@@ -1,8 +1,8 @@
 # rctbayespower
 
 <!-- badges: start -->
-[![R-CMD-check](https://github.com/yourusername/rctbayespower/workflows/R-CMD-check/badge.svg)](https://github.com/yourusername/rctbayespower/actions)
-[![Codecov test coverage](https://codecov.io/gh/yourusername/rctbayespower/branch/main/graph/badge.svg)](https://codecov.io/gh/yourusername/rctbayespower?branch=main)
+[![R-CMD-check](https://github.com/matthiaskloft/rctbayespower/workflows/R-CMD-check/badge.svg)](https://github.com/matthiaskloft/rctbayespower/actions)
+[![Codecov test coverage](https://codecov.io/gh/matthiaskloft/rctbayespower/branch/main/graph/badge.svg)](https://codecov.io/gh/matthiaskloft/rctbayespower?branch=main)
 [![CRAN status](https://www.r-pkg.org/badges/version/rctbayespower)](https://CRAN.R-project.org/package=rctbayespower)
 <!-- badges: end -->
 
@@ -23,7 +23,7 @@ You can install the development version of `rctbayespower` from GitHub:
 
 ```r
 # install.packages("devtools")
-devtools::install_github("yourusername/rctbayespower")
+devtools::install_github("matthiaskloft/rctbayespower")
 ```
 
 ## Quick Start

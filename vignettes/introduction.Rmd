@@ -41,7 +41,7 @@ This vignette demonstrates the main functions of the package with practical exam
 
 ```{r install, eval=FALSE}
 # Install from GitHub (once package is published)
-# devtools::install_github("yourusername/rctbayespower")
+# devtools::install_github("matthiaskloft/rctbayespower")
 
 # Load the package
 library(rctbayespower)

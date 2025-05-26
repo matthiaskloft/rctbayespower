@@ -7,7 +7,7 @@
 plot_power_curve(x, type = "auto", power_metric = "rope", ...)
 }
 \arguments{
-\item{x}{An object of class 'rctbayespower', 'rctbayespower_samplesize', 
+\item{x}{An object of class 'rctbayespower', 'rctbayespower_samplesize',
 or 'rctbayespower_curve'}
 
 \item{type}{Type of plot ("power_curve", "sample_size", "effect_distribution")}

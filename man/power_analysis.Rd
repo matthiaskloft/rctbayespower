@@ -22,7 +22,7 @@ power_analysis(
   brms_args = list(),
   seed = NULL,
   parallel = FALSE,
-  cores = NULL
+  cores = 2
 )
 }
 \arguments{
@@ -67,13 +67,13 @@ A list containing power analysis results
 }
 \description{
 Conduct Bayesian power analysis for randomized controlled trials using brms.
-This function estimates the probability of detecting a treatment effect of a 
+This function estimates the probability of detecting a treatment effect of a
 given size using Bayesian methods.
 }
 \examples{
 \dontrun{
 # Basic power analysis for continuous outcome
-result <- power_analysis(
+power_result <- power_analysis(
   n_control = 50,
   n_treatment = 50,
   effect_size = 0.5,
@@ -81,13 +81,18 @@ result <- power_analysis(
   n_simulations = 100
 )
 
-# Binary outcome with custom ROPE
-result_binary <- power_analysis(
-  n_control = 100,
-  n_treatment = 100,
+# Power analysis with covariates
+covariates <- list(
+  age = list(type = "continuous", mean = 45, sd = 10),
+  sex = list(type = "binary", prob = 0.5)
+)
+
+power_result <- power_analysis(
+  n_control = 75,
+  n_treatment = 75,
   effect_size = 0.3,
-  outcome_type = "binary",
-  rope_limits = c(-0.05, 0.05),
+  outcome_type = "continuous",
+  covariates = covariates,
   n_simulations = 200
 )
 }

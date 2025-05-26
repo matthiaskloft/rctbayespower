@@ -53,3 +53,5 @@ Meta/
 # IDE files
 .vscode/
 .idea/
+/doc/
+/Meta/

@@ -48,7 +48,7 @@ install.packages(c(
 devtools::install_local("path/to/rctbayespower")
 
 # Or if published to GitHub
-# devtools::install_github("yourusername/rctbayespower")
+# devtools::install_github("matthiaskloft/rctbayespower")
 ```
 
 ## Quick Start

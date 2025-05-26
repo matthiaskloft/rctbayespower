@@ -11,7 +11,7 @@ Description: This package provides tools for conducting Bayesian power analysis
 License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.1
+RoxygenNote: 7.3.2
 Depends: 
     R (>= 4.1.0)
 Imports:
@@ -33,5 +33,5 @@ Suggests:
     covr
 Config/testthat/edition: 3
 VignetteBuilder: knitr
-URL: https://github.com/yourusername/rctbayespower
-BugReports: https://github.com/yourusername/rctbayespower/issues
+URL: https://github.com/matthiaskloft/rctbayespower
+BugReports: https://github.com/matthiaskloft/rctbayespower/issues

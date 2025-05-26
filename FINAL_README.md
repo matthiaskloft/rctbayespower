@@ -1,7 +1,7 @@
 # 🎉 rctbayespower Package - COMPLETE & READY TO USE
 
-[![R Package](https://img.shields.io/badge/R%20Package-Complete-brightgreen)](https://github.com/yourusername/rctbayespower)
-[![Version](https://img.shields.io/badge/Version-0.1.0-blue)](https://github.com/yourusername/rctbayespower)
+[![R Package](https://img.shields.io/badge/R%20Package-Complete-brightgreen)](https://github.com/matthiaskloft/rctbayespower)
+[![Version](https://img.shields.io/badge/Version-0.1.0-blue)](https://github.com/matthiaskloft/rctbayespower)
 [![License](https://img.shields.io/badge/License-MIT-yellow)](LICENSE)
 
 ## 📋 Package Status: ✅ COMPLETE
@@ -226,7 +226,7 @@ regulatory_analysis <- power_analysis(
 ### Getting Help
 - 📖 Check the vignettes: `browseVignettes("rctbayespower")`
 - 💬 Function help: `?function_name`
-- 🐛 Issues: [GitHub Issues](https://github.com/yourusername/rctbayespower/issues)
+- 🐛 Issues: [GitHub Issues](https://github.com/matthiaskloft/rctbayespower/issues)
 
 ### Citation
 ```r

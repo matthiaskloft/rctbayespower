@@ -8,7 +8,7 @@ sample_size_analysis(
   effect_size,
   target_power = 0.8,
   outcome_type = "continuous",
-  sample_sizes = seq(20, 200, by = 10),
+  sample_sizes = seq(20, 200, by = 20),
   allocation_ratio = 1,
   n_simulations = 500,
   ...
