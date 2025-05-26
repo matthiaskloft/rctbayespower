@@ -1,0 +1,15 @@
+^.*\.Rproj$
+^\.Rproj\.user$
+^\.Rbuildignore$
+^\.git$
+^\.gitignore$
+^.*\.o$
+^.*\.so$
+^.*\.dll$
+^doc$
+^Meta$
+^\.github$
+^codecov\.yml$
+^LICENSE\.md$
+^cran-comments\.md$
+^revdep$
