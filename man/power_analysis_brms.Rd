@@ -40,6 +40,8 @@ power_analysis_brms(
 
 \item{success_threshold}{Numeric posterior probability threshold for declaring success (default 0.8)}
 
+\item{verbose}{Logical indicating whether to print progress messages (default TRUE)}
+
 \item{...}{Additional arguments passed to \code{\link[brms]{brm}}}
 }
 \value{

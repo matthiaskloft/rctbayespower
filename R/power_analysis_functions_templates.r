@@ -4,6 +4,7 @@
 #' @param y Default value if x is NULL
 #' @return x if not NULL, otherwise y
 #' @keywords internal
+#' @noRd
 `%||%` <- function(x, y) {
   if (is.null(x)) y else x
 }
@@ -13,7 +14,7 @@
 #' @param conditions Named list with data generation parameters
 #' @return data.frame with longitudinal RCT data
 #' @keywords internal
-#' @importFrom stats rnorm expand.grid
+#' @importFrom stats rnorm
 generate_rct_data <- function(conditions) {
   
   # Extract required parameters with validation
@@ -123,7 +124,7 @@ generate_rct_data <- function(conditions) {
 #' @param ... Additional arguments passed to brm()
 #' @return Numeric probability of success for this simulation
 #' @keywords internal
-#' @importFrom brms brm bf prior student_t as_draws_df
+#' @importFrom brms brm bf prior as_draws_df
 #' @importFrom stats as.formula
 single_sim_brms <- function(sim_id, conditions, t_endpoint, threshold, 
                             prior_spec = NULL, success_threshold = 0.8, ...) {
@@ -212,6 +213,7 @@ single_sim_brms <- function(sim_id, conditions, t_endpoint, threshold,
 #' @param n_cores Integer number of cores for parallel processing (default: detectCores() - 1)
 #' @param prior_spec Optional brms prior specification. If NULL, uses student_t(3, 0, 2) priors
 #' @param success_threshold Numeric posterior probability threshold for declaring success (default 0.8)
+#' @param verbose Logical indicating whether to print progress messages (default TRUE)
 #' @param ... Additional arguments passed to \code{\link[brms]{brm}}
 #' 
 #' @return List containing:
@@ -259,7 +261,7 @@ single_sim_brms <- function(sim_id, conditions, t_endpoint, threshold,
 #' )
 #' }
 #' 
-#' @importFrom brms brm bf prior student_t as_draws_df
+#' @importFrom brms brm bf prior as_draws_df
 #' @importFrom parallel makeCluster clusterEvalQ clusterExport parLapply stopCluster detectCores
 #' @importFrom stats rnorm as.formula
 #' @export
