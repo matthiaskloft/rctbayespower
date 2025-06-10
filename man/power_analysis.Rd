@@ -2,27 +2,30 @@
 % Please edit documentation in R/power_analysis.R
 \name{power_analysis}
 \alias{power_analysis}
-\title{Bayesian Power Analysis for RCTs}
+\title{Flexible Bayesian Power Analysis for RCTs}
 \usage{
 power_analysis(
   n_control,
   n_treatment,
-  effect_size,
-  outcome_type = "continuous",
-  prior_specification = "default",
-  rope_limits = c(-0.1, 0.1),
-  prob_threshold = 0.95,
+  simulate_data_fn,
+  model_formula_true_params = NULL,
+  model_formula_estimation = NULL,
+  family = NULL,
+  priors_true_params = NULL,
+  priors_estimation = NULL,
+  target_param,
+  threshold_success,
+  threshold_futility,
+  p_sig_success = 0.95,
+  p_sig_futility = 0.5,
   n_simulations = 1000,
-  baseline_mean = 0,
-  baseline_sd = 1,
-  baseline_prob = 0.5,
-  baseline_rate = 1,
-  covariates = NULL,
-  model_formula = NULL,
-  brms_args = list(),
+  brms_args = list(algorithm = "sampling", iter = 1500, warmup = 500, chains = 2, cores =
+    1, init = 0.1, control = list(adapt_delta = 0.9)),
   seed = NULL,
-  parallel = FALSE,
-  cores = 2
+  n_cores = 1,
+  brms_design_true_params = NULL,
+  brms_design_estimation = NULL,
+  progress_updates = 10
 )
 }
 \arguments{
@@ -30,70 +33,140 @@ power_analysis(
 
 \item{n_treatment}{Number of participants in treatment group}
 
-\item{effect_size}{Expected effect size}
+\item{simulate_data_fn}{User-defined function that takes (n_control, n_treatment) and returns a data frame}
 
-\item{outcome_type}{Type of outcome ("continuous", "binary", "count")}
+\item{model_formula_true_params}{brms formula object for design model with true parameters}
 
-\item{prior_specification}{Prior specification for the treatment effect}
+\item{model_formula_estimation}{brms formula object for estimation model}
 
-\item{rope_limits}{ROPE (Region of Practical Equivalence) limits}
+\item{family}{Distributional family for brms (e.g., gaussian(), bernoulli(), poisson())}
 
-\item{prob_threshold}{Probability threshold for declaring an effect}
+\item{priors_true_params}{Priors with true parameter values (as constants) for design model}
+
+\item{priors_estimation}{Priors for estimation in power simulation}
+
+\item{target_param}{Name of the parameter to track for power calculation (without "b_" prefix)}
+
+\item{threshold_success}{Upper threshold for success determination}
+
+\item{threshold_futility}{Lower threshold for futility determination (required)}
+
+\item{p_sig_success}{Probability threshold for declaring success (default 0.95)}
+
+\item{p_sig_futility}{Probability threshold for declaring futility (default 0.5)}
 
 \item{n_simulations}{Number of simulation iterations}
 
-\item{baseline_mean}{Baseline mean for continuous outcomes}
-
-\item{baseline_sd}{Baseline standard deviation for continuous outcomes}
-
-\item{baseline_prob}{Baseline probability for binary outcomes}
-
-\item{baseline_rate}{Baseline rate for count outcomes}
-
-\item{covariates}{List of covariate specifications}
-
-\item{model_formula}{Custom model formula (optional)}
-
-\item{brms_args}{Additional arguments passed to brms}
+\item{brms_args}{Arguments passed to brms for estimation models. Default includes algorithm="sampling", iter=1200, warmup=200, chains=2, cores=1. User can override any of these or add additional arguments.}
 
 \item{seed}{Random seed for reproducibility}
 
-\item{parallel}{Whether to run simulations in parallel}
+\item{n_cores}{Number of cores for parallel processing. If n_cores > 1, simulations will run in parallel.}
 
-\item{cores}{Number of cores for parallel processing}
+\item{brms_design_true_params}{Optional pre-fitted brms model with true parameters. If provided, this model will be used instead of fitting a new design model.}
+
+\item{brms_design_estimation}{Optional pre-fitted brms model template for estimation. If provided, this model will be used instead of fitting a new design model.}
+
+\item{progress_updates}{Number of progress updates to show during parallel processing. Default is 10. Set to 0 to disable progress updates.}
 }
 \value{
 A list containing power analysis results
 }
 \description{
-Conduct Bayesian power analysis for randomized controlled trials using brms.
-This function estimates the probability of detecting a treatment effect of a
-given size using Bayesian methods.
+Conduct Bayesian power analysis for randomized controlled trials using user-specified
+models and data generation functions. This function uses a design-based approach with
+separate models for true parameter specification and estimation.
 }
 \examples{
 \dontrun{
-# Basic power analysis for continuous outcome
+# Define data simulation function
+simulate_data <- function(n_control, n_treatment) {
+  data.frame(
+    outcome = rnorm(n_control + n_treatment),
+    baseline = rnorm(n_control + n_treatment),
+    group = factor(rep(c(0, 1), times = c(n_control, n_treatment)),
+                   levels = c(0, 1), labels = c("ctrl", "treat"))
+  )
+}
+
+# Define model formulas and priors
+model_formula_true <- brms::bf(outcome ~ baseline + group, center = FALSE)
+model_formula_est <- brms::bf(outcome ~ baseline + group)
+priors_true <- c(
+  brms::set_prior("constant(.2)", class = "b", coef = "baseline"),
+  brms::set_prior("constant(.5)", class = "b", coef = "grouptreat"),
+  brms::set_prior("constant(0)", class = "Intercept"),
+  brms::set_prior("constant(1)", class = "sigma")
+)
+priors_est <- c(
+  brms::set_prior("student_t(3, 0, 2)", class = "b"),
+  brms::set_prior("student_t(3, 0, 1)", class = "b", coef = "baseline"),
+  brms::set_prior("student_t(3, 0, 2)", class = "Intercept"),
+  brms::set_prior("student_t(3, 0, 1)", class = "sigma")
+)
+
+# Run power analysis with default brms_args
 power_result <- power_analysis(
-  n_control = 50,
-  n_treatment = 50,
-  effect_size = 0.5,
-  outcome_type = "continuous",
+  n_control = 50, n_treatment = 50,
+  simulate_data_fn = simulate_data,
+  model_formula_true_params = model_formula_true,
+  model_formula_estimation = model_formula_est,
+  family = gaussian(),
+  priors_true_params = priors_true,
+  priors_estimation = priors_est,
+  target_param = "grouptreat",
+  threshold_success = 0.2,
+  threshold_futility = 0,
+  p_sig_success = 0.95,
+  p_sig_futility = 0.8,
   n_simulations = 100
 )
 
-# Power analysis with covariates
-covariates <- list(
-  age = list(type = "continuous", mean = 45, sd = 10),
-  sex = list(type = "binary", prob = 0.5)
+# Run power analysis with custom brms_args and parallel processing with progress
+power_result_custom <- power_analysis(
+  n_control = 50, n_treatment = 50,
+  simulate_data_fn = simulate_data,
+  model_formula_true_params = model_formula_true,
+  model_formula_estimation = model_formula_est,
+  family = gaussian(),
+  priors_true_params = priors_true,
+  priors_estimation = priors_est,
+  target_param = "grouptreat",
+  threshold_success = 0.2,
+  threshold_futility = 0,
+  p_sig_success = 0.95,
+  p_sig_futility = 0.7,
+  n_simulations = 100,
+  brms_args = list(algorithm = "meanfield", iter = 800, chains = 4),
+  n_cores = 4,  # Use 4 cores for parallel processing
+  progress_updates = 5  # Show 5 progress updates during execution
 )
 
-power_result <- power_analysis(
-  n_control = 75,
-  n_treatment = 75,
-  effect_size = 0.3,
-  outcome_type = "continuous",
-  covariates = covariates,
-  n_simulations = 200
+# Alternative: Use pre-fitted models (e.g., from validate_power_design)
+validation <- validate_power_design(
+  n_control = 50, n_treatment = 50,
+  simulate_data_fn = simulate_data,
+  model_formula_true_params = model_formula_true,
+  model_formula_estimation = model_formula_est,
+  family = gaussian(),
+  priors_true_params = priors_true,
+  priors_estimation = priors_est,
+  target_param = "grouptreat"
+)
+
+power_result_prefitted <- power_analysis(
+  n_control = 50, n_treatment = 50,
+  simulate_data_fn = simulate_data,
+  target_param = "grouptreat",
+  threshold_success = 0.2,
+  threshold_futility = 0,
+  p_sig_success = 0.95,
+  p_sig_futility = 0.7,
+  n_simulations = 1000,
+  n_cores = 6,
+  progress_updates = 10,  # Show progress every 100 simulations
+  brms_design_true_params = validation$brms_design_true_params,
+  brms_design_estimation = validation$brms_design_estimation
 )
 }
 }

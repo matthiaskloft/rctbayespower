@@ -76,7 +76,8 @@ cardio_power <- power_analysis(
   effect_size = 0.375,
   outcome_type = "continuous",
   rope_limits = c(-0.25, 0.25),  # Based on clinical threshold
-  n_simulations = 200
+  n_simulations = 200,
+  algorithm = "fullrank"
 )
 
 print(cardio_power)

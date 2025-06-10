@@ -1,16 +1,22 @@
 # Export all functions that should be available to users
 export(power_analysis)
-export(sample_size_analysis)
-export(simulate_rct_data)
-export(bayesian_power_curve)
-export(plot_power_curve)
-export(effect_size_analysis)
+export(power_analysis_ancova)
+export(validate_power_design)
+export(power_grid_analysis)
+export(validate_weighting_function)
+# Export S3 methods
+S3method(summary, rctbayespower)
+S3method(summary, rctbayespower_grid)
+S3method(print, rctbayespower)
+S3method(print, rctbayespower_grid)
+S3method(plot, rctbayespower_grid)
 
 # Import functions from other packages
 importFrom(magrittr, "%>%")
 importFrom(rlang, .data)
 importFrom(stats, rnorm, rbinom, rpois)
 importFrom(utils, head, tail)
+importFrom(scales, percent_format)
 
 # Import packages
 import(ggplot2)

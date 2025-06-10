@@ -1,0 +1,3 @@
+- delete everything in effect_size_analysis.R and power_curve.R, we will implement this later
+- delete all tests now, we will implement them later when the functions are complete
+- I deleted the test files
