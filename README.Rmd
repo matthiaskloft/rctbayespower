@@ -1,24 +1,31 @@
+---
+output: github_document
+---
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.path = "man/figures/README-",
+  out.width = "100%"
+)
+```
 
 # rctbayespower
 
 <!-- badges: start -->
-
 <!-- Note: Badges are placeholders for when the package is published -->
-
 <!-- badges: end -->
 
 ## Disclaimer
 
-This is an experimental package written by Github copilot and is not
-intended for production use.
+This is an experimental package written by Github copilot and is not intended for production use.
 
 ## Overview
 
-`rctbayespower` provides tools for conducting Bayesian power analysis
-for randomized controlled trials (RCTs) using `brms` and Stan. The
-package allows researchers to:
+`rctbayespower` provides tools for conducting Bayesian power analysis for randomized controlled trials (RCTs) using `brms` and Stan. The package allows researchers to:
 
 - Estimate power curves for different effect sizes
 - Determine optimal sample sizes using Bayesian methods
@@ -31,14 +38,14 @@ package allows researchers to:
 
 You can install the development version of `rctbayespower` from GitHub:
 
-``` r
+```{r, eval = FALSE}
 # install.packages("devtools")
 devtools::install_github("matthiaskloft/rctbayespower")
 ```
 
 ## Quick Start
 
-``` r
+```{r example, eval = FALSE}
 library(rctbayespower)
 
 # Basic power analysis for continuous outcome
@@ -68,14 +75,13 @@ plot_power_curve(sample_size_result, type = "sample_size")
 
 ### Multiple Outcome Types
 
-- **Continuous outcomes**: Using Cohen’s d effect sizes
+- **Continuous outcomes**: Using Cohen's d effect sizes
 - **Binary outcomes**: Using log odds ratios
 - **Count outcomes**: Using log rate ratios
 
 ### Flexible Power Metrics
 
-- **ROPE Power**: Probability effect is outside region of practical
-  equivalence
+- **ROPE Power**: Probability effect is outside region of practical equivalence
 - **Directional Power**: Probability effect is in expected direction  
 - **Significance Power**: Traditional frequentist-like power
 
@@ -89,20 +95,20 @@ plot_power_curve(sample_size_result, type = "sample_size")
 
 ## Main Functions
 
-| Function                 | Purpose                        |
-|--------------------------|--------------------------------|
-| `power_analysis()`       | Main power analysis function   |
-| `sample_size_analysis()` | Determine optimal sample size  |
-| `bayesian_power_curve()` | Generate power curves          |
+| Function | Purpose |
+|----------|---------|
+| `power_analysis()` | Main power analysis function |
+| `sample_size_analysis()` | Determine optimal sample size |
+| `bayesian_power_curve()` | Generate power curves |
 | `effect_size_analysis()` | Analyze effect size estimation |
-| `simulate_rct_data()`    | Generate simulated RCT data    |
-| `plot_power_curve()`     | Visualization functions        |
+| `simulate_rct_data()` | Generate simulated RCT data |
+| `plot_power_curve()` | Visualization functions |
 
 ## Example Workflows
 
 ### Sample Size Planning
 
-``` r
+```{r sample-size, eval = FALSE}
 # Determine sample size for desired power
 result <- sample_size_analysis(
   effect_size = 0.4,
@@ -117,7 +123,7 @@ plot_power_curve(result, type = "sample_size")
 
 ### Power Curve Analysis
 
-``` r
+```{r power-curve, eval = FALSE}
 # Generate power curve across effect sizes
 curve_result <- bayesian_power_curve(
   n_control = 75,
@@ -132,7 +138,7 @@ plot_power_curve(curve_result)
 
 ### Binary Outcomes
 
-``` r
+```{r binary, eval = FALSE}
 # Power analysis for binary endpoint
 binary_power <- power_analysis(
   n_control = 100,
@@ -146,7 +152,7 @@ binary_power <- power_analysis(
 
 ### Including Covariates
 
-``` r
+```{r covariates, eval = FALSE}
 # Define covariates
 covariates <- list(
   age = list(type = "continuous", mean = 45, sd = 10),
@@ -166,12 +172,9 @@ power_with_covs <- power_analysis(
 
 ## Documentation
 
-- [Getting Started Vignette](vignettes/introduction.Rmd): Basic usage
-  and concepts
-- [Advanced Techniques](vignettes/advanced-techniques.Rmd): Complex
-  designs and custom analyses  
-- [Case Studies](vignettes/case-studies.Rmd): Real-world applications
-  across domains
+- [Getting Started Vignette](vignettes/introduction.Rmd): Basic usage and concepts
+- [Advanced Techniques](vignettes/advanced-techniques.Rmd): Complex designs and custom analyses  
+- [Case Studies](vignettes/case-studies.Rmd): Real-world applications across domains
 
 ## Dependencies
 
@@ -194,8 +197,7 @@ For full functionality, ensure you have a working Stan installation.
 
 - **Core Functions**: Complete Bayesian power analysis workflow
 - **Documentation**: Comprehensive help files for all functions  
-- **Vignettes**: Three detailed guides covering basic usage, advanced
-  techniques, and real-world case studies
+- **Vignettes**: Three detailed guides covering basic usage, advanced techniques, and real-world case studies
 - **Tests**: Unit tests for core functionality
 - **Examples**: Simulated datasets for testing and learning
 
@@ -213,8 +215,7 @@ For full functionality, ensure you have a working Stan installation.
 ## Installation and Setup
 
 ### Quick Installation
-
-``` r
+```{r install, eval = FALSE}
 # Install dependencies first
 install.packages(c("brms", "bayestestR", "ggplot2", "dplyr"))
 
@@ -223,33 +224,30 @@ devtools::install_local("path/to/rctbayespower")
 ```
 
 ### Detailed Setup
-
-See `INSTALLATION_GUIDE.md` for complete installation instructions,
-including system dependencies and troubleshooting.
+See `INSTALLATION_GUIDE.md` for complete installation instructions, including system dependencies and troubleshooting.
 
 ### Quick Validation
-
-``` r
+```{r validate, eval = FALSE}
 # Test core functionality
 source("validate_package.R")
 ```
 
 ## Contributing
 
-Contributions are welcome! Please see our [contributing
-guidelines](CONTRIBUTING.md) for details.
+Contributions are welcome! Please see our [contributing guidelines](CONTRIBUTING.md) for details.
 
 ## Citation
 
 If you use `rctbayespower` in your research, please cite:
 
-    Author, A. et al. (2025). rctbayespower: Bayesian Power Analysis for 
-    Randomized Controlled Trials. R package version X.X.X.
+```
+Author, A. et al. (2025). rctbayespower: Bayesian Power Analysis for 
+Randomized Controlled Trials. R package version X.X.X.
+```
 
 ## License
 
-This project is licensed under the MIT License - see the
-[LICENSE.md](LICENSE.md) file for details.
+This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details.
 
 ## Acknowledgments
 

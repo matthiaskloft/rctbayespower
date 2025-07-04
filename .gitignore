@@ -10,6 +10,9 @@ __pycache__/
 .Ruserdata
 *.Rproj
 
+# Generated README
+README.md
+
 # Distribution / packaging
 .Python
 build/

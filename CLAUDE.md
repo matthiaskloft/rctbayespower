@@ -17,11 +17,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - ✅ **Grid Analysis Functions**: New comprehensive `power_grid_analysis()` function that replaces and extends previous sample size and effect size analysis functions
 
 **Current Package State:**
-- All core functions working with enhanced performance and reliability
+- Core functions (`power_analysis`, `power_analysis_ancova`, `power_grid_analysis`) working with enhanced performance
 - Model caching provides significant speedup for grid analyses
 - Comprehensive plotting system with multiple visualization options
 - Robust parallelization with proper parameter handling
 - Package structure and dependencies stable and optimized
+- **Note**: Tests are currently minimal and will be implemented later when functions are complete
+- **Note**: Some functions like `effect_size_analysis` and `power_curve` are placeholders for future implementation
 
 ## Core Architecture
 
@@ -79,11 +81,10 @@ devtools::test()
 
 ### Testing
 ```r
-# Run all tests
-testthat::test_dir("tests/testthat")
+# Run all tests (currently minimal - tests will be implemented later)
+devtools::test()
 
-# Run specific test file
-testthat::test_file("tests/testthat/test-power_analysis.R")
+# Note: Individual test files are not yet implemented
 ```
 
 ### Documentation Building
@@ -96,10 +97,12 @@ devtools::build_vignettes()
 
 Key dependencies that must be available:
 - **brms** (≥ 2.20.0): Bayesian modeling interface to Stan
-- **rstanarm**: Alternative Bayesian modeling
-- **bayestestR**: Bayesian inference tools (ROPE analysis)
 - **posterior**: Stan posterior analysis
 - **ggplot2, dplyr, tidyr, purrr**: Data manipulation and visualization
+- **magrittr, tibble, rlang**: Supporting utilities
+- **parallel**: Parallel processing capabilities
+
+Note: Dependencies are automatically handled by the DESCRIPTION file when installing the package.
 
 ## Key Implementation Details
 
