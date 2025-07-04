@@ -53,9 +53,9 @@
 #'   n_control = 75,
 #'   n_treatment = 75,
 #'   outcome_type = "binary",
-#'   effect_size = 0.693,  # log odds ratio for OR = 2
-#'   baseline_effect = 0.405,  # log odds ratio for OR = 1.5
-#'   intercept_value = 0,  # 50% baseline probability
+#'   effect_size = 0.693, # log odds ratio for OR = 2
+#'   baseline_effect = 0.405, # log odds ratio for OR = 1.5
+#'   intercept_value = 0, # 50% baseline probability
 #'   p_sig_success = 0.95,
 #'   p_sig_futility = 0.6,
 #'   n_simulations = 200
@@ -66,9 +66,9 @@
 #'   n_control = 60,
 #'   n_treatment = 60,
 #'   outcome_type = "count",
-#'   effect_size = 0.693,  # log rate ratio for RR = 2
-#'   baseline_effect = 0.405,  # log rate ratio for RR = 1.5
-#'   intercept_value = 1.099,  # log(3) for baseline rate = 3
+#'   effect_size = 0.693, # log rate ratio for RR = 2
+#'   baseline_effect = 0.405, # log rate ratio for RR = 1.5
+#'   intercept_value = 1.099, # log(3) for baseline rate = 3
 #'   p_sig_success = 0.95,
 #'   p_sig_futility = 0.7,
 #'   n_simulations = 150
@@ -87,8 +87,8 @@
 #'   p_sig_futility = 0.5,
 #'   n_simulations = 100,
 #'   brms_args = list(algorithm = "meanfield", iter = 800),
-#'   n_cores = 3,  # Use 3 cores for parallel processing
-#'   progress_updates = 5  # Show 5 progress updates
+#'   n_cores = 3, # Use 3 cores for parallel processing
+#'   progress_updates = 5 # Show 5 progress updates
 #' )
 #' }
 power_analysis_ancova <- function(n_control,
@@ -144,18 +144,18 @@ power_analysis_ancova <- function(n_control,
 
   # Validate parameter types and ranges
   if (!is.numeric(n_control) ||
-      length(n_control) != 1 || n_control <= 0) {
+    length(n_control) != 1 || n_control <= 0) {
     stop("n_control must be a single positive number.")
   }
   if (!is.numeric(n_treatment) ||
-      length(n_treatment) != 1 || n_treatment <= 0) {
+    length(n_treatment) != 1 || n_treatment <= 0) {
     stop("n_treatment must be a single positive number.")
   }
   if (!is.numeric(effect_size) || length(effect_size) != 1) {
     stop("effect_size must be a single numeric value.")
   }
   if (!is.numeric(baseline_effect) ||
-      length(baseline_effect) != 1) {
+    length(baseline_effect) != 1) {
     stop("baseline_effect must be a single numeric value.")
   }
 
@@ -166,33 +166,33 @@ power_analysis_ancova <- function(n_control,
 
   # Validate optional numeric parameters
   if (!is.numeric(intercept_value) ||
-      length(intercept_value) != 1) {
+    length(intercept_value) != 1) {
     stop("intercept_value must be a single numeric value.")
   }
   if (!is.numeric(sigma_value) ||
-      length(sigma_value) != 1 || sigma_value <= 0) {
+    length(sigma_value) != 1 || sigma_value <= 0) {
     stop("sigma_value must be a single positive number.")
   }
   if (!is.numeric(threshold_success) ||
-      length(threshold_success) != 1) {
+    length(threshold_success) != 1) {
     stop("threshold_success must be a single numeric value.")
   }
   if (!is.numeric(threshold_futility) ||
-      length(threshold_futility) != 1) {
+    length(threshold_futility) != 1) {
     stop("threshold_futility must be a single numeric value.")
   }
   if (!is.numeric(p_sig_success) ||
-      length(p_sig_success) != 1 ||
-      p_sig_success <= 0 || p_sig_success >= 1) {
+    length(p_sig_success) != 1 ||
+    p_sig_success <= 0 || p_sig_success >= 1) {
     stop("p_sig_success must be a single number between 0 and 1.")
   }
   if (!is.numeric(p_sig_futility) ||
-      length(p_sig_futility) != 1 ||
-      p_sig_futility <= 0 || p_sig_futility >= 1) {
+    length(p_sig_futility) != 1 ||
+    p_sig_futility <= 0 || p_sig_futility >= 1) {
     stop("p_sig_futility must be a single number between 0 and 1.")
   }
   if (!is.numeric(n_simulations) ||
-      length(n_simulations) != 1 || n_simulations < 1) {
+    length(n_simulations) != 1 || n_simulations < 1) {
     stop("n_simulations must be a single positive integer.")
   }
   if (!is.numeric(n_cores) || length(n_cores) != 1 || n_cores < 1) {
@@ -201,15 +201,15 @@ power_analysis_ancova <- function(n_control,
 
   # Validate prior specifications
   if (!is.character(priors_treatment) ||
-      length(priors_treatment) != 1) {
+    length(priors_treatment) != 1) {
     stop("priors_treatment must be a single character string.")
   }
   if (!is.character(priors_baseline) ||
-      length(priors_baseline) != 1) {
+    length(priors_baseline) != 1) {
     stop("priors_baseline must be a single character string.")
   }
   if (!is.character(priors_intercept) ||
-      length(priors_intercept) != 1) {
+    length(priors_intercept) != 1) {
     stop("priors_intercept must be a single character string.")
   }
   if (!is.character(priors_sigma) || length(priors_sigma) != 1) {
@@ -250,8 +250,7 @@ power_analysis_ancova <- function(n_control,
   model_formula_estimation <- brms::bf(outcome ~ baseline + group)
 
   # Define distributional family
-  family <- switch(
-    outcome_type,
+  family <- switch(outcome_type,
     "continuous" = gaussian(),
     "binary" = bernoulli(),
     "count" = poisson()
@@ -278,8 +277,10 @@ power_analysis_ancova <- function(n_control,
 
   # Add sigma prior only for continuous outcomes
   if (outcome_type == "continuous") {
-    priors_true_params <- c(priors_true_params,
-                            brms::set_prior(paste0("constant(", sigma_value, ")"), class = "sigma"))
+    priors_true_params <- c(
+      priors_true_params,
+      brms::set_prior(paste0("constant(", sigma_value, ")"), class = "sigma")
+    )
   }
 
   # Set up estimation priors (exactly as in template)
@@ -291,8 +292,10 @@ power_analysis_ancova <- function(n_control,
 
   # Add sigma prior only for continuous outcomes
   if (outcome_type == "continuous") {
-    priors_estimation <- c(priors_estimation,
-                           brms::set_prior(priors_sigma, class = "sigma"))
+    priors_estimation <- c(
+      priors_estimation,
+      brms::set_prior(priors_sigma, class = "sigma")
+    )
   }
 
   # Define target parameter (exactly as in template)

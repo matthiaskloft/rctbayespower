@@ -45,7 +45,7 @@ Sometimes studies use unequal allocation ratios (e.g., 2:1 treatment to control)
 # 2:1 allocation ratio
 power_unequal <- power_analysis(
   n_control = 50,
-  n_treatment = 100,  # 2:1 ratio
+  n_treatment = 100, # 2:1 ratio
   effect_size = 0.4,
   outcome_type = "continuous",
   n_simulations = n_sims_demo
@@ -54,9 +54,9 @@ power_unequal <- power_analysis(
 # Compare with equal allocation
 power_equal <- power_analysis(
   n_control = 75,
-  n_treatment = 75,  # Same total N = 150
+  n_treatment = 75, # Same total N = 150
   effect_size = 0.4,
-  outcome_type = "continuous", 
+  outcome_type = "continuous",
   n_simulations = n_sims_demo
 )
 
@@ -74,16 +74,16 @@ For studies with multiple treatment arms, analyze each comparison separately:
 power_A_vs_C <- power_analysis(
   n_control = 60,
   n_treatment = 60,
-  effect_size = 0.5,  # Treatment A effect
+  effect_size = 0.5, # Treatment A effect
   outcome_type = "continuous",
   n_simulations = n_sims_demo
 )
 
-# Treatment B vs Control  
+# Treatment B vs Control
 power_B_vs_C <- power_analysis(
   n_control = 60,
   n_treatment = 60,
-  effect_size = 0.3,  # Treatment B effect (smaller)
+  effect_size = 0.3, # Treatment B effect (smaller)
   outcome_type = "continuous",
   n_simulations = n_sims_demo
 )
@@ -92,7 +92,7 @@ power_B_vs_C <- power_analysis(
 power_A_vs_B <- power_analysis(
   n_control = 60,
   n_treatment = 60,
-  effect_size = 0.2,  # Difference between treatments
+  effect_size = 0.2, # Difference between treatments
   outcome_type = "continuous",
   n_simulations = n_sims_demo
 )
@@ -114,7 +114,7 @@ informed_prior <- prior(normal(0.3, 0.2), class = "b", coef = "treatment")
 power_informed <- power_analysis(
   n_control = 40,
   n_treatment = 40,
-  effect_size = 0.4,  # True effect
+  effect_size = 0.4, # True effect
   outcome_type = "continuous",
   prior_specification = informed_prior,
   n_simulations = n_sims_demo
@@ -160,29 +160,31 @@ For clustered data (e.g., patients within clinics):
 ```{r hierarchical, eval=FALSE}
 # Simulate clustered data
 simulate_clustered_data <- function(n_clusters_control, n_clusters_treatment,
-                                   n_per_cluster, effect_size, icc = 0.05) {
-  
+                                    n_per_cluster, effect_size, icc = 0.05) {
   total_control <- n_clusters_control * n_per_cluster
   total_treatment <- n_clusters_treatment * n_per_cluster
-  
+
   # Create cluster IDs
   cluster_id <- c(
     rep(1:n_clusters_control, each = n_per_cluster),
-    rep((n_clusters_control + 1):(n_clusters_control + n_clusters_treatment), 
-        each = n_per_cluster)
+    rep((n_clusters_control + 1):(n_clusters_control + n_clusters_treatment),
+      each = n_per_cluster
+    )
   )
-  
+
   # Treatment assignment
   treatment <- c(rep(0, total_control), rep(1, total_treatment))
-  
+
   # Generate random effects for clusters
   cluster_effects <- rnorm(n_clusters_control + n_clusters_treatment, 0, sqrt(icc))
-  
+
   # Generate outcomes with cluster effects
-  outcome <- rnorm(total_control + total_treatment, 
-                  treatment * effect_size + cluster_effects[cluster_id],
-                  sqrt(1 - icc))
-  
+  outcome <- rnorm(
+    total_control + total_treatment,
+    treatment * effect_size + cluster_effects[cluster_id],
+    sqrt(1 - icc)
+  )
+
   data.frame(
     id = 1:(total_control + total_treatment),
     cluster_id = cluster_id,
@@ -193,35 +195,39 @@ simulate_clustered_data <- function(n_clusters_control, n_clusters_treatment,
 
 # Custom power analysis for clustered design
 clustered_power_analysis <- function(n_clusters_control, n_clusters_treatment,
-                                    n_per_cluster, effect_size, n_simulations = 100) {
-  
+                                     n_per_cluster, effect_size, n_simulations = 100) {
   power_results <- vector("numeric", n_simulations)
-  
+
   for (i in 1:n_simulations) {
     # Generate clustered data
-    data <- simulate_clustered_data(n_clusters_control, n_clusters_treatment,
-                                   n_per_cluster, effect_size)
-    
+    data <- simulate_clustered_data(
+      n_clusters_control, n_clusters_treatment,
+      n_per_cluster, effect_size
+    )
+
     # Fit mixed model
-    tryCatch({
-      fit <- brm(outcome ~ treatment + (1|cluster_id), 
-                data = data, 
-                chains = 2, 
-                iter = 1000,
-                refresh = 0,
-                silent = 2)
-      
-      # Extract treatment effect
-      treatment_samples <- posterior_samples(fit, pars = "b_treatment")$b_treatment
-      
-      # Calculate power (probability effect > 0)
-      power_results[i] <- mean(treatment_samples > 0)
-      
-    }, error = function(e) {
-      power_results[i] <- NA
-    })
+    tryCatch(
+      {
+        fit <- brm(outcome ~ treatment + (1 | cluster_id),
+          data = data,
+          chains = 2,
+          iter = 1000,
+          refresh = 0,
+          silent = 2
+        )
+
+        # Extract treatment effect
+        treatment_samples <- posterior_samples(fit, pars = "b_treatment")$b_treatment
+
+        # Calculate power (probability effect > 0)
+        power_results[i] <- mean(treatment_samples > 0)
+      },
+      error = function(e) {
+        power_results[i] <- NA
+      }
+    )
   }
-  
+
   return(mean(power_results, na.rm = TRUE))
 }
 
@@ -245,11 +251,10 @@ Planning for interim analyses with Bayesian monitoring:
 
 ```{r sequential, eval=FALSE}
 # Function for sequential Bayesian monitoring
-sequential_analysis <- function(max_n_per_group, interim_points, effect_size, 
-                               stop_threshold = 0.95) {
-  
+sequential_analysis <- function(max_n_per_group, interim_points, effect_size,
+                                stop_threshold = 0.95) {
   results <- list()
-  
+
   for (interim_n in interim_points) {
     # Power analysis at interim point
     interim_power <- power_analysis(
@@ -259,7 +264,7 @@ sequential_analysis <- function(max_n_per_group, interim_points, effect_size,
       outcome_type = "continuous",
       n_simulations = n_sims_demo
     )
-    
+
     results[[as.character(interim_n)]] <- list(
       n_per_group = interim_n,
       power_direction = interim_power$power_direction,
@@ -268,7 +273,7 @@ sequential_analysis <- function(max_n_per_group, interim_points, effect_size,
       stop_for_futility = interim_power$power_direction < 0.1
     )
   }
-  
+
   return(results)
 }
 
@@ -283,9 +288,11 @@ sequential_results <- sequential_analysis(
 # Display results
 for (n in names(sequential_results)) {
   result <- sequential_results[[n]]
-  cat("N =", result$n_per_group, 
-      "Power =", round(result$power_direction, 3),
-      "Stop for efficacy:", result$stop_for_efficacy, "\n")
+  cat(
+    "N =", result$n_per_group,
+    "Power =", round(result$power_direction, 3),
+    "Stop for efficacy:", result$stop_for_efficacy, "\n"
+  )
 }
 ```
 
@@ -297,9 +304,8 @@ Evaluate the operating characteristics of your design under different scenarios:
 
 ```{r operating_characteristics, eval=FALSE}
 # Function to evaluate design under multiple scenarios
-evaluate_design_performance <- function(n_control, n_treatment, 
-                                       true_effect_sizes, n_simulations = 50) {
-  
+evaluate_design_performance <- function(n_control, n_treatment,
+                                        true_effect_sizes, n_simulations = 50) {
   results <- data.frame(
     true_effect = numeric(),
     power_rope = numeric(),
@@ -307,7 +313,7 @@ evaluate_design_performance <- function(n_control, n_treatment,
     type_i_error = numeric(),
     bias = numeric()
   )
-  
+
   for (true_effect in true_effect_sizes) {
     power_result <- power_analysis(
       n_control = n_control,
@@ -316,11 +322,11 @@ evaluate_design_performance <- function(n_control, n_treatment,
       outcome_type = "continuous",
       n_simulations = n_simulations
     )
-    
+
     # Calculate metrics
     type_i_error <- if (true_effect == 0) power_result$power_direction else NA
     bias <- power_result$mean_effect_estimate - true_effect
-    
+
     results <- rbind(results, data.frame(
       true_effect = true_effect,
       power_rope = power_result$power_rope,
@@ -329,7 +335,7 @@ evaluate_design_performance <- function(n_control, n_treatment,
       bias = bias
     ))
   }
-  
+
   return(results)
 }
 
@@ -351,11 +357,10 @@ print(design_performance)
 ```{r missing_data, eval=FALSE}
 # Function to simulate missing data and analyze power
 power_with_missing_data <- function(n_control, n_treatment, effect_size,
-                                   missing_rate = 0.1, n_simulations = 50) {
-  
+                                    missing_rate = 0.1, n_simulations = 50) {
   successful_analyses <- 0
   power_estimates <- numeric()
-  
+
   for (i in 1:n_simulations) {
     # Generate complete data
     data <- simulate_rct_data(
@@ -364,39 +369,42 @@ power_with_missing_data <- function(n_control, n_treatment, effect_size,
       effect_size = effect_size,
       outcome_type = "continuous"
     )
-    
+
     # Introduce missing data
     n_missing <- round(nrow(data) * missing_rate)
     missing_indices <- sample(nrow(data), n_missing)
     data$outcome[missing_indices] <- NA
-    
+
     # Analyze with complete cases only
     complete_data <- data[complete.cases(data), ]
-    
-    if (nrow(complete_data) > 10) {  # Minimum sample size
-      tryCatch({
-        fit <- brm(outcome ~ treatment, 
-                  data = complete_data,
-                  chains = 2, 
-                  iter = 1000,
-                  refresh = 0,
-                  silent = 2)
-        
-        treatment_samples <- posterior_samples(fit, pars = "b_treatment")$b_treatment
-        power_estimates[i] <- mean(treatment_samples > 0)
-        successful_analyses <- successful_analyses + 1
-        
-      }, error = function(e) {
-        power_estimates[i] <- NA
-      })
+
+    if (nrow(complete_data) > 10) { # Minimum sample size
+      tryCatch(
+        {
+          fit <- brm(outcome ~ treatment,
+            data = complete_data,
+            chains = 2,
+            iter = 1000,
+            refresh = 0,
+            silent = 2
+          )
+
+          treatment_samples <- posterior_samples(fit, pars = "b_treatment")$b_treatment
+          power_estimates[i] <- mean(treatment_samples > 0)
+          successful_analyses <- successful_analyses + 1
+        },
+        error = function(e) {
+          power_estimates[i] <- NA
+        }
+      )
     }
   }
-  
+
   return(list(
     power = mean(power_estimates, na.rm = TRUE),
     successful_rate = successful_analyses / n_simulations,
-    effective_sample_size = n_control + n_treatment - 
-                           round((n_control + n_treatment) * missing_rate)
+    effective_sample_size = n_control + n_treatment -
+      round((n_control + n_treatment) * missing_rate)
   ))
 }
 
@@ -416,8 +424,7 @@ cat("Effective sample size:", power_missing$effective_sample_size, "\n")
 ```{r cost_effectiveness, eval=FALSE}
 # Function to calculate power per dollar
 power_cost_analysis <- function(effect_size, cost_per_participant = 1000,
-                               fixed_costs = 50000, target_power = 0.8) {
-  
+                                fixed_costs = 50000, target_power = 0.8) {
   # Test different sample sizes
   sample_sizes <- seq(20, 150, by = 10)
   results <- data.frame(
@@ -426,7 +433,7 @@ power_cost_analysis <- function(effect_size, cost_per_participant = 1000,
     power = numeric(),
     cost_per_power = numeric()
   )
-  
+
   for (n in sample_sizes) {
     power_result <- power_analysis(
       n_control = n,
@@ -435,10 +442,10 @@ power_cost_analysis <- function(effect_size, cost_per_participant = 1000,
       outcome_type = "continuous",
       n_simulations = n_sims_demo
     )
-    
+
     total_cost <- fixed_costs + (2 * n * cost_per_participant)
     cost_per_power <- total_cost / power_result$power_rope
-    
+
     results <- rbind(results, data.frame(
       n_per_group = n,
       total_cost = total_cost,
@@ -446,7 +453,7 @@ power_cost_analysis <- function(effect_size, cost_per_participant = 1000,
       cost_per_power = cost_per_power
     ))
   }
-  
+
   # Find most cost-effective design achieving target power
   adequate_power <- results$power >= target_power
   if (any(adequate_power)) {
@@ -482,29 +489,28 @@ When planning studies for regulatory submission:
 ```{r regulatory, eval=FALSE}
 # Conservative analysis for regulatory submission
 regulatory_power_analysis <- function(n_control, n_treatment, effect_size) {
-  
   # Use conservative settings
   power_result <- power_analysis(
     n_control = n_control,
     n_treatment = n_treatment,
     effect_size = effect_size,
     outcome_type = "continuous",
-    prior_specification = "default",  # Weakly informative
-    rope_limits = c(-0.05, 0.05),    # Narrow ROPE
-    prob_threshold = 0.975,           # Higher threshold
-    n_simulations = 1000              # More simulations
+    prior_specification = "default", # Weakly informative
+    rope_limits = c(-0.05, 0.05), # Narrow ROPE
+    prob_threshold = 0.975, # Higher threshold
+    n_simulations = 1000 # More simulations
   )
-  
+
   # Additional frequentist analysis for comparison
   freq_power <- power.t.test(
     n = n_control,
     delta = effect_size,
     sd = 1,
-    sig.level = 0.025,  # One-sided
+    sig.level = 0.025, # One-sided
     type = "two.sample",
     alternative = "one.sided"
   )
-  
+
   return(list(
     bayesian_power = power_result,
     frequentist_power = freq_power$power
