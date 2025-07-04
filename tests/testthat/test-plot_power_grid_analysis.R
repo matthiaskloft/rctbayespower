@@ -5,7 +5,7 @@
 # - plot.rctbayespower_grid() S3 method
 # - Auto-detection of optimal plot types
 # - Power curves, heatmaps, integrated power plots
-# - Data validation and dependency checking  
+# - Data validation and dependency checking
 # - Faceting and multiple metrics display
 # - ggplot2 object creation and structure
 # - Error handling for malformed input data

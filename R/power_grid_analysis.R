@@ -114,12 +114,12 @@ power_grid_analysis <- function(target_power_success = 0.9,
                                 ...) {
   # Validate inputs
   if (!is.numeric(target_power_success) ||
-      target_power_success <= 0 || target_power_success >= 1) {
+    target_power_success <= 0 || target_power_success >= 1) {
     stop("target_power_success must be a number between 0 and 1")
   }
 
   if (!is.numeric(target_power_futility) ||
-      target_power_futility <= 0 || target_power_futility >= 1) {
+    target_power_futility <= 0 || target_power_futility >= 1) {
     stop("target_power_futility must be a number between 0 and 1")
   }
 
@@ -140,7 +140,7 @@ power_grid_analysis <- function(target_power_success = 0.9,
   }
 
   if (!is.numeric(percent_group_treat) ||
-      percent_group_treat <= 0 || percent_group_treat >= 1) {
+    percent_group_treat <= 0 || percent_group_treat >= 1) {
     stop("percent_group_treat must be a number between 0 and 1")
   }
 
@@ -153,7 +153,7 @@ power_grid_analysis <- function(target_power_success = 0.9,
     stop("threshold_success is required and must be specified.")
   }
   if (!is.numeric(threshold_success) ||
-      length(threshold_success) != 1) {
+    length(threshold_success) != 1) {
     stop("threshold_success must be a single numeric value.")
   }
 
@@ -161,7 +161,7 @@ power_grid_analysis <- function(target_power_success = 0.9,
     stop("threshold_futility is required and must be specified.")
   }
   if (!is.numeric(threshold_futility) ||
-      length(threshold_futility) != 1) {
+    length(threshold_futility) != 1) {
     stop("threshold_futility must be a single numeric value.")
   }
 
@@ -178,255 +178,282 @@ power_grid_analysis <- function(target_power_success = 0.9,
     if (is.character(design_prior)) {
       # Use brms density functions with generic evaluation
       weight_type <- "brms"
-      tryCatch({
-        if (!requireNamespace("brms", quietly = TRUE)) {
-          stop("Package 'brms' is required for parsing brms design prior syntax.")
-        }
+      tryCatch(
+        {
+          if (!requireNamespace("brms", quietly = TRUE)) {
+            stop("Package 'brms' is required for parsing brms design prior syntax.")
+          }
 
-        # Validate basic syntax
-        if (!grepl("^[a-zA-Z_][a-zA-Z0-9_]*\\(.*\\)$", design_prior)) {
-          stop(
-            "Invalid brms prior syntax. Expected format: 'distribution_name(param1, param2, ...)'"
+          # Validate basic syntax
+          if (!grepl("^[a-zA-Z_][a-zA-Z0-9_]*\\(.*\\)$", design_prior)) {
+            stop(
+              "Invalid brms prior syntax. Expected format: 'distribution_name(param1, param2, ...)'"
+            )
+          }
+
+          # Extract distribution name
+          dist_name <- gsub("\\(.*\\)", "", design_prior)
+
+          # Create density and quantile function calls
+          # Priority: stats package first, then brms, then error
+          density_call <- NULL
+          quantile_call <- NULL
+          source_package <- NULL
+
+          # Define mapping from brms names to stats names
+          brms_to_stats_map <- list(
+            "normal" = "norm",
+            "student_t" = "t",
+            "gamma" = "gamma",
+            "beta" = "beta",
+            "exponential" = "exp",
+            "uniform" = "unif",
+            "poisson" = "pois",
+            "binomial" = "binom",
+            "cauchy" = "cauchy",
+            "chi_square" = "chisq",
+            "f" = "f",
+            "lognormal" = "lnorm",
+            "logistic" = "logis",
+            "weibull" = "weibull",
+            "wilcox" = "wilcox"
           )
-        }
 
-        # Extract distribution name
-        dist_name <- gsub("\\(.*\\)", "", design_prior)
+          # Try stats package first
+          stats_name <- brms_to_stats_map[[dist_name]]
+          if (!is.null(stats_name)) {
+            # Test if stats function exists and works
+            stats_call <- sub(dist_name, stats_name, design_prior)
+            test_density_call <- paste0("stats::d", stats_call)
+            test_quantile_call <- paste0("stats::q", stats_call)
 
-        # Create density and quantile function calls
-        # Priority: stats package first, then brms, then error
-        density_call <- NULL
-        quantile_call <- NULL
-        source_package <- NULL
+            # Test the stats functions
+            stats_works <- tryCatch(
+              {
+                test_call <- gsub("\\(", "(0.5,", test_density_call)
+                result <- eval(parse(text = test_call))
+                is.numeric(result) &&
+                  length(result) == 1 && !is.na(result)
+              },
+              error = function(e) {
+                FALSE
+              }
+            )
 
-        # Define mapping from brms names to stats names
-        brms_to_stats_map <- list(
-          "normal" = "norm",
-          "student_t" = "t",
-          "gamma" = "gamma",
-          "beta" = "beta",
-          "exponential" = "exp",
-          "uniform" = "unif",
-          "poisson" = "pois",
-          "binomial" = "binom",
-          "cauchy" = "cauchy",
-          "chi_square" = "chisq",
-          "f" = "f",
-          "lognormal" = "lnorm",
-          "logistic" = "logis",
-          "weibull" = "weibull",
-          "wilcox" = "wilcox"
-        )
-
-        # Try stats package first
-        stats_name <- brms_to_stats_map[[dist_name]]
-        if (!is.null(stats_name)) {
-          # Test if stats function exists and works
-          stats_call <- sub(dist_name, stats_name, design_prior)
-          test_density_call <- paste0("stats::d", stats_call)
-          test_quantile_call <- paste0("stats::q", stats_call)
-
-          # Test the stats functions
-          stats_works <- tryCatch({
-            test_call <- gsub("\\(", "(0.5,", test_density_call)
-            result <- eval(parse(text = test_call))
-            is.numeric(result) &&
-              length(result) == 1 && !is.na(result)
-          }, error = function(e)
-            FALSE)
-
-          if (stats_works) {
-            density_call <- test_density_call
-            quantile_call <- test_quantile_call
-            source_package <- "stats"
+            if (stats_works) {
+              density_call <- test_density_call
+              quantile_call <- test_quantile_call
+              source_package <- "stats"
+            } else {
+              stats_works <- FALSE
+            }
           } else {
             stats_works <- FALSE
           }
-        } else {
-          stats_works <- FALSE
-        }
 
-        # If stats doesn't work, try brms
-        if (!stats_works) {
-          density_call <- paste0("brms::d", design_prior)
-          quantile_call <- paste0("brms::q", design_prior)
-          source_package <- "brms"
+          # If stats doesn't work, try brms
+          if (!stats_works) {
+            density_call <- paste0("brms::d", design_prior)
+            quantile_call <- paste0("brms::q", design_prior)
+            source_package <- "brms"
 
-          # Test brms functions
-          brms_works <- tryCatch({
-            test_call <- gsub("\\(", "(0.5,", density_call)
-            result <- eval(parse(text = test_call))
-            is.numeric(result) &&
-              length(result) == 1 && !is.na(result)
-          }, error = function(e)
-            FALSE)
-
-          if (!brms_works) {
-            stop(
-              paste0(
-                "Distribution '",
-                dist_name,
-                "' not available in either stats or brms packages"
-              )
+            # Test brms functions
+            brms_works <- tryCatch(
+              {
+                test_call <- gsub("\\(", "(0.5,", density_call)
+                result <- eval(parse(text = test_call))
+                is.numeric(result) &&
+                  length(result) == 1 && !is.na(result)
+              },
+              error = function(e) {
+                FALSE
+              }
             )
+
+            if (!brms_works) {
+              stop(
+                paste0(
+                  "Distribution '",
+                  dist_name,
+                  "' not available in either stats or brms packages"
+                )
+              )
+            }
           }
-        }
 
-        # Functions have already been tested above, no need to test again
+          # Functions have already been tested above, no need to test again
 
-        # Create weight function
-        weight_fn <- function(x) {
-          # Replace the first parameter (or add x as first parameter)
-          modified_call <- gsub("\\(", paste0("(", x, ","), density_call)
-          tryCatch({
-            eval(parse(text = modified_call))
-          }, error = function(e) {
-            stop(
-              paste0(
-                "Error evaluating ",
-                source_package,
-                " density function: ",
-                e$message
-              )
-            )
-          })
-        }
-
-        # Try to create quantile function
-        quantile_fn <- NULL
-        test_quantile_call <- gsub("\\(", "(0.5,", quantile_call)
-        quantile_available <- tryCatch({
-          test_result <- eval(parse(text = test_quantile_call))
-          if (is.numeric(test_result) &&
-              length(test_result) == 1 && !is.na(test_result)) {
-            # Create actual quantile function
-            quantile_fn <<- function(p) {
-              modified_call <- gsub("\\(", paste0("(", p, ","), quantile_call)
-              tryCatch({
+          # Create weight function
+          weight_fn <- function(x) {
+            # Replace the first parameter (or add x as first parameter)
+            modified_call <- gsub("\\(", paste0("(", x, ","), density_call)
+            tryCatch(
+              {
                 eval(parse(text = modified_call))
-              }, error = function(e) {
+              },
+              error = function(e) {
                 stop(
                   paste0(
                     "Error evaluating ",
                     source_package,
-                    " quantile function: ",
+                    " density function: ",
                     e$message
                   )
                 )
-              })
-            }
-            TRUE
-          } else {
-            FALSE
-          }
-        }, error = function(e) {
-          FALSE
-        })
-
-        if (!quantile_available) {
-          warning(
-            paste0(
-              "Quantile function '",
-              quantile_call,
-              "' not available. Coverage checking will be disabled."
+              }
             )
-          )
-        }
+          }
 
-        cat("Successfully parsed design prior:", design_prior, "\n")
-        cat("  Distribution:", dist_name, "\n")
-        cat("  Density function:",
-            density_call,
-            "(using",
-            source_package,
-            "package)\n")
-        if (quantile_available) {
+          # Try to create quantile function
+          quantile_fn <- NULL
+          test_quantile_call <- gsub("\\(", "(0.5,", quantile_call)
+          quantile_available <- tryCatch(
+            {
+              test_result <- eval(parse(text = test_quantile_call))
+              if (is.numeric(test_result) &&
+                length(test_result) == 1 && !is.na(test_result)) {
+                # Create actual quantile function
+                quantile_fn <<- function(p) {
+                  modified_call <- gsub("\\(", paste0("(", p, ","), quantile_call)
+                  tryCatch(
+                    {
+                      eval(parse(text = modified_call))
+                    },
+                    error = function(e) {
+                      stop(
+                        paste0(
+                          "Error evaluating ",
+                          source_package,
+                          " quantile function: ",
+                          e$message
+                        )
+                      )
+                    }
+                  )
+                }
+                TRUE
+              } else {
+                FALSE
+              }
+            },
+            error = function(e) {
+              FALSE
+            }
+          )
+
+          if (!quantile_available) {
+            warning(
+              paste0(
+                "Quantile function '",
+                quantile_call,
+                "' not available. Coverage checking will be disabled."
+              )
+            )
+          }
+
+          cat("Successfully parsed design prior:", design_prior, "\n")
+          cat("  Distribution:", dist_name, "\n")
           cat(
-            "  Quantile function:",
-            quantile_call,
+            "  Density function:",
+            density_call,
             "(using",
             source_package,
             "package)\n"
           )
-        } else {
-          cat("  Quantile function: Not available (coverage checking disabled)\n")
+          if (quantile_available) {
+            cat(
+              "  Quantile function:",
+              quantile_call,
+              "(using",
+              source_package,
+              "package)\n"
+            )
+          } else {
+            cat("  Quantile function: Not available (coverage checking disabled)\n")
+          }
+        },
+        error = function(e) {
+          stop(paste("Error parsing design prior:", e$message))
         }
-
-      }, error = function(e) {
-        stop(paste("Error parsing design prior:", e$message))
-      })
+      )
     } else if (is.function(design_prior)) {
       # Validate R function
       weight_type <- "function"
-      tryCatch({
-        test_val <- design_prior(0.5)
-        if (!is.numeric(test_val) || length(test_val) != 1) {
-          stop("Design prior function must return a single numeric value")
+      tryCatch(
+        {
+          test_val <- design_prior(0.5)
+          if (!is.numeric(test_val) || length(test_val) != 1) {
+            stop("Design prior function must return a single numeric value")
+          }
+          weight_fn <- design_prior
+          # For custom functions, we'll estimate quantiles numerically
+          quantile_fn <- function(p) {
+            # Create a grid of values and find approximate quantiles
+            test_range <- seq(
+              min(effect_sizes) - 2 * sd(effect_sizes),
+              max(effect_sizes) + 2 * sd(effect_sizes),
+              length.out = 1000
+            )
+            weights <- sapply(test_range, weight_fn)
+            weights <- weights / sum(weights)
+            cumulative <- cumsum(weights)
+            approx(cumulative, test_range, xout = p)$y
+          }
+        },
+        error = function(e) {
+          stop(paste("Error testing design prior function:", e$message))
         }
-        weight_fn <- design_prior
-        # For custom functions, we'll estimate quantiles numerically
-        quantile_fn <- function(p) {
-          # Create a grid of values and find approximate quantiles
-          test_range <- seq(
-            min(effect_sizes) - 2 * sd(effect_sizes),
-            max(effect_sizes) + 2 * sd(effect_sizes),
-            length.out = 1000
-          )
-          weights <- sapply(test_range, weight_fn)
-          weights <- weights / sum(weights)
-          cumulative <- cumsum(weights)
-          approx(cumulative, test_range, xout = p)$y
-        }
-      }, error = function(e) {
-        stop(paste("Error testing design prior function:", e$message))
-      })
+      )
     } else {
       stop("design_prior must be either a character string (brms syntax) or an R function")
     }
 
     # Compute quantiles and check coverage
     if (!is.null(quantile_fn)) {
-      tryCatch({
-        q10 <- quantile_fn(0.1)
-        q90 <- quantile_fn(0.9)
+      tryCatch(
+        {
+          q10 <- quantile_fn(0.1)
+          q90 <- quantile_fn(0.9)
 
-        # Check if effect sizes adequately cover the prior distribution
-        min_effect <- min(effect_sizes)
-        max_effect <- max(effect_sizes)
+          # Check if effect sizes adequately cover the prior distribution
+          min_effect <- min(effect_sizes)
+          max_effect <- max(effect_sizes)
 
-        if (max_effect < q90) {
-          warning(
-            paste0(
-              "Maximum effect size (",
-              round(max_effect, 3),
-              ") is less than 90th percentile of design prior (",
-              round(q90, 3),
-              "). Consider including larger effect sizes."
+          if (max_effect < q90) {
+            warning(
+              paste0(
+                "Maximum effect size (",
+                round(max_effect, 3),
+                ") is less than 90th percentile of design prior (",
+                round(q90, 3),
+                "). Consider including larger effect sizes."
+              )
             )
-          )
-        }
+          }
 
-        if (min_effect > q10) {
-          warning(
-            paste0(
-              "Minimum effect size (",
-              round(min_effect, 3),
-              ") is greater than 10th percentile of design prior (",
-              round(q10, 3),
-              "). Consider including smaller effect sizes."
+          if (min_effect > q10) {
+            warning(
+              paste0(
+                "Minimum effect size (",
+                round(min_effect, 3),
+                ") is greater than 10th percentile of design prior (",
+                round(q10, 3),
+                "). Consider including smaller effect sizes."
+              )
             )
-          )
+          }
+        },
+        error = function(e) {
+          # If quantile computation fails for custom functions, just warn
+          if (weight_type == "function") {
+            warning(
+              "Could not compute quantiles for custom design prior function. Unable to check effect size coverage."
+            )
+          } else {
+            stop(paste("Error computing quantiles:", e$message))
+          }
         }
-      }, error = function(e) {
-        # If quantile computation fails for custom functions, just warn
-        if (weight_type == "function") {
-          warning(
-            "Could not compute quantiles for custom design prior function. Unable to check effect size coverage."
-          )
-        } else {
-          stop(paste("Error computing quantiles:", e$message))
-        }
-      })
+      )
     }
   }
 
@@ -435,10 +462,10 @@ power_grid_analysis <- function(target_power_success = 0.9,
 
   # Determine analysis type
   analysis_type <- if (length(sample_sizes) == 1 &&
-                       length(effect_sizes) > 1) {
+    length(effect_sizes) > 1) {
     "effect_only"
   } else if (length(sample_sizes) > 1 &&
-             length(effect_sizes) == 1) {
+    length(effect_sizes) == 1) {
     "sample_only"
   } else if (length(sample_sizes) > 1 && length(effect_sizes) > 1) {
     "both"
@@ -450,23 +477,31 @@ power_grid_analysis <- function(target_power_success = 0.9,
   if (analysis_type == "effect_only") {
     cat("\n=== Effect Size Analysis ===\n")
     cat("Fixed sample size:", sample_sizes[1], "\n")
-    cat("Effect sizes to test:",
-        paste(effect_sizes, collapse = ", "),
-        "\n")
+    cat(
+      "Effect sizes to test:",
+      paste(effect_sizes, collapse = ", "),
+      "\n"
+    )
   } else if (analysis_type == "sample_only") {
     cat("\n=== Sample Size Analysis ===\n")
     cat("Fixed effect size:", effect_sizes[1], "\n")
-    cat("Sample sizes to test:",
-        paste(sample_sizes, collapse = ", "),
-        "\n")
+    cat(
+      "Sample sizes to test:",
+      paste(sample_sizes, collapse = ", "),
+      "\n"
+    )
   } else {
     cat("\n=== Power Grid Analysis ===\n")
-    cat("Sample sizes to test:",
-        paste(sample_sizes, collapse = ", "),
-        "\n")
-    cat("Effect sizes to test:",
-        paste(effect_sizes, collapse = ", "),
-        "\n")
+    cat(
+      "Sample sizes to test:",
+      paste(sample_sizes, collapse = ", "),
+      "\n"
+    )
+    cat(
+      "Effect sizes to test:",
+      paste(effect_sizes, collapse = ", "),
+      "\n"
+    )
   }
   cat("Threshold - Success:", threshold_success, "\n")
   cat("Threshold - Futility:", threshold_futility, "\n")
@@ -477,79 +512,90 @@ power_grid_analysis <- function(target_power_success = 0.9,
 
     # Report quantiles if available
     if (!is.null(quantile_fn)) {
-      tryCatch({
-        q10 <- quantile_fn(0.1)
-        q25 <- quantile_fn(0.25)
-        q50 <- quantile_fn(0.5)
-        q75 <- quantile_fn(0.75)
-        q90 <- quantile_fn(0.9)
+      tryCatch(
+        {
+          q10 <- quantile_fn(0.1)
+          q25 <- quantile_fn(0.25)
+          q50 <- quantile_fn(0.5)
+          q75 <- quantile_fn(0.75)
+          q90 <- quantile_fn(0.9)
 
-        cat("Design prior quantiles:\n")
-        cat("  10%:",
+          cat("Design prior quantiles:\n")
+          cat(
+            "  10%:",
             round(q10, 3),
             ", 25%:",
             round(q25, 3),
             ", 50%:",
-            round(q50, 3))
-        cat(", 75%:", round(q75, 3), ", 90%:", round(q90, 3), "\n")
+            round(q50, 3)
+          )
+          cat(", 75%:", round(q75, 3), ", 90%:", round(q90, 3), "\n")
 
-        # Compute quantiles of chosen effect sizes under the design prior
-        effect_weights <- sapply(effect_sizes, weight_fn)
-        effect_weights <- effect_weights / sum(effect_weights)
+          # Compute quantiles of chosen effect sizes under the design prior
+          effect_weights <- sapply(effect_sizes, weight_fn)
+          effect_weights <- effect_weights / sum(effect_weights)
 
-        # Create empirical CDF and find quantiles
-        sorted_idx <- order(effect_sizes)
-        sorted_effects <- effect_sizes[sorted_idx]
-        sorted_weights <- effect_weights[sorted_idx]
-        cumulative_weights <- cumsum(sorted_weights)
+          # Create empirical CDF and find quantiles
+          sorted_idx <- order(effect_sizes)
+          sorted_effects <- effect_sizes[sorted_idx]
+          sorted_weights <- effect_weights[sorted_idx]
+          cumulative_weights <- cumsum(sorted_weights)
 
-        # Find quantiles by interpolation
-        effect_q10 <- approx(cumulative_weights, sorted_effects, xout = 0.1)$y
-        effect_q25 <- approx(cumulative_weights, sorted_effects, xout = 0.25)$y
-        effect_q50 <- approx(cumulative_weights, sorted_effects, xout = 0.5)$y
-        effect_q75 <- approx(cumulative_weights, sorted_effects, xout = 0.75)$y
-        effect_q90 <- approx(cumulative_weights, sorted_effects, xout = 0.9)$y
+          # Find quantiles by interpolation
+          effect_q10 <- approx(cumulative_weights, sorted_effects, xout = 0.1)$y
+          effect_q25 <- approx(cumulative_weights, sorted_effects, xout = 0.25)$y
+          effect_q50 <- approx(cumulative_weights, sorted_effects, xout = 0.5)$y
+          effect_q75 <- approx(cumulative_weights, sorted_effects, xout = 0.75)$y
+          effect_q90 <- approx(cumulative_weights, sorted_effects, xout = 0.9)$y
 
-        cat("Chosen effect sizes quantiles under design prior:\n")
-        cat(
-          "  10%:",
-          round(effect_q10, 3),
-          ", 25%:",
-          round(effect_q25, 3),
-          ", 50%:",
-          round(effect_q50, 3)
-        )
-        cat(", 75%:",
+          cat("Chosen effect sizes quantiles under design prior:\n")
+          cat(
+            "  10%:",
+            round(effect_q10, 3),
+            ", 25%:",
+            round(effect_q25, 3),
+            ", 50%:",
+            round(effect_q50, 3)
+          )
+          cat(
+            ", 75%:",
             round(effect_q75, 3),
             ", 90%:",
             round(effect_q90, 3),
-            "\n")
+            "\n"
+          )
 
-        # Coverage status
-        min_effect <- min(effect_sizes)
-        max_effect <- max(effect_sizes)
-        cat("Effect size range: [",
+          # Coverage status
+          min_effect <- min(effect_sizes)
+          max_effect <- max(effect_sizes)
+          cat(
+            "Effect size range: [",
             round(min_effect, 3),
             ", ",
             round(max_effect, 3),
-            "]\n")
+            "]\n"
+          )
 
-        coverage_low <- min_effect <= q10
-        coverage_high <- max_effect >= q90
+          coverage_low <- min_effect <= q10
+          coverage_high <- max_effect >= q90
 
-        if (coverage_low && coverage_high) {
-          cat("OK: Effect sizes adequately cover design prior (10%-90% range)\n")
-        } else {
-          cat("WARN: Effect sizes may not fully cover design prior range\n")
+          if (coverage_low && coverage_high) {
+            cat("OK: Effect sizes adequately cover design prior (10%-90% range)\n")
+          } else {
+            cat("WARN: Effect sizes may not fully cover design prior range\n")
+          }
+        },
+        error = function(e) {
+          # Silently continue if quantile reporting fails
         }
-      }, error = function(e) {
-        # Silently continue if quantile reporting fails
-      })
+      )
     }
   }
-  cat("Total combinations:",
-      length(sample_sizes) * length(effect_sizes),
-      "\n\n")
+  cat(
+    "Total combinations:",
+    length(sample_sizes) * length(effect_sizes),
+    "\n\n"
+  )
 
   # Storage for results
   results_matrix <- vector("list", length(sample_sizes) * length(effect_sizes))
@@ -584,9 +630,11 @@ power_grid_analysis <- function(target_power_success = 0.9,
       length(unique_effects),
       ") ---\n"
     )
-    cat("Combinations for this effect size:",
-        nrow(effect_combinations),
-        "\n")
+    cat(
+      "Combinations for this effect size:",
+      nrow(effect_combinations),
+      "\n"
+    )
 
     # Compile models once per effect size (only for power_analysis, not power_analysis_ancova)
     compiled_models <- NULL
@@ -598,72 +646,77 @@ power_grid_analysis <- function(target_power_success = 0.9,
       n_treatment_first <- round(n_total_first * percent_group_treat)
       n_control_first <- n_total_first - n_treatment_first
 
-      cat("Compiling brms models for effect size",
-          current_effect,
-          "...\n")
+      cat(
+        "Compiling brms models for effect size",
+        current_effect,
+        "...\n"
+      )
 
       # Use validate_power_design to compile models without running simulations
-      tryCatch({
-        # Check if all required parameters for validate_power_design are present
-        required_params <- c(
-          "simulate_data_fn",
-          "model_formula_true_params",
-          "model_formula_estimation",
-          "family",
-          "priors_true_params",
-          "priors_estimation",
-          "target_param"
-        )
-
-        if (all(required_params %in% names(dots))) {
-          # validate_power_design expects different arguments than power_analysis
-          validation_args <- list(
-            n_control = n_control_first,
-            n_treatment = n_treatment_first,
-            simulate_data_fn = dots$simulate_data_fn,
-            model_formula_true_params = dots$model_formula_true_params,
-            model_formula_estimation = dots$model_formula_estimation,
-            family = dots$family,
-            priors_true_params = dots$priors_true_params,
-            priors_estimation = dots$priors_estimation,
-            target_param = dots$target_param
+      tryCatch(
+        {
+          # Check if all required parameters for validate_power_design are present
+          required_params <- c(
+            "simulate_data_fn",
+            "model_formula_true_params",
+            "model_formula_estimation",
+            "family",
+            "priors_true_params",
+            "priors_estimation",
+            "target_param"
           )
 
-          # Add brms_args if provided
-          if ("brms_args" %in% names(dots)) {
-            validation_args$brms_args <- dots$brms_args
+          if (all(required_params %in% names(dots))) {
+            # validate_power_design expects different arguments than power_analysis
+            validation_args <- list(
+              n_control = n_control_first,
+              n_treatment = n_treatment_first,
+              simulate_data_fn = dots$simulate_data_fn,
+              model_formula_true_params = dots$model_formula_true_params,
+              model_formula_estimation = dots$model_formula_estimation,
+              family = dots$family,
+              priors_true_params = dots$priors_true_params,
+              priors_estimation = dots$priors_estimation,
+              target_param = dots$target_param
+            )
+
+            # Add brms_args if provided
+            if ("brms_args" %in% names(dots)) {
+              validation_args$brms_args <- dots$brms_args
+            }
+
+            validation_result <- do.call(validate_power_design, validation_args)
+            compiled_models <- list(
+              brms_design_true_params = validation_result$brms_design_true_params,
+              brms_design_estimation = validation_result$brms_design_estimation
+            )
+            cat(
+              "Successfully compiled and cached brms models for effect size",
+              current_effect,
+              "\n"
+            )
+          } else {
+            missing_params <- setdiff(required_params, names(dots))
+            cat(
+              "Cannot cache models: missing required parameters:",
+              paste(missing_params, collapse = ", "),
+              "\n"
+            )
+            compiled_models <- NULL
           }
-
-          validation_result <- do.call(validate_power_design, validation_args)
-          compiled_models <- list(
-            brms_design_true_params = validation_result$brms_design_true_params,
-            brms_design_estimation = validation_result$brms_design_estimation
-          )
+        },
+        error = function(e) {
           cat(
-            "Successfully compiled and cached brms models for effect size",
+            "Error compiling models for effect size",
             current_effect,
+            ":",
+            as.character(e),
             "\n"
           )
-        } else {
-          missing_params <- setdiff(required_params, names(dots))
-          cat(
-            "Cannot cache models: missing required parameters:",
-            paste(missing_params, collapse = ", "),
-            "\n"
-          )
+          cat("Falling back to individual model compilation per combination.\n")
           compiled_models <- NULL
         }
-      }, error = function(e) {
-        cat(
-          "Error compiling models for effect size",
-          current_effect,
-          ":",
-          as.character(e),
-          "\n"
-        )
-        cat("Falling back to individual model compilation per combination.\n")
-        compiled_models <- NULL
-      })
+      )
 
       # Store in cache
       compiled_models_cache[[as.character(current_effect)]] <- compiled_models
@@ -674,65 +727,69 @@ power_grid_analysis <- function(target_power_success = 0.9,
       n_treatment_first <- round(n_total_first * percent_group_treat)
       n_control_first <- n_total_first - n_treatment_first
 
-      cat("Compiling brms models for ANCOVA with effect size",
-          current_effect,
-          "...\n")
+      cat(
+        "Compiling brms models for ANCOVA with effect size",
+        current_effect,
+        "...\n"
+      )
 
-      tryCatch({
-        # Check if all required parameters for power_analysis_ancova are present
-        required_ancova_params <- c("outcome_type", "baseline_effect")
+      tryCatch(
+        {
+          # Check if all required parameters for power_analysis_ancova are present
+          required_ancova_params <- c("outcome_type", "baseline_effect")
 
-        if (all(required_ancova_params %in% names(dots))) {
+          if (all(required_ancova_params %in% names(dots))) {
+            # Use the compile_models_only option to get compiled models without running simulations
+            compile_args <- c(
+              list(
+                n_control = n_control_first,
+                n_treatment = n_treatment_first,
+                effect_size = current_effect,
+                threshold_success = threshold_success,
+                threshold_futility = threshold_futility,
+                compile_models_only = TRUE
+              ),
+              dots
+            )
 
-          # Use the compile_models_only option to get compiled models without running simulations
-          compile_args <- c(
-            list(
-              n_control = n_control_first,
-              n_treatment = n_treatment_first,
-              effect_size = current_effect,
-              threshold_success = threshold_success,
-              threshold_futility = threshold_futility,
-              compile_models_only = TRUE
-            ),
-            dots
-          )
+            # Call power_analysis_ancova with compile_models_only=TRUE
+            ancova_compilation_result <- do.call(power_analysis_ancova, compile_args)
 
-          # Call power_analysis_ancova with compile_models_only=TRUE
-          ancova_compilation_result <- do.call(power_analysis_ancova, compile_args)
+            # Extract the compiled models
+            compiled_models <- list(
+              brms_design_true_params = ancova_compilation_result$brms_design_true_params,
+              brms_design_estimation = ancova_compilation_result$brms_design_estimation,
+              power_analysis_args = ancova_compilation_result$power_analysis_args,
+              ancova_params = ancova_compilation_result$ancova_params
+            )
 
-          # Extract the compiled models
-          compiled_models <- list(
-            brms_design_true_params = ancova_compilation_result$brms_design_true_params,
-            brms_design_estimation = ancova_compilation_result$brms_design_estimation,
-            power_analysis_args = ancova_compilation_result$power_analysis_args,
-            ancova_params = ancova_compilation_result$ancova_params
-          )
-
+            cat(
+              "Successfully compiled and cached ANCOVA models for effect size",
+              current_effect,
+              "\n"
+            )
+          } else {
+            missing_params <- setdiff(required_ancova_params, names(dots))
+            cat(
+              "Cannot cache ANCOVA models: missing required parameters:",
+              paste(missing_params, collapse = ", "),
+              "\n"
+            )
+            compiled_models <- NULL
+          }
+        },
+        error = function(e) {
           cat(
-            "Successfully compiled and cached ANCOVA models for effect size",
+            "Error compiling ANCOVA models for effect size",
             current_effect,
+            ":",
+            as.character(e),
             "\n"
           )
-        } else {
-          missing_params <- setdiff(required_ancova_params, names(dots))
-          cat(
-            "Cannot cache ANCOVA models: missing required parameters:",
-            paste(missing_params, collapse = ", "),
-            "\n"
-          )
+          cat("Falling back to individual model compilation per combination.\n")
           compiled_models <- NULL
         }
-      }, error = function(e) {
-        cat(
-          "Error compiling ANCOVA models for effect size",
-          current_effect,
-          ":",
-          as.character(e),
-          "\n"
-        )
-        cat("Falling back to individual model compilation per combination.\n")
-        compiled_models <- NULL
-      })
+      )
 
       # Store in cache
       compiled_models_cache[[as.character(current_effect)]] <- compiled_models
@@ -754,13 +811,15 @@ power_grid_analysis <- function(target_power_success = 0.9,
 
       # Find the absolute index for this combination
       abs_index <- which(combinations$sample_size == n_total &
-                           combinations$effect_size == effect_size)[1]
+        combinations$effect_size == effect_size)[1]
 
-      cat("Testing combination",
-          abs_index,
-          "of",
-          nrow(combinations),
-          ":")
+      cat(
+        "Testing combination",
+        abs_index,
+        "of",
+        nrow(combinations),
+        ":"
+      )
       cat(" N =", n_total, ", Effect =", effect_size)
       if (!is.null(compiled_models)) {
         cat(" (using cached models)")
@@ -810,47 +869,50 @@ power_grid_analysis <- function(target_power_success = 0.9,
         }
       }
 
-      tryCatch({
-        if (power_analysis_fn == "power_analysis_ancova" &&
+      tryCatch(
+        {
+          if (power_analysis_fn == "power_analysis_ancova" &&
             !is.null(compiled_models)) {
-          # Use power_analysis directly with cached models for ANCOVA
-          power_result <- do.call(power_analysis, power_args)
-        } else if (power_analysis_fn == "power_analysis_ancova") {
-          # Fall back to normal ANCOVA call if no cached models
-          power_result <- do.call(power_analysis_ancova, power_args)
-        } else {
-          # For power_analysis, use the modified power_args (with or without cached models)
-          power_result <- do.call(power_analysis, power_args)
-        }
+            # Use power_analysis directly with cached models for ANCOVA
+            power_result <- do.call(power_analysis, power_args)
+          } else if (power_analysis_fn == "power_analysis_ancova") {
+            # Fall back to normal ANCOVA call if no cached models
+            power_result <- do.call(power_analysis_ancova, power_args)
+          } else {
+            # For power_analysis, use the modified power_args (with or without cached models)
+            power_result <- do.call(power_analysis, power_args)
+          }
 
-        # Extract power metrics
-        results_matrix[[result_index]] <- list(
-          n_total = n_total,
-          n_control = n_control,
-          n_treatment = n_treatment,
-          effect_size = effect_size,
-          power_success = power_result$power_success,
-          power_futility = power_result$power_futility,
-          mean_prob_success = power_result$mean_prob_success,
-          mean_prob_futility = power_result$mean_prob_futility,
-          convergence_rate = power_result$convergence_rate,
-          full_result = power_result
-        )
-      }, error = function(e) {
-        results_matrix[[result_index]] <- list(
-          n_total = n_total,
-          n_control = n_control,
-          n_treatment = n_treatment,
-          effect_size = effect_size,
-          power_success = NA,
-          power_futility = NA,
-          mean_prob_success = NA,
-          mean_prob_futility = NA,
-          convergence_rate = NA,
-          error = as.character(e)
-        )
-        cat("  ERROR:", as.character(e), "\n")
-      })
+          # Extract power metrics
+          results_matrix[[result_index]] <- list(
+            n_total = n_total,
+            n_control = n_control,
+            n_treatment = n_treatment,
+            effect_size = effect_size,
+            power_success = power_result$power_success,
+            power_futility = power_result$power_futility,
+            mean_prob_success = power_result$mean_prob_success,
+            mean_prob_futility = power_result$mean_prob_futility,
+            convergence_rate = power_result$convergence_rate,
+            full_result = power_result
+          )
+        },
+        error = function(e) {
+          results_matrix[[result_index]] <- list(
+            n_total = n_total,
+            n_control = n_control,
+            n_treatment = n_treatment,
+            effect_size = effect_size,
+            power_success = NA,
+            power_futility = NA,
+            mean_prob_success = NA,
+            mean_prob_futility = NA,
+            convergence_rate = NA,
+            error = as.character(e)
+          )
+          cat("  ERROR:", as.character(e), "\n")
+        }
+      )
 
       result_index <- result_index + 1
     }
@@ -866,26 +928,31 @@ power_grid_analysis <- function(target_power_success = 0.9,
       n_control = x$n_control,
       n_treatment = x$n_treatment,
       effect_size = x$effect_size,
-      power_success = if (is.null(x$power_success))
+      power_success = if (is.null(x$power_success)) {
         NA
-      else
-        x$power_success,
-      power_futility = if (is.null(x$power_futility))
+      } else {
+        x$power_success
+      },
+      power_futility = if (is.null(x$power_futility)) {
         NA
-      else
-        x$power_futility,
-      mean_prob_success = if (is.null(x$mean_prob_success))
+      } else {
+        x$power_futility
+      },
+      mean_prob_success = if (is.null(x$mean_prob_success)) {
         NA
-      else
-        x$mean_prob_success,
-      mean_prob_futility = if (is.null(x$mean_prob_futility))
+      } else {
+        x$mean_prob_success
+      },
+      mean_prob_futility = if (is.null(x$mean_prob_futility)) {
         NA
-      else
-        x$mean_prob_futility,
-      convergence_rate = if (is.null(x$convergence_rate))
+      } else {
+        x$mean_prob_futility
+      },
+      convergence_rate = if (is.null(x$convergence_rate)) {
         NA
-      else
-        x$convergence_rate,
+      } else {
+        x$convergence_rate
+      },
       stringsAsFactors = FALSE
     )
   }))
@@ -898,7 +965,7 @@ power_grid_analysis <- function(target_power_success = 0.9,
 
     # Get weights for each effect size
     weights <- sapply(effect_sizes, weight_fn)
-    weights <- weights / sum(weights)  # Normalize to sum to 1
+    weights <- weights / sum(weights) # Normalize to sum to 1
 
     # For each sample size, compute weighted average power
     integrated_results <- list()
@@ -907,7 +974,7 @@ power_grid_analysis <- function(target_power_success = 0.9,
       subset_data <- power_surface[power_surface$n_total == n, ]
 
       if (nrow(subset_data) > 0 &&
-          all(!is.na(subset_data$power_success))) {
+        all(!is.na(subset_data$power_success))) {
         weighted_power_success <- sum(subset_data$power_success * weights)
         weighted_power_futility <- sum(subset_data$power_futility * weights)
         weighted_prob_success <- sum(subset_data$mean_prob_success * weights)
@@ -931,10 +998,10 @@ power_grid_analysis <- function(target_power_success = 0.9,
 
   # Find optimal combinations
   optimal_success <- power_surface[!is.na(power_surface$power_success) &
-                                     power_surface$power_success >= target_power_success, ]
+    power_surface$power_success >= target_power_success, ]
 
   optimal_futility <- power_surface[!is.na(power_surface$power_futility) &
-                                      power_surface$power_futility >= target_power_futility, ]
+    power_surface$power_futility >= target_power_futility, ]
 
   # Find minimum sample size for integrated power if available
   min_n_integrated_success <- NA_integer_
@@ -955,14 +1022,14 @@ power_grid_analysis <- function(target_power_success = 0.9,
 
   # Calculate min_n fields for sample_only mode (backward compatibility)
   min_n_success <- if (analysis_type == "sample_only" &&
-                       nrow(optimal_success) > 0) {
+    nrow(optimal_success) > 0) {
     min(optimal_success$n_total)
   } else {
     NA_integer_
   }
 
   min_n_futility <- if (analysis_type == "sample_only" &&
-                        nrow(optimal_futility) > 0) {
+    nrow(optimal_futility) > 0) {
     min(optimal_futility$n_total)
   } else {
     NA_integer_
@@ -994,10 +1061,11 @@ power_grid_analysis <- function(target_power_success = 0.9,
     min_n_success = min_n_success,
     min_n_futility = min_n_futility,
     power_curve = power_curve,
-    effect_size = if (analysis_type == "sample_only")
+    effect_size = if (analysis_type == "sample_only") {
       effect_sizes[1]
-    else
-      NULL,
+    } else {
+      NULL
+    },
 
     # Main results
     power_surface = power_surface,
@@ -1024,40 +1092,47 @@ power_grid_analysis <- function(target_power_success = 0.9,
 
     if (nrow(optimal_success) > 0) {
       best_effect <- optimal_success[which.max(optimal_success$power_success), ]
-      cat("Best effect size achieving success power >=",
-          target_power_success,
-          ":\n")
+      cat(
+        "Best effect size achieving success power >=",
+        target_power_success,
+        ":\n"
+      )
       cat(
         "  Effect size =",
         best_effect$effect_size,
         ", Power =",
         round(best_effect$power_success, 3)
       )
-      cat(", Mean Probability =",
-          round(best_effect$mean_prob_success, 3),
-          "\n")
+      cat(
+        ", Mean Probability =",
+        round(best_effect$mean_prob_success, 3),
+        "\n"
+      )
     } else {
       cat("Target success power not achieved with tested effect sizes\n")
     }
 
     if (nrow(optimal_futility) > 0) {
       best_effect <- optimal_futility[which.max(optimal_futility$power_futility), ]
-      cat("Best effect size achieving futility power >=",
-          target_power_futility,
-          ":\n")
+      cat(
+        "Best effect size achieving futility power >=",
+        target_power_futility,
+        ":\n"
+      )
       cat(
         "  Effect size =",
         best_effect$effect_size,
         ", Power =",
         round(best_effect$power_futility, 3)
       )
-      cat(", Mean Probability =",
-          round(best_effect$mean_prob_futility, 3),
-          "\n")
+      cat(
+        ", Mean Probability =",
+        round(best_effect$mean_prob_futility, 3),
+        "\n"
+      )
     } else {
       cat("Target futility power not achieved with tested effect sizes\n")
     }
-
   } else if (analysis_type == "sample_only") {
     cat("\n=== Sample Size Analysis Complete ===\n")
     if (!is.na(min_n_success)) {
@@ -1112,19 +1187,22 @@ power_grid_analysis <- function(target_power_success = 0.9,
 
     print(compact_df, row.names = FALSE)
     cat("(N Total = total sample size) \n")
-
   } else {
     cat("\n=== Power Grid Complete ===\n")
 
     if (nrow(optimal_success) > 0) {
       min_combo <- optimal_success[which.min(optimal_success$n_total), ]
-      cat("Smallest sample size achieving success power >=",
-          target_power_success,
-          ":\n")
-      cat("  N =",
-          min_combo$n_total,
-          ", Effect size =",
-          min_combo$effect_size)
+      cat(
+        "Smallest sample size achieving success power >=",
+        target_power_success,
+        ":\n"
+      )
+      cat(
+        "  N =",
+        min_combo$n_total,
+        ", Effect size =",
+        min_combo$effect_size
+      )
       cat(
         ", Power =",
         round(min_combo$power_success, 3),
@@ -1138,13 +1216,17 @@ power_grid_analysis <- function(target_power_success = 0.9,
 
     if (nrow(optimal_futility) > 0) {
       min_combo <- optimal_futility[which.min(optimal_futility$n_total), ]
-      cat("Smallest sample size achieving futility power >=",
-          target_power_futility,
-          ":\n")
-      cat("  N =",
-          min_combo$n_total,
-          ", Effect size =",
-          min_combo$effect_size)
+      cat(
+        "Smallest sample size achieving futility power >=",
+        target_power_futility,
+        ":\n"
+      )
+      cat(
+        "  N =",
+        min_combo$n_total,
+        ", Effect size =",
+        min_combo$effect_size
+      )
       cat(
         ", Power =",
         round(min_combo$power_futility, 3),
@@ -1159,7 +1241,7 @@ power_grid_analysis <- function(target_power_success = 0.9,
 
   # Integrated power results (only relevant when effect sizes vary)
   if (length(effect_sizes) > 1 &&
-      !is.null(integrated_power_success)) {
+    !is.null(integrated_power_success)) {
     cat("\nIntegrated power results:\n")
 
     # Check if we have any results to show
@@ -1212,25 +1294,33 @@ print.rctbayespower_grid <- function(x, ...) {
     cat("Bayesian RCT Effect Size Analysis\n")
     cat("=================================\n\n")
     cat("Fixed sample size:", x$sample_sizes[1], "\n")
-    cat("Effect sizes tested:",
-        paste(x$effect_sizes, collapse = ", "),
-        "\n")
+    cat(
+      "Effect sizes tested:",
+      paste(x$effect_sizes, collapse = ", "),
+      "\n"
+    )
   } else if (x$analysis_type == "sample_only") {
     cat("Bayesian RCT Sample Size Analysis\n")
     cat("=================================\n\n")
     cat("Fixed effect size:", x$effect_sizes[1], "\n")
-    cat("Sample sizes tested:",
-        paste(x$sample_sizes, collapse = ", "),
-        "\n")
+    cat(
+      "Sample sizes tested:",
+      paste(x$sample_sizes, collapse = ", "),
+      "\n"
+    )
   } else {
     cat("Bayesian RCT Power Grid Analysis\n")
     cat("================================\n\n")
-    cat("Sample sizes tested:",
-        paste(x$sample_sizes, collapse = ", "),
-        "\n")
-    cat("Effect sizes tested:",
-        paste(x$effect_sizes, collapse = ", "),
-        "\n")
+    cat(
+      "Sample sizes tested:",
+      paste(x$sample_sizes, collapse = ", "),
+      "\n"
+    )
+    cat(
+      "Effect sizes tested:",
+      paste(x$effect_sizes, collapse = ", "),
+      "\n"
+    )
   }
 
   cat("Target power - Success:", x$target_power_success)
@@ -1248,7 +1338,7 @@ print.rctbayespower_grid <- function(x, ...) {
   if (x$analysis_type == "effect_only") {
     # For effect size analysis, show best effect size for the fixed sample size
     if (!is.null(x$optimal_combinations_success) &&
-        nrow(x$optimal_combinations_success) > 0) {
+      nrow(x$optimal_combinations_success) > 0) {
       best_effect <- x$optimal_combinations_success[which.max(x$optimal_combinations_success$power_success), ]
       cat("Best effect size achieving target success power:\n")
       cat(
@@ -1257,15 +1347,17 @@ print.rctbayespower_grid <- function(x, ...) {
         ", Power =",
         round(best_effect$power_success, 3)
       )
-      cat(", Mean Probability =",
-          round(best_effect$mean_prob_success, 3),
-          "\n")
+      cat(
+        ", Mean Probability =",
+        round(best_effect$mean_prob_success, 3),
+        "\n"
+      )
     } else {
       cat("Target success power not achieved with tested effect sizes\n")
     }
 
     if (!is.null(x$optimal_combinations_futility) &&
-        nrow(x$optimal_combinations_futility) > 0) {
+      nrow(x$optimal_combinations_futility) > 0) {
       best_effect <- x$optimal_combinations_futility[which.max(x$optimal_combinations_futility$power_futility), ]
       cat("Best effect size achieving target futility power:\n")
       cat(
@@ -1274,26 +1366,29 @@ print.rctbayespower_grid <- function(x, ...) {
         ", Power =",
         round(best_effect$power_futility, 3)
       )
-      cat(", Mean Probability =",
-          round(best_effect$mean_prob_futility, 3),
-          "\n")
+      cat(
+        ", Mean Probability =",
+        round(best_effect$mean_prob_futility, 3),
+        "\n"
+      )
     } else {
       cat("Target futility power not achieved with tested effect sizes\n")
     }
-
   } else if (x$analysis_type == "sample_only") {
     # For sample size analysis, show minimum sample sizes (compatible with original format)
     cat(
       "Minimum required total sample sizes: Success =",
-      if (!is.na(x$min_n_success))
+      if (!is.na(x$min_n_success)) {
         x$min_n_success
-      else
+      } else {
         "Not achieved"
+      }
     )
-    cat(", Futility =", if (!is.na(x$min_n_futility))
+    cat(", Futility =", if (!is.na(x$min_n_futility)) {
       x$min_n_futility
-      else
-        "Not achieved")
+    } else {
+      "Not achieved"
+    })
     cat("\n")
 
     # Add power overview table (copied from power_grid_analysis execution)
@@ -1324,17 +1419,18 @@ print.rctbayespower_grid <- function(x, ...) {
 
     print(compact_df, row.names = FALSE)
     cat("(N Total = total sample size) \n")
-
   } else {
     # For both varying, show optimal combinations
     if (!is.null(x$optimal_combinations_success) &&
-        nrow(x$optimal_combinations_success) > 0) {
+      nrow(x$optimal_combinations_success) > 0) {
       min_combo <- x$optimal_combinations_success[which.min(x$optimal_combinations_success$n_total), ]
       cat("Smallest sample size achieving target success power:\n")
-      cat("  N =",
-          min_combo$n_total,
-          ", Effect size =",
-          min_combo$effect_size)
+      cat(
+        "  N =",
+        min_combo$n_total,
+        ", Effect size =",
+        min_combo$effect_size
+      )
       cat(
         ", Power =",
         round(min_combo$power_success, 3),
@@ -1347,13 +1443,15 @@ print.rctbayespower_grid <- function(x, ...) {
     }
 
     if (!is.null(x$optimal_combinations_futility) &&
-        nrow(x$optimal_combinations_futility) > 0) {
+      nrow(x$optimal_combinations_futility) > 0) {
       min_combo <- x$optimal_combinations_futility[which.min(x$optimal_combinations_futility$n_total), ]
       cat("Smallest sample size achieving target futility power:\n")
-      cat("  N =",
-          min_combo$n_total,
-          ", Effect size =",
-          min_combo$effect_size)
+      cat(
+        "  N =",
+        min_combo$n_total,
+        ", Effect size =",
+        min_combo$effect_size
+      )
       cat(
         ", Power =",
         round(min_combo$power_futility, 3),
@@ -1375,17 +1473,21 @@ print.rctbayespower_grid <- function(x, ...) {
     has_futility_result <- !is.na(x$min_n_integrated_futility)
 
     if (has_success_result) {
-      cat("Minimum N for integrated success power:",
-          x$min_n_integrated_success,
-          "\n")
+      cat(
+        "Minimum N for integrated success power:",
+        x$min_n_integrated_success,
+        "\n"
+      )
     } else {
       cat("Target integrated success power not achieved with tested sample sizes\n")
     }
 
     if (has_futility_result) {
-      cat("Minimum N for integrated futility power:",
-          x$min_n_integrated_futility,
-          "\n")
+      cat(
+        "Minimum N for integrated futility power:",
+        x$min_n_integrated_futility,
+        "\n"
+      )
     } else {
       cat("Target integrated futility power not achieved with tested sample sizes\n")
     }
@@ -1417,33 +1519,45 @@ summary.rctbayespower_grid <- function(object, ...) {
 
   cat("Analysis Parameters:\n")
   cat("  Target power - Success:", object$target_power_success, "\n")
-  cat("  Target power - Futility:",
-      object$target_power_futility,
-      "\n")
+  cat(
+    "  Target power - Futility:",
+    object$target_power_futility,
+    "\n"
+  )
   cat("  Threshold - Success:", object$threshold_success, "\n")
   cat("  Threshold - Futility:", object$threshold_futility, "\n")
 
   if (object$analysis_type == "effect_only") {
     cat("  Fixed sample size:", object$sample_sizes[1], "\n")
-    cat("  Effect sizes tested:",
-        paste(object$effect_sizes, collapse = ", "),
-        "\n")
+    cat(
+      "  Effect sizes tested:",
+      paste(object$effect_sizes, collapse = ", "),
+      "\n"
+    )
   } else if (object$analysis_type == "sample_only") {
     cat("  Effect size:", object$effect_size, "\n")
-    cat("  Sample sizes tested:",
-        paste(object$sample_sizes, collapse = ", "),
-        "\n")
+    cat(
+      "  Sample sizes tested:",
+      paste(object$sample_sizes, collapse = ", "),
+      "\n"
+    )
   } else {
-    cat("  Sample sizes:",
-        paste(object$sample_sizes, collapse = ", "),
-        "\n")
-    cat("  Effect sizes:",
-        paste(object$effect_sizes, collapse = ", "),
-        "\n")
+    cat(
+      "  Sample sizes:",
+      paste(object$sample_sizes, collapse = ", "),
+      "\n"
+    )
+    cat(
+      "  Effect sizes:",
+      paste(object$effect_sizes, collapse = ", "),
+      "\n"
+    )
   }
 
-  cat("  Allocation (treatment %):",
-      paste0(object$percent_group_treat * 100, "%\n"))
+  cat(
+    "  Allocation (treatment %):",
+    paste0(object$percent_group_treat * 100, "%\n")
+  )
   cat("  Power analysis function:", object$power_analysis_fn, "\n")
 
   if (!is.null(object$design_prior)) {
@@ -1451,9 +1565,11 @@ summary.rctbayespower_grid <- function(object, ...) {
     cat("  Design prior type:", object$design_prior_type, "\n")
   }
 
-  cat("  Analysis time:",
-      round(object$analysis_time_minutes, 2),
-      "minutes\n\n")
+  cat(
+    "  Analysis time:",
+    round(object$analysis_time_minutes, 2),
+    "minutes\n\n"
+  )
 
   # For sample_only mode, show minimum sample sizes section like original
   if (object$analysis_type == "sample_only") {
@@ -1515,7 +1631,6 @@ summary.rctbayespower_grid <- function(object, ...) {
     )
 
     print(display_df, row.names = FALSE)
-
   } else if (object$analysis_type == "sample_only") {
     # For sample size analysis, show detailed table like original
     power_df <- object$power_surface
@@ -1550,7 +1665,6 @@ summary.rctbayespower_grid <- function(object, ...) {
     )
 
     print(display_df, row.names = FALSE)
-
   } else {
     # For power grid (both varying), show detailed table
     cat("Power Grid Results:\n")
@@ -1588,12 +1702,14 @@ summary.rctbayespower_grid <- function(object, ...) {
   cat("====================\n")
 
   if (!is.null(object$optimal_combinations_success) &&
-      nrow(object$optimal_combinations_success) > 0) {
+    nrow(object$optimal_combinations_success) > 0) {
     cat("Combinations achieving target success power:\n")
-    success_display <- object$optimal_combinations_success[, c("n_total",
-                                                               "effect_size",
-                                                               "power_success",
-                                                               "mean_prob_success")]
+    success_display <- object$optimal_combinations_success[, c(
+      "n_total",
+      "effect_size",
+      "power_success",
+      "mean_prob_success"
+    )]
     success_display$power_success <- paste0(round(success_display$power_success * 100, 1), "%")
     success_display$mean_prob_success <- paste0(round(success_display$mean_prob_success * 100, 1), "%")
     names(success_display) <- c("N_total", "Effect_size", "Power_success", "Prob_success")
@@ -1605,18 +1721,22 @@ summary.rctbayespower_grid <- function(object, ...) {
   cat("\n")
 
   if (!is.null(object$optimal_combinations_futility) &&
-      nrow(object$optimal_combinations_futility) > 0) {
+    nrow(object$optimal_combinations_futility) > 0) {
     cat("Combinations achieving target futility power:\n")
-    futility_display <- object$optimal_combinations_futility[, c("n_total",
-                                                                 "effect_size",
-                                                                 "power_futility",
-                                                                 "mean_prob_futility")]
+    futility_display <- object$optimal_combinations_futility[, c(
+      "n_total",
+      "effect_size",
+      "power_futility",
+      "mean_prob_futility"
+    )]
     futility_display$power_futility <- paste0(round(futility_display$power_futility * 100, 1), "%")
     futility_display$mean_prob_futility <- paste0(round(futility_display$mean_prob_futility * 100, 1), "%")
-    names(futility_display) <- c("N_total",
-                                 "Effect_size",
-                                 "Power_futility",
-                                 "Prob_futility")
+    names(futility_display) <- c(
+      "N_total",
+      "Effect_size",
+      "Power_futility",
+      "Prob_futility"
+    )
     print(futility_display, row.names = FALSE)
   } else {
     cat("No combinations achieved target futility power.\n")
@@ -1630,27 +1750,39 @@ summary.rctbayespower_grid <- function(object, ...) {
     integrated_display <- object$integrated_power
 
     # Format as percentages
-    integrated_display$integrated_power_success <- paste0(round(integrated_display$integrated_power_success * 100, 1),
-                                                          "%")
-    integrated_display$integrated_power_futility <- paste0(round(integrated_display$integrated_power_futility * 100, 1),
-                                                           "%")
-    integrated_display$integrated_prob_success <- paste0(round(integrated_display$integrated_prob_success * 100, 1),
-                                                         "%")
-    integrated_display$integrated_prob_futility <- paste0(round(integrated_display$integrated_prob_futility * 100, 1),
-                                                          "%")
+    integrated_display$integrated_power_success <- paste0(
+      round(integrated_display$integrated_power_success * 100, 1),
+      "%"
+    )
+    integrated_display$integrated_power_futility <- paste0(
+      round(integrated_display$integrated_power_futility * 100, 1),
+      "%"
+    )
+    integrated_display$integrated_prob_success <- paste0(
+      round(integrated_display$integrated_prob_success * 100, 1),
+      "%"
+    )
+    integrated_display$integrated_prob_futility <- paste0(
+      round(integrated_display$integrated_prob_futility * 100, 1),
+      "%"
+    )
 
     # Reorder columns to preferred order: N_total, Power_Success, Prob_Success, Power_Futility, Prob_Futility
-    integrated_display <- integrated_display[, c("n_total",
-                                                 "integrated_power_success",
-                                                 "integrated_prob_success",
-                                                 "integrated_power_futility",
-                                                 "integrated_prob_futility")]
+    integrated_display <- integrated_display[, c(
+      "n_total",
+      "integrated_power_success",
+      "integrated_prob_success",
+      "integrated_power_futility",
+      "integrated_prob_futility"
+    )]
 
-    names(integrated_display) <- c("N_total",
-                                   "Power_Success",
-                                   "Prob_Success",
-                                   "Power_Futility",
-                                   "Prob_Futility")
+    names(integrated_display) <- c(
+      "N_total",
+      "Power_Success",
+      "Prob_Success",
+      "Power_Futility",
+      "Prob_Futility"
+    )
 
     print(integrated_display, row.names = FALSE)
 
@@ -1721,242 +1853,285 @@ validate_weighting_function <- function(effect_sizes = seq(0.2, 0.8, 0.1),
   errors <- character()
 
   # Test 1: Normal distribution parsing
-  if (verbose)
+  if (verbose) {
     cat("Test 1: Normal distribution parsing...\n")
-  test_results$normal_parsing <- tryCatch({
-    weighting_function <- "normal(0.5, 0.15)"
+  }
+  test_results$normal_parsing <- tryCatch(
+    {
+      weighting_function <- "normal(0.5, 0.15)"
 
-    # Test using the new generic approach
-    density_call <- paste0("brms::d", weighting_function)
-    quantile_call <- paste0("brms::q", weighting_function)
+      # Test using the new generic approach
+      density_call <- paste0("brms::d", weighting_function)
+      quantile_call <- paste0("brms::q", weighting_function)
 
-    # Create weight function
-    weight_fn <- function(x) {
-      modified_call <- gsub("\\(", paste0("(", x, ","), density_call)
-      eval(parse(text = modified_call))
+      # Create weight function
+      weight_fn <- function(x) {
+        modified_call <- gsub("\\(", paste0("(", x, ","), density_call)
+        eval(parse(text = modified_call))
+      }
+
+      # Create quantile function
+      quantile_fn <- function(p) {
+        modified_call <- gsub("\\(", paste0("(", p, ","), quantile_call)
+        eval(parse(text = modified_call))
+      }
+
+      # Test the functions work
+      test_weights <- sapply(effect_sizes, weight_fn)
+      test_quantiles <- quantile_fn(c(0.1, 0.5, 0.9))
+
+      # Validate results
+      if (!is.numeric(test_weights) || any(is.na(test_weights))) {
+        stop("Weight function produced non-numeric or NA values")
+      }
+
+      if (!is.numeric(test_quantiles) || any(is.na(test_quantiles))) {
+        stop("Quantile function produced non-numeric or NA values")
+      }
+
+      list(
+        passed = TRUE,
+        weights = test_weights,
+        quantiles = test_quantiles
+      )
+    },
+    error = function(e) {
+      errors <<- c(errors, paste("Test 1 failed:", e$message))
+      list(passed = FALSE, error = e$message)
     }
-
-    # Create quantile function
-    quantile_fn <- function(p) {
-      modified_call <- gsub("\\(", paste0("(", p, ","), quantile_call)
-      eval(parse(text = modified_call))
-    }
-
-    # Test the functions work
-    test_weights <- sapply(effect_sizes, weight_fn)
-    test_quantiles <- quantile_fn(c(0.1, 0.5, 0.9))
-
-    # Validate results
-    if (!is.numeric(test_weights) || any(is.na(test_weights))) {
-      stop("Weight function produced non-numeric or NA values")
-    }
-
-    if (!is.numeric(test_quantiles) || any(is.na(test_quantiles))) {
-      stop("Quantile function produced non-numeric or NA values")
-    }
-
-    list(passed = TRUE,
-         weights = test_weights,
-         quantiles = test_quantiles)
-  }, error = function(e) {
-    errors <<- c(errors, paste("Test 1 failed:", e$message))
-    list(passed = FALSE, error = e$message)
-  })
+  )
 
   # Test 2: Student-t distribution parsing
-  if (verbose)
+  if (verbose) {
     cat("Test 2: Student-t distribution parsing...\n")
-  test_results$studentt_parsing <- tryCatch({
-    weighting_function <- "student_t(6, 0.5, 0.2)"
+  }
+  test_results$studentt_parsing <- tryCatch(
+    {
+      weighting_function <- "student_t(6, 0.5, 0.2)"
 
-    # Test using the new generic approach
-    density_call <- paste0("brms::d", weighting_function)
-    quantile_call <- paste0("brms::q", weighting_function)
+      # Test using the new generic approach
+      density_call <- paste0("brms::d", weighting_function)
+      quantile_call <- paste0("brms::q", weighting_function)
 
-    # Create weight function
-    weight_fn <- function(x) {
-      modified_call <- gsub("\\(", paste0("(", x, ","), density_call)
-      eval(parse(text = modified_call))
+      # Create weight function
+      weight_fn <- function(x) {
+        modified_call <- gsub("\\(", paste0("(", x, ","), density_call)
+        eval(parse(text = modified_call))
+      }
+
+      # Create quantile function
+      quantile_fn <- function(p) {
+        modified_call <- gsub("\\(", paste0("(", p, ","), quantile_call)
+        eval(parse(text = modified_call))
+      }
+
+      # Test the functions work
+      test_weights <- sapply(effect_sizes, weight_fn)
+      test_quantiles <- quantile_fn(c(0.1, 0.5, 0.9))
+
+      # Validate results
+      if (!is.numeric(test_weights) || any(is.na(test_weights))) {
+        stop("Weight function produced non-numeric or NA values")
+      }
+
+      if (!is.numeric(test_quantiles) || any(is.na(test_quantiles))) {
+        stop("Quantile function produced non-numeric or NA values")
+      }
+
+      list(
+        passed = TRUE,
+        weights = test_weights,
+        quantiles = test_quantiles
+      )
+    },
+    error = function(e) {
+      errors <<- c(errors, paste("Test 2 failed:", e$message))
+      list(passed = FALSE, error = e$message)
     }
-
-    # Create quantile function
-    quantile_fn <- function(p) {
-      modified_call <- gsub("\\(", paste0("(", p, ","), quantile_call)
-      eval(parse(text = modified_call))
-    }
-
-    # Test the functions work
-    test_weights <- sapply(effect_sizes, weight_fn)
-    test_quantiles <- quantile_fn(c(0.1, 0.5, 0.9))
-
-    # Validate results
-    if (!is.numeric(test_weights) || any(is.na(test_weights))) {
-      stop("Weight function produced non-numeric or NA values")
-    }
-
-    if (!is.numeric(test_quantiles) || any(is.na(test_quantiles))) {
-      stop("Quantile function produced non-numeric or NA values")
-    }
-
-    list(passed = TRUE,
-         weights = test_weights,
-         quantiles = test_quantiles)
-  }, error = function(e) {
-    errors <<- c(errors, paste("Test 2 failed:", e$message))
-    list(passed = FALSE, error = e$message)
-  })
+  )
 
   # Test 3: Custom R function validation
-  if (verbose)
+  if (verbose) {
     cat("Test 3: Custom R function validation...\n")
-  test_results$custom_function <- tryCatch({
-    # Create a custom weighting function
-    custom_fn <- function(x)
-      dnorm(x, mean = 0.4, sd = 0.1)
+  }
+  test_results$custom_function <- tryCatch(
+    {
+      # Create a custom weighting function
+      custom_fn <- function(x) {
+        dnorm(x, mean = 0.4, sd = 0.1)
+      }
 
-    # Test validation logic
-    test_val <- custom_fn(0.5)
-    if (!is.numeric(test_val) || length(test_val) != 1) {
-      stop("Weighting function must return a single numeric value")
-    }
-
-    # Test the function works with effect sizes
-    test_weights <- sapply(effect_sizes, custom_fn)
-
-    if (!is.numeric(test_weights) || any(is.na(test_weights))) {
-      stop("Custom function produced non-numeric or NA values")
-    }
-
-    list(passed = TRUE, weights = test_weights)
-  }, error = function(e) {
-    errors <<- c(errors, paste("Test 3 failed:", e$message))
-    list(passed = FALSE, error = e$message)
-  })
-
-  # Test 4: Weight normalization
-  if (verbose)
-    cat("Test 4: Weight normalization...\n")
-  test_results$weight_normalization <- tryCatch({
-    # Use normal distribution weights
-    weight_fn <- function(x)
-      dnorm(x, mean = 0.5, sd = 0.15)
-    weights <- sapply(effect_sizes, weight_fn)
-    normalized_weights <- weights / sum(weights)
-
-    # Check that weights sum to 1 (within tolerance)
-    weight_sum <- sum(normalized_weights)
-    if (abs(weight_sum - 1.0) > 1e-10) {
-      stop(paste("Normalized weights do not sum to 1. Sum =", weight_sum))
-    }
-
-    # Check all weights are positive
-    if (any(normalized_weights <= 0)) {
-      stop("Some normalized weights are non-positive")
-    }
-
-    list(
-      passed = TRUE,
-      original_weights = weights,
-      normalized_weights = normalized_weights,
-      sum = weight_sum
-    )
-  }, error = function(e) {
-    errors <<- c(errors, paste("Test 4 failed:", e$message))
-    list(passed = FALSE, error = e$message)
-  })
-
-  # Test 5: Coverage checking logic
-  if (verbose)
-    cat("Test 5: Coverage checking logic...\n")
-  test_results$coverage_checking <- tryCatch({
-    # Test with normal distribution
-    quantile_fn <- function(p)
-      qnorm(p, mean = 0.5, sd = 0.15)
-
-    q10 <- quantile_fn(0.1)
-    q90 <- quantile_fn(0.9)
-
-    min_effect <- min(effect_sizes)
-    max_effect <- max(effect_sizes)
-
-    # Test coverage warnings would be triggered correctly
-    coverage_low <- min_effect <= q10
-    coverage_high <- max_effect >= q90
-
-    # With default effect_sizes (0.2 to 0.8) and normal(0.5, 0.15),
-    # we expect good coverage
-    expected_coverage <- coverage_low && coverage_high
-
-    list(
-      passed = TRUE,
-      q10 = q10,
-      q90 = q90,
-      min_effect = min_effect,
-      max_effect = max_effect,
-      coverage_low = coverage_low,
-      coverage_high = coverage_high,
-      good_coverage = expected_coverage
-    )
-  }, error = function(e) {
-    errors <<- c(errors, paste("Test 5 failed:", e$message))
-    list(passed = FALSE, error = e$message)
-  })
-
-  # Test 6: Error handling for invalid inputs
-  if (verbose)
-    cat("Test 6: Error handling for invalid inputs...\n")
-  test_results$error_handling <- tryCatch({
-    errors_caught <- 0
-    total_error_tests <- 0
-
-    # Test invalid brms syntax
-    total_error_tests <- total_error_tests + 1
-    tryCatch({
-      # This should fail due to wrong number of parameters
-      params <- gsub("normal\\(|\\)", "", "normal(0.5)")  # Missing second parameter
-      params <- as.numeric(strsplit(params, ",")[[1]])
-      if (length(params) != 2)
-        stop("normal() requires 2 parameters")
-    }, error = function(e) {
-      errors_caught <<- errors_caught + 1
-    })
-
-    # Test invalid R function
-    total_error_tests <- total_error_tests + 1
-    tryCatch({
-      invalid_fn <- function(x)
-        c(1, 2)  # Returns vector instead of single value
-      test_val <- invalid_fn(0.5)
+      # Test validation logic
+      test_val <- custom_fn(0.5)
       if (!is.numeric(test_val) || length(test_val) != 1) {
         stop("Weighting function must return a single numeric value")
       }
-    }, error = function(e) {
-      errors_caught <<- errors_caught + 1
-    })
 
-    # Test unsupported distribution
-    total_error_tests <- total_error_tests + 1
-    tryCatch({
-      # Test with a distribution that doesn't exist
-      density_call <- "brms::dnonexistent(1, 2)"
-      test_result <- eval(parse(text = density_call))
-    }, error = function(e) {
-      errors_caught <<- errors_caught + 1
-    })
+      # Test the function works with effect sizes
+      test_weights <- sapply(effect_sizes, custom_fn)
 
-    list(
-      passed = TRUE,
-      errors_caught = errors_caught,
-      total_tests = total_error_tests
-    )
-  }, error = function(e) {
-    errors <<- c(errors, paste("Test 6 failed:", e$message))
-    list(passed = FALSE, error = e$message)
-  })
+      if (!is.numeric(test_weights) || any(is.na(test_weights))) {
+        stop("Custom function produced non-numeric or NA values")
+      }
+
+      list(passed = TRUE, weights = test_weights)
+    },
+    error = function(e) {
+      errors <<- c(errors, paste("Test 3 failed:", e$message))
+      list(passed = FALSE, error = e$message)
+    }
+  )
+
+  # Test 4: Weight normalization
+  if (verbose) {
+    cat("Test 4: Weight normalization...\n")
+  }
+  test_results$weight_normalization <- tryCatch(
+    {
+      # Use normal distribution weights
+      weight_fn <- function(x) {
+        dnorm(x, mean = 0.5, sd = 0.15)
+      }
+      weights <- sapply(effect_sizes, weight_fn)
+      normalized_weights <- weights / sum(weights)
+
+      # Check that weights sum to 1 (within tolerance)
+      weight_sum <- sum(normalized_weights)
+      if (abs(weight_sum - 1.0) > 1e-10) {
+        stop(paste("Normalized weights do not sum to 1. Sum =", weight_sum))
+      }
+
+      # Check all weights are positive
+      if (any(normalized_weights <= 0)) {
+        stop("Some normalized weights are non-positive")
+      }
+
+      list(
+        passed = TRUE,
+        original_weights = weights,
+        normalized_weights = normalized_weights,
+        sum = weight_sum
+      )
+    },
+    error = function(e) {
+      errors <<- c(errors, paste("Test 4 failed:", e$message))
+      list(passed = FALSE, error = e$message)
+    }
+  )
+
+  # Test 5: Coverage checking logic
+  if (verbose) {
+    cat("Test 5: Coverage checking logic...\n")
+  }
+  test_results$coverage_checking <- tryCatch(
+    {
+      # Test with normal distribution
+      quantile_fn <- function(p) {
+        qnorm(p, mean = 0.5, sd = 0.15)
+      }
+
+      q10 <- quantile_fn(0.1)
+      q90 <- quantile_fn(0.9)
+
+      min_effect <- min(effect_sizes)
+      max_effect <- max(effect_sizes)
+
+      # Test coverage warnings would be triggered correctly
+      coverage_low <- min_effect <= q10
+      coverage_high <- max_effect >= q90
+
+      # With default effect_sizes (0.2 to 0.8) and normal(0.5, 0.15),
+      # we expect good coverage
+      expected_coverage <- coverage_low && coverage_high
+
+      list(
+        passed = TRUE,
+        q10 = q10,
+        q90 = q90,
+        min_effect = min_effect,
+        max_effect = max_effect,
+        coverage_low = coverage_low,
+        coverage_high = coverage_high,
+        good_coverage = expected_coverage
+      )
+    },
+    error = function(e) {
+      errors <<- c(errors, paste("Test 5 failed:", e$message))
+      list(passed = FALSE, error = e$message)
+    }
+  )
+
+  # Test 6: Error handling for invalid inputs
+  if (verbose) {
+    cat("Test 6: Error handling for invalid inputs...\n")
+  }
+  test_results$error_handling <- tryCatch(
+    {
+      errors_caught <- 0
+      total_error_tests <- 0
+
+      # Test invalid brms syntax
+      total_error_tests <- total_error_tests + 1
+      tryCatch(
+        {
+          # This should fail due to wrong number of parameters
+          params <- gsub("normal\\(|\\)", "", "normal(0.5)") # Missing second parameter
+          params <- as.numeric(strsplit(params, ",")[[1]])
+          if (length(params) != 2) {
+            stop("normal() requires 2 parameters")
+          }
+        },
+        error = function(e) {
+          errors_caught <<- errors_caught + 1
+        }
+      )
+
+      # Test invalid R function
+      total_error_tests <- total_error_tests + 1
+      tryCatch(
+        {
+          invalid_fn <- function(x) {
+            c(1, 2)
+          } # Returns vector instead of single value
+          test_val <- invalid_fn(0.5)
+          if (!is.numeric(test_val) || length(test_val) != 1) {
+            stop("Weighting function must return a single numeric value")
+          }
+        },
+        error = function(e) {
+          errors_caught <<- errors_caught + 1
+        }
+      )
+
+      # Test unsupported distribution
+      total_error_tests <- total_error_tests + 1
+      tryCatch(
+        {
+          # Test with a distribution that doesn't exist
+          density_call <- "brms::dnonexistent(1, 2)"
+          test_result <- eval(parse(text = density_call))
+        },
+        error = function(e) {
+          errors_caught <<- errors_caught + 1
+        }
+      )
+
+      list(
+        passed = TRUE,
+        errors_caught = errors_caught,
+        total_tests = total_error_tests
+      )
+    },
+    error = function(e) {
+      errors <<- c(errors, paste("Test 6 failed:", e$message))
+      list(passed = FALSE, error = e$message)
+    }
+  )
 
   # Summary
-  all_passed <- all(sapply(test_results, function(x)
-    x$passed))
+  all_passed <- all(sapply(test_results, function(x) {
+    x$passed
+  }))
 
   if (verbose) {
     cat("\n=== Validation Summary ===\n")

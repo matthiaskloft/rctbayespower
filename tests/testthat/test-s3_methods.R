@@ -3,7 +3,7 @@
 
 # TODO: Add tests for:
 # - print.rctbayespower() method
-# - print.rctbayespower_grid() method  
+# - print.rctbayespower_grid() method
 # - summary.rctbayespower() method
 # - summary.rctbayespower_grid() method
 # - Class structure validation

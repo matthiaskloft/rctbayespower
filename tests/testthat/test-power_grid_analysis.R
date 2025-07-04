@@ -1,4 +1,4 @@
-# Test file for power_grid_analysis.R  
+# Test file for power_grid_analysis.R
 # Tests will be implemented later when functions are complete
 
 # TODO: Add tests for:

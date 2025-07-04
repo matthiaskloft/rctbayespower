@@ -3,7 +3,7 @@
 
 # TODO: Add tests for:
 # - power_analysis() function
-# - validate_power_design() function  
+# - validate_power_design() function
 # - Parameter validation
 # - Model fitting workflows
 # - Parallel processing functionality

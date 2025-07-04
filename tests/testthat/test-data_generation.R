@@ -4,7 +4,7 @@
 # TODO: Add tests for:
 # - Built-in data simulation functions for ANCOVA
 # - Continuous outcome data generation
-# - Binary outcome data generation  
+# - Binary outcome data generation
 # - Count outcome data generation
 # - Baseline covariate correlation
 # - Effect size implementation accuracy

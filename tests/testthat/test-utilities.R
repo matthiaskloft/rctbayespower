@@ -2,7 +2,7 @@
 # Tests will be implemented later when functions are complete
 
 # TODO: Add tests for:
-# - validate_weighting_function() 
+# - validate_weighting_function()
 # - Design prior parsing utilities
 # - Parameter validation helpers
 # - Model caching utilities
