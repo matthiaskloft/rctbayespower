@@ -52,10 +52,10 @@ A pharmaceutical company wants to test a new medication for reducing LDL cholest
 # Convert to standardized effect size
 baseline_sd <- 40
 additional_reduction <- 15
-effect_size <- additional_reduction / baseline_sd  # Cohen's d = 0.375
+effect_size <- additional_reduction / baseline_sd # Cohen's d = 0.375
 
 # Clinically meaningful difference
-clinical_threshold <- 10 / baseline_sd  # 0.25
+clinical_threshold <- 10 / baseline_sd # 0.25
 
 cat("Expected effect size (Cohen's d):", round(effect_size, 3), "\n")
 cat("Clinical threshold:", round(clinical_threshold, 3), "\n")
@@ -75,7 +75,7 @@ cardio_power <- power_analysis(
   n_treatment = 100,
   effect_size = 0.375,
   outcome_type = "continuous",
-  rope_limits = c(-0.25, 0.25),  # Based on clinical threshold
+  rope_limits = c(-0.25, 0.25), # Based on clinical threshold
   n_simulations = 200,
   algorithm = "fullrank"
 )
@@ -89,7 +89,7 @@ print(cardio_power)
 # Find optimal sample size
 cardio_sample_size <- sample_size_analysis(
   effect_size = 0.375,
-  target_power = 0.85,  # Higher power for regulatory submission
+  target_power = 0.85, # Higher power for regulatory submission
   outcome_type = "continuous",
   sample_sizes = seq(80, 200, by = 20),
   rope_limits = c(-0.25, 0.25),
@@ -139,16 +139,16 @@ A clinical psychologist wants to test a new cognitive behavioral therapy (CBT) p
 # Effect size calculation
 baseline_sd <- 12
 expected_reduction <- 5
-effect_size <- expected_reduction / baseline_sd  # Cohen's d ≈ 0.42
+effect_size <- expected_reduction / baseline_sd # Cohen's d ≈ 0.42
 
 # Clinical threshold
-clinical_threshold <- 3 / baseline_sd  # 0.25
+clinical_threshold <- 3 / baseline_sd # 0.25
 
 # Define covariates
 depression_covariates <- list(
   baseline_bdi = list(type = "continuous", mean = 28, sd = 8),
   age = list(type = "continuous", mean = 42, sd = 15),
-  sex = list(type = "binary", prob = 0.65)  # 65% female
+  sex = list(type = "binary", prob = 0.65) # 65% female
 )
 
 cat("Expected effect size:", round(effect_size, 3), "\n")
@@ -227,7 +227,7 @@ treatment_odds <- treatment_prob / (1 - treatment_prob)
 log_odds_ratio <- log(treatment_odds / baseline_odds)
 
 cat("Baseline response rate:", baseline_prob, "\n")
-cat("Expected treatment response rate:", treatment_prob, "\n") 
+cat("Expected treatment response rate:", treatment_prob, "\n")
 cat("Log odds ratio:", round(log_odds_ratio, 3), "\n")
 ```
 
@@ -244,7 +244,7 @@ Log odds ratio: 1.163")
 rare_disease_power <- power_analysis(
   n_control = 15,
   n_treatment = 15,
-  effect_size = 1.163,  # Log odds ratio
+  effect_size = 1.163, # Log odds ratio
   outcome_type = "binary",
   baseline_prob = 0.15,
   n_simulations = 200
@@ -295,11 +295,11 @@ scenario_results <- data.frame(
 
 for (scenario_name in names(sample_size_scenarios)) {
   scenario <- sample_size_scenarios[[scenario_name]]
-  
+
   if (scenario$n_control == 0) {
     # Single-arm design - compare to historical control
     # This would require different analysis approach
-    power_est <- 0.75  # Placeholder
+    power_est <- 0.75 # Placeholder
   } else {
     power_result <- power_analysis(
       n_control = scenario$n_control,
@@ -312,7 +312,7 @@ for (scenario_name in names(sample_size_scenarios)) {
     )
     power_est <- power_result$power_direction
   }
-  
+
   scenario_results <- rbind(scenario_results, data.frame(
     scenario = scenario_name,
     n_control = scenario$n_control,
@@ -363,7 +363,7 @@ Effective sample size per arm: 253")
 ```{r cluster_power, eval=FALSE}
 # Use effective sample size for power calculation
 baseline_rate <- 0.12
-treatment_rate <- 0.09  # 3 percentage point reduction
+treatment_rate <- 0.09 # 3 percentage point reduction
 
 # Convert to log odds ratio
 baseline_odds <- baseline_rate / (1 - baseline_rate)
@@ -405,11 +405,11 @@ cluster_results <- data.frame(
 
 for (config_name in names(cluster_configs)) {
   config <- cluster_configs[[config_name]]
-  
+
   # Calculate effective sample size
   design_eff <- 1 + (config$n_per_cluster - 1) * icc
   eff_n <- (config$n_clusters * config$n_per_cluster) / design_eff
-  
+
   # Power analysis
   power_result <- power_analysis(
     n_control = round(eff_n),
@@ -419,7 +419,7 @@ for (config_name in names(cluster_configs)) {
     baseline_prob = baseline_rate,
     n_simulations = 50
   )
-  
+
   cluster_results <- rbind(cluster_results, data.frame(
     configuration = config_name,
     n_clusters = config$n_clusters,
@@ -451,10 +451,9 @@ A generic drug manufacturer wants to demonstrate non-inferiority of their produc
 # This is equivalent to testing if the lower bound of CI > -0.3
 
 non_inferiority_power <- function(n_control, n_treatment, true_difference = 0,
-                                 ni_margin = -0.3, n_simulations = 100) {
-  
+                                  ni_margin = -0.3, n_simulations = 100) {
   power_results <- numeric(n_simulations)
-  
+
   for (i in 1:n_simulations) {
     # Generate data under null hypothesis of equal efficacy
     data <- simulate_rct_data(
@@ -463,27 +462,30 @@ non_inferiority_power <- function(n_control, n_treatment, true_difference = 0,
       effect_size = true_difference,
       outcome_type = "continuous"
     )
-    
-    tryCatch({
-      # Fit Bayesian model
-      fit <- brm(outcome ~ treatment, 
-                data = data,
-                chains = 2, 
-                iter = 1000,
-                refresh = 0,
-                silent = 2)
-      
-      # Extract treatment effect samples
-      treatment_samples <- posterior_samples(fit, pars = "b_treatment")$b_treatment
-      
-      # Calculate probability that difference > non-inferiority margin
-      power_results[i] <- mean(treatment_samples > ni_margin)
-      
-    }, error = function(e) {
-      power_results[i] <- NA
-    })
+
+    tryCatch(
+      {
+        # Fit Bayesian model
+        fit <- brm(outcome ~ treatment,
+          data = data,
+          chains = 2,
+          iter = 1000,
+          refresh = 0,
+          silent = 2
+        )
+
+        # Extract treatment effect samples
+        treatment_samples <- posterior_samples(fit, pars = "b_treatment")$b_treatment
+
+        # Calculate probability that difference > non-inferiority margin
+        power_results[i] <- mean(treatment_samples > ni_margin)
+      },
+      error = function(e) {
+        power_results[i] <- NA
+      }
+    )
   }
-  
+
   return(mean(power_results, na.rm = TRUE))
 }
 
@@ -524,23 +526,22 @@ An oncology trial with planned interim analysis:
 ```{r adaptive_design, eval=FALSE}
 # Simulate adaptive trial
 simulate_adaptive_trial <- function(max_n = 120, interim_n = 40,
-                                   true_response_rate = 0.3,
-                                   historical_rate = 0.15,
-                                   futility_threshold = 0.1,
-                                   efficacy_threshold = 0.95) {
-  
+                                    true_response_rate = 0.3,
+                                    historical_rate = 0.15,
+                                    futility_threshold = 0.1,
+                                    efficacy_threshold = 0.95) {
   # Generate data up to interim
   interim_responses <- rbinom(interim_n, 1, true_response_rate)
   interim_successes <- sum(interim_responses)
-  
+
   # Bayesian analysis at interim (using beta-binomial model)
   # Prior: Beta(1, 1) (non-informative)
   posterior_alpha <- 1 + interim_successes
   posterior_beta <- 1 + interim_n - interim_successes
-  
+
   # Probability that response rate > historical rate
   prob_superior <- 1 - pbeta(historical_rate, posterior_alpha, posterior_beta)
-  
+
   # Decision at interim
   if (prob_superior < futility_threshold) {
     decision <- "Stop for futility"
@@ -555,14 +556,14 @@ simulate_adaptive_trial <- function(max_n = 120, interim_n = 40,
     # Generate remaining data
     remaining_responses <- rbinom(max_n - interim_n, 1, true_response_rate)
     total_successes <- interim_successes + sum(remaining_responses)
-    
+
     # Final analysis
     final_alpha <- 1 + total_successes
     final_beta <- 1 + max_n - total_successes
     final_prob <- 1 - pbeta(historical_rate, final_alpha, final_beta)
     final_n <- max_n
   }
-  
+
   return(list(
     decision = decision,
     interim_prob = prob_superior,
@@ -585,13 +586,14 @@ adaptive_results <- data.frame(
 )
 
 for (rate in response_rates) {
-  trials <- replicate(100, simulate_adaptive_trial(true_response_rate = rate), 
-                     simplify = FALSE)
-  
+  trials <- replicate(100, simulate_adaptive_trial(true_response_rate = rate),
+    simplify = FALSE
+  )
+
   decisions <- sapply(trials, function(x) x$decision)
   sample_sizes <- sapply(trials, function(x) x$final_n)
   final_probs <- sapply(trials, function(x) x$final_prob)
-  
+
   adaptive_results <- rbind(adaptive_results, data.frame(
     true_rate = rate,
     stop_futility = mean(decisions == "Stop for futility"),

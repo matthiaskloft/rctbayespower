@@ -52,7 +52,7 @@ library(rctbayespower)
 power_result <- power_analysis(
   n_control = 50,
   n_treatment = 50,
-  effect_size = 0.5,  # Cohen's d
+  effect_size = 0.5, # Cohen's d
   outcome_type = "continuous",
   n_simulations = 1000
 )
@@ -143,9 +143,9 @@ plot_power_curve(curve_result)
 binary_power <- power_analysis(
   n_control = 100,
   n_treatment = 100,
-  effect_size = 0.5,  # log odds ratio
+  effect_size = 0.5, # log odds ratio
   outcome_type = "binary",
-  baseline_prob = 0.3,  # control group success rate
+  baseline_prob = 0.3, # control group success rate
   n_simulations = 1000
 )
 ```

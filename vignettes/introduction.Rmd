@@ -23,7 +23,7 @@ knitr::opts_chunk$set(
 )
 
 # Set up for examples (reduce simulation counts for faster vignette building)
-n_sims_demo <- 50  # Use fewer simulations for demo purposes
+n_sims_demo <- 50 # Use fewer simulations for demo purposes
 ```
 
 # Introduction
@@ -69,7 +69,7 @@ Let's start with a basic power analysis for a continuous outcome (e.g., change i
 power_result <- power_analysis(
   n_control = 50,
   n_treatment = 50,
-  effect_size = 0.5,  # Cohen's d
+  effect_size = 0.5, # Cohen's d
   outcome_type = "continuous",
   n_simulations = n_sims_demo,
   baseline_mean = 0,
@@ -85,25 +85,25 @@ cat("Bayesian RCT Power Analysis Results
 ===================================
 
 Study Parameters:
-  Sample size (control): 50 
-  Sample size (treatment): 50 
-  True effect size: 0.5 
-  Outcome type: continuous 
-  ROPE limits: -0.1 to 0.1 
-  Probability threshold: 0.95 
+  Sample size (control): 50
+  Sample size (treatment): 50
+  True effect size: 0.5
+  Outcome type: continuous
+  ROPE limits: -0.1 to 0.1
+  Probability threshold: 0.95
 
 Simulation Results:
-  Total simulations: 50 
-  Successful fits: 48 
-  Convergence rate: 0.96 
+  Total simulations: 50
+  Successful fits: 48
+  Convergence rate: 0.96
 
 Power Estimates:
-  Power (ROPE): 0.875 
-  Power (Direction): 0.958 
-  Power (Significant): 0.833 
+  Power (ROPE): 0.875
+  Power (Direction): 0.958
+  Power (Significant): 0.833
 
 Effect Size Estimates:
-  Mean estimate: 0.487 
+  Mean estimate: 0.487
   SD of estimates: 0.203")
 ```
 
@@ -121,9 +121,9 @@ For binary outcomes (e.g., treatment success/failure):
 binary_power <- power_analysis(
   n_control = 100,
   n_treatment = 100,
-  effect_size = 0.3,  # Log odds ratio
+  effect_size = 0.3, # Log odds ratio
   outcome_type = "binary",
-  baseline_prob = 0.2,  # 20% success rate in control
+  baseline_prob = 0.2, # 20% success rate in control
   n_simulations = n_sims_demo
 )
 
@@ -139,9 +139,9 @@ For count outcomes (e.g., number of hospitalizations):
 count_power <- power_analysis(
   n_control = 75,
   n_treatment = 75,
-  effect_size = 0.4,  # Log rate ratio
+  effect_size = 0.4, # Log rate ratio
   outcome_type = "count",
-  baseline_rate = 2.5,  # Average 2.5 events in control
+  baseline_rate = 2.5, # Average 2.5 events in control
   n_simulations = n_sims_demo
 )
 ```
@@ -281,9 +281,9 @@ Here's a typical workflow for planning an RCT:
 pilot_power <- power_analysis(
   n_control = 50,
   n_treatment = 50,
-  effect_size = 0.4,  # Expected effect from literature
+  effect_size = 0.4, # Expected effect from literature
   outcome_type = "continuous",
-  n_simulations = 100  # Use more simulations for real analysis
+  n_simulations = 100 # Use more simulations for real analysis
 )
 ```
 
@@ -305,7 +305,7 @@ sample_size_analysis_result <- sample_size_analysis(
 ```{r workflow_step3, eval=FALSE}
 # Test different effect sizes to understand sensitivity
 sensitivity_curve <- bayesian_power_curve(
-  n_control = 70,  # From step 2
+  n_control = 70, # From step 2
   n_treatment = 70,
   effect_sizes = seq(0.2, 0.8, by = 0.1),
   outcome_type = "continuous",

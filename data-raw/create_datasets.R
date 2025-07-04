@@ -4,14 +4,14 @@
 set.seed(123)
 cardio_trial <- simulate_rct_data(
   n_control = 100,
-  n_treatment = 100, 
+  n_treatment = 100,
   effect_size = 0.4,
   outcome_type = "continuous",
-  baseline_mean = 30,  # LDL cholesterol reduction
+  baseline_mean = 30, # LDL cholesterol reduction
   baseline_sd = 15,
   covariates = list(
     age = list(type = "continuous", mean = 65, sd = 8),
-    sex = list(type = "binary", prob = 0.6),  # 60% male
+    sex = list(type = "binary", prob = 0.6), # 60% male
     baseline_ldl = list(type = "continuous", mean = 140, sd = 25)
   )
 )
@@ -23,12 +23,12 @@ depression_trial <- simulate_rct_data(
   n_control = 75,
   n_treatment = 75,
   effect_size = 0.6,
-  outcome_type = "continuous", 
-  baseline_mean = 0,    # Change in depression score
+  outcome_type = "continuous",
+  baseline_mean = 0, # Change in depression score
   baseline_sd = 8,
   covariates = list(
     age = list(type = "continuous", mean = 45, sd = 12),
-    sex = list(type = "binary", prob = 0.35),  # 35% male
+    sex = list(type = "binary", prob = 0.35), # 35% male
     baseline_severity = list(type = "continuous", mean = 25, sd = 5)
   )
 )
@@ -41,7 +41,7 @@ vaccine_trial <- simulate_rct_data(
   n_treatment = 500,
   effect_size = 0.5,
   outcome_type = "binary",
-  baseline_prob = 0.1,  # 10% infection rate in control
+  baseline_prob = 0.1, # 10% infection rate in control
   covariates = list(
     age = list(type = "continuous", mean = 50, sd = 15),
     comorbidities = list(type = "binary", prob = 0.3),
@@ -52,7 +52,7 @@ vaccine_trial$outcome_label <- "infection_status"
 
 # Save datasets
 usethis::use_data(cardio_trial, overwrite = TRUE)
-usethis::use_data(depression_trial, overwrite = TRUE) 
+usethis::use_data(depression_trial, overwrite = TRUE)
 usethis::use_data(vaccine_trial, overwrite = TRUE)
 
 # Create documentation for datasets
@@ -74,7 +74,7 @@ cat('
 #\' @source Simulated using simulate_rct_data()
 "cardio_trial"
 
-#\' Simulated Depression Trial Data  
+#\' Simulated Depression Trial Data
 #\'
 #\' A dataset containing simulated data from a depression treatment trial
 #\' testing a new antidepressant medication.
@@ -100,7 +100,7 @@ cat('
 #\' \\describe{
 #\'   \\item{group}{Treatment group assignment (control/treatment)}
 #\'   \\item{outcome}{Infection status (0 = no infection, 1 = infection)}
-#\'   \\item{age}{Patient age in years}  
+#\'   \\item{age}{Patient age in years}
 #\'   \\item{comorbidities}{Presence of comorbidities (0 = no, 1 = yes)}
 #\'   \\item{prior_infection}{History of prior infection (0 = no, 1 = yes)}
 #\'   \\item{outcome_label}{Label describing the outcome measure}
