@@ -11,8 +11,9 @@
 
 ## Disclaimer
 
-This is an experimental package written by Github copilot and is not
-intended for production use.
+This is an experimental package written with the help of LLMs and is not
+yet thouroughly tested yet. Hence I do not recommend using it for
+production code or critical analyses.
 
 ## Overview
 
@@ -41,27 +42,34 @@ devtools::install_github("matthiaskloft/rctbayespower")
 ``` r
 library(rctbayespower)
 
-# Basic power analysis for continuous outcome
-power_result <- power_analysis(
+# Basic power analysis using ANCOVA wrapper
+power_result <- power_analysis_ancova(
   n_control = 50,
   n_treatment = 50,
-  effect_size = 0.5,  # Cohen's d
   outcome_type = "continuous",
+  effect_size = 0.5,  # Cohen's d
+  baseline_effect = 0.2,
+  threshold_success = 0.2,
+  threshold_futility = 0,
   n_simulations = 1000
 )
 
 print(power_result)
 
-# Sample size analysis
-sample_size_result <- sample_size_analysis(
-  effect_size = 0.5,
-  target_power = 0.8,
+# Grid analysis for sample size planning
+grid_result <- power_grid_analysis(
+  sample_sizes = seq(20, 100, by = 20),
+  effect_sizes = 0.5,
+  threshold_success = 0.2,
+  threshold_futility = 0,
+  power_analysis_fn = "power_analysis_ancova",
   outcome_type = "continuous",
-  sample_sizes = seq(20, 100, by = 10)
+  baseline_effect = 0.2,
+  n_simulations = 500
 )
 
 # Plot results
-plot_power_curve(sample_size_result, type = "sample_size")
+plot(grid_result)
 ```
 
 ## Key Features
@@ -89,14 +97,13 @@ plot_power_curve(sample_size_result, type = "sample_size")
 
 ## Main Functions
 
-| Function                 | Purpose                        |
-|--------------------------|--------------------------------|
-| `power_analysis()`       | Main power analysis function   |
-| `sample_size_analysis()` | Determine optimal sample size  |
-| `bayesian_power_curve()` | Generate power curves          |
-| `effect_size_analysis()` | Analyze effect size estimation |
-| `simulate_rct_data()`    | Generate simulated RCT data    |
-| `plot_power_curve()`     | Visualization functions        |
+| Function | Purpose |
+|----|----|
+| `power_analysis()` | Main power analysis function |
+| `power_analysis_ancova()` | Convenience wrapper for ANCOVA designs |
+| `power_grid_analysis()` | Grid analysis varying sample sizes and/or effect sizes |
+| `plot.rctbayespower_grid()` | Visualization functions for grid analysis |
+| `validate_power_design()` | Pre-validate analysis designs |
 
 ## Example Workflows
 
@@ -104,42 +111,50 @@ plot_power_curve(sample_size_result, type = "sample_size")
 
 ``` r
 # Determine sample size for desired power
-result <- sample_size_analysis(
-  effect_size = 0.4,
-  target_power = 0.8,
-  outcome_type = "continuous",
+result <- power_grid_analysis(
   sample_sizes = seq(30, 150, by = 20),
+  effect_sizes = 0.4,
+  threshold_success = 0.2,
+  threshold_futility = 0,
+  power_analysis_fn = "power_analysis_ancova",
+  outcome_type = "continuous",
+  baseline_effect = 0.2,
   n_simulations = 500
 )
 
-plot_power_curve(result, type = "sample_size")
+plot(result)
 ```
 
 ### Power Curve Analysis
 
 ``` r
 # Generate power curve across effect sizes
-curve_result <- bayesian_power_curve(
-  n_control = 75,
-  n_treatment = 75,
+curve_result <- power_grid_analysis(
+  sample_sizes = 75,
   effect_sizes = seq(0, 1, by = 0.1),
+  threshold_success = 0.2,
+  threshold_futility = 0,
+  power_analysis_fn = "power_analysis_ancova",
   outcome_type = "continuous",
+  baseline_effect = 0.2,
   n_simulations = 500
 )
 
-plot_power_curve(curve_result)
+plot(curve_result)
 ```
 
 ### Binary Outcomes
 
 ``` r
 # Power analysis for binary endpoint
-binary_power <- power_analysis(
+binary_power <- power_analysis_ancova(
   n_control = 100,
   n_treatment = 100,
-  effect_size = 0.5,  # log odds ratio
   outcome_type = "binary",
-  baseline_prob = 0.3,  # control group success rate
+  effect_size = 0.5,  # log odds ratio
+  baseline_effect = 0.2,
+  threshold_success = 0.3,
+  threshold_futility = 0,
   n_simulations = 1000
 )
 ```
@@ -147,19 +162,19 @@ binary_power <- power_analysis(
 ### Including Covariates
 
 ``` r
-# Define covariates
-covariates <- list(
-  age = list(type = "continuous", mean = 45, sd = 10),
-  sex = list(type = "binary", prob = 0.5)
-)
+# The power_analysis_ancova function includes baseline covariates by default
+# For more complex covariate structures, use the flexible power_analysis function
+# with custom data simulation and model formulas (see workflow_template.R)
 
-# Power analysis with covariates
-power_with_covs <- power_analysis(
+# Basic analysis with baseline covariate
+power_with_baseline <- power_analysis_ancova(
   n_control = 60,
   n_treatment = 60,
-  effect_size = 0.4,
   outcome_type = "continuous",
-  covariates = covariates,
+  effect_size = 0.4,
+  baseline_effect = 0.3,  # Effect of baseline covariate
+  threshold_success = 0.2,
+  threshold_futility = 0,
   n_simulations = 1000
 )
 ```

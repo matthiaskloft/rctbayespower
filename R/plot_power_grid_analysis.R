@@ -15,7 +15,7 @@
 #' @param metric Which power metric to display:
 #'   \itemize{
 #'     \item "success" - Success power and probability
-#'     \item "futility" - Futility power and probability  
+#'     \item "futility" - Futility power and probability
 #'     \item "both" - Both success and futility power and probabilities (default)
 #'   }
 #' @param values Which values to display:
@@ -35,6 +35,8 @@
 #'
 #' @return A ggplot2 object
 #' @export
+#' @importFrom stats as.formula
+#' @importFrom rlang .data
 #'
 #' @examples
 #' \dontrun{
@@ -77,7 +79,7 @@
 #' # Power curves faceted by effect size (when both vary)
 #' plot(grid_result, type = "power_curve", facet_by = "effect_size")
 #'
-#' # Power curves faceted by sample size (when both vary)  
+#' # Power curves faceted by sample size (when both vary)
 #' plot(grid_result, type = "power_curve", facet_by = "sample_size")
 #'
 #' # Integrated power plot with design prior
@@ -101,28 +103,28 @@ plot.rctbayespower_grid <- function(x,
                                    show_integrated = TRUE,
                                    facet_by = "effect_size",
                                    ...) {
-  
+
   if (!requireNamespace("ggplot2", quietly = TRUE)) {
     stop("Package 'ggplot2' is required for plotting.")
   }
-  
+
   if (!requireNamespace("scales", quietly = TRUE)) {
     stop("Package 'scales' is required for plotting.")
   }
-  
+
   # Check for valid data
   if (is.null(x$power_surface) || nrow(x$power_surface) == 0) {
     stop("No power analysis results to plot. Check that power_grid_analysis() completed successfully.")
   }
-  
+
   # Check for missing essential columns
-  required_cols <- c("n_total", "effect_size", "power_success", "power_futility", 
+  required_cols <- c("n_total", "effect_size", "power_success", "power_futility",
                      "mean_prob_success", "mean_prob_futility")
   missing_cols <- setdiff(required_cols, names(x$power_surface))
   if (length(missing_cols) > 0) {
     stop("Missing required columns in power_surface: ", paste(missing_cols, collapse = ", "))
   }
-  
+
   # Auto-detect plot type based on analysis type
   if (type == "auto") {
     if (x$analysis_type == "sample_only") {
@@ -135,20 +137,20 @@ plot.rctbayespower_grid <- function(x,
       stop("Cannot auto-detect plot type for analysis type: ", x$analysis_type)
     }
   }
-  
+
   # Validate parameters
   if (!metric %in% c("success", "futility", "both")) {
     stop("metric must be 'success', 'futility', or 'both'")
   }
-  
+
   if (!values %in% c("power", "post_prob", "both")) {
     stop("values must be 'power', 'post_prob', or 'both'")
   }
-  
+
   if (!facet_by %in% c("effect_size", "sample_size")) {
     stop("facet_by must be 'effect_size' or 'sample_size'")
   }
-  
+
   # Create plot based on type
   if (type == "power_curve") {
     create_power_curve_plot(x, metric, values, show_target, show_integrated, facet_by, ...)
@@ -167,7 +169,7 @@ plot.rctbayespower_grid <- function(x,
 #' @noRd
 create_power_curve_plot <- function(x, metric, values, show_target, show_integrated, facet_by, ...) {
   plot_data <- x$power_surface
-  
+
   if (x$analysis_type == "sample_only") {
     x_var <- "n_total"
     x_label <- "Total Sample Size"
@@ -200,62 +202,62 @@ create_power_curve_plot <- function(x, metric, values, show_target, show_integra
   } else {
     stop("Unknown analysis type")
   }
-  
+
   # Base plot
   p <- ggplot2::ggplot(plot_data, ggplot2::aes_string(x = x_var))
-  
+
   # Success metrics
   if (metric == "success" || metric == "both") {
     # Add power if requested
     if (values == "power" || values == "both") {
-      p <- p + 
-        ggplot2::geom_line(ggplot2::aes(y = power_success, color = "Success Power"),
+      p <- p +
+        ggplot2::geom_line(ggplot2::aes(y = .data$power_success, color = "Success Power"),
                           size = 1.2, linetype = "solid") +
-        ggplot2::geom_point(ggplot2::aes(y = power_success, color = "Success Power"),
+        ggplot2::geom_point(ggplot2::aes(y = .data$power_success, color = "Success Power"),
                            size = 3, shape = 16)
-      
+
       if (show_target) {
         p <- p + ggplot2::geom_hline(yintercept = x$target_power_success,
                                     linetype = "dashed", color = "steelblue", alpha = 0.7)
       }
     }
-    
+
     # Add posterior probability if requested
     if (values == "post_prob" || values == "both") {
-      p <- p + 
-        ggplot2::geom_line(ggplot2::aes(y = mean_prob_success, color = "Success Probability"),
+      p <- p +
+        ggplot2::geom_line(ggplot2::aes(y = .data$mean_prob_success, color = "Success Probability"),
                           size = 1.2, linetype = "dotted") +
-        ggplot2::geom_point(ggplot2::aes(y = mean_prob_success, color = "Success Probability"),
+        ggplot2::geom_point(ggplot2::aes(y = .data$mean_prob_success, color = "Success Probability"),
                            size = 3, shape = 17)
     }
   }
-  
-  # Futility metrics  
+
+  # Futility metrics
   if (metric == "futility" || metric == "both") {
     # Add power if requested
     if (values == "power" || values == "both") {
-      p <- p + 
-        ggplot2::geom_line(ggplot2::aes(y = power_futility, color = "Futility Power"),
+      p <- p +
+        ggplot2::geom_line(ggplot2::aes(y = .data$power_futility, color = "Futility Power"),
                           size = 1.2, linetype = "solid") +
-        ggplot2::geom_point(ggplot2::aes(y = power_futility, color = "Futility Power"),
+        ggplot2::geom_point(ggplot2::aes(y = .data$power_futility, color = "Futility Power"),
                            size = 3, shape = 16)
-      
+
       if (show_target) {
         p <- p + ggplot2::geom_hline(yintercept = x$target_power_futility,
                                     linetype = "dashed", color = "darkred", alpha = 0.7)
       }
     }
-    
+
     # Add posterior probability if requested
     if (values == "post_prob" || values == "both") {
-      p <- p + 
-        ggplot2::geom_line(ggplot2::aes(y = mean_prob_futility, color = "Futility Probability"),
+      p <- p +
+        ggplot2::geom_line(ggplot2::aes(y = .data$mean_prob_futility, color = "Futility Probability"),
                           size = 1.2, linetype = "dotted") +
-        ggplot2::geom_point(ggplot2::aes(y = mean_prob_futility, color = "Futility Probability"),
+        ggplot2::geom_point(ggplot2::aes(y = .data$mean_prob_futility, color = "Futility Probability"),
                            size = 3, shape = 17)
     }
   }
-  
+
   # Add integrated power if available and requested
   # Integrated power is meaningful when we have multiple effect sizes and sample sizes on x-axis
   if (show_integrated && !is.null(x$integrated_power) && length(x$effect_sizes) > 1 && x_var == "n_total") {
@@ -263,7 +265,7 @@ create_power_curve_plot <- function(x, metric, values, show_target, show_integra
       # Add horizontal reference lines for integrated power values
       for (i in 1:nrow(x$integrated_power)) {
         power_val <- x$integrated_power$integrated_power_success[i]
-        p <- p + 
+        p <- p +
           ggplot2::geom_hline(yintercept = power_val,
                              color = "cyan",
                              linetype = "longdash",
@@ -271,12 +273,12 @@ create_power_curve_plot <- function(x, metric, values, show_target, show_integra
                              alpha = 0.7)
       }
     }
-    
+
     if (metric == "futility" || metric == "both") {
       # Add horizontal reference lines for integrated power values
       for (i in 1:nrow(x$integrated_power)) {
         power_val <- x$integrated_power$integrated_power_futility[i]
-        p <- p + 
+        p <- p +
           ggplot2::geom_hline(yintercept = power_val,
                              color = "magenta",
                              linetype = "longdash",
@@ -285,18 +287,18 @@ create_power_curve_plot <- function(x, metric, values, show_target, show_integra
       }
     }
   }
-  
+
   # Color scheme
   colors <- c("Success Power" = "steelblue", "Success Probability" = "lightblue",
               "Futility Power" = "darkred", "Futility Probability" = "pink",
               "Integrated Success" = "cyan", "Integrated Futility" = "magenta")
-  
+
   # Dynamic y-axis label based on values parameter
   y_label <- switch(values,
                    "power" = "Power",
-                   "post_prob" = "Posterior Probability", 
+                   "post_prob" = "Posterior Probability",
                    "both" = "Power / Posterior Probability")
-  
+
   # Dynamic caption
   caption_parts <- c()
   if (show_target) caption_parts <- c(caption_parts, "Gray dashed lines: target power levels")
@@ -305,20 +307,20 @@ create_power_curve_plot <- function(x, metric, values, show_target, show_integra
     caption_parts <- c(caption_parts, "Colored horizontal lines: integrated power (weighted by design prior)")
   }
   caption_text <- if (length(caption_parts) > 0) paste(caption_parts, collapse = "; ") else NULL
-  
+
   # Add faceting if needed
   if (!is.null(facet_var)) {
-    p <- p + ggplot2::facet_wrap(as.formula(paste("~", facet_var)), 
+    p <- p + ggplot2::facet_wrap(as.formula(paste("~", facet_var)),
                                  labeller = ggplot2::labeller(.default = function(x) paste(facet_label, "=", x)))
   }
-  
+
   # Set x-axis to use discrete values from study design
   if (x_var == "n_total") {
     p <- p + ggplot2::scale_x_continuous(breaks = x$sample_sizes, labels = x$sample_sizes)
   } else if (x_var == "effect_size") {
     p <- p + ggplot2::scale_x_continuous(breaks = x$effect_sizes, labels = x$effect_sizes)
   }
-  
+
   p <- p +
     ggplot2::scale_color_manual(values = colors) +
     ggplot2::scale_y_continuous(limits = c(0, 1), labels = scales::percent_format()) +
@@ -338,7 +340,7 @@ create_power_curve_plot <- function(x, metric, values, show_target, show_integra
       axis.text = ggplot2::element_text(size = 10),
       legend.position = "bottom"
     )
-  
+
   return(p)
 }
 
@@ -348,23 +350,23 @@ create_heatmap_plot <- function(x, metric, values, show_target, ...) {
   if (x$analysis_type != "both") {
     stop("Heatmap plot requires both sample sizes and effect sizes to vary")
   }
-  
+
   plot_data <- x$power_surface
-  
+
   # Check for sufficient data points
   if (nrow(plot_data) < 4) {
     stop("Heatmap requires at least 4 data points (2x2 grid). Consider using type='power_curve' instead.")
   }
-  
+
   # Remove rows with all NA values for key metrics
-  valid_rows <- !(is.na(plot_data$power_success) & is.na(plot_data$power_futility) & 
+  valid_rows <- !(is.na(plot_data$power_success) & is.na(plot_data$power_futility) &
                   is.na(plot_data$mean_prob_success) & is.na(plot_data$mean_prob_futility))
   plot_data <- plot_data[valid_rows, ]
-  
+
   if (nrow(plot_data) == 0) {
     stop("No valid data points for heatmap. All power analysis results contain NA values.")
   }
-  
+
   # Determine what to plot based on values parameter
   if (values == "power") {
     fill_var_success <- "power_success"
@@ -383,7 +385,7 @@ create_heatmap_plot <- function(x, metric, values, show_target, ...) {
     fill_name <- "Power"
     plot_suffix <- "Power"
   }
-  
+
   if (metric == "success") {
     p <- ggplot2::ggplot(plot_data, ggplot2::aes_string(x = "effect_size", y = "n_total", fill = fill_var_success)) +
       ggplot2::geom_tile() +
@@ -409,52 +411,52 @@ create_heatmap_plot <- function(x, metric, values, show_target, ...) {
     if (values == "both") {
       # Create 4-panel plot: success power, success prob, futility power, futility prob
       plot_data_long <- rbind(
-        data.frame(plot_data[, c("n_total", "effect_size")], 
-                  value = plot_data$power_success, 
+        data.frame(plot_data[, c("n_total", "effect_size")],
+                  value = plot_data$power_success,
                   type = "Success Power"),
-        data.frame(plot_data[, c("n_total", "effect_size")], 
-                  value = plot_data$mean_prob_success, 
+        data.frame(plot_data[, c("n_total", "effect_size")],
+                  value = plot_data$mean_prob_success,
                   type = "Success Probability"),
-        data.frame(plot_data[, c("n_total", "effect_size")], 
-                  value = plot_data$power_futility, 
+        data.frame(plot_data[, c("n_total", "effect_size")],
+                  value = plot_data$power_futility,
                   type = "Futility Power"),
-        data.frame(plot_data[, c("n_total", "effect_size")], 
-                  value = plot_data$mean_prob_futility, 
+        data.frame(plot_data[, c("n_total", "effect_size")],
+                  value = plot_data$mean_prob_futility,
                   type = "Futility Probability")
       )
       fill_name <- "Value"
     } else {
       # Standard 2-panel plot
       plot_data_long <- rbind(
-        data.frame(plot_data[, c("n_total", "effect_size")], 
-                  value = plot_data[[fill_var_success]], 
+        data.frame(plot_data[, c("n_total", "effect_size")],
+                  value = plot_data[[fill_var_success]],
                   type = paste("Success", plot_suffix)),
-        data.frame(plot_data[, c("n_total", "effect_size")], 
-                  value = plot_data[[fill_var_futility]], 
+        data.frame(plot_data[, c("n_total", "effect_size")],
+                  value = plot_data[[fill_var_futility]],
                   type = paste("Futility", plot_suffix))
       )
     }
-    
-    p <- ggplot2::ggplot(plot_data_long, ggplot2::aes(x = effect_size, y = n_total, fill = value)) +
+
+    p <- ggplot2::ggplot(plot_data_long, ggplot2::aes(x = .data$effect_size, y = .data$n_total, fill = .data$value)) +
       ggplot2::geom_tile() +
       ggplot2::facet_wrap(~ type) +
       ggplot2::scale_fill_viridis_c(name = fill_name, labels = scales::percent_format()) +
       ggplot2::labs(
         title = if (values == "both") "Power and Probability Analysis Heatmap" else paste(plot_suffix, "Analysis Heatmap"),
-        subtitle = paste("Target powers - Success:", x$target_power_success, 
+        subtitle = paste("Target powers - Success:", x$target_power_success,
                         ", Futility:", x$target_power_futility),
         x = "Effect Size",
         y = "Total Sample Size"
       )
   }
-  
+
   # Add contour lines at target power if requested - skip for now to avoid aesthetic warnings
   # Will be re-enabled once the core plotting works smoothly
   if (FALSE && show_target && values != "post_prob") {
     # Contour functionality temporarily disabled to prevent aesthetic warnings
     # The core heatmap functionality works fine without contours
   }
-  
+
   p <- p +
     ggplot2::theme_minimal() +
     ggplot2::theme(
@@ -463,7 +465,7 @@ create_heatmap_plot <- function(x, metric, values, show_target, ...) {
       axis.title = ggplot2::element_text(size = 12),
       axis.text = ggplot2::element_text(size = 10)
     )
-  
+
   return(p)
 }
 
@@ -473,39 +475,39 @@ create_integrated_plot <- function(x, metric, values, show_target, ...) {
   if (is.null(x$integrated_power)) {
     stop("Integrated power plot requires design prior to be specified in power_grid_analysis()")
   }
-  
+
   plot_data <- x$integrated_power
-  
-  p <- ggplot2::ggplot(plot_data, ggplot2::aes(x = n_total))
-  
+
+  p <- ggplot2::ggplot(plot_data, ggplot2::aes(x = .data$n_total))
+
   if (metric == "success" || metric == "both") {
-    p <- p + 
-      ggplot2::geom_line(ggplot2::aes(y = integrated_power_success, color = "Integrated Success Power"),
+    p <- p +
+      ggplot2::geom_line(ggplot2::aes(y = .data$integrated_power_success, color = "Integrated Success Power"),
                         size = 1.5, linetype = "solid") +
-      ggplot2::geom_point(ggplot2::aes(y = integrated_power_success, color = "Integrated Success Power"),
+      ggplot2::geom_point(ggplot2::aes(y = .data$integrated_power_success, color = "Integrated Success Power"),
                          size = 3, shape = 17)
-    
+
     if (show_target) {
       p <- p + ggplot2::geom_hline(yintercept = x$target_power_success,
                                   linetype = "dashed", color = "steelblue", alpha = 0.7)
     }
   }
-  
+
   if (metric == "futility" || metric == "both") {
-    p <- p + 
-      ggplot2::geom_line(ggplot2::aes(y = integrated_power_futility, color = "Integrated Futility Power"),
+    p <- p +
+      ggplot2::geom_line(ggplot2::aes(y = .data$integrated_power_futility, color = "Integrated Futility Power"),
                         size = 1.5, linetype = "solid") +
-      ggplot2::geom_point(ggplot2::aes(y = integrated_power_futility, color = "Integrated Futility Power"),
+      ggplot2::geom_point(ggplot2::aes(y = .data$integrated_power_futility, color = "Integrated Futility Power"),
                          size = 3, shape = 17)
-    
+
     if (show_target) {
       p <- p + ggplot2::geom_hline(yintercept = x$target_power_futility,
                                   linetype = "dashed", color = "darkred", alpha = 0.7)
     }
   }
-  
+
   colors <- c("Integrated Success Power" = "lightblue", "Integrated Futility Power" = "pink")
-  
+
   p <- p +
     ggplot2::scale_x_continuous(breaks = x$sample_sizes, labels = x$sample_sizes) +
     ggplot2::scale_color_manual(values = colors) +
@@ -526,7 +528,7 @@ create_integrated_plot <- function(x, metric, values, show_target, ...) {
       axis.text = ggplot2::element_text(size = 10),
       legend.position = "bottom"
     )
-  
+
   return(p)
 }
 
@@ -534,7 +536,7 @@ create_integrated_plot <- function(x, metric, values, show_target, ...) {
 #' @noRd
 create_comparison_plot <- function(x, metric, values, ...) {
   plot_data <- x$power_surface
-  
+
   if (x$analysis_type == "sample_only") {
     x_var <- "n_total"
     x_label <- "Total Sample Size"
@@ -546,43 +548,43 @@ create_comparison_plot <- function(x, metric, values, ...) {
   } else {
     stop("Comparison plot requires single varying dimension (sample_only or effect_only)")
   }
-  
+
   p <- ggplot2::ggplot(plot_data, ggplot2::aes_string(x = x_var))
-  
+
   if (metric == "success" || metric == "both") {
-    p <- p + 
-      ggplot2::geom_line(ggplot2::aes(y = power_success, color = "Success Power"),
+    p <- p +
+      ggplot2::geom_line(ggplot2::aes(y = .data$power_success, color = "Success Power"),
                         size = 1.2, linetype = "solid") +
-      ggplot2::geom_point(ggplot2::aes(y = power_success, color = "Success Power"),
+      ggplot2::geom_point(ggplot2::aes(y = .data$power_success, color = "Success Power"),
                          size = 3, shape = 16) +
-      ggplot2::geom_line(ggplot2::aes(y = mean_prob_success, color = "Success Probability"),
+      ggplot2::geom_line(ggplot2::aes(y = .data$mean_prob_success, color = "Success Probability"),
                         size = 1.2, linetype = "dashed") +
-      ggplot2::geom_point(ggplot2::aes(y = mean_prob_success, color = "Success Probability"),
+      ggplot2::geom_point(ggplot2::aes(y = .data$mean_prob_success, color = "Success Probability"),
                          size = 3, shape = 17)
   }
-  
+
   if (metric == "futility" || metric == "both") {
-    p <- p + 
-      ggplot2::geom_line(ggplot2::aes(y = power_futility, color = "Futility Power"),
+    p <- p +
+      ggplot2::geom_line(ggplot2::aes(y = .data$power_futility, color = "Futility Power"),
                         size = 1.2, linetype = "solid") +
-      ggplot2::geom_point(ggplot2::aes(y = power_futility, color = "Futility Power"),
+      ggplot2::geom_point(ggplot2::aes(y = .data$power_futility, color = "Futility Power"),
                          size = 3, shape = 16) +
-      ggplot2::geom_line(ggplot2::aes(y = mean_prob_futility, color = "Futility Probability"),
+      ggplot2::geom_line(ggplot2::aes(y = .data$mean_prob_futility, color = "Futility Probability"),
                         size = 1.2, linetype = "dashed") +
-      ggplot2::geom_point(ggplot2::aes(y = mean_prob_futility, color = "Futility Probability"),
+      ggplot2::geom_point(ggplot2::aes(y = .data$mean_prob_futility, color = "Futility Probability"),
                          size = 3, shape = 17)
   }
-  
+
   colors <- c("Success Power" = "steelblue", "Success Probability" = "lightblue",
               "Futility Power" = "darkred", "Futility Probability" = "pink")
-  
+
   # Set x-axis to use discrete values from study design
   if (x_var == "n_total") {
     p <- p + ggplot2::scale_x_continuous(breaks = x$sample_sizes, labels = x$sample_sizes)
   } else if (x_var == "effect_size") {
     p <- p + ggplot2::scale_x_continuous(breaks = x$effect_sizes, labels = x$effect_sizes)
   }
-  
+
   p <- p +
     ggplot2::scale_color_manual(values = colors) +
     ggplot2::scale_y_continuous(limits = c(0, 1), labels = scales::percent_format()) +
@@ -600,6 +602,6 @@ create_comparison_plot <- function(x, metric, values, ...) {
       axis.text = ggplot2::element_text(size = 10),
       legend.position = "bottom"
     )
-  
+
   return(p)
 }

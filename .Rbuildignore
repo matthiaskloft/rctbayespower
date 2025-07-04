@@ -13,4 +13,10 @@
 ^LICENSE\.md$
 ^cran-comments\.md$
 ^revdep$
-^scripts_development^/
+^scripts_development$
+^CLAUDE\.md$
+^CLAUDE\.local\.md$
+^README\.Rmd$
+^data-raw$
+^r_package_development_guidelines\.md$
+^\.claude$

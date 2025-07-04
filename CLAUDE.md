@@ -23,7 +23,103 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Robust parallelization with proper parameter handling
 - Package structure and dependencies stable and optimized
 - **Note**: Tests are currently minimal and will be implemented later when functions are complete
-- **Note**: Some functions like `effect_size_analysis` and `power_curve` are placeholders for future implementation
+- **Note**: Some functions like `effect_size_analysis` and `power_curve` will be implemented later
+
+## Development Practices and R CMD Check Guidelines
+
+### Documentation Guidelines
+- **Always update documentations directly in the .R file's roxygen documentation**
+- **CRITICAL**: After updating roxygen comments, run `devtools::document()` to regenerate .Rd files
+- **Never manually edit .Rd files** in the `man/` directory - they are auto-generated
+
+### R CMD Check Best Practices
+
+#### 1. Avoiding Documentation Mismatches
+**Problem**: R CMD check fails when default parameter values in code don't match roxygen documentation.
+
+**Solution**: Always ensure roxygen `@param` documentation matches the actual default values in function signatures.
+
+**Example Fix**:
+```r
+# BAD: Code has default = 0.975 but docs say 0.95
+#' @param p_sig_success Probability threshold for success (default 0.95)
+my_function <- function(p_sig_success = 0.975) { ... }
+
+# GOOD: Documentation matches code
+#' @param p_sig_success Probability threshold for success (default 0.975) 
+my_function <- function(p_sig_success = 0.975) { ... }
+```
+
+**Recent fixes applied**: Updated documentation for `p_sig_success` in `power_analysis.R` and `power_analysis_ancova.R`, and `target_power_futility` in `power_grid_analysis.R`.
+
+#### 2. Avoiding Non-ASCII Character Errors
+**Problem**: R CMD check flags Unicode symbols (✓, ⚠, ✗) as non-ASCII characters.
+
+**Solution**: Use ASCII-only characters in all R source files.
+
+**Example Fix**:
+```r
+# BAD: Unicode symbols
+message("✓ Success")
+warning("⚠ Warning") 
+stop("✗ Error")
+
+# GOOD: ASCII equivalents
+message("OK: Success")
+warning("WARN: Warning")
+stop("ERROR: Error")
+```
+
+**Recent fixes applied**: Replaced all Unicode symbols with ASCII equivalents in validation messages across all R files.
+
+#### 3. Avoiding Global Variable Binding Warnings
+**Problem**: R CMD check warns about "no visible binding for global variable" when using ggplot2/dplyr syntax.
+
+**Solution**: Use `.data$variable` notation for non-standard evaluation contexts.
+
+**Example Fix**:
+```r
+# BAD: Direct variable reference
+ggplot(df, aes(x = power_success, y = sample_size))
+df %>% select(Estimate)
+
+# GOOD: Use .data$ notation
+ggplot(df, aes(x = .data$power_success, y = .data$sample_size))
+df %>% select(.data$Estimate)
+```
+
+**Recent fixes applied**: Fixed 24+ instances in plotting functions and data manipulation code.
+
+#### 4. Missing Package Imports
+**Problem**: Functions from imported packages show as "not available" during check.
+
+**Solution**: Add explicit imports to NAMESPACE via roxygen2 `@importFrom` tags.
+
+**Example Fix**:
+```r
+# Add to function roxygen block:
+#' @importFrom stats approx
+#' @importFrom utils modifyList
+#' @importFrom brms bernoulli poisson
+```
+
+**Recent fixes applied**: Added comprehensive imports for stats, utils, and brms functions.
+
+### Pre-Commit Workflow
+Before committing changes, always run:
+```r
+# 1. Update documentation
+devtools::document()
+
+# 2. Check for basic issues
+devtools::check()
+
+# 3. Verify no non-ASCII characters
+tools::showNonASCIIfile("R/")  # Should show nothing
+
+# 4. Install and test locally
+devtools::install()
+```
 
 ## Core Architecture
 
@@ -58,6 +154,11 @@ The package follows standard R package structure with enhanced performance optim
 - **Integration**: Seamless integration with grid analysis for weighted power computation
 
 All functions support three outcome types (continuous, binary, count) with flexible covariate inclusion and custom prior specifications. A workflow template (`workflow_template.R`) provides a starting point for custom power analyses.
+
+## Guideline References
+
+### Package Development Guidelines
+- Refer to `r_package_development_guidelines.md` for comprehensive R package development guidelines and best practices
 
 ## Common Development Commands
 

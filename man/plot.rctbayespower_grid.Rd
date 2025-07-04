@@ -101,7 +101,7 @@ plot(grid_result, type = "heatmap")
 # Power curves faceted by effect size (when both vary)
 plot(grid_result, type = "power_curve", facet_by = "effect_size")
 
-# Power curves faceted by sample size (when both vary)  
+# Power curves faceted by sample size (when both vary)
 plot(grid_result, type = "power_curve", facet_by = "sample_size")
 
 # Integrated power plot with design prior

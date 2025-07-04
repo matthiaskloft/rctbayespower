@@ -6,7 +6,9 @@
       "Bash(R:*)",
       "Bash(rm:*)",
       "Bash(mv:*)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(_R_CHECK_FORCE_SUGGESTS_=false R CMD check . --no-tests --no-vignettes --no-manual)",
+      "Bash(mkdir:*)"
     ],
     "deny": []
   }

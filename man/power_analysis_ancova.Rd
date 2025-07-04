@@ -14,7 +14,7 @@ power_analysis_ancova(
   sigma_value = 1,
   threshold_success,
   threshold_futility,
-  p_sig_success = 0.95,
+  p_sig_success = 0.975,
   p_sig_futility = 0.5,
   n_simulations = 1000,
   priors_treatment = "student_t(3, 0, 2)",
@@ -48,7 +48,7 @@ power_analysis_ancova(
 
 \item{threshold_futility}{Lower threshold for futility determination (required)}
 
-\item{p_sig_success}{Probability threshold for declaring success (default 0.95)}
+\item{p_sig_success}{Probability threshold for declaring success (default 0.975)}
 
 \item{p_sig_futility}{Probability threshold for declaring futility (default 0.5)}
 

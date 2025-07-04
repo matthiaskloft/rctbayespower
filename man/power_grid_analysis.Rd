@@ -6,7 +6,7 @@
 \usage{
 power_grid_analysis(
   target_power_success = 0.9,
-  target_power_futility = 0.9,
+  target_power_futility = 0.95,
   sample_sizes,
   effect_sizes,
   threshold_success,
@@ -21,7 +21,7 @@ power_grid_analysis(
 \arguments{
 \item{target_power_success}{Desired power level for success decisions (default: 0.9)}
 
-\item{target_power_futility}{Desired power level for futility decisions (default: 0.9)}
+\item{target_power_futility}{Desired power level for futility decisions (default: 0.95)}
 
 \item{sample_sizes}{Vector of total sample sizes to test}
 
@@ -87,7 +87,7 @@ For ANCOVA power analysis (power_analysis_fn = "power_analysis_ancova"), you mus
 outcome_type, baseline_effect
 }
 \examples{
-\\dontrun{
+\dontrun{
 # Basic analysis across sample sizes and effect sizes
 grid_result <- power_grid_analysis(
   target_power_success = 0.8,

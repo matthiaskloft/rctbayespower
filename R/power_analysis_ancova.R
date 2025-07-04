@@ -14,7 +14,7 @@
 #' @param sigma_value True residual standard deviation (for continuous outcomes only)
 #' @param threshold_success Upper threshold for success determination
 #' @param threshold_futility Lower threshold for futility determination (required)
-#' @param p_sig_success Probability threshold for declaring success (default 0.95)
+#' @param p_sig_success Probability threshold for declaring success (default 0.975)
 #' @param p_sig_futility Probability threshold for declaring futility (default 0.5)
 #' @param n_simulations Number of simulation iterations
 #' @param priors_treatment Prior for treatment effect (default: student_t(3, 0, 2))
@@ -29,6 +29,8 @@
 #'
 #' @return A list containing power analysis results, or if compile_models_only=TRUE, a list with compiled models and arguments for later use
 #' @export
+#' @importFrom stats rnorm gaussian poisson
+#' @importFrom brms bernoulli
 #'
 #' @examples
 #' \dontrun{
@@ -119,7 +121,7 @@ power_analysis_ancova <- function(n_control,
                                   progress_updates = 10,
                                   compile_models_only = FALSE) {
   # Input validation
-  
+
   # Check required parameters
   if (missing(n_control) || is.null(n_control)) {
     stop("n_control is required and must be specified.")
@@ -139,7 +141,7 @@ power_analysis_ancova <- function(n_control,
   if (missing(threshold_futility) || is.null(threshold_futility)) {
     stop("threshold_futility is required and must be specified.")
   }
-  
+
   # Validate parameter types and ranges
   if (!is.numeric(n_control) ||
       length(n_control) != 1 || n_control <= 0) {
@@ -156,12 +158,12 @@ power_analysis_ancova <- function(n_control,
       length(baseline_effect) != 1) {
     stop("baseline_effect must be a single numeric value.")
   }
-  
+
   # Validate outcome type
   if (!outcome_type %in% c("continuous", "binary", "count")) {
     stop("outcome_type must be one of: 'continuous', 'binary', 'count'")
   }
-  
+
   # Validate optional numeric parameters
   if (!is.numeric(intercept_value) ||
       length(intercept_value) != 1) {
@@ -196,7 +198,7 @@ power_analysis_ancova <- function(n_control,
   if (!is.numeric(n_cores) || length(n_cores) != 1 || n_cores < 1) {
     stop("n_cores must be a single positive integer.")
   }
-  
+
   # Validate prior specifications
   if (!is.character(priors_treatment) ||
       length(priors_treatment) != 1) {
@@ -213,22 +215,22 @@ power_analysis_ancova <- function(n_control,
   if (!is.character(priors_sigma) || length(priors_sigma) != 1) {
     stop("priors_sigma must be a single character string.")
   }
-  
+
   # Validate brms_args
   if (!is.list(brms_args)) {
     stop("brms_args must be a list.")
   }
-  
+
   # Validate seed if provided
   if (!is.null(seed) && (!is.numeric(seed) || length(seed) != 1)) {
     stop("seed must be a single numeric value or NULL.")
   }
-  
+
   # Validate logical consistency
   if (threshold_success <= threshold_futility) {
     stop("threshold_success must be greater than threshold_futility.")
   }
-  
+
   # Create data simulation function following template exactly
   simulate_data <- function(n_control, n_treatment) {
     data.frame(
@@ -242,11 +244,11 @@ power_analysis_ancova <- function(n_control,
       )
     )
   }
-  
+
   # Define model formulas (exactly as in template)
   model_formula_true_params <- brms::bf(outcome ~ baseline + group, center = FALSE)
   model_formula_estimation <- brms::bf(outcome ~ baseline + group)
-  
+
   # Define distributional family
   family <- switch(
     outcome_type,
@@ -254,7 +256,7 @@ power_analysis_ancova <- function(n_control,
     "binary" = bernoulli(),
     "count" = poisson()
   )
-  
+
   # Set up priors with true parameter values (constants as in template)
   priors_true_params <- c(
     brms::set_prior(
@@ -273,33 +275,33 @@ power_analysis_ancova <- function(n_control,
       coef = "Intercept"
     )
   )
-  
+
   # Add sigma prior only for continuous outcomes
   if (outcome_type == "continuous") {
     priors_true_params <- c(priors_true_params,
                             brms::set_prior(paste0("constant(", sigma_value, ")"), class = "sigma"))
   }
-  
+
   # Set up estimation priors (exactly as in template)
   priors_estimation <- c(
     brms::set_prior(priors_treatment, class = "b"),
     brms::set_prior(priors_baseline, class = "b", coef = "baseline"),
     brms::set_prior(priors_intercept, class = "Intercept")
   )
-  
+
   # Add sigma prior only for continuous outcomes
   if (outcome_type == "continuous") {
     priors_estimation <- c(priors_estimation,
                            brms::set_prior(priors_sigma, class = "sigma"))
   }
-  
+
   # Define target parameter (exactly as in template)
   target_param <- "grouptreat"
-  
+
   # If compile_models_only is TRUE, use validate_power_design to compile models and return them
   if (compile_models_only) {
     cat("Compiling ANCOVA models without running simulations...\n")
-    
+
     # Use validate_power_design to compile the models
     validation_result <- validate_power_design(
       n_control = n_control,
@@ -313,7 +315,7 @@ power_analysis_ancova <- function(n_control,
       target_param = target_param,
       brms_args = brms_args
     )
-    
+
     # Return compiled models and arguments for later use
     return(list(
       brms_design_true_params = validation_result$brms_design_true_params,
@@ -348,7 +350,7 @@ power_analysis_ancova <- function(n_control,
       )
     ))
   }
-  
+
   # Call the main power analysis function
   power_analysis(
     n_control = n_control,
