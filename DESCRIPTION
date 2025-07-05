@@ -31,3 +31,4 @@ Suggests:
     covr
 Config/testthat/edition: 3
 VignetteBuilder: knitr
+URL: https://matthiaskloft.github.io/rctbayespower/

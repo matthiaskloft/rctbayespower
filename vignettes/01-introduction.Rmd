@@ -1,0 +1,336 @@
+---
+title: "Getting Started with rctbayespower: Bayesian Power Analysis for RCTs"
+date: "`r Sys.Date()`"
+output: 
+  rmarkdown::html_vignette:
+    toc: true
+    toc_depth: 3
+vignette: >
+  %\VignetteIndexEntry{Getting Started with rctbayespower: Bayesian Power Analysis for RCTs}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 7,
+  fig.height = 5,
+  warning = FALSE,
+  message = FALSE
+)
+
+# Set up for examples (reduce simulation counts for faster vignette building)
+n_cores_demo <- parallel::detectCores() - 1 
+n_sims_demo <- n_cores_demo * 20 
+```
+
+# Introduction
+
+The `rctbayespower` package provides tools for conducting Bayesian power analysis for randomized controlled trials (RCTs) using the `brms` package and Stan. Unlike traditional frequentist power analysis, Bayesian power analysis allows researchers to:
+
+- Incorporate prior knowledge about treatment effects
+- Use probabilistic statements about effect sizes
+- Consider regions of practical equivalence (ROPE)
+- Account for uncertainty in parameter estimates
+
+This vignette demonstrates the main functions of the package with practical examples using real model fitting.
+
+## Installation and Setup
+
+```{r install, eval=FALSE}
+# Install from GitHub (once package is published)
+# devtools::install_github("matthiaskloft/rctbayespower")
+
+# Load the package
+library(rctbayespower)
+
+# Required dependencies
+library(brms)
+library(ggplot2)
+library(dplyr)
+```
+
+```{r load_libs, echo=FALSE}
+library(rctbayespower)
+library(ggplot2)
+library(dplyr)
+```
+
+# Basic Power Analysis Using ANCOVA Design
+
+## Continuous Outcomes
+
+Let's start with a basic power analysis for a continuous outcome (e.g., change in blood pressure) using the convenient ANCOVA wrapper function.
+
+```{r basic_power_continuous}
+# Basic power analysis for continuous outcome with baseline covariate
+power_result <- power_analysis_ancova(
+  n_control = 50,
+  n_treatment = 50,
+  effect_size = 0.5, # Cohen's d
+  baseline_effect = 0.3, # Baseline covariate effect
+  outcome_type = "continuous",
+  threshold_success = 0.3, # Clinically meaningful effect
+  threshold_futility = 0.1, # Futility threshold
+  p_sig_success = 0.95, # Probability threshold for success
+  p_sig_futility = 0.5, # Probability threshold for futility
+  n_simulations = n_sims_demo,
+  n_cores = n_cores_demo,
+  brms_args = list(
+    algorithm = "meanfield", # Fast algorithm for demo
+    importance_resampling = TRUE,
+    iter = 1e4,
+    output_samples = 1e3
+  )
+)
+
+print(power_result)
+```
+
+The output shows:
+- **Power Success**: Probability that the effect exceeds the success threshold
+- **Power Futility**: Probability that the effect falls below the futility threshold
+- **Mean Effect Estimate**: Average estimated effect size across simulations
+- **Convergence**: Proportion of models that converged successfully
+
+
+# Grid Analysis: Sample Size and Effect Size Exploration
+
+## Sample Size Analysis
+
+One of the most common questions in study planning is: "How many participants do I need?" The `power_grid_analysis()` function helps answer this question by testing multiple sample sizes.
+
+```{r sample_size_analysis}
+# Find sample size needed for 80% power
+sample_size_result <- power_grid_analysis(
+  sample_sizes = c(40, 60, 80, 100),
+  effect_sizes = 0.5, # Fixed effect size
+  target_power_success = 0.8,
+  target_power_futility = 0.8,
+  power_analysis_fn = "power_analysis_ancova",
+  outcome_type = "continuous",
+  baseline_effect = 0.3,
+  threshold_success = 0.3,
+  threshold_futility = 0.1,
+  p_sig_success = 0.95,
+  p_sig_futility = 0.5,
+  n_simulations = n_sims_demo,
+  n_cores = n_cores_demo
+)
+
+print(sample_size_result)
+```
+
+```{r sample_size_plot}
+# Visualize the sample size analysis
+plot(sample_size_result, type = "power_curve")
+```
+
+## Effect Size Sensitivity Analysis
+
+Understanding how power changes with effect size helps assess study sensitivity:
+
+```{r effect_size_analysis}
+# Generate power curve across different effect sizes
+effect_size_result <- power_grid_analysis(
+  sample_sizes = 60, # Fixed sample size
+  effect_sizes = seq(0.2, 0.8, by = 0.1),
+  design_prior = "normal(0.5, 0.1)", # Prior knowledge about effect size
+  power_analysis_fn = "power_analysis_ancova",
+  outcome_type = "continuous",
+  baseline_effect = 0.3,
+  threshold_success = 0.3,
+  threshold_futility = 0.1,
+  p_sig_success = 0.95,
+  p_sig_futility = 0.5,
+  n_simulations = n_sims_demo,
+  n_cores = n_cores_demo
+)
+
+print(effect_size_result)
+```
+
+```{r effect_size_plot}
+# Plot the power curve with integrated power
+plot(effect_size_result, type = "power_curve", show_integrated = TRUE)
+```
+
+## Full Grid Analysis
+
+For comprehensive planning, analyze both sample sizes and effect sizes:
+
+```{r grid_analysis}
+# Full grid analysis
+grid_result <- power_grid_analysis(
+  sample_sizes = c(50, 70, 90),
+  effect_sizes = c(0.3, 0.5, 0.7),
+  design_prior = "normal(0.5, 0.1)",
+  power_analysis_fn = "power_analysis_ancova",
+  outcome_type = "continuous",
+  baseline_effect = 0.3,
+  threshold_success = 0.3,
+  threshold_futility = 0.1,
+  p_sig_success = 0.95,
+  p_sig_futility = 0.5,
+  n_simulations = n_sims_demo,
+  n_cores = n_cores_demo
+)
+
+print(grid_result)
+```
+
+```{r grid_plot}
+# Visualize as heatmap
+plot(grid_result, type = "heatmap")
+```
+
+# Advanced Features: Custom Power Analysis
+
+## Building a Custom Model
+
+For specialized designs, you can build custom models using the core `power_analysis()` function:
+
+```{r custom_model_setup}
+# Define custom data simulation function
+simulate_custom_data <- function(n_control, n_treatment) {
+  data.frame(
+    outcome = rnorm(n_control + n_treatment),
+    baseline = rnorm(n_control + n_treatment),
+    age = rnorm(n_control + n_treatment, mean = 50, sd = 15),
+    group = factor(
+      rep(c(0, 1), times = c(n_control, n_treatment)),
+      levels = c(0, 1),
+      labels = c("ctrl", "treat")
+    )
+  )
+}
+
+# Create mock data for model specification
+mock_data <- simulate_custom_data(25, 25)
+
+# Define model formulas
+model_formula_true_params <- bf(outcome ~ baseline + age + group, center = FALSE)
+model_formula_estimation <- bf(outcome ~ baseline + age + group)
+
+# Define distributional family
+family <- gaussian()
+
+# Set true parameters as priors (constants)
+priors_true_params <- c(
+  set_prior("constant(0.2)", class = "b", coef = "baseline"),
+  set_prior("constant(0.01)", class = "b", coef = "age"),
+  set_prior("constant(0.5)", class = "b", coef = "grouptreat"),
+  set_prior("constant(0)", class = "b", coef = "Intercept"),
+  set_prior("constant(1)", class = "sigma")
+)
+
+# Set estimation priors
+priors_estimation <- c(
+  set_prior("student_t(3, 0, 1)", class = "b", coef = "baseline"),
+  set_prior("student_t(3, 0, 0.1)", class = "b", coef = "age"),
+  set_prior("student_t(3, 0, 2)", class = "Intercept"),
+  set_prior("student_t(3, 0, 1)", class = "sigma")
+)
+```
+
+```{r custom_model_validate}
+# Validate the power design
+validation <- validate_power_design(
+  n_control = 50,
+  n_treatment = 50,
+  model_formula_true_params = model_formula_true_params,
+  model_formula_estimation = model_formula_estimation,
+  family = family,
+  priors_true_params = priors_true_params,
+  priors_estimation = priors_estimation,
+  target_param = "grouptreat",
+  simulate_data_fn = simulate_custom_data,
+  brms_args = list(
+    algorithm = "meanfield",
+    importance_resampling = TRUE,
+    iter = 1e4,
+    output_samples = 1e3
+  )
+)
+
+print(validation)
+```
+
+```{r custom_model_power}
+# Run power analysis with custom model
+custom_power <- power_analysis(
+  n_control = 50,
+  n_treatment = 50,
+  brms_design_true_params = validation$brms_design_true_params,
+  brms_design_estimation = validation$brms_design_estimation,
+  target_param = "grouptreat",
+  simulate_data_fn = simulate_custom_data,
+  threshold_success = 0.3,
+  threshold_futility = 0.1,
+  p_sig_success = 0.95,
+  p_sig_futility = 0.5,
+  n_simulations = n_sims_demo,
+  n_cores = n_cores_demo,
+  brms_args = list(
+    algorithm = "meanfield",
+    importance_resampling = TRUE,
+    iter = 1e4,
+    output_samples = 1e3
+  )
+)
+
+print(custom_power)
+```
+
+
+# Interpreting Results
+
+## Power Metrics
+
+The package provides several types of power:
+
+1. **Success Power**: Probability that the treatment effect exceeds the success threshold. This is often the most relevant for clinical decisions.
+
+2. **Futility Power**: Probability that the treatment effect falls below the futility threshold, useful for stopping rules.
+
+3. **Mean Effect Estimate**: Average estimated effect size across simulations, should be close to the true effect.
+
+## Convergence
+
+Always check the convergence rate. If it's below 95%, consider:
+- Increasing the number of iterations
+- Simplifying the model
+- Using a different algorithm
+- Checking for model specification issues
+
+## Effect Size Interpretation
+
+For continuous outcomes (Cohen's d):
+- 0.2 = small effect
+- 0.5 = medium effect  
+- 0.8 = large effect
+
+For binary outcomes, effect sizes represent log odds ratios.
+For count outcomes, effect sizes represent log rate ratios.
+
+
+# Conclusion
+
+The `rctbayespower` package provides a comprehensive framework for Bayesian power analysis in RCTs. By incorporating prior information and using probabilistic reasoning, it offers a more nuanced approach to study planning than traditional frequentist methods.
+
+Key advantages include:
+- Incorporation of prior knowledge through design priors
+- Probabilistic interpretation of results
+- Flexibility in defining success and futility thresholds
+- Rich visualization options
+- Support for multiple outcome types and study designs
+
+For more advanced usage and specialized designs, see the additional vignettes and function documentation.
+
+# Session Information
+
+```{r session_info}
+sessionInfo()
+```

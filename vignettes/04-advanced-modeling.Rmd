@@ -1,0 +1,323 @@
+---
+title: "Advanced Bayesian Power Analysis Techniques"
+author: "rctbayespower package authors"
+date: "`r Sys.Date()`"
+output: 
+  rmarkdown::html_vignette:
+    toc: true
+    toc_depth: 3
+vignette: >
+  %\VignetteIndexEntry{Advanced Bayesian Power Analysis Techniques}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 7,
+  fig.height = 5,
+  warning = FALSE,
+  message = FALSE
+)
+
+# Reduced simulation counts for vignette building
+n_sims_demo <- 8 # Minimal simulations for fast demo builds
+n_cores_demo <- 1 # Single core for vignette building
+```
+
+# Advanced Techniques in Bayesian RCT Power Analysis
+
+This vignette covers advanced techniques and scenarios for Bayesian power analysis using the `rctbayespower` package, with real model fitting examples.
+
+```{r load_libs, echo=FALSE}
+library(rctbayespower)
+library(ggplot2)
+library(dplyr)
+```
+
+# Complex Study Designs
+
+## Unequal Allocation Ratios
+
+Sometimes studies use unequal allocation ratios (e.g., 2:1 treatment to control) to maximize learning from the experimental condition:
+
+```{r unequal_allocation}
+# 2:1 allocation ratio
+power_unequal <- power_analysis_ancova(
+  n_control = 50,
+  n_treatment = 100, # 2:1 ratio
+  effect_size = 0.4,
+  baseline_effect = 0.3,
+  outcome_type = "continuous",
+  threshold_success = 0.3,
+  threshold_futility = 0.1,
+  n_simulations = n_sims_demo,
+  n_cores = n_cores_demo,
+  brms_args = list(
+    algorithm = "meanfield",
+    importance_resampling = TRUE,
+    iter = 1e4,
+    output_samples = 1e3
+  )
+)
+
+# Compare with equal allocation (same total N = 150)
+power_equal <- power_analysis_ancova(
+  n_control = 75,
+  n_treatment = 75,
+  effect_size = 0.4,
+  baseline_effect = 0.3,
+  outcome_type = "continuous",
+  threshold_success = 0.3,
+  threshold_futility = 0.1,
+  n_simulations = n_sims_demo,
+  n_cores = n_cores_demo,
+  brms_args = list(
+    algorithm = "meanfield",
+    importance_resampling = TRUE,
+    iter = 1e4,
+    output_samples = 1e3
+  )
+)
+
+# Compare power
+cat("Unequal allocation (2:1) power:", round(power_unequal$power_success, 3), "\n")
+cat("Equal allocation power:", round(power_equal$power_success, 3), "\n")
+```
+
+## Multi-arm Studies
+
+For studies with multiple treatment arms, analyze each comparison separately:
+
+```{r multiarm}
+# Create a comparison table for multiple arms
+multiarm_comparison <- data.frame(
+  Comparison = character(),
+  Power_Success = numeric(),
+  Power_Futility = numeric(),
+  Mean_Effect = numeric(),
+  stringsAsFactors = FALSE
+)
+
+# Treatment A vs Control
+power_A_vs_C <- power_analysis_ancova(
+  n_control = 60,
+  n_treatment = 60,
+  effect_size = 0.5, # Treatment A effect
+  baseline_effect = 0.3,
+  outcome_type = "continuous",
+  threshold_success = 0.3,
+  threshold_futility = 0.1,
+  n_simulations = n_sims_demo,
+  n_cores = n_cores_demo,
+  brms_args = list(
+    algorithm = "meanfield",
+    importance_resampling = TRUE,
+    iter = 1e4,
+    output_samples = 1e3
+  )
+)
+
+multiarm_comparison <- rbind(multiarm_comparison, data.frame(
+  Comparison = "Treatment A vs Control",
+  Power_Success = power_A_vs_C$power_success,
+  Power_Futility = power_A_vs_C$power_futility,
+  Mean_Effect = power_A_vs_C$mean_effect_estimate
+))
+
+# Treatment B vs Control
+power_B_vs_C <- power_analysis_ancova(
+  n_control = 60,
+  n_treatment = 60,
+  effect_size = 0.3, # Treatment B effect (smaller)
+  baseline_effect = 0.3,
+  outcome_type = "continuous",
+  threshold_success = 0.3,
+  threshold_futility = 0.1,
+  n_simulations = n_sims_demo,
+  n_cores = n_cores_demo,
+  brms_args = list(
+    algorithm = "meanfield",
+    importance_resampling = TRUE,
+    iter = 1e4,
+    output_samples = 1e3
+  )
+)
+
+multiarm_comparison <- rbind(multiarm_comparison, data.frame(
+  Comparison = "Treatment B vs Control",
+  Power_Success = power_B_vs_C$power_success,
+  Power_Futility = power_B_vs_C$power_futility,
+  Mean_Effect = power_B_vs_C$mean_effect_estimate
+))
+
+# Treatment A vs Treatment B (head-to-head)
+power_A_vs_B <- power_analysis_ancova(
+  n_control = 60,
+  n_treatment = 60,
+  effect_size = 0.2, # Difference between treatments
+  baseline_effect = 0.3,
+  outcome_type = "continuous",
+  threshold_success = 0.15, # Smaller threshold for head-to-head
+  threshold_futility = 0.05,
+  n_simulations = n_sims_demo,
+  n_cores = n_cores_demo,
+  brms_args = list(
+    algorithm = "meanfield",
+    importance_resampling = TRUE,
+    iter = 1e4,
+    output_samples = 1e3
+  )
+)
+
+multiarm_comparison <- rbind(multiarm_comparison, data.frame(
+  Comparison = "Treatment A vs Treatment B",
+  Power_Success = power_A_vs_B$power_success,
+  Power_Futility = power_A_vs_B$power_futility,
+  Mean_Effect = power_A_vs_B$mean_effect_estimate
+))
+
+print(multiarm_comparison)
+```
+
+
+# Adaptive and Sequential Designs
+
+## Sequential Monitoring Framework
+
+Planning for interim analyses with Bayesian monitoring:
+
+```{r sequential_monitoring}
+# Simulate sequential monitoring at different interim points
+sequential_analysis <- function(interim_fractions = c(0.5, 0.75, 1.0)) {
+  max_n <- 100
+  results <- data.frame(
+    Interim_Fraction = numeric(),
+    N_Per_Group = numeric(),
+    Power_Success = numeric(),
+    Power_Futility = numeric(),
+    Stop_For_Efficacy = logical(),
+    Stop_For_Futility = logical(),
+    stringsAsFactors = FALSE
+  )
+  
+  for (fraction in interim_fractions) {
+    interim_n <- ceiling(max_n * fraction)
+    
+    power_result <- power_analysis_ancova(
+      n_control = interim_n,
+      n_treatment = interim_n,
+      effect_size = 0.5,
+      baseline_effect = 0.3,
+      outcome_type = "continuous",
+      threshold_success = 0.3,
+      threshold_futility = 0.1,
+      p_sig_success = 0.95,
+      p_sig_futility = 0.05,
+      n_simulations = n_sims_demo,
+      n_cores = n_cores_demo,
+      brms_args = list(
+        algorithm = "meanfield",
+        importance_resampling = TRUE,
+        iter = 1e4,
+        output_samples = 1e3
+      )
+    )
+    
+    # Decision rules for stopping
+    stop_efficacy <- power_result$power_success > 0.95
+    stop_futility <- power_result$power_futility > 0.95
+    
+    results <- rbind(results, data.frame(
+      Interim_Fraction = fraction,
+      N_Per_Group = interim_n,
+      Power_Success = power_result$power_success,
+      Power_Futility = power_result$power_futility,
+      Stop_For_Efficacy = stop_efficacy,
+      Stop_For_Futility = stop_futility
+    ))
+  }
+  
+  return(results)
+}
+
+# Run sequential analysis
+sequential_results <- sequential_analysis(c(0.4, 0.6, 0.8, 1.0))
+print(sequential_results)
+```
+
+# Cost-Effectiveness Integration
+
+## Power per Cost Analysis
+
+Incorporating cost considerations into power analysis:
+
+```{r cost_effectiveness}
+# Function to calculate cost-effectiveness
+calculate_cost_effectiveness <- function(sample_sizes, cost_per_participant = 1000, fixed_costs = 50000) {
+  cost_results <- data.frame(
+    Sample_Size = numeric(),
+    Total_Cost = numeric(),
+    Power_Success = numeric(),
+    Cost_Per_Power_Unit = numeric(),
+    stringsAsFactors = FALSE
+  )
+  
+  for (n in sample_sizes) {
+    power_result <- power_analysis_ancova(
+      n_control = n,
+      n_treatment = n,
+      effect_size = 0.5,
+      baseline_effect = 0.3,
+      outcome_type = "continuous",
+      threshold_success = 0.3,
+      threshold_futility = 0.1,
+      n_simulations = n_sims_demo,
+      n_cores = n_cores_demo,
+      brms_args = list(
+        algorithm = "meanfield",
+        importance_resampling = TRUE,
+        iter = 1e4,
+        output_samples = 1e3
+      )
+    )
+    
+    total_cost <- fixed_costs + (2 * n * cost_per_participant)
+    cost_per_power <- total_cost / power_result$power_success
+    
+    cost_results <- rbind(cost_results, data.frame(
+      Sample_Size = n,
+      Total_Cost = total_cost,
+      Power_Success = power_result$power_success,
+      Cost_Per_Power_Unit = cost_per_power
+    ))
+  }
+  
+  return(cost_results)
+}
+
+# Analyze cost-effectiveness
+cost_analysis <- calculate_cost_effectiveness(
+  sample_sizes = c(60, 80, 100, 120),
+  cost_per_participant = 1000,
+  fixed_costs = 50000
+)
+
+print(cost_analysis)
+
+# Find most cost-effective design
+optimal_design <- cost_analysis[which.min(cost_analysis$Cost_Per_Power_Unit), ]
+cat("Most cost-effective design:\n")
+cat("Sample size per group:", optimal_design$Sample_Size, "\n")
+cat("Total cost: $", format(optimal_design$Total_Cost, big.mark = ","), "\n")
+cat("Power:", round(optimal_design$Power_Success, 3), "\n")
+cat("Cost per power unit: $", format(round(optimal_design$Cost_Per_Power_Unit), big.mark = ","), "\n")
+```
+
+# Session Information
+
+```{r session_info}
+sessionInfo()
+```

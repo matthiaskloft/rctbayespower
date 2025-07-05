@@ -28,8 +28,8 @@
 #' @return A list containing power analysis results
 #' @export
 #' @importFrom parallel makeCluster stopCluster clusterExport clusterEvalQ parLapply detectCores
-#' @importFrom stats median sd
-#' @importFrom utils modifyList
+#' @importFrom stats median sd setNames
+#' @importFrom utils modifyList capture.output
 #' @importFrom rlang .data
 #'
 #' @examples
@@ -51,7 +51,7 @@
 #' priors_true <- c(
 #'   brms::set_prior("constant(.2)", class = "b", coef = "baseline"),
 #'   brms::set_prior("constant(.5)", class = "b", coef = "grouptreat"),
-#'   brms::set_prior("constant(0)", class = "Intercept"),
+#'   brms::set_prior("constant(0)", class = "b", coef = "Intercept"),
 #'   brms::set_prior("constant(1)", class = "sigma")
 #' )
 #' priors_est <- c(
@@ -851,6 +851,175 @@ summary.rctbayespower <- function(object, ...) {
   invisible(object)
 }
 
+#' Plot Power Analysis Results
+#'
+#' Create visualizations for single power analysis results by converting them to
+#' a grid format and using the existing grid plotting functionality.
+#'
+#' @param x An object of class 'rctbayespower' returned by power_analysis()
+#' @param type Type of plot to create. For single power analysis results, only
+#'   "comparison" is supported, showing power vs posterior probabilities
+#' @param metric Which power metric to display:
+#'   \itemize{
+#'     \item "success" - Success power and probability
+#'     \item "futility" - Futility power and probability  
+#'     \item "both" - Both success and futility power and probabilities (default)
+#'   }
+#' @param ... Additional arguments (currently unused)
+#'
+#' @return A ggplot2 object showing power analysis results
+#' @export
+#' @importFrom rlang .data
+#'
+#' @examples
+#' \donttest{
+#' # Create a mock power analysis result object
+#' power_result <- structure(list(
+#'   study_parameters = list(
+#'     n_control = 100,
+#'     n_treatment = 100,
+#'     target_param = "grouptreat",
+#'     threshold_success = 0.2,
+#'     threshold_futility = 0,
+#'     p_sig_success = 0.975,
+#'     p_sig_futility = 0.5,
+#'     target_power_success = 0.8,
+#'     target_power_futility = 0.2
+#'   ),
+#'   power_success = 0.85,
+#'   power_futility = 0.25,
+#'   mean_prob_success = 0.82,
+#'   mean_prob_futility = 0.23,
+#'   convergence_rate = 0.95,
+#'   n_simulations = 1000,
+#'   successful_fits = 950,
+#'   median_effect_estimate = 0.48,
+#'   sd_median_effect_estimate = 0.12
+#' ), class = "rctbayespower")
+#' 
+#' # Create plot showing both success and futility metrics
+#' plot(power_result)
+#' 
+#' # Show only success metrics
+#' plot(power_result, metric = "success")
+#' 
+#' # Show only futility metrics  
+#' plot(power_result, metric = "futility")
+#' }
+plot.rctbayespower <- function(x, type = "comparison", metric = "both", ...) {
+  if (!requireNamespace("ggplot2", quietly = TRUE)) {
+    stop("Package 'ggplot2' is required for plotting.")
+  }
+  
+  # Validate type parameter - only comparison makes sense for single analysis
+  if (type != "comparison") {
+    warning("Only type='comparison' is supported for single power analysis results. Using 'comparison'.")
+    type <- "comparison"
+  }
+  
+  # Convert single power analysis result to grid format for plotting
+  mock_grid <- list(
+    power_surface = data.frame(
+      n_total = x$study_parameters$n_control + x$study_parameters$n_treatment,
+      effect_size = NA, # Single point, effect size not varied
+      power_success = x$power_success,
+      power_futility = x$power_futility,
+      mean_prob_success = x$mean_prob_success,
+      mean_prob_futility = x$mean_prob_futility,
+      convergence_rate = x$convergence_rate
+    ),
+    analysis_type = "single_point", # Custom type for single analysis
+    target_power_success = ifelse(is.null(x$study_parameters$target_power_success), 0.8, x$study_parameters$target_power_success),
+    target_power_futility = ifelse(is.null(x$study_parameters$target_power_futility), 0.2, x$study_parameters$target_power_futility),
+    sample_sizes = x$study_parameters$n_control + x$study_parameters$n_treatment,
+    threshold_success = x$study_parameters$threshold_success,
+    threshold_futility = x$study_parameters$threshold_futility
+  )
+  
+  # Create the plot using ggplot2 directly since we have a single point
+  plot_data <- mock_grid$power_surface
+  
+  # Create base plot
+  p <- ggplot2::ggplot(plot_data, ggplot2::aes(x = 1)) # Dummy x-axis for single point
+  
+  # Add metrics based on parameter
+  colors <- c(
+    "Success Power" = "steelblue", "Success Probability" = "lightblue",
+    "Futility Power" = "darkred", "Futility Probability" = "pink"
+  )
+  
+  y_values <- c()
+  y_labels <- c()
+  point_colors <- c()
+  
+  if (metric == "success" || metric == "both") {
+    y_values <- c(y_values, plot_data$power_success, plot_data$mean_prob_success)
+    y_labels <- c(y_labels, "Success Power", "Success Probability")
+    point_colors <- c(point_colors, colors["Success Power"], colors["Success Probability"])
+  }
+  
+  if (metric == "futility" || metric == "both") {
+    y_values <- c(y_values, plot_data$power_futility, plot_data$mean_prob_futility)
+    y_labels <- c(y_labels, "Futility Power", "Futility Probability")
+    point_colors <- c(point_colors, colors["Futility Power"], colors["Futility Probability"])
+  }
+  
+  # Create data frame for plotting
+  point_data <- data.frame(
+    x = rep(1, length(y_values)),
+    y = y_values,
+    metric = factor(y_labels, levels = y_labels),
+    color = point_colors
+  )
+  
+  # Create the plot
+  p <- ggplot2::ggplot(point_data, ggplot2::aes(x = .data$x, y = .data$y, color = .data$metric)) +
+    ggplot2::geom_point(size = 8, alpha = 0.8) +
+    ggplot2::scale_color_manual(values = setNames(point_colors, y_labels)) +
+    ggplot2::scale_y_continuous(limits = c(0, 1), labels = scales::percent_format()) +
+    ggplot2::scale_x_continuous(breaks = NULL) +
+    ggplot2::labs(
+      title = "Bayesian Power Analysis Results",
+      subtitle = paste(
+        "Sample size:", mock_grid$sample_sizes,
+        "| Simulations:", x$n_simulations,
+        "| Convergence:", paste0(round(x$convergence_rate * 100, 1), "%")
+      ),
+      x = "",
+      y = "Power / Posterior Probability",
+      color = "Metric",
+      caption = "Point size represents single power analysis result"
+    ) +
+    ggplot2::theme_minimal() +
+    ggplot2::theme(
+      plot.title = ggplot2::element_text(size = 14, face = "bold"),
+      plot.subtitle = ggplot2::element_text(size = 12),
+      axis.title = ggplot2::element_text(size = 12),
+      axis.text.x = ggplot2::element_blank(),
+      axis.ticks.x = ggplot2::element_blank(),
+      legend.position = "bottom",
+      panel.grid.major.x = ggplot2::element_blank(),
+      panel.grid.minor.x = ggplot2::element_blank()
+    )
+  
+  # Add target power reference lines if meaningful
+  if (metric == "success" || metric == "both") {
+    p <- p + ggplot2::geom_hline(
+      yintercept = mock_grid$target_power_success,
+      linetype = "dashed", color = "steelblue", alpha = 0.7
+    )
+  }
+  
+  if (metric == "futility" || metric == "both") {
+    p <- p + ggplot2::geom_hline(
+      yintercept = mock_grid$target_power_futility,
+      linetype = "dashed", color = "darkred", alpha = 0.7
+    )
+  }
+  
+  return(p)
+}
+
 #' Validate Power Analysis Design
 #'
 #' Helper function to validate the design components before running a full power analysis.
@@ -1034,9 +1203,15 @@ validate_power_design <- function(n_control,
       )
       cat("OK: Design model with true parameters fitted successfully\n")
 
-      # Show true parameter values
-      cat("  True parameter values:\n \n")
-      print(summary(brms_design_true))
+      # Show true parameter values safely
+      cat("  True parameter values:\n")
+      tryCatch({
+        summary_output <- capture.output(print(summary(brms_design_true)))
+        cat(paste(summary_output, collapse = "\n"))
+        cat("\n")
+      }, error = function(e) {
+        cat("  (Summary output suppressed due to output connection issues)\n")
+      })
     },
     error = function(e) {
       stop("Design model with true parameters failed: ", as.character(e))

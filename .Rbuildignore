@@ -20,3 +20,6 @@
 ^data-raw$
 ^r_package_development_guidelines\.md$
 ^\.claude$
+^_pkgdown\.yml$
+^docs$
+^pkgdown$

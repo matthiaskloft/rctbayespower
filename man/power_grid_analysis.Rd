@@ -91,7 +91,7 @@ outcome_type, baseline_effect
 # Basic analysis across sample sizes and effect sizes
 grid_result <- power_grid_analysis(
   target_power_success = 0.8,
-  sample_sizes = c(40, 80),
+  sample_sizes = c(100, 200),
   effect_sizes = c(0.4, 0.8),
   threshold_success = 0.2,
   threshold_futility = 0,

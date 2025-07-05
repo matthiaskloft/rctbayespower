@@ -41,51 +41,78 @@
 #' @examples
 #' \donttest{
 #' # Sample size analysis plot
-#' grid_result <- power_grid_analysis(
-#'   sample_sizes = c(100, 200),
-#'   effect_sizes = 0.5,
+#' grid_result <- list(
+#'   target_power_success = 0.9,
+#'   target_power_futility = 0.95,
 #'   threshold_success = 0.2,
 #'   threshold_futility = 0,
-#'   power_analysis_fn = "power_analysis_ancova",
-#'   outcome_type = "continuous",
-#'   baseline_effect = 0.2,
-#'   n_simulations = 1,
-#'   brms_args = list(algorithm = "meanfield"), # fast algorithm for testing
-#'   n_cores = 1,
-#'   progress_updates = 5
+#'   sample_sizes = c(100, 200),
+#'   effect_sizes = 0.5,
+#'   design_prior = NULL,
+#'   analysis_type = "sample_only",
+#'   power_surface = data.frame(
+#'     n_total = c(100, 200),
+#'     effect_size = c(0.5, 0.5),
+#'     power_success = c(0.65, 0.85),
+#'     power_futility = c(0.20, 0.15),
+#'     mean_prob_success = c(0.72, 0.88),
+#'     mean_prob_futility = c(0.25, 0.18)
+#'   ),
+#'   integrated_power = NULL,
+#'   optimal_combinations = data.frame(),
+#'   detailed_results = list()
 #' )
+#' class(grid_result) <- "rctbayespower_grid"
 #' plot(grid_result) # Auto-detects power curve
 #'
 #' # Effect size analysis plot
-#' grid_result <- power_grid_analysis(
-#'   sample_sizes = 200,
-#'   effect_sizes = c(0.4, 0.8),
+#' grid_result <- list(
+#'   target_power_success = 0.9,
+#'   target_power_futility = 0.95,
 #'   threshold_success = 0.2,
 #'   threshold_futility = 0,
-#'   power_analysis_fn = "power_analysis_ancova",
-#'   outcome_type = "continuous",
-#'   baseline_effect = 0.2,
-#'   n_simulations = 1,
-#'   brms_args = list(algorithm = "meanfield"), # fast algorithm for testing
-#'   n_cores = 1,
-#'   progress_updates = 5
+#'   sample_sizes = 200,
+#'   effect_sizes = c(0.4, 0.8),
+#'   design_prior = NULL,
+#'   analysis_type = "effect_only",
+#'   power_surface = data.frame(
+#'     n_total = c(200, 200),
+#'     effect_size = c(0.4, 0.8),
+#'     power_success = c(0.75, 0.92),
+#'     power_futility = c(0.30, 0.08),
+#'     mean_prob_success = c(0.78, 0.94),
+#'     mean_prob_futility = c(0.32, 0.10)
+#'   ),
+#'   integrated_power = NULL,
+#'   optimal_combinations = data.frame(),
+#'   detailed_results = list()
 #' )
+#' class(grid_result) <- "rctbayespower_grid"
 #' plot(grid_result) # Shows both success and futility, both power and probabilities
 #'
 #' # Full grid heatmap
-#' grid_result <- power_grid_analysis(
-#'   sample_sizes = c(100, 200),
-#'   effect_sizes = c(0.4, 0.8),
+#' grid_result <- list(
+#'   target_power_success = 0.9,
+#'   target_power_futility = 0.95,
 #'   threshold_success = 0.2,
 #'   threshold_futility = 0,
-#'   power_analysis_fn = "power_analysis_ancova",
-#'   outcome_type = "continuous",
-#'   baseline_effect = 0.2,
-#'   n_simulations = 1,
-#'   brms_args = list(algorithm = "meanfield"), # fast algorithm for testing
-#'   n_cores = 1,
-#'   progress_updates = 5
+#'   sample_sizes = c(100, 200),
+#'   effect_sizes = c(0.4, 0.8),
+#'   design_prior = NULL,
+#'   analysis_type = "both",
+#'   power_surface = data.frame(
+#'     n_total = c(100, 200, 100, 200),
+#'     effect_size = c(0.4, 0.4, 0.8, 0.8),
+#'     power_success = c(0.60, 0.75, 0.80, 0.92),
+#'     power_futility = c(0.35, 0.30, 0.15, 0.08),
+#'     mean_prob_success = c(0.65, 0.78, 0.82, 0.94),
+#'     mean_prob_futility = c(0.38, 0.32, 0.18, 0.10)
+#'   ),
+#'   integrated_power = NULL,
+#'   optimal_combinations = data.frame(),
+#'   detailed_results = list()
 #' )
+#' class(grid_result) <- "rctbayespower_grid"
 #' plot(grid_result, type = "heatmap")
 #'
 #' # Power curves faceted by effect size (when both vary)

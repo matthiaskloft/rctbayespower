@@ -898,32 +898,32 @@ power_grid_analysis <- function(target_power_success = 0.9,
   # Create power surface data frame
   power_surface <- do.call(rbind, lapply(results_matrix, function(x) {
     data.frame(
-      n_total = x$n_total,
-      n_control = x$n_control,
-      n_treatment = x$n_treatment,
-      effect_size = x$effect_size,
+      n_total = if (is.null(x$n_total)) NA_integer_ else x$n_total,
+      n_control = if (is.null(x$n_control)) NA_integer_ else x$n_control,
+      n_treatment = if (is.null(x$n_treatment)) NA_integer_ else x$n_treatment,
+      effect_size = if (is.null(x$effect_size)) NA_real_ else x$effect_size,
       power_success = if (is.null(x$power_success)) {
-        NA
+        NA_real_
       } else {
         x$power_success
       },
       power_futility = if (is.null(x$power_futility)) {
-        NA
+        NA_real_
       } else {
         x$power_futility
       },
       mean_prob_success = if (is.null(x$mean_prob_success)) {
-        NA
+        NA_real_
       } else {
         x$mean_prob_success
       },
       mean_prob_futility = if (is.null(x$mean_prob_futility)) {
-        NA
+        NA_real_
       } else {
         x$mean_prob_futility
       },
       convergence_rate = if (is.null(x$convergence_rate)) {
-        NA
+        NA_real_
       } else {
         x$convergence_rate
       },

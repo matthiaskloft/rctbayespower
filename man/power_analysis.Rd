@@ -96,7 +96,7 @@ model_formula_est <- brms::bf(outcome ~ baseline + group)
 priors_true <- c(
   brms::set_prior("constant(.2)", class = "b", coef = "baseline"),
   brms::set_prior("constant(.5)", class = "b", coef = "grouptreat"),
-  brms::set_prior("constant(0)", class = "Intercept"),
+  brms::set_prior("constant(0)", class = "b", coef = "Intercept"),
   brms::set_prior("constant(1)", class = "sigma")
 )
 priors_est <- c(
@@ -108,8 +108,8 @@ priors_est <- c(
 
 # Run power analysis with optimized brms_args
 power_result <- power_analysis(
-  n_control = 50, 
-  n_treatment = 50,
+  n_control = 100, 
+  n_treatment = 100,
   simulate_data_fn = simulate_data,
   model_formula_true_params = model_formula_true,
   model_formula_estimation = model_formula_est,
@@ -150,8 +150,8 @@ power_result_custom <- power_analysis(
 
 # Alternative: Use pre-fitted models (e.g., from validate_power_design)
 validation <- validate_power_design(
-  n_control = 50, 
-  n_treatment = 50,
+  n_control = 100, 
+  n_treatment = 100,
   simulate_data_fn = simulate_data,
   model_formula_true_params = model_formula_true,
   model_formula_estimation = model_formula_est,
@@ -162,8 +162,8 @@ validation <- validate_power_design(
 )
 
 power_result_prefitted <- power_analysis(
-  n_control = 50, 
-  n_treatment = 50,
+  n_control = 100, 
+  n_treatment = 100,
   simulate_data_fn = simulate_data,
   target_param = "grouptreat",
   threshold_success = 0.2,

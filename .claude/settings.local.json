@@ -9,7 +9,8 @@
       "Bash(grep:*)",
       "Bash(_R_CHECK_FORCE_SUGGESTS_=false R CMD check . --no-tests --no-vignettes --no-manual)",
       "Bash(mkdir:*)",
-      "Bash(_R_CHECK_FORCE_SUGGESTS_=false R CMD check . --no-manual --no-tests)"
+      "Bash(_R_CHECK_FORCE_SUGGESTS_=false R CMD check . --no-manual --no-tests)",
+      "Bash(_R_CHECK_FORCE_SUGGESTS_=false R CMD check --no-examples --no-tests --no-vignettes --no-install .)"
     ],
     "deny": []
   }
