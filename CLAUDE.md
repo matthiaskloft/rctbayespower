@@ -284,3 +284,7 @@ The `workflow_template.R` file provides a complete example workflow for custom p
 - Includes examples for checking default priors and setting custom priors
 - Shows model caching and performance optimization techniques
 - Serves as a template for researchers developing their own power analysis pipelines
+
+## Repository Memories and Notes
+
+- Only edit the README.Rmd file, the README.md file will get build from it later.
