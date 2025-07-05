@@ -23,8 +23,8 @@ knitr::opts_chunk$set(
 )
 
 # Demo settings
-n_sims_demo <- 6 # Minimal simulations for fast demo builds
-n_cores_demo <- 1 # Single core for vignette building
+n_cores <- parallel::detectCores() - 1
+n_sims <- n_cores * 10
 ```
 
 # Real-World Case Studies
@@ -77,8 +77,8 @@ cardio_power <- power_analysis_ancova(
   threshold_futility = 0.1,
   p_sig_success = 0.95,
   p_sig_futility = 0.5,
-  n_simulations = n_sims_demo,
-  n_cores = n_cores_demo,
+  n_simulations = n_sims,
+  n_cores = n_cores,
   brms_args = list(
     algorithm = "meanfield",
     importance_resampling = TRUE,
@@ -106,8 +106,8 @@ cardio_sample_size <- power_grid_analysis(
   threshold_futility = 0.1,
   p_sig_success = 0.95,
   p_sig_futility = 0.5,
-  n_simulations = n_sims_demo,
-  n_cores = n_cores_demo
+  n_simulations = n_sims,
+  n_cores = n_cores
 )
 
 print(cardio_sample_size)
@@ -133,8 +133,8 @@ cardio_informed <- power_grid_analysis(
   threshold_futility = 0.1,
   p_sig_success = 0.95,
   p_sig_futility = 0.5,
-  n_simulations = n_sims_demo,
-  n_cores = n_cores_demo
+  n_simulations = n_sims,
+  n_cores = n_cores
 )
 
 cat("Integrated power with informed prior:", round(cardio_informed$integrated_power_success, 3), "\n")
@@ -187,8 +187,8 @@ depression_power <- power_analysis_ancova(
   threshold_futility = 0.1,
   p_sig_success = 0.95,
   p_sig_futility = 0.5,
-  n_simulations = n_sims_demo,
-  n_cores = n_cores_demo,
+  n_simulations = n_sims,
+  n_cores = n_cores,
   brms_args = list(
     algorithm = "meanfield",
     importance_resampling = TRUE,
@@ -208,8 +208,8 @@ depression_power_weak <- power_analysis_ancova(
   threshold_futility = 0.1,
   p_sig_success = 0.95,
   p_sig_futility = 0.5,
-  n_simulations = n_sims_demo,
-  n_cores = n_cores_demo,
+  n_simulations = n_sims,
+  n_cores = n_cores,
   brms_args = list(
     algorithm = "meanfield",
     importance_resampling = TRUE,
@@ -237,8 +237,8 @@ depression_curve <- power_grid_analysis(
   threshold_futility = 0.1,
   p_sig_success = 0.95,
   p_sig_futility = 0.5,
-  n_simulations = n_sims_demo,
-  n_cores = n_cores_demo
+  n_simulations = n_sims,
+  n_cores = n_cores
 )
 
 print(depression_curve)
@@ -292,8 +292,8 @@ rare_disease_power <- power_analysis_ancova(
   threshold_futility = 0.2,
   p_sig_success = 0.9, # Lower probability threshold
   p_sig_futility = 0.9,
-  n_simulations = n_sims_demo,
-  n_cores = n_cores_demo,
+  n_simulations = n_sims,
+  n_cores = n_cores,
   brms_args = list(
     algorithm = "meanfield",
     importance_resampling = TRUE,
@@ -320,8 +320,8 @@ rare_disease_sample_sizes <- power_grid_analysis(
   threshold_futility = 0.2,
   p_sig_success = 0.9,
   p_sig_futility = 0.9,
-  n_simulations = n_sims_demo,
-  n_cores = n_cores_demo,
+  n_simulations = n_sims,
+  n_cores = n_cores,
   brms_args = list(
     algorithm = "meanfield",
     importance_resampling = TRUE,
@@ -381,8 +381,8 @@ public_health_power <- power_analysis_ancova(
   threshold_futility = 0.05,
   p_sig_success = 0.95,
   p_sig_futility = 0.5,
-  n_simulations = n_sims_demo,
-  n_cores = n_cores_demo,
+  n_simulations = n_sims,
+  n_cores = n_cores,
   brms_args = list(
     algorithm = "meanfield",
     importance_resampling = TRUE,
@@ -417,8 +417,8 @@ public_health_cost_analysis <- function(sample_sizes, cost_per_participant = 50,
       baseline_prob = baseline_rate,
       threshold_success = abs(public_health_log_or) * 0.5,
       threshold_futility = 0.05,
-      n_simulations = n_sims_demo,
-      n_cores = n_cores_demo,
+      n_simulations = n_sims,
+      n_cores = n_cores,
       brms_args = list(
         algorithm = "meanfield",
         importance_resampling = TRUE,
@@ -507,8 +507,8 @@ for (i in 2:length(doses)) { # Skip placebo (dose 1)
     threshold_futility = 0.1,
     p_sig_success = 0.95,
     p_sig_futility = 0.5,
-    n_simulations = n_sims_demo,
-    n_cores = n_cores_demo,
+    n_simulations = n_sims,
+    n_cores = n_cores,
     brms_args = list(
       algorithm = "meanfield",
       importance_resampling = TRUE,
@@ -541,8 +541,8 @@ dose_grid <- power_grid_analysis(
   threshold_success = 0.25,
   threshold_futility = 0.1,
   target_power_success = 0.8,
-  n_simulations = n_sims_demo,
-  n_cores = n_cores_demo
+  n_simulations = n_sims,
+  n_cores = n_cores
 )
 
 print(dose_grid)
@@ -587,8 +587,8 @@ ni_power <- power_analysis_ancova(
   threshold_futility = ni_margin, # Different interpretation for NI
   p_sig_success = 0.975, # One-sided test at 2.5% level
   p_sig_futility = 0.025,
-  n_simulations = n_sims_demo,
-  n_cores = n_cores_demo,
+  n_simulations = n_sims,
+  n_cores = n_cores,
   brms_args = list(
     algorithm = "meanfield",
     importance_resampling = TRUE,
@@ -615,8 +615,8 @@ ni_sample_sizes <- power_grid_analysis(
   threshold_futility = ni_margin,
   p_sig_success = 0.975,
   p_sig_futility = 0.025,
-  n_simulations = n_sims_demo,
-  n_cores = n_cores_demo
+  n_simulations = n_sims,
+  n_cores = n_cores
 )
 
 print(ni_sample_sizes)

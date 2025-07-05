@@ -1,4 +1,38 @@
-url: ~
+url: https://matthiaskloft.github.io/rctbayespower/
+pkgdown_sha: ~
 template:
   bootstrap: 5
+
+reference:
+- title: "Core Power Analysis Functions"
+  desc: "Main functions for conducting Bayesian power analysis"
+  contents:
+  - power_analysis
+  - power_analysis_ancova
+  - power_grid_analysis
+
+- title: "Visualization Functions"
+  desc: "Functions for plotting and visualizing power analysis results"
+  contents:
+  - plot.rctbayespower
+  - plot.rctbayespower_grid
+
+- title: "Validation and Utilities"
+  desc: "Helper functions for validating designs and settings"
+  contents:
+  - validate_power_design
+  - validate_weighting_function
+
+- title: "Output Methods"
+  desc: "Methods for printing and summarizing results"
+  contents:
+  - print.rctbayespower
+  - print.rctbayespower_grid
+  - summary.rctbayespower
+  - summary.rctbayespower_grid
+
+- title: "Package Documentation"
+  desc: "General package information"
+  contents:
+  - rctbayespower-package
 

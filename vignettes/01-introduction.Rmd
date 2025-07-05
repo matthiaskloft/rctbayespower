@@ -22,8 +22,8 @@ knitr::opts_chunk$set(
 )
 
 # Set up for examples (reduce simulation counts for faster vignette building)
-n_cores_demo <- parallel::detectCores() - 1
-n_sims_demo <- n_cores_demo * 20
+n_cores <- parallel::detectCores() - 1
+n_sims <- n_cores * 10
 ```
 
 # Introduction
@@ -76,8 +76,8 @@ power_result <- power_analysis_ancova(
   threshold_futility = 0.1, # Futility threshold
   p_sig_success = 0.95, # Probability threshold for success
   p_sig_futility = 0.5, # Probability threshold for futility
-  n_simulations = n_sims_demo,
-  n_cores = n_cores_demo,
+  n_simulations = n_sims,
+  n_cores = n_cores,
   brms_args = list(
     algorithm = "meanfield", # Fast algorithm for demo
     importance_resampling = TRUE,
@@ -116,8 +116,8 @@ sample_size_result <- power_grid_analysis(
   threshold_futility = 0.1,
   p_sig_success = 0.95,
   p_sig_futility = 0.5,
-  n_simulations = n_sims_demo,
-  n_cores = n_cores_demo
+  n_simulations = n_sims,
+  n_cores = n_cores
 )
 
 print(sample_size_result)
@@ -145,8 +145,8 @@ effect_size_result <- power_grid_analysis(
   threshold_futility = 0.1,
   p_sig_success = 0.95,
   p_sig_futility = 0.5,
-  n_simulations = n_sims_demo,
-  n_cores = n_cores_demo
+  n_simulations = n_sims,
+  n_cores = n_cores
 )
 
 print(effect_size_result)
@@ -174,8 +174,8 @@ grid_result <- power_grid_analysis(
   threshold_futility = 0.1,
   p_sig_success = 0.95,
   p_sig_futility = 0.5,
-  n_simulations = n_sims_demo,
-  n_cores = n_cores_demo
+  n_simulations = n_sims,
+  n_cores = n_cores
 )
 
 print(grid_result)
@@ -271,8 +271,8 @@ custom_power <- power_analysis(
   threshold_futility = 0.1,
   p_sig_success = 0.95,
   p_sig_futility = 0.5,
-  n_simulations = n_sims_demo,
-  n_cores = n_cores_demo,
+  n_simulations = n_sims,
+  n_cores = n_cores,
   brms_args = list(
     algorithm = "meanfield",
     importance_resampling = TRUE,

@@ -23,8 +23,8 @@ knitr::opts_chunk$set(
 )
 
 # Fast performance testing settings
-n_sims_perf <- 3 # Minimal simulations for performance testing
-n_cores_perf <- 1 # Single core for consistent timing
+n_cores <- parallel::detectCores() - 1
+n_sims <- n_cores * 10
 ```
 
 # Algorithm Performance and Computational Considerations
@@ -78,7 +78,7 @@ performance_results <- data.frame(
   stringsAsFactors = FALSE
 )
 
-algorithms <- c("meanfield", "fullrank")
+algorithms <- c("meanfield", "fullrank", "sampling")
 
 for (alg in algorithms) {
   cat("Testing algorithm:", alg, "\n")
@@ -93,8 +93,8 @@ for (alg in algorithms) {
     outcome_type = "continuous",
     threshold_success = 0.3,
     threshold_futility = 0.1,
-    n_simulations = n_sims_perf,
-    n_cores = n_cores_perf,
+    n_simulations = n_sims,
+    n_cores = n_cores,
     brms_args = list(
       algorithm = alg,
       importance_resampling = TRUE,
@@ -135,8 +135,8 @@ system.time({
     baseline_effect = 0.3,
     threshold_success = 0.3,
     threshold_futility = 0.1,
-    n_simulations = n_sims_perf,
-    n_cores = n_cores_perf,
+    n_simulations = n_sims,
+    n_cores = n_cores,
     brms_args = list(
       algorithm = "meanfield",
       importance_resampling = TRUE,
@@ -200,7 +200,7 @@ exploration <- power_grid_analysis(
   threshold_success = 0.3,
   threshold_futility = 0.1,
   n_simulations = 2, # Very fast
-  n_cores = n_cores_perf,
+  n_cores = n_cores,
   brms_args = list(algorithm = "meanfield", importance_resampling = TRUE, iter = 1e4, output_samples = 1e3)
 )
 
@@ -220,8 +220,8 @@ focused <- power_analysis_ancova(
   outcome_type = "continuous",
   threshold_success = 0.3,
   threshold_futility = 0.1,
-  n_simulations = n_sims_perf,
-  n_cores = n_cores_perf,
+  n_simulations = n_sims,
+  n_cores = n_cores,
   brms_args = list(algorithm = "fullrank", importance_resampling = TRUE, iter = 1e4, output_samples = 1e3)
 )
 

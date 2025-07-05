@@ -23,8 +23,8 @@ knitr::opts_chunk$set(
 )
 
 # Reduced simulation counts for vignette building
-n_sims_demo <- 8 # Minimal simulations for fast demo builds
-n_cores_demo <- 1 # Single core for vignette building
+n_cores <- parallel::detectCores() - 1
+n_sims <- n_cores * 10
 ```
 
 # Advanced Techniques in Bayesian RCT Power Analysis
@@ -53,8 +53,8 @@ power_unequal <- power_analysis_ancova(
   outcome_type = "continuous",
   threshold_success = 0.3,
   threshold_futility = 0.1,
-  n_simulations = n_sims_demo,
-  n_cores = n_cores_demo,
+  n_simulations = n_sims,
+  n_cores = n_cores,
   brms_args = list(
     algorithm = "meanfield",
     importance_resampling = TRUE,
@@ -72,8 +72,8 @@ power_equal <- power_analysis_ancova(
   outcome_type = "continuous",
   threshold_success = 0.3,
   threshold_futility = 0.1,
-  n_simulations = n_sims_demo,
-  n_cores = n_cores_demo,
+  n_simulations = n_sims,
+  n_cores = n_cores,
   brms_args = list(
     algorithm = "meanfield",
     importance_resampling = TRUE,
@@ -110,8 +110,8 @@ power_A_vs_C <- power_analysis_ancova(
   outcome_type = "continuous",
   threshold_success = 0.3,
   threshold_futility = 0.1,
-  n_simulations = n_sims_demo,
-  n_cores = n_cores_demo,
+  n_simulations = n_sims,
+  n_cores = n_cores,
   brms_args = list(
     algorithm = "meanfield",
     importance_resampling = TRUE,
@@ -136,8 +136,8 @@ power_B_vs_C <- power_analysis_ancova(
   outcome_type = "continuous",
   threshold_success = 0.3,
   threshold_futility = 0.1,
-  n_simulations = n_sims_demo,
-  n_cores = n_cores_demo,
+  n_simulations = n_sims,
+  n_cores = n_cores,
   brms_args = list(
     algorithm = "meanfield",
     importance_resampling = TRUE,
@@ -162,8 +162,8 @@ power_A_vs_B <- power_analysis_ancova(
   outcome_type = "continuous",
   threshold_success = 0.15, # Smaller threshold for head-to-head
   threshold_futility = 0.05,
-  n_simulations = n_sims_demo,
-  n_cores = n_cores_demo,
+  n_simulations = n_sims,
+  n_cores = n_cores,
   brms_args = list(
     algorithm = "meanfield",
     importance_resampling = TRUE,
@@ -216,8 +216,8 @@ sequential_analysis <- function(interim_fractions = c(0.5, 0.75, 1.0)) {
       threshold_futility = 0.1,
       p_sig_success = 0.95,
       p_sig_futility = 0.05,
-      n_simulations = n_sims_demo,
-      n_cores = n_cores_demo,
+      n_simulations = n_sims,
+      n_cores = n_cores,
       brms_args = list(
         algorithm = "meanfield",
         importance_resampling = TRUE,
@@ -274,8 +274,8 @@ calculate_cost_effectiveness <- function(sample_sizes, cost_per_participant = 10
       outcome_type = "continuous",
       threshold_success = 0.3,
       threshold_futility = 0.1,
-      n_simulations = n_sims_demo,
-      n_cores = n_cores_demo,
+      n_simulations = n_sims,
+      n_cores = n_cores,
       brms_args = list(
         algorithm = "meanfield",
         importance_resampling = TRUE,

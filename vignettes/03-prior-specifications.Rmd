@@ -23,8 +23,8 @@ knitr::opts_chunk$set(
 )
 
 # Demo settings for faster vignette building
-n_sims_demo <- 8 # Minimal simulations for demo
-n_cores_demo <- 1 # Single core for vignette building
+n_cores <- parallel::detectCores() - 1
+n_sims <- n_cores * 10
 ```
 
 # Advanced Prior Specifications for Bayesian Power Analysis
@@ -85,8 +85,8 @@ effect_size_informed <- power_grid_analysis(
   baseline_effect = 0.3,
   threshold_success = 0.3,
   threshold_futility = 0.1,
-  n_simulations = n_sims_demo,
-  n_cores = n_cores_demo
+  n_sims = n_sims,
+  n_cores = n_cores
 )
 
 design_prior_comparison <- rbind(design_prior_comparison, data.frame(
@@ -105,8 +105,8 @@ effect_size_skeptical <- power_grid_analysis(
   baseline_effect = 0.3,
   threshold_success = 0.3,
   threshold_futility = 0.1,
-  n_simulations = n_sims_demo,
-  n_cores = n_cores_demo
+  n_sims = n_sims_demo,
+  n_cores = n_cores
 )
 
 design_prior_comparison <- rbind(design_prior_comparison, data.frame(
@@ -125,8 +125,8 @@ effect_size_optimistic <- power_grid_analysis(
   baseline_effect = 0.3,
   threshold_success = 0.3,
   threshold_futility = 0.1,
-  n_simulations = n_sims_demo,
-  n_cores = n_cores_demo
+  n_sims = n_sims_demo,
+  n_cores = n_cores
 )
 
 design_prior_comparison <- rbind(design_prior_comparison, data.frame(
@@ -239,8 +239,8 @@ for (scenario_name in names(prior_scenarios)) {
     baseline_effect = 0.3,
     threshold_success = 0.3,
     threshold_futility = 0.1,
-    n_simulations = n_sims_demo,
-    n_cores = n_cores_demo
+    n_sims = n_sims_demo,
+    n_cores = n_cores
   )
 
   sensitivity_results <- rbind(sensitivity_results, data.frame(
@@ -278,8 +278,8 @@ default_power <- power_analysis_ancova(
   outcome_type = "continuous",
   threshold_success = 0.3,
   threshold_futility = 0.1,
-  n_simulations = n_sims_demo,
-  n_cores = n_cores_demo,
+  n_sims = n_sims_demo,
+  n_cores = n_cores,
   brms_args = list(
     algorithm = "meanfield",
     importance_resampling = TRUE,
@@ -412,8 +412,8 @@ conservative_power <- power_analysis(
   simulate_data_fn = simulate_interaction_data,
   threshold_success = 0.3,
   threshold_futility = 0.1,
-  n_simulations = n_sims_demo,
-  n_cores = n_cores_demo,
+  n_sims = n_sims_demo,
+  n_cores = n_cores,
   brms_args = list(
     algorithm = "meanfield",
     importance_resampling = TRUE,
@@ -468,8 +468,8 @@ meta_informed_power <- power_grid_analysis(
   baseline_effect = 0.3,
   threshold_success = 0.25,
   threshold_futility = 0.1,
-  n_simulations = n_sims_demo,
-  n_cores = n_cores_demo
+  n_sims = n_sims_demo,
+  n_cores = n_cores
 )
 
 cat("Meta-analysis informed integrated power:", round(meta_informed_power$integrated_power_success, 3), "\n")
@@ -513,8 +513,8 @@ expert_power <- power_grid_analysis(
   baseline_effect = 0.3,
   threshold_success = 0.3,
   threshold_futility = 0.1,
-  n_simulations = n_sims_demo,
-  n_cores = n_cores_demo
+  n_sims = n_sims_demo,
+  n_cores = n_cores
 )
 
 cat("Expert-informed integrated power:", round(expert_power$integrated_power_success, 3), "\n")
@@ -540,8 +540,8 @@ regulatory_power <- power_grid_analysis(
   threshold_success = 0.25, # Conservative threshold
   threshold_futility = 0.1,
   target_power_success = 0.9, # High power requirement
-  n_simulations = n_sims_demo,
-  n_cores = n_cores_demo
+  n_sims = n_sims_demo,
+  n_cores = n_cores
 )
 
 print(regulatory_power)
@@ -557,8 +557,8 @@ academic_power <- power_grid_analysis(
   threshold_success = 0.3,
   threshold_futility = 0.1,
   target_power_success = 0.8, # Standard power requirement
-  n_simulations = n_sims_demo,
-  n_cores = n_cores_demo
+  n_sims = n_sims_demo,
+  n_cores = n_cores
 )
 
 comparison_table <- data.frame(
