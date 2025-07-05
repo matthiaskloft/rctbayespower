@@ -91,49 +91,14 @@ outcome_type, baseline_effect
 # Basic analysis across sample sizes and effect sizes
 grid_result <- power_grid_analysis(
   target_power_success = 0.8,
-  sample_sizes = seq(20, 80, by = 20),
-  effect_sizes = seq(0.2, 0.8, by = 0.2),
+  sample_sizes = c(40, 80),
+  effect_sizes = c(0.4, 0.8),
   threshold_success = 0.2,
   threshold_futility = 0,
   power_analysis_fn = "power_analysis_ancova",
   outcome_type = "continuous",
   baseline_effect = 0.2,
-  n_simulations = 2,
-  brms_args = list(algorithm = "meanfield"), # fast algorithm for testing
-  n_cores = 1,
-  progress_updates = 5
-)
-
-# With brms design prior (prior belief about effect size)
-grid_result <- power_grid_analysis(
-  target_power_success = 0.8,
-  sample_sizes = seq(20, 80, by = 20),
-  effect_sizes = seq(0.2, 0.8, by = 0.2),
-  threshold_success = 0.2,
-  threshold_futility = 0,
-  design_prior = "normal(0.5, 0.15)",
-  power_analysis_fn = "power_analysis_ancova",
-  outcome_type = "continuous",
-  baseline_effect = 0.2,
-  n_simulations = 2,
-  brms_args = list(algorithm = "meanfield"), # fast algorithm for testing
-  n_cores = 1,
-  progress_updates = 5
-)
-
-# With custom R design prior function
-prior_belief <- function(x) dnorm(x, mean = 0.4, sd = 0.1)
-grid_result <- power_grid_analysis(
-  target_power_success = 0.8,
-  sample_sizes = seq(20, 80, by = 20),
-  effect_sizes = seq(0.2, 0.8, by = 0.2),
-  threshold_success = 0.2,
-  threshold_futility = 0,
-  design_prior = prior_belief,
-  power_analysis_fn = "power_analysis_ancova",
-  outcome_type = "continuous",
-  baseline_effect = 0.2,
-  n_simulations = 2,
+  n_simulations = 1,
   brms_args = list(algorithm = "meanfield"), # fast algorithm for testing
   n_cores = 1,
   progress_updates = 5

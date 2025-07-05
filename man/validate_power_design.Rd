@@ -50,7 +50,8 @@ Performs a single simulation run and checks for convergence and parameter extrac
 \dontrun{
 # Validate design before running full power analysis
 validation <- validate_power_design(
-  n_control = 50, n_treatment = 50,
+  n_control = 50, 
+  n_treatment = 50,
   simulate_data_fn = simulate_data,
   model_formula_true_params = model_formula_true,
   model_formula_estimation = model_formula_est,
@@ -62,7 +63,8 @@ validation <- validate_power_design(
 
 # Use the compiled models from validation in power analysis
 power_result <- power_analysis(
-  n_control = 50, n_treatment = 50,
+  n_control = 50, 
+  n_treatment = 50,
   simulate_data_fn = simulate_data,
   target_param = "grouptreat",
   threshold_success = 0.2,
@@ -73,6 +75,7 @@ power_result <- power_analysis(
   brms_design_true_params = validation$brms_design_true_params,
   brms_design_estimation = validation$brms_design_estimation
   brms_args = list(algorithm = "meanfield"),
+  n_cores = 1,
   progress_updates = 5
 )
 }

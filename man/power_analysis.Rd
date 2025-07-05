@@ -166,7 +166,7 @@ power_result_prefitted <- power_analysis(
   threshold_futility = 0,
   p_sig_success = 0.95,
   p_sig_futility = 0.7,
-  n_simulations = 2,
+  n_simulations = 1,
   brms_args = list(algorithm = "meanfield"),
   n_cores = 1,
   progress_updates = 5,
