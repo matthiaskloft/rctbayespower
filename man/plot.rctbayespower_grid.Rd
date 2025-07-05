@@ -64,7 +64,7 @@ Supports different plot types based on analysis type (sample_only, effect_only, 
 \donttest{
 # Sample size analysis plot
 grid_result <- power_grid_analysis(
-  sample_sizes = seq(20, 40),
+  sample_sizes = c(20, 40),
   effect_sizes = 0.5,
   threshold_success = 0.2,
   threshold_futility = 0,
@@ -81,7 +81,7 @@ plot(grid_result) # Auto-detects power curve
 # Effect size analysis plot
 grid_result <- power_grid_analysis(
   sample_sizes = 60,
-  effect_sizes = seq(0.4, 0.8),
+  effect_sizes = c(0.4, 0.8),
   threshold_success = 0.2,
   threshold_futility = 0,
   power_analysis_fn = "power_analysis_ancova",
@@ -96,8 +96,8 @@ plot(grid_result) # Shows both success and futility, both power and probabilitie
 
 # Full grid heatmap
 grid_result <- power_grid_analysis(
-  sample_sizes = seq(20, 40),
-  effect_sizes = seq(0.4, 0.8),
+  sample_sizes = c(20, 40),
+  effect_sizes = c(0.4, 0.8),
   threshold_success = 0.2,
   threshold_futility = 0,
   power_analysis_fn = "power_analysis_ancova",

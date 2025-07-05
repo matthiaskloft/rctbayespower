@@ -62,7 +62,7 @@
 #' # Basic analysis across sample sizes and effect sizes
 #' grid_result <- power_grid_analysis(
 #'   target_power_success = 0.8,
-#'   sample_sizes = c(40, 80),
+#'   sample_sizes = c(100, 200),
 #'   effect_sizes = c(0.4, 0.8),
 #'   threshold_success = 0.2,
 #'   threshold_futility = 0,
@@ -2176,28 +2176,3 @@ validate_weighting_function <- function(effect_sizes = seq(0.2, 0.8, 0.1),
     errors = errors
   ))
 }
-
-# ===============================================================================
-# RETIRED FUNCTIONS
-# ===============================================================================
-# The following functions have been replaced by power_grid_analysis() and are
-# kept here for reference only. They will be removed in a future version.
-# ===============================================================================
-
-# #' Sample Size Analysis for Bayesian RCTs (RETIRED)
-# #'
-# #' This function has been replaced by power_grid_analysis().
-# #' Use power_grid_analysis() with single effect size for equivalent functionality.
-# #'
-# sample_size_analysis <- function(target_power_success = 0.9,
-#                                  target_power_futility = 0.9,
-#                                  sample_sizes,
-#                                  threshold_success,
-#                                  threshold_futility,
-#                                  effect_size,
-#                                  percent_group_treat = .5,
-#                                  power_analysis_fn = "power_analysis",
-#                                  n_simulations = 500,
-#                                  ...) {
-#   stop("sample_size_analysis() has been retired. Use power_grid_analysis() instead.")
-# }

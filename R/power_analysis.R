@@ -63,7 +63,8 @@
 #'
 #' # Run power analysis with optimized brms_args
 #' power_result <- power_analysis(
-#'   n_control = 50, n_treatment = 50,
+#'   n_control = 100, 
+#'   n_treatment = 100,
 #'   simulate_data_fn = simulate_data,
 #'   model_formula_true_params = model_formula_true,
 #'   model_formula_estimation = model_formula_est,
@@ -83,7 +84,8 @@
 #'
 #' # Run power analysis with progress updates
 #' power_result_custom <- power_analysis(
-#'   n_control = 50, n_treatment = 50,
+#'   n_control = 50, 
+#'   n_treatment = 50,
 #'   simulate_data_fn = simulate_data,
 #'   model_formula_true_params = model_formula_true,
 #'   model_formula_estimation = model_formula_est,
@@ -103,7 +105,8 @@
 #'
 #' # Alternative: Use pre-fitted models (e.g., from validate_power_design)
 #' validation <- validate_power_design(
-#'   n_control = 50, n_treatment = 50,
+#'   n_control = 100, 
+#'   n_treatment = 100,
 #'   simulate_data_fn = simulate_data,
 #'   model_formula_true_params = model_formula_true,
 #'   model_formula_estimation = model_formula_est,
@@ -114,7 +117,8 @@
 #' )
 #'
 #' power_result_prefitted <- power_analysis(
-#'   n_control = 50, n_treatment = 50,
+#'   n_control = 100, 
+#'   n_treatment = 100,
 #'   simulate_data_fn = simulate_data,
 #'   target_param = "grouptreat",
 #'   threshold_success = 0.2,
