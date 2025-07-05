@@ -21,9 +21,7 @@ knitr::opts_chunk$set(
 
 ## Disclaimer
 
-This is an experimental package written with the help of LLMs and has not been 
-thoroughly tested yet.
-Hence, I do not recommend using it for production code or critical analyses.
+This is an experimental package developed with the assistance of LLMs and it has not yet been fully tested. Therefore, I do not recommend using it for production code or critical analyses.
 
 
 
