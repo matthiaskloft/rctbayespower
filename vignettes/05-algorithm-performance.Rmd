@@ -82,9 +82,9 @@ algorithms <- c("meanfield", "fullrank")
 
 for (alg in algorithms) {
   cat("Testing algorithm:", alg, "\n")
-  
+
   start_time <- Sys.time()
-  
+
   power_result <- power_analysis_ancova(
     n_control = 60,
     n_treatment = 60,
@@ -102,9 +102,9 @@ for (alg in algorithms) {
       output_samples = 1e3
     )
   )
-  
+
   elapsed_time <- as.numeric(difftime(Sys.time(), start_time, units = "secs"))
-  
+
   performance_results <- rbind(performance_results, data.frame(
     Algorithm = alg,
     Time_Seconds = elapsed_time,
@@ -213,7 +213,7 @@ start_time <- Sys.time()
 
 # Focus on promising region
 focused <- power_analysis_ancova(
-  n_control = 80,  # Best from stage 1
+  n_control = 80, # Best from stage 1
   n_treatment = 80,
   effect_size = 0.5,
   baseline_effect = 0.3,
@@ -285,20 +285,20 @@ print(issues_guide)
 monitor_performance <- function(analysis_function) {
   # Monitor memory
   initial_memory <- object.size(ls())
-  
+
   # Time the analysis
   start_time <- Sys.time()
   result <- analysis_function()
   elapsed <- difftime(Sys.time(), start_time, units = "secs")
-  
+
   # Check convergence
   if (result$convergence < 0.95) {
     warning("Low convergence: ", result$convergence)
   }
-  
+
   cat("Analysis completed in", round(elapsed, 1), "seconds\n")
   cat("Convergence rate:", round(result$convergence, 3), "\n")
-  
+
   return(result)
 }
 ```
@@ -329,11 +329,11 @@ monitor_performance <- function(analysis_function) {
 # Quick calculator for analysis complexity
 calculate_complexity <- function(n_sample_sizes, n_effect_sizes, n_simulations) {
   total_fits <- n_sample_sizes * n_effect_sizes * n_simulations
-  
+
   # Rough time estimates (minutes)
-  time_meanfield <- total_fits / 100  # ~100 fits per minute
-  time_fullrank <- total_fits / 50    # ~50 fits per minute
-  
+  time_meanfield <- total_fits / 100 # ~100 fits per minute
+  time_fullrank <- total_fits / 50 # ~50 fits per minute
+
   cat("Analysis complexity:\n")
   cat("  Total model fits:", total_fits, "\n")
   cat("  Estimated time (meanfield):", round(time_meanfield, 1), "minutes\n")
