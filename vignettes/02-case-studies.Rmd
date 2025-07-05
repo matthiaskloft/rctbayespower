@@ -406,7 +406,7 @@ public_health_cost_analysis <- function(sample_sizes, cost_per_participant = 50,
     Cost_Per_Power_Unit = numeric(),
     stringsAsFactors = FALSE
   )
-  
+
   for (n in sample_sizes) {
     power_result <- power_analysis_ancova(
       n_control = n,
@@ -426,10 +426,10 @@ public_health_cost_analysis <- function(sample_sizes, cost_per_participant = 50,
         output_samples = 1e3
       )
     )
-    
+
     total_cost <- fixed_costs + (2 * n * cost_per_participant)
     cost_per_power <- total_cost / power_result$power_success
-    
+
     cost_results <- rbind(cost_results, data.frame(
       Sample_Size = n,
       Total_Cost = total_cost,
@@ -437,7 +437,7 @@ public_health_cost_analysis <- function(sample_sizes, cost_per_participant = 50,
       Cost_Per_Power_Unit = cost_per_power
     ))
   }
-  
+
   return(cost_results)
 }
 
@@ -516,7 +516,7 @@ for (i in 2:length(doses)) { # Skip placebo (dose 1)
       output_samples = 1e3
     )
   )
-  
+
   dose_power_results <- rbind(dose_power_results, data.frame(
     Dose = doses[i],
     Effect_Size = expected_effects[i],
@@ -683,7 +683,7 @@ study_configs <- list(
 
 for (study_name in names(study_configs)) {
   config <- study_configs[[study_name]]
-  
+
   # Time meanfield
   start_time <- Sys.time()
   power_analysis_ancova(
@@ -699,7 +699,7 @@ for (study_name in names(study_configs)) {
     brms_args = list(algorithm = "meanfield", importance_resampling = TRUE, iter = 1e4, output_samples = 1e3)
   )
   meanfield_time <- as.numeric(difftime(Sys.time(), start_time, units = "secs"))
-  
+
   # Time fullrank
   start_time <- Sys.time()
   power_analysis_ancova(
@@ -715,7 +715,7 @@ for (study_name in names(study_configs)) {
     brms_args = list(algorithm = "fullrank", importance_resampling = TRUE, iter = 1e4, output_samples = 1e3)
   )
   fullrank_time <- as.numeric(difftime(Sys.time(), start_time, units = "secs"))
-  
+
   algorithm_comparison <- rbind(algorithm_comparison, data.frame(
     Study_Type = study_name,
     Sample_Size = config$n,

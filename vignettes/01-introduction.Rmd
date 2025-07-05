@@ -22,8 +22,8 @@ knitr::opts_chunk$set(
 )
 
 # Set up for examples (reduce simulation counts for faster vignette building)
-n_cores_demo <- parallel::detectCores() - 1 
-n_sims_demo <- n_cores_demo * 20 
+n_cores_demo <- parallel::detectCores() - 1
+n_sims_demo <- n_cores_demo * 20
 ```
 
 # Introduction

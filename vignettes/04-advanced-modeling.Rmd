@@ -202,10 +202,10 @@ sequential_analysis <- function(interim_fractions = c(0.5, 0.75, 1.0)) {
     Stop_For_Futility = logical(),
     stringsAsFactors = FALSE
   )
-  
+
   for (fraction in interim_fractions) {
     interim_n <- ceiling(max_n * fraction)
-    
+
     power_result <- power_analysis_ancova(
       n_control = interim_n,
       n_treatment = interim_n,
@@ -225,11 +225,11 @@ sequential_analysis <- function(interim_fractions = c(0.5, 0.75, 1.0)) {
         output_samples = 1e3
       )
     )
-    
+
     # Decision rules for stopping
     stop_efficacy <- power_result$power_success > 0.95
     stop_futility <- power_result$power_futility > 0.95
-    
+
     results <- rbind(results, data.frame(
       Interim_Fraction = fraction,
       N_Per_Group = interim_n,
@@ -239,7 +239,7 @@ sequential_analysis <- function(interim_fractions = c(0.5, 0.75, 1.0)) {
       Stop_For_Futility = stop_futility
     ))
   }
-  
+
   return(results)
 }
 
@@ -264,7 +264,7 @@ calculate_cost_effectiveness <- function(sample_sizes, cost_per_participant = 10
     Cost_Per_Power_Unit = numeric(),
     stringsAsFactors = FALSE
   )
-  
+
   for (n in sample_sizes) {
     power_result <- power_analysis_ancova(
       n_control = n,
@@ -283,10 +283,10 @@ calculate_cost_effectiveness <- function(sample_sizes, cost_per_participant = 10
         output_samples = 1e3
       )
     )
-    
+
     total_cost <- fixed_costs + (2 * n * cost_per_participant)
     cost_per_power <- total_cost / power_result$power_success
-    
+
     cost_results <- rbind(cost_results, data.frame(
       Sample_Size = n,
       Total_Cost = total_cost,
@@ -294,7 +294,7 @@ calculate_cost_effectiveness <- function(sample_sizes, cost_per_participant = 10
       Cost_Per_Power_Unit = cost_per_power
     ))
   }
-  
+
   return(cost_results)
 }
 

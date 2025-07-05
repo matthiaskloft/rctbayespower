@@ -152,7 +152,7 @@ Beyond normal distributions, you can use various prior distributions:
 design_prior_examples <- data.frame(
   Distribution = c(
     "normal(0.4, 0.1)",
-    "student_t(5, 0.4, 0.1)", 
+    "student_t(5, 0.4, 0.1)",
     "beta(3, 7)",
     "gamma(4, 10)",
     "lognormal(log(0.4), 0.2)"
@@ -167,7 +167,7 @@ design_prior_examples <- data.frame(
   Notes = c(
     "Most common choice",
     "Heavier tails than normal",
-    "Good for proportions/probabilities", 
+    "Good for proportions/probabilities",
     "Right-skewed positive values",
     "For multiplicative effects"
   ),
@@ -188,7 +188,7 @@ mixture_prior_function <- function(n) {
   mixture_indicator <- rbinom(n, 1, 0.3)
   moderate_effects <- rnorm(n, 0.3, 0.05)
   large_effects <- rnorm(n, 0.7, 0.1)
-  
+
   effects <- ifelse(mixture_indicator == 1, large_effects, moderate_effects)
   return(effects)
 }
@@ -201,8 +201,10 @@ cat("SD:", round(sd(test_effects), 3), "\n")
 cat("Range:", round(range(test_effects), 3), "\n")
 
 # Visualize the mixture distribution
-hist(test_effects, breaks = 30, main = "Mixture Design Prior", 
-     xlab = "Effect Size", col = "lightblue", border = "darkblue")
+hist(test_effects,
+  breaks = 30, main = "Mixture Design Prior",
+  xlab = "Effect Size", col = "lightblue", border = "darkblue"
+)
 ```
 
 ## Design Prior Sensitivity Analysis
@@ -227,7 +229,7 @@ sensitivity_results <- data.frame(
 
 for (scenario_name in names(prior_scenarios)) {
   cat("Testing scenario:", scenario_name, "\n")
-  
+
   scenario_result <- power_grid_analysis(
     sample_sizes = 80,
     effect_sizes = seq(0.1, 0.8, by = 0.1),
@@ -240,7 +242,7 @@ for (scenario_name in names(prior_scenarios)) {
     n_simulations = n_sims_demo,
     n_cores = n_cores_demo
   )
-  
+
   sensitivity_results <- rbind(sensitivity_results, data.frame(
     Scenario = scenario_name,
     Integrated_Power = scenario_result$integrated_power_success,
@@ -304,23 +306,23 @@ For specialized analyses, you can build custom models with specific priors:
 # Define custom data simulation with interaction
 simulate_interaction_data <- function(n_control, n_treatment) {
   total_n <- n_control + n_treatment
-  
+
   # Simulate predictors
   age <- rnorm(total_n, mean = 50, sd = 15)
   baseline_severity <- rnorm(total_n, mean = 5, sd = 2)
-  
+
   # Treatment assignment
   treatment <- c(rep(0, n_control), rep(1, n_treatment))
-  
+
   # Outcome with treatment-covariate interaction
   outcome <- (
-    0.1 * age + 
-    0.3 * baseline_severity + 
-    0.5 * treatment + 
-    0.1 * treatment * baseline_severity + # Interaction term
-    rnorm(total_n, 0, 1)
+    0.1 * age +
+      0.3 * baseline_severity +
+      0.5 * treatment +
+      0.1 * treatment * baseline_severity + # Interaction term
+      rnorm(total_n, 0, 1)
   )
-  
+
   data.frame(
     outcome = outcome,
     age = age,
@@ -451,8 +453,8 @@ print(meta_analysis_example)
 
 # Derive design prior from meta-analysis
 meta_mean <- 0.39
-meta_se <- (0.49 - 0.29) / (2 * 1.96)  # SE from 95% CI
-meta_sd <- meta_se * sqrt(4)  # Inflate for between-study heterogeneity
+meta_se <- (0.49 - 0.29) / (2 * 1.96) # SE from 95% CI
+meta_sd <- meta_se * sqrt(4) # Inflate for between-study heterogeneity
 
 cat("Derived design prior: normal(", meta_mean, ", ", round(meta_sd, 3), ")\n", sep = "")
 
@@ -526,7 +528,7 @@ When planning studies for regulatory approval, conservative approaches are often
 
 ```{r regulatory_priors}
 # Conservative design prior for regulatory submission
-regulatory_design_prior <- "normal(0.3, 0.05)"  # Conservative effect, low uncertainty
+regulatory_design_prior <- "normal(0.3, 0.05)" # Conservative effect, low uncertainty
 
 regulatory_power <- power_grid_analysis(
   sample_sizes = c(100, 150, 200),
@@ -535,9 +537,9 @@ regulatory_power <- power_grid_analysis(
   power_analysis_fn = "power_analysis_ancova",
   outcome_type = "continuous",
   baseline_effect = 0.4,
-  threshold_success = 0.25,  # Conservative threshold
+  threshold_success = 0.25, # Conservative threshold
   threshold_futility = 0.1,
-  target_power_success = 0.9,  # High power requirement
+  target_power_success = 0.9, # High power requirement
   n_simulations = n_sims_demo,
   n_cores = n_cores_demo
 )
@@ -548,13 +550,13 @@ print(regulatory_power)
 academic_power <- power_grid_analysis(
   sample_sizes = c(100, 150, 200),
   effect_sizes = seq(0.2, 0.5, by = 0.05),
-  design_prior = "normal(0.4, 0.15)",  # More optimistic, higher uncertainty
+  design_prior = "normal(0.4, 0.15)", # More optimistic, higher uncertainty
   power_analysis_fn = "power_analysis_ancova",
   outcome_type = "continuous",
   baseline_effect = 0.4,
   threshold_success = 0.3,
   threshold_futility = 0.1,
-  target_power_success = 0.8,  # Standard power requirement
+  target_power_success = 0.8, # Standard power requirement
   n_simulations = n_sims_demo,
   n_cores = n_cores_demo
 )
@@ -586,7 +588,7 @@ print(comparison_table)
 prior_guidelines <- data.frame(
   Situation = c(
     "Strong evidence base",
-    "Limited evidence", 
+    "Limited evidence",
     "Conflicting evidence",
     "Novel intervention",
     "Regulatory submission"
@@ -628,16 +630,16 @@ Key questions to ask when specifying priors:
 check_design_prior_sensitivity <- function(base_prior, analysis_params) {
   # 1. Test different centers
   cat("1. Testing different prior centers...\n")
-  
-  # 2. Test different spreads  
+
+  # 2. Test different spreads
   cat("2. Testing different prior spreads...\n")
-  
+
   # 3. Test different distributions
   cat("3. Testing different prior distributions...\n")
-  
+
   # 4. Check robustness to outliers
   cat("4. Testing robustness to outliers...\n")
-  
+
   # 5. Validate against external evidence
   cat("5. Validating against external evidence...\n")
 }
@@ -653,7 +655,7 @@ check_design_prior_sensitivity <- function(base_prior, analysis_params) {
 prior_documentation <- data.frame(
   Component = c(
     "Design Prior",
-    "Model Priors", 
+    "Model Priors",
     "Sensitivity Analysis",
     "Justification",
     "Limitations"
