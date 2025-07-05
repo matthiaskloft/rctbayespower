@@ -69,9 +69,11 @@ power_result <- power_analysis(
   threshold_futility = 0,
   p_sig_success = 0.95,
   p_sig_futility = 0.5,
-  n_simulations = 100,
+  n_simulations = 2,
   brms_design_true_params = validation$brms_design_true_params,
   brms_design_estimation = validation$brms_design_estimation
+  brms_args = list(algorithm = "meanfield"),
+  progress_updates = 5
 )
 }
 }

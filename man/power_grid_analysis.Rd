@@ -87,7 +87,7 @@ For ANCOVA power analysis (power_analysis_fn = "power_analysis_ancova"), you mus
 outcome_type, baseline_effect
 }
 \examples{
-\dontrun{
+\donttest{
 # Basic analysis across sample sizes and effect sizes
 grid_result <- power_grid_analysis(
   target_power_success = 0.8,
@@ -98,7 +98,10 @@ grid_result <- power_grid_analysis(
   power_analysis_fn = "power_analysis_ancova",
   outcome_type = "continuous",
   baseline_effect = 0.2,
-  n_simulations = 100
+  n_simulations = 2,
+  brms_args = list(algorithm = "meanfield"), # fast algorithm for testing
+  n_cores = 1,
+  progress_updates = 5
 )
 
 # With brms design prior (prior belief about effect size)
@@ -112,7 +115,10 @@ grid_result <- power_grid_analysis(
   power_analysis_fn = "power_analysis_ancova",
   outcome_type = "continuous",
   baseline_effect = 0.2,
-  n_simulations = 100
+  n_simulations = 2,
+  brms_args = list(algorithm = "meanfield"), # fast algorithm for testing
+  n_cores = 1,
+  progress_updates = 5
 )
 
 # With custom R design prior function
@@ -127,7 +133,10 @@ grid_result <- power_grid_analysis(
   power_analysis_fn = "power_analysis_ancova",
   outcome_type = "continuous",
   baseline_effect = 0.2,
-  n_simulations = 100
+  n_simulations = 2,
+  brms_args = list(algorithm = "meanfield"), # fast algorithm for testing
+  n_cores = 1,
+  progress_updates = 5
 )
 }
 }

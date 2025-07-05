@@ -24,7 +24,7 @@ power_analysis_ancova(
   brms_args = list(algorithm = "sampling", iter = 1500, warmup = 500, chains = 2, cores =
     1, init = 0.1, control = list(adapt_delta = 0.9)),
   seed = NULL,
-  n_cores = parallel::detectCores() - 1,
+  n_cores = 1,
   progress_updates = 10,
   compile_models_only = FALSE
 )
@@ -66,7 +66,7 @@ power_analysis_ancova(
 
 \item{seed}{Random seed for reproducibility}
 
-\item{n_cores}{Number of cores for parallel processing. If n_cores > 1, simulations will run in parallel. Default is number of available cores minus 1.}
+\item{n_cores}{Number of cores for parallel processing. If n_cores > 1, simulations will run in parallel. Default is 1.}
 
 \item{progress_updates}{Number of progress updates to show during parallel processing. Default is 10. Set to 0 to disable progress updates.}
 
@@ -82,7 +82,7 @@ a baseline covariate following the exact template workflow. Supports continuous,
 binary, and count outcomes.
 }
 \examples{
-\dontrun{
+\donttest{
 # Continuous outcome ANCOVA
 power_result <- power_analysis_ancova(
   n_control = 50,
@@ -94,50 +94,9 @@ power_result <- power_analysis_ancova(
   threshold_futility = 0,
   p_sig_success = 0.95,
   p_sig_futility = 0.8,
-  n_simulations = 100
-)
-
-# Binary outcome ANCOVA
-power_result <- power_analysis_ancova(
-  n_control = 75,
-  n_treatment = 75,
-  outcome_type = "binary",
-  effect_size = 0.693,  # log odds ratio for OR = 2
-  baseline_effect = 0.405,  # log odds ratio for OR = 1.5
-  intercept_value = 0,  # 50\% baseline probability
-  p_sig_success = 0.95,
-  p_sig_futility = 0.6,
-  n_simulations = 200
-)
-
-# Count outcome ANCOVA
-power_result <- power_analysis_ancova(
-  n_control = 60,
-  n_treatment = 60,
-  outcome_type = "count",
-  effect_size = 0.693,  # log rate ratio for RR = 2
-  baseline_effect = 0.405,  # log rate ratio for RR = 1.5
-  intercept_value = 1.099,  # log(3) for baseline rate = 3
-  p_sig_success = 0.95,
-  p_sig_futility = 0.7,
-  n_simulations = 150
-)
-
-# ANCOVA with custom brms_args and parallel processing with progress
-power_result_custom <- power_analysis_ancova(
-  n_control = 50,
-  n_treatment = 50,
-  outcome_type = "continuous",
-  effect_size = 0.5,
-  baseline_effect = 0.2,
-  threshold_success = 0.2,
-  threshold_futility = 0,
-  p_sig_success = 0.95,
-  p_sig_futility = 0.5,
-  n_simulations = 100,
-  brms_args = list(algorithm = "meanfield", iter = 800),
-  n_cores = 3,  # Use 3 cores for parallel processing
-  progress_updates = 5  # Show 5 progress updates
+  n_simulations = 2,
+  brms_args = list(algorithm = "meanfield"),
+  progress_updates = 5
 )
 }
 }

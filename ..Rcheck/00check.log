@@ -6,20 +6,17 @@
     GNU Fortran (Ubuntu 13.3.0-6ubuntu2~24.04) 13.3.0
 * running under: Ubuntu 24.04.2 LTS
 * using session charset: UTF-8
-* using options ‘--no-tests --no-manual --no-vignettes’
+* using options ‘--no-tests --no-manual’
 * checking for file ‘./DESCRIPTION’ ... OK
 * this is package ‘rctbayespower’ version ‘0.1.0’
 * package encoding: UTF-8
 * checking package namespace information ... OK
 * checking package dependencies ... ERROR
 Packages required but not available:
-  'brms', 'posterior', 'ggplot2', 'dplyr', 'tidyr', 'purrr',
-  'magrittr', 'tibble', 'rlang', 'scales'
+  'brms', 'posterior', 'ggplot2', 'dplyr', 'tidyr', 'tibble', 'scales'
 
 Packages suggested but not available for checking:
-  'testthat', 'knitr', 'rmarkdown', 'covr'
-
-VignetteBuilder package required for checking but not installed: ‘knitr’
+  'testthat', 'rmarkdown', 'covr'
 
 See section ‘The DESCRIPTION file’ in the ‘Writing R Extensions’
 manual.

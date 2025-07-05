@@ -23,7 +23,8 @@ knitr::opts_chunk$set(
 )
 
 # Reduced simulation counts for vignette building
-n_sims_demo <- 30
+n_sims_demo <- 2 # Use minimal simulations for fast demo builds
+brms_args_demo <- list(algorithm = "meanfield") # Fast algorithm for testing
 ```
 
 # Advanced Techniques in Bayesian RCT Power Analysis
@@ -195,7 +196,7 @@ simulate_clustered_data <- function(n_clusters_control, n_clusters_treatment,
 
 # Custom power analysis for clustered design
 clustered_power_analysis <- function(n_clusters_control, n_clusters_treatment,
-                                     n_per_cluster, effect_size, n_simulations = 100) {
+                                     n_per_cluster, effect_size, n_simulations = n_sims_demo) {
   power_results <- vector("numeric", n_simulations)
 
   for (i in 1:n_simulations) {
@@ -211,7 +212,7 @@ clustered_power_analysis <- function(n_clusters_control, n_clusters_treatment,
         fit <- brm(outcome ~ treatment + (1 | cluster_id),
           data = data,
           chains = 2,
-          iter = 1000,
+          iter = 500,
           refresh = 0,
           silent = 2
         )
@@ -305,7 +306,7 @@ Evaluate the operating characteristics of your design under different scenarios:
 ```{r operating_characteristics, eval=FALSE}
 # Function to evaluate design under multiple scenarios
 evaluate_design_performance <- function(n_control, n_treatment,
-                                        true_effect_sizes, n_simulations = 50) {
+                                        true_effect_sizes, n_simulations = n_sims_demo) {
   results <- data.frame(
     true_effect = numeric(),
     power_rope = numeric(),
@@ -357,7 +358,7 @@ print(design_performance)
 ```{r missing_data, eval=FALSE}
 # Function to simulate missing data and analyze power
 power_with_missing_data <- function(n_control, n_treatment, effect_size,
-                                    missing_rate = 0.1, n_simulations = 50) {
+                                    missing_rate = 0.1, n_simulations = n_sims_demo) {
   successful_analyses <- 0
   power_estimates <- numeric()
 
@@ -384,7 +385,7 @@ power_with_missing_data <- function(n_control, n_treatment, effect_size,
           fit <- brm(outcome ~ treatment,
             data = complete_data,
             chains = 2,
-            iter = 1000,
+            iter = 500,
             refresh = 0,
             silent = 2
           )
@@ -498,7 +499,7 @@ regulatory_power_analysis <- function(n_control, n_treatment, effect_size) {
     prior_specification = "default", # Weakly informative
     rope_limits = c(-0.05, 0.05), # Narrow ROPE
     prob_threshold = 0.975, # Higher threshold
-    n_simulations = 1000 # More simulations
+    n_simulations = n_sims_demo
   )
 
   # Additional frequentist analysis for comparison

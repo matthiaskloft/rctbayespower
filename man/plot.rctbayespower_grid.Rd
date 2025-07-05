@@ -61,7 +61,7 @@ Create comprehensive visualizations for power grid analysis results from power_g
 Supports different plot types based on analysis type (sample_only, effect_only, or both varying).
 }
 \examples{
-\dontrun{
+\donttest{
 # Sample size analysis plot
 grid_result <- power_grid_analysis(
   sample_sizes = seq(20, 100, 20),
@@ -70,9 +70,13 @@ grid_result <- power_grid_analysis(
   threshold_futility = 0,
   power_analysis_fn = "power_analysis_ancova",
   outcome_type = "continuous",
-  baseline_effect = 0.2
+  baseline_effect = 0.2,
+  n_simulations = 2,
+  brms_args = list(algorithm = "meanfield"), # fast algorithm for testing
+  n_cores = 1,
+  progress_updates = 5
 )
-plot(grid_result)  # Auto-detects power curve
+plot(grid_result) # Auto-detects power curve
 
 # Effect size analysis plot
 grid_result <- power_grid_analysis(
@@ -82,9 +86,13 @@ grid_result <- power_grid_analysis(
   threshold_futility = 0,
   power_analysis_fn = "power_analysis_ancova",
   outcome_type = "continuous",
-  baseline_effect = 0.2
+  baseline_effect = 0.2,
+  n_simulations = 2,
+  brms_args = list(algorithm = "meanfield"), # fast algorithm for testing
+  n_cores = 1,
+  progress_updates = 5
 )
-plot(grid_result)  # Shows both success and futility, both power and probabilities
+plot(grid_result) # Shows both success and futility, both power and probabilities
 
 # Full grid heatmap
 grid_result <- power_grid_analysis(
@@ -94,7 +102,11 @@ grid_result <- power_grid_analysis(
   threshold_futility = 0,
   power_analysis_fn = "power_analysis_ancova",
   outcome_type = "continuous",
-  baseline_effect = 0.2
+  baseline_effect = 0.2,
+  n_simulations = 2,
+  brms_args = list(algorithm = "meanfield"), # fast algorithm for testing
+  n_cores = 1,
+  progress_updates = 5
 )
 plot(grid_result, type = "heatmap")
 
@@ -113,7 +125,11 @@ grid_result <- power_grid_analysis(
   threshold_futility = 0,
   power_analysis_fn = "power_analysis_ancova",
   outcome_type = "continuous",
-  baseline_effect = 0.2
+  baseline_effect = 0.2,
+  n_simulations = 2,
+  brms_args = list(algorithm = "meanfield"), # fast algorithm for testing
+  n_cores = 1,
+  progress_updates = 5
 )
 plot(grid_result, type = "integrated")
 }

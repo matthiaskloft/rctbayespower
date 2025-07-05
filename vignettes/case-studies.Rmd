@@ -23,7 +23,8 @@ knitr::opts_chunk$set(
 )
 
 # Demo settings
-n_sims_demo <- 50
+n_sims_demo <- 2 # Use minimal simulations for fast demo builds
+brms_args_demo <- list(algorithm = "meanfield") # Fast algorithm for testing
 ```
 
 # Real-World Case Studies
@@ -76,7 +77,7 @@ cardio_power <- power_analysis(
   effect_size = 0.375,
   outcome_type = "continuous",
   rope_limits = c(-0.25, 0.25), # Based on clinical threshold
-  n_simulations = 200,
+  n_simulations = n_sims_demo,
   algorithm = "fullrank"
 )
 
@@ -93,7 +94,7 @@ cardio_sample_size <- sample_size_analysis(
   outcome_type = "continuous",
   sample_sizes = seq(80, 200, by = 20),
   rope_limits = c(-0.25, 0.25),
-  n_simulations = 100
+  n_simulations = n_sims_demo
 )
 
 # Plot sample size curve
@@ -115,7 +116,7 @@ cardio_power_informed <- power_analysis(
   outcome_type = "continuous",
   prior_specification = informed_prior,
   rope_limits = c(-0.25, 0.25),
-  n_simulations = 200
+  n_simulations = n_sims_demo
 )
 
 cat("Power with informed prior:", round(cardio_power_informed$power_rope, 3), "\n")
@@ -168,7 +169,7 @@ depression_power <- power_analysis(
   outcome_type = "continuous",
   covariates = depression_covariates,
   rope_limits = c(-0.25, 0.25),
-  n_simulations = 150
+  n_simulations = n_sims_demo
 )
 
 # Compare with analysis without covariates
@@ -178,7 +179,7 @@ depression_power_no_cov <- power_analysis(
   effect_size = 0.42,
   outcome_type = "continuous",
   rope_limits = c(-0.25, 0.25),
-  n_simulations = 150
+  n_simulations = n_sims_demo
 )
 
 cat("Power with covariates:", round(depression_power$power_rope, 3), "\n")
@@ -196,7 +197,7 @@ depression_curve <- bayesian_power_curve(
   outcome_type = "continuous",
   covariates = depression_covariates,
   rope_limits = c(-0.25, 0.25),
-  n_simulations = 100
+  n_simulations = n_sims_demo
 )
 
 plot_power_curve(depression_curve)
@@ -247,7 +248,7 @@ rare_disease_power <- power_analysis(
   effect_size = 1.163, # Log odds ratio
   outcome_type = "binary",
   baseline_prob = 0.15,
-  n_simulations = 200
+  n_simulations = n_sims_demo
 )
 
 print(rare_disease_power)
@@ -267,7 +268,7 @@ rare_disease_informed <- power_analysis(
   outcome_type = "binary",
   baseline_prob = 0.15,
   prior_specification = strong_prior,
-  n_simulations = 200
+  n_simulations = n_sims_demo
 )
 
 cat("Power with informative prior:", round(rare_disease_informed$power_direction, 3), "\n")
@@ -308,7 +309,7 @@ for (scenario_name in names(sample_size_scenarios)) {
       outcome_type = "binary",
       baseline_prob = 0.15,
       prior_specification = strong_prior,
-      n_simulations = 100
+      n_simulations = n_sims_demo
     )
     power_est <- power_result$power_direction
   }
@@ -376,7 +377,7 @@ cluster_power <- power_analysis(
   effect_size = cluster_log_or,
   outcome_type = "binary",
   baseline_prob = baseline_rate,
-  n_simulations = 150
+  n_simulations = n_sims_demo
 )
 
 print(cluster_power)
@@ -417,7 +418,7 @@ for (config_name in names(cluster_configs)) {
     effect_size = cluster_log_or,
     outcome_type = "binary",
     baseline_prob = baseline_rate,
-    n_simulations = 50
+    n_simulations = n_sims_demo
   )
 
   cluster_results <- rbind(cluster_results, data.frame(
@@ -451,7 +452,7 @@ A generic drug manufacturer wants to demonstrate non-inferiority of their produc
 # This is equivalent to testing if the lower bound of CI > -0.3
 
 non_inferiority_power <- function(n_control, n_treatment, true_difference = 0,
-                                  ni_margin = -0.3, n_simulations = 100) {
+                                  ni_margin = -0.3, n_simulations = n_sims_demo) {
   power_results <- numeric(n_simulations)
 
   for (i in 1:n_simulations) {
@@ -469,7 +470,7 @@ non_inferiority_power <- function(n_control, n_treatment, true_difference = 0,
         fit <- brm(outcome ~ treatment,
           data = data,
           chains = 2,
-          iter = 1000,
+          iter = 500,
           refresh = 0,
           silent = 2
         )
@@ -586,7 +587,7 @@ adaptive_results <- data.frame(
 )
 
 for (rate in response_rates) {
-  trials <- replicate(100, simulate_adaptive_trial(true_response_rate = rate),
+  trials <- replicate(n_sims_demo, simulate_adaptive_trial(true_response_rate = rate),
     simplify = FALSE
   )
 

@@ -78,14 +78,15 @@ models and data generation functions. This function uses a design-based approach
 separate models for true parameter specification and estimation.
 }
 \examples{
-\dontrun{
+\donttest{
 # Define data simulation function
 simulate_data <- function(n_control, n_treatment) {
   data.frame(
     outcome = rnorm(n_control + n_treatment),
     baseline = rnorm(n_control + n_treatment),
     group = factor(rep(c(0, 1), times = c(n_control, n_treatment)),
-                   levels = c(0, 1), labels = c("ctrl", "treat"))
+      levels = c(0, 1), labels = c("ctrl", "treat")
+    )
   )
 }
 
@@ -105,7 +106,7 @@ priors_est <- c(
   brms::set_prior("student_t(3, 0, 1)", class = "sigma")
 )
 
-# Run power analysis with default brms_args
+# Run power analysis with optimized brms_args
 power_result <- power_analysis(
   n_control = 50, n_treatment = 50,
   simulate_data_fn = simulate_data,
@@ -119,10 +120,13 @@ power_result <- power_analysis(
   threshold_futility = 0,
   p_sig_success = 0.95,
   p_sig_futility = 0.8,
-  n_simulations = 100
+  n_simulations = 2,
+  brms_args = list(algorithm = "meanfield"),
+  n_cores = 1,
+  progress_updates = 5
 )
 
-# Run power analysis with custom brms_args and parallel processing with progress
+# Run power analysis with progress updates
 power_result_custom <- power_analysis(
   n_control = 50, n_treatment = 50,
   simulate_data_fn = simulate_data,
@@ -136,10 +140,10 @@ power_result_custom <- power_analysis(
   threshold_futility = 0,
   p_sig_success = 0.95,
   p_sig_futility = 0.7,
-  n_simulations = 100,
-  brms_args = list(algorithm = "meanfield", iter = 800, chains = 4),
-  n_cores = 4,  # Use 4 cores for parallel processing
-  progress_updates = 5  # Show 5 progress updates during execution
+  n_simulations = 2,
+  brms_args = list(algorithm = "meanfield"),
+  n_cores = 1,
+  progress_updates = 5
 )
 
 # Alternative: Use pre-fitted models (e.g., from validate_power_design)
@@ -162,9 +166,10 @@ power_result_prefitted <- power_analysis(
   threshold_futility = 0,
   p_sig_success = 0.95,
   p_sig_futility = 0.7,
-  n_simulations = 1000,
-  n_cores = 6,
-  progress_updates = 10,  # Show progress every 100 simulations
+  n_simulations = 2,
+  brms_args = list(algorithm = "meanfield"),
+  n_cores = 1,
+  progress_updates = 5,
   brms_design_true_params = validation$brms_design_true_params,
   brms_design_estimation = validation$brms_design_estimation
 )
