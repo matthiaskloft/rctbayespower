@@ -1785,7 +1785,7 @@ summary.rctbayespower_grid <- function(object, ...) {
     optimal_combinations_futility = object$optimal_combinations_futility,
     integrated_power = object$integrated_power
   )
-  
+
   invisible(summary_obj)
 }
 
