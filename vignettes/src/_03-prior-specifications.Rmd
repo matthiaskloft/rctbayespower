@@ -1,0 +1,718 @@
+---
+title: "Advanced Prior Specifications for Bayesian Power Analysis"
+author: "rctbayespower package authors"
+date: "`r Sys.Date()`"
+output: 
+  rmarkdown::html_vignette:
+    toc: true
+    toc_depth: 3
+vignette: >
+  %\VignetteIndexEntry{Advanced Prior Specifications for Bayesian Power Analysis}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 7,
+  fig.height = 5,
+  warning = FALSE,
+  message = FALSE
+)
+
+# Demo settings for faster vignette building
+n_cores <- parallel::detectCores() - 1
+n_sims <- n_cores * 10
+```
+
+# Advanced Prior Specifications for Bayesian Power Analysis
+
+This vignette covers advanced techniques for specifying and using priors in Bayesian power analysis with the `rctbayespower` package. It focuses on both design priors (for effect size uncertainty) and model priors (for parameter estimation).
+
+```{r load_libs, echo=FALSE}
+# Check and install required packages
+required_packages <- c("rctbayespower", "ggplot2", "dplyr")
+lapply(required_packages, function(pkg) {
+  if (!requireNamespace(pkg, quietly = TRUE)) {
+    if (pkg == "rctbayespower") {
+      # Install from local source if building vignettes
+      install.packages(".", repos = NULL, type = "source")
+    } else {
+      install.packages(pkg, repos = "https://cloud.r-project.org")
+    }
+  }
+  library(pkg, character.only = TRUE)
+})
+```
+
+# Types of Priors in Power Analysis
+
+## Design Priors vs Model Priors
+
+The `rctbayespower` package uses two distinct types of priors:
+
+1. **Design Priors**: Express uncertainty about the true effect size in the population
+2. **Model Priors**: Used during Bayesian model fitting for parameter estimation
+
+```{r prior_types}
+# Conceptual overview
+prior_types <- data.frame(
+  Prior_Type = c("Design Prior", "Model Prior"),
+  Purpose = c("Effect size uncertainty", "Parameter estimation"),
+  Usage = c("Grid analysis integration", "brms model fitting"),
+  Example = c("normal(0.5, 0.1)", "student_t(3, 0, 1)"),
+  Impact = c("Integrated power calculation", "Posterior inference"),
+  stringsAsFactors = FALSE
+)
+
+print(prior_types)
+```
+
+# Design Priors for Effect Size Integration
+
+## Basic Design Prior Specification
+
+Design priors allow you to incorporate uncertainty about the true effect size when planning studies:
+
+```{r design_priors_basic}
+# Compare different design prior specifications
+design_prior_comparison <- data.frame(
+  Prior_Type = character(),
+  Integrated_Power = numeric(),
+  Power_at_Point = numeric(),
+  stringsAsFactors = FALSE
+)
+
+# Informative prior based on meta-analysis
+effect_size_informed <- power_grid_analysis(
+  sample_sizes = 80,
+  effect_sizes = seq(0.2, 0.6, by = 0.1),
+  design_prior = "normal(0.4, 0.1)", # Informed prior centered at 0.4
+  power_analysis_fn = "power_analysis_ancova",
+  outcome_type = "continuous",
+  baseline_effect = 0.3,
+  threshold_success = 0.3,
+  threshold_futility = 0.1,
+  n_sims = n_sims,
+  n_cores = n_cores
+)
+
+design_prior_comparison <- rbind(design_prior_comparison, data.frame(
+  Prior_Type = "Informed Normal(0.4, 0.1)",
+  Integrated_Power = effect_size_informed$integrated_power_success,
+  Power_at_Point = effect_size_informed$power_success[effect_size_informed$effect_size == 0.4]
+))
+
+# Skeptical prior
+effect_size_skeptical <- power_grid_analysis(
+  sample_sizes = 80,
+  effect_sizes = seq(0.2, 0.6, by = 0.1),
+  design_prior = "normal(0.25, 0.05)", # Skeptical prior centered at 0.25
+  power_analysis_fn = "power_analysis_ancova",
+  outcome_type = "continuous",
+  baseline_effect = 0.3,
+  threshold_success = 0.3,
+  threshold_futility = 0.1,
+  n_sims = n_sims_demo,
+  n_cores = n_cores
+)
+
+design_prior_comparison <- rbind(design_prior_comparison, data.frame(
+  Prior_Type = "Skeptical Normal(0.25, 0.05)",
+  Integrated_Power = effect_size_skeptical$integrated_power_success,
+  Power_at_Point = effect_size_skeptical$power_success[effect_size_skeptical$effect_size == 0.3]
+))
+
+# Optimistic prior
+effect_size_optimistic <- power_grid_analysis(
+  sample_sizes = 80,
+  effect_sizes = seq(0.2, 0.6, by = 0.1),
+  design_prior = "normal(0.5, 0.08)", # Optimistic prior centered at 0.5
+  power_analysis_fn = "power_analysis_ancova",
+  outcome_type = "continuous",
+  baseline_effect = 0.3,
+  threshold_success = 0.3,
+  threshold_futility = 0.1,
+  n_sims = n_sims_demo,
+  n_cores = n_cores
+)
+
+design_prior_comparison <- rbind(design_prior_comparison, data.frame(
+  Prior_Type = "Optimistic Normal(0.5, 0.08)",
+  Integrated_Power = effect_size_optimistic$integrated_power_success,
+  Power_at_Point = effect_size_optimistic$power_success[effect_size_optimistic$effect_size == 0.5]
+))
+
+print(design_prior_comparison)
+```
+
+```{r design_priors_plot}
+# Visualize the effect of different design priors
+plot(effect_size_informed, type = "power_curve", show_integrated = TRUE)
+```
+
+## Advanced Design Prior Distributions
+
+Beyond normal distributions, you can use various prior distributions:
+
+```{r advanced_design_priors}
+# Examples of different design prior distributions
+design_prior_examples <- data.frame(
+  Distribution = c(
+    "normal(0.4, 0.1)",
+    "student_t(5, 0.4, 0.1)",
+    "beta(3, 7)",
+    "gamma(4, 10)",
+    "lognormal(log(0.4), 0.2)"
+  ),
+  Use_Case = c(
+    "Standard informed prior",
+    "Robust to outliers",
+    "Bounded between 0 and 1",
+    "Positive effects only",
+    "Log-normal effects"
+  ),
+  Notes = c(
+    "Most common choice",
+    "Heavier tails than normal",
+    "Good for proportions/probabilities",
+    "Right-skewed positive values",
+    "For multiplicative effects"
+  ),
+  stringsAsFactors = FALSE
+)
+
+print(design_prior_examples)
+```
+
+## Custom Design Prior Functions
+
+You can define custom R functions for complex design priors:
+
+```{r custom_design_prior}
+# Example: Mixture of two normal distributions
+mixture_prior_function <- function(n) {
+  # 70% chance of moderate effect, 30% chance of large effect
+  mixture_indicator <- rbinom(n, 1, 0.3)
+  moderate_effects <- rnorm(n, 0.3, 0.05)
+  large_effects <- rnorm(n, 0.7, 0.1)
+
+  effects <- ifelse(mixture_indicator == 1, large_effects, moderate_effects)
+  return(effects)
+}
+
+# Test the mixture prior
+test_effects <- mixture_prior_function(1000)
+cat("Mixture prior summary:\n")
+cat("Mean:", round(mean(test_effects), 3), "\n")
+cat("SD:", round(sd(test_effects), 3), "\n")
+cat("Range:", round(range(test_effects), 3), "\n")
+
+# Visualize the mixture distribution
+hist(test_effects,
+  breaks = 30, main = "Mixture Design Prior",
+  xlab = "Effect Size", col = "lightblue", border = "darkblue"
+)
+```
+
+## Design Prior Sensitivity Analysis
+
+Examine how different design priors affect integrated power:
+
+```{r design_prior_sensitivity}
+# Test multiple design priors for sensitivity
+prior_scenarios <- list(
+  "Conservative" = "normal(0.2, 0.05)",
+  "Moderate" = "normal(0.4, 0.1)",
+  "Optimistic" = "normal(0.6, 0.1)",
+  "Uncertain" = "normal(0.4, 0.2)"
+)
+
+sensitivity_results <- data.frame(
+  Scenario = character(),
+  Integrated_Power = numeric(),
+  Power_Variability = numeric(),
+  stringsAsFactors = FALSE
+)
+
+for (scenario_name in names(prior_scenarios)) {
+  cat("Testing scenario:", scenario_name, "\n")
+
+  scenario_result <- power_grid_analysis(
+    sample_sizes = 80,
+    effect_sizes = seq(0.1, 0.8, by = 0.1),
+    design_prior = prior_scenarios[[scenario_name]],
+    power_analysis_fn = "power_analysis_ancova",
+    outcome_type = "continuous",
+    baseline_effect = 0.3,
+    threshold_success = 0.3,
+    threshold_futility = 0.1,
+    n_sims = n_sims_demo,
+    n_cores = n_cores
+  )
+
+  sensitivity_results <- rbind(sensitivity_results, data.frame(
+    Scenario = scenario_name,
+    Integrated_Power = scenario_result$integrated_power_success,
+    Power_Variability = sd(scenario_result$power_success)
+  ))
+}
+
+print(sensitivity_results)
+```
+
+# Model Priors for Parameter Estimation
+
+## Default vs Custom Model Priors
+
+Model priors affect how parameters are estimated during the Bayesian fitting process:
+
+```{r model_priors_comparison}
+# Compare default vs custom model priors
+model_prior_comparison <- data.frame(
+  Prior_Type = character(),
+  Power_Success = numeric(),
+  Power_Futility = numeric(),
+  Convergence = numeric(),
+  stringsAsFactors = FALSE
+)
+
+# Analysis with default priors
+default_power <- power_analysis_ancova(
+  n_control = 60,
+  n_treatment = 60,
+  effect_size = 0.5,
+  baseline_effect = 0.3,
+  outcome_type = "continuous",
+  threshold_success = 0.3,
+  threshold_futility = 0.1,
+  n_sims = n_sims_demo,
+  n_cores = n_cores,
+  brms_args = list(
+    algorithm = "meanfield",
+    importance_resampling = TRUE,
+    iter = 1e4,
+    output_samples = 1e3
+  )
+)
+
+model_prior_comparison <- rbind(model_prior_comparison, data.frame(
+  Prior_Type = "Default",
+  Power_Success = default_power$power_success,
+  Power_Futility = default_power$power_futility,
+  Convergence = default_power$convergence
+))
+
+print(model_prior_comparison)
+```
+
+## Custom Model Prior Specification
+
+For specialized analyses, you can build custom models with specific priors:
+
+```{r custom_model_priors}
+# Define custom data simulation with interaction
+simulate_interaction_data <- function(n_control, n_treatment) {
+  total_n <- n_control + n_treatment
+
+  # Simulate predictors
+  age <- rnorm(total_n, mean = 50, sd = 15)
+  baseline_severity <- rnorm(total_n, mean = 5, sd = 2)
+
+  # Treatment assignment
+  treatment <- c(rep(0, n_control), rep(1, n_treatment))
+
+  # Outcome with treatment-covariate interaction
+  outcome <- (
+    0.1 * age +
+      0.3 * baseline_severity +
+      0.5 * treatment +
+      0.1 * treatment * baseline_severity + # Interaction term
+      rnorm(total_n, 0, 1)
+  )
+
+  data.frame(
+    outcome = outcome,
+    age = age,
+    baseline_severity = baseline_severity,
+    treatment = factor(treatment, levels = c(0, 1), labels = c("ctrl", "treat"))
+  )
+}
+
+# Create mock data for model specification
+mock_data <- simulate_interaction_data(25, 25)
+
+# Define model formulas
+model_formula_true <- bf(outcome ~ age + baseline_severity + treatment + treatment:baseline_severity, center = FALSE)
+model_formula_est <- bf(outcome ~ age + baseline_severity + treatment + treatment:baseline_severity)
+
+# Set true parameters as constant priors
+priors_true <- c(
+  set_prior("constant(0.1)", class = "b", coef = "age"),
+  set_prior("constant(0.3)", class = "b", coef = "baseline_severity"),
+  set_prior("constant(0.5)", class = "b", coef = "treatmenttreat"),
+  set_prior("constant(0.1)", class = "b", coef = "treatmenttreat:baseline_severity"),
+  set_prior("constant(0)", class = "b", coef = "Intercept"),
+  set_prior("constant(1)", class = "sigma")
+)
+
+# Informative estimation priors
+priors_informative <- c(
+  set_prior("normal(0.1, 0.05)", class = "b", coef = "age"),
+  set_prior("normal(0.3, 0.1)", class = "b", coef = "baseline_severity"),
+  set_prior("normal(0.1, 0.05)", class = "b", coef = "treatmenttreat:baseline_severity"),
+  set_prior("normal(0, 2)", class = "Intercept"),
+  set_prior("normal(0, 1)", class = "sigma")
+)
+
+# Conservative estimation priors
+priors_conservative <- c(
+  set_prior("student_t(3, 0, 0.5)", class = "b", coef = "age"),
+  set_prior("student_t(3, 0, 0.5)", class = "b", coef = "baseline_severity"),
+  set_prior("student_t(3, 0, 0.3)", class = "b", coef = "treatmenttreat:baseline_severity"),
+  set_prior("student_t(3, 0, 2)", class = "Intercept"),
+  set_prior("student_t(3, 0, 1)", class = "sigma")
+)
+
+# Validate with informative priors
+validation_informative <- validate_power_design(
+  n_control = 60,
+  n_treatment = 60,
+  model_formula_true_params = model_formula_true,
+  model_formula_estimation = model_formula_est,
+  family = gaussian(),
+  priors_true_params = priors_true,
+  priors_estimation = priors_informative,
+  target_param = "treatmenttreat",
+  simulate_data_fn = simulate_interaction_data,
+  brms_args = list(
+    algorithm = "meanfield",
+    importance_resampling = TRUE,
+    iter = 1e4,
+    output_samples = 1e3
+  )
+)
+
+print(validation_informative)
+```
+
+## Prior Impact on Power
+
+Compare how different model priors affect power estimates:
+
+```{r prior_impact_comparison}
+# Compare different estimation priors
+prior_impact_results <- data.frame(
+  Prior_Type = character(),
+  Power_Success = numeric(),
+  Mean_Effect = numeric(),
+  Effect_SD = numeric(),
+  stringsAsFactors = FALSE
+)
+
+# Test with conservative priors
+conservative_power <- power_analysis(
+  n_control = 50,
+  n_treatment = 50,
+  brms_design_true_params = validation_informative$brms_design_true_params,
+  brms_design_estimation = validation_informative$brms_design_estimation,
+  target_param = "treatmenttreat",
+  simulate_data_fn = simulate_interaction_data,
+  threshold_success = 0.3,
+  threshold_futility = 0.1,
+  n_sims = n_sims_demo,
+  n_cores = n_cores,
+  brms_args = list(
+    algorithm = "meanfield",
+    importance_resampling = TRUE,
+    iter = 1e4,
+    output_samples = 1e3
+  )
+)
+
+prior_impact_results <- rbind(prior_impact_results, data.frame(
+  Prior_Type = "Informative",
+  Power_Success = conservative_power$power_success,
+  Mean_Effect = conservative_power$mean_effect_estimate,
+  Effect_SD = conservative_power$sd_effect_estimate
+))
+
+print(prior_impact_results)
+```
+
+# Prior Elicitation Strategies
+
+## Meta-Analysis Based Priors
+
+Using systematic reviews and meta-analyses to inform priors:
+
+```{r meta_analysis_priors}
+# Example: Deriving design priors from meta-analysis
+meta_analysis_example <- data.frame(
+  Study = c("Study 1", "Study 2", "Study 3", "Study 4", "Meta-Analysis"),
+  Effect_Size = c(0.35, 0.42, 0.28, 0.51, 0.39),
+  Lower_CI = c(0.15, 0.22, 0.08, 0.31, 0.29),
+  Upper_CI = c(0.55, 0.62, 0.48, 0.71, 0.49),
+  Notes = c("RCT, n=200", "RCT, n=150", "RCT, n=180", "RCT, n=220", "Fixed effects"),
+  stringsAsFactors = FALSE
+)
+
+print(meta_analysis_example)
+
+# Derive design prior from meta-analysis
+meta_mean <- 0.39
+meta_se <- (0.49 - 0.29) / (2 * 1.96) # SE from 95% CI
+meta_sd <- meta_se * sqrt(4) # Inflate for between-study heterogeneity
+
+cat("Derived design prior: normal(", meta_mean, ", ", round(meta_sd, 3), ")\n", sep = "")
+
+# Use meta-analysis informed prior
+meta_informed_power <- power_grid_analysis(
+  sample_sizes = c(60, 80, 100),
+  effect_sizes = seq(0.2, 0.6, by = 0.1),
+  design_prior = paste0("normal(", meta_mean, ", ", round(meta_sd, 3), ")"),
+  power_analysis_fn = "power_analysis_ancova",
+  outcome_type = "continuous",
+  baseline_effect = 0.3,
+  threshold_success = 0.25,
+  threshold_futility = 0.1,
+  n_sims = n_sims_demo,
+  n_cores = n_cores
+)
+
+cat("Meta-analysis informed integrated power:", round(meta_informed_power$integrated_power_success, 3), "\n")
+```
+
+## Expert Elicitation
+
+Incorporating expert knowledge when data is limited:
+
+```{r expert_elicitation}
+# Example expert elicitation summary
+expert_elicitation <- data.frame(
+  Expert = c("Clinician A", "Clinician B", "Statistician", "Consensus"),
+  Pessimistic = c(0.2, 0.15, 0.25, 0.2),
+  Best_Guess = c(0.4, 0.35, 0.45, 0.4),
+  Optimistic = c(0.7, 0.6, 0.8, 0.7),
+  Confidence = c("High", "Medium", "High", "Medium"),
+  stringsAsFactors = FALSE
+)
+
+print(expert_elicitation)
+
+# Convert expert opinions to prior parameters
+expert_mean <- 0.4
+expert_pessimistic <- 0.2
+expert_optimistic <- 0.7
+
+# Assume pessimistic is 10th percentile, optimistic is 90th percentile
+# For normal distribution: P10 = mean - 1.28*sd, P90 = mean + 1.28*sd
+expert_sd <- (expert_optimistic - expert_pessimistic) / (2 * 1.28)
+
+cat("Expert-based design prior: normal(", expert_mean, ", ", round(expert_sd, 3), ")\n", sep = "")
+
+# Compare expert vs data-driven priors
+expert_power <- power_grid_analysis(
+  sample_sizes = 80,
+  effect_sizes = seq(0.1, 0.8, by = 0.1),
+  design_prior = paste0("normal(", expert_mean, ", ", round(expert_sd, 3), ")"),
+  power_analysis_fn = "power_analysis_ancova",
+  outcome_type = "continuous",
+  baseline_effect = 0.3,
+  threshold_success = 0.3,
+  threshold_futility = 0.1,
+  n_sims = n_sims_demo,
+  n_cores = n_cores
+)
+
+cat("Expert-informed integrated power:", round(expert_power$integrated_power_success, 3), "\n")
+```
+
+# Regulatory and Practical Considerations
+
+## Conservative Priors for Regulatory Settings
+
+When planning studies for regulatory approval, conservative approaches are often preferred:
+
+```{r regulatory_priors}
+# Conservative design prior for regulatory submission
+regulatory_design_prior <- "normal(0.3, 0.05)" # Conservative effect, low uncertainty
+
+regulatory_power <- power_grid_analysis(
+  sample_sizes = c(100, 150, 200),
+  effect_sizes = seq(0.2, 0.5, by = 0.05),
+  design_prior = regulatory_design_prior,
+  power_analysis_fn = "power_analysis_ancova",
+  outcome_type = "continuous",
+  baseline_effect = 0.4,
+  threshold_success = 0.25, # Conservative threshold
+  threshold_futility = 0.1,
+  target_power_success = 0.9, # High power requirement
+  n_sims = n_sims_demo,
+  n_cores = n_cores
+)
+
+print(regulatory_power)
+
+# Compare regulatory vs academic planning
+academic_power <- power_grid_analysis(
+  sample_sizes = c(100, 150, 200),
+  effect_sizes = seq(0.2, 0.5, by = 0.05),
+  design_prior = "normal(0.4, 0.15)", # More optimistic, higher uncertainty
+  power_analysis_fn = "power_analysis_ancova",
+  outcome_type = "continuous",
+  baseline_effect = 0.4,
+  threshold_success = 0.3,
+  threshold_futility = 0.1,
+  target_power_success = 0.8, # Standard power requirement
+  n_sims = n_sims_demo,
+  n_cores = n_cores
+)
+
+comparison_table <- data.frame(
+  Setting = c("Regulatory", "Academic"),
+  Design_Prior = c("normal(0.3, 0.05)", "normal(0.4, 0.15)"),
+  Target_Power = c(0.9, 0.8),
+  Integrated_Power = c(
+    regulatory_power$integrated_power_success,
+    academic_power$integrated_power_success
+  ),
+  Recommended_N = c(
+    min(regulatory_power$sample_size[regulatory_power$meets_target_success]),
+    min(academic_power$sample_size[academic_power$meets_target_success])
+  ),
+  stringsAsFactors = FALSE
+)
+
+print(comparison_table)
+```
+
+# Best Practices for Prior Specification
+
+## Prior Selection Guidelines
+
+```{r prior_guidelines}
+# Guidelines for prior specification
+prior_guidelines <- data.frame(
+  Situation = c(
+    "Strong evidence base",
+    "Limited evidence",
+    "Conflicting evidence",
+    "Novel intervention",
+    "Regulatory submission"
+  ),
+  Design_Prior_Strategy = c(
+    "Informative from meta-analysis",
+    "Weakly informative",
+    "Mixture or wide prior",
+    "Conservative/skeptical",
+    "Conservative with sensitivity"
+  ),
+  Model_Prior_Strategy = c(
+    "Mildly informative",
+    "Default/weakly informative",
+    "Robust (student_t)",
+    "Default",
+    "Default/conservative"
+  ),
+  Example = c(
+    "normal(0.4, 0.1)",
+    "normal(0.3, 0.2)",
+    "mixture or normal(0.3, 0.3)",
+    "normal(0.2, 0.1)",
+    "normal(0.25, 0.05)"
+  ),
+  stringsAsFactors = FALSE
+)
+
+print(prior_guidelines)
+```
+
+## Prior Sensitivity Checklist
+
+Key questions to ask when specifying priors:
+
+```{r sensitivity_checklist, eval=FALSE}
+# Prior sensitivity analysis checklist
+
+check_design_prior_sensitivity <- function(base_prior, analysis_params) {
+  # 1. Test different centers
+  cat("1. Testing different prior centers...\n")
+
+  # 2. Test different spreads
+  cat("2. Testing different prior spreads...\n")
+
+  # 3. Test different distributions
+  cat("3. Testing different prior distributions...\n")
+
+  # 4. Check robustness to outliers
+  cat("4. Testing robustness to outliers...\n")
+
+  # 5. Validate against external evidence
+  cat("5. Validating against external evidence...\n")
+}
+
+# Example usage
+# check_design_prior_sensitivity("normal(0.4, 0.1)", analysis_params)
+```
+
+## Documentation and Reporting
+
+```{r prior_documentation}
+# Template for documenting prior choices
+prior_documentation <- data.frame(
+  Component = c(
+    "Design Prior",
+    "Model Priors",
+    "Sensitivity Analysis",
+    "Justification",
+    "Limitations"
+  ),
+  Documentation_Required = c(
+    "Distribution, parameters, source",
+    "All custom priors and rationale",
+    "Alternative specifications tested",
+    "Evidence base and expert input",
+    "Assumptions and uncertainties"
+  ),
+  Example = c(
+    "normal(0.4, 0.1) from Smith et al. meta-analysis",
+    "student_t(3,0,1) for robustness to outliers",
+    "Tested normal(0.3,0.05) to normal(0.5,0.2)",
+    "Based on 3 RCTs in similar population",
+    "Limited data on long-term effects"
+  ),
+  stringsAsFactors = FALSE
+)
+
+print(prior_documentation)
+```
+
+# Conclusion
+
+Proper prior specification is crucial for meaningful Bayesian power analysis:
+
+## Key Principles
+
+1. **Design Priors**: Use to express uncertainty about effect sizes
+2. **Model Priors**: Choose appropriate priors for parameter estimation
+3. **Evidence-Based**: Ground priors in available evidence when possible
+4. **Sensitivity Analysis**: Always test robustness to prior choices
+5. **Documentation**: Clearly document and justify all prior specifications
+
+## Common Strategies
+
+- **Meta-analysis informed**: When systematic evidence exists
+- **Expert elicitation**: When data is limited but expertise available
+- **Conservative**: For regulatory or high-stakes decisions
+- **Sensitivity testing**: Always test multiple reasonable specifications
+
+The `rctbayespower` package provides flexible tools for implementing these strategies while maintaining computational efficiency through model caching and optimized algorithms.
+
+# Session Information
+
+```{r session_info}
+sessionInfo()
+```

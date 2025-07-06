@@ -1,0 +1,232 @@
+---
+title: "Algorithm Performance and Computational Considerations"
+author: "rctbayespower package authors"
+date: "`r Sys.Date()`"
+output: 
+  rmarkdown::html_vignette:
+    toc: true
+    toc_depth: 3
+vignette: >
+  %\VignetteIndexEntry{Algorithm Performance and Computational Considerations}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 7,
+  fig.height = 5,
+  warning = FALSE,
+  message = FALSE
+)
+
+# Fast performance testing settings
+n_cores <- parallel::detectCores() - 1
+n_sims <- n_cores * 10
+```
+
+# Algorithm Performance and Computational Considerations
+
+This vignette provides guidance on algorithm selection, performance optimization, and computational considerations when using the `rctbayespower` package for Bayesian power analysis.
+
+```{r load_libs, echo=FALSE}
+# Check and install required packages
+required_packages <- c("rctbayespower", "ggplot2", "dplyr")
+lapply(required_packages, function(pkg) {
+  if (!requireNamespace(pkg, quietly = TRUE)) {
+    if (pkg == "rctbayespower") {
+      # Install from local source if building vignettes
+      install.packages(".", repos = NULL, type = "source")
+    } else {
+      install.packages(pkg, repos = "https://cloud.r-project.org")
+    }
+  }
+  library(pkg, character.only = TRUE)
+})
+```
+
+# Algorithm Overview
+
+The `rctbayespower` package supports multiple algorithms with different speed-accuracy trade-offs:
+
+## Algorithm Types
+
+```{r algorithm_overview}
+# Algorithm comparison table
+algorithm_comparison <- data.frame(
+  Algorithm = c("meanfield", "fullrank", "sampling"),
+  Speed = c("Fastest", "Medium", "Slowest"),
+  Accuracy = c("Good", "Better", "Best"),
+  Use_Case = c("Exploration", "Refinement", "Final confirmation"),
+  Typical_Time = c("Seconds", "Minutes", "Hours"),
+  stringsAsFactors = FALSE
+)
+
+print(algorithm_comparison)
+```
+
+## Selection Strategy
+
+**Recommended workflow:**
+1. **Exploration**: `meanfield` for rapid screening
+2. **Refinement**: `fullrank` for detailed analysis
+3. **Confirmation**: `sampling` for final results
+
+# Performance Comparison
+
+## Basic Algorithm Comparison
+
+```{r basic_performance}
+# Compare core algorithms on standard problem
+performance_results <- data.frame(
+  Algorithm = character(),
+  Time_Seconds = numeric(),
+  Power_Success = numeric(),
+  Convergence = numeric(),
+  stringsAsFactors = FALSE
+)
+
+algorithms <- c("meanfield", "fullrank", "sampling")
+
+for (alg in algorithms) {
+  cat("Testing algorithm:", alg, "\n")
+
+  start_time <- Sys.time()
+
+  power_result <- power_analysis_ancova(
+    n_control = 60,
+    n_treatment = 60,
+    effect_size = 0.5,
+    baseline_effect = 0.3,
+    outcome_type = "continuous",
+    threshold_success = 0.3,
+    threshold_futility = 0.1,
+    n_simulations = n_sims,
+    n_cores = n_cores,
+    brms_args = list(
+      algorithm = alg,
+      importance_resampling = TRUE,
+      iter = 1e4,
+      output_samples = 1e3
+    )
+  )
+
+  elapsed_time <- as.numeric(difftime(Sys.time(), start_time, units = "secs"))
+
+  performance_results <- rbind(performance_results, data.frame(
+    Algorithm = alg,
+    Time_Seconds = elapsed_time,
+    Power_Success = power_result$power_success,
+    Convergence = power_result$convergence
+  ))
+}
+
+print(performance_results)
+
+# Calculate efficiency (accuracy per unit time)
+performance_results$Efficiency <- performance_results$Power_Success / performance_results$Time_Seconds
+cat("\nEfficiency (power per second):\n")
+print(performance_results[c("Algorithm", "Efficiency")])
+```
+
+## Grid Analysis Performance
+
+```{r grid_performance}
+# Demonstrate model caching benefits
+cat("Grid analysis with model caching:\n")
+system.time({
+  grid_result <- power_grid_analysis(
+    sample_sizes = c(60, 80, 100),
+    effect_sizes = c(0.4, 0.5, 0.6),
+    power_analysis_fn = "power_analysis_ancova",
+    outcome_type = "continuous",
+    baseline_effect = 0.3,
+    threshold_success = 0.3,
+    threshold_futility = 0.1,
+    n_simulations = n_sims,
+    n_cores = n_cores,
+    brms_args = list(
+      algorithm = "meanfield",
+      importance_resampling = TRUE,
+      iter = 1e4,
+      output_samples = 1e3
+    )
+  )
+})
+
+cat("Grid completed:", nrow(grid_result), "combinations\n")
+cat("Average power:", round(mean(grid_result$power_success), 3), "\n")
+```
+
+# Computational Requirements
+
+## Memory Guidelines
+
+```{r memory_guidelines}
+memory_guide <- data.frame(
+  Component = c("Base session", "Small analysis", "Medium grid", "Large grid"),
+  Memory_MB = c("~50", "~100", "~300", "~1000+"),
+  Notes = c("R + packages", "Single power analysis", "5x5 grid", "10x10+ grid"),
+  stringsAsFactors = FALSE
+)
+
+print(memory_guide)
+```
+
+## Time Estimates
+
+```{r time_estimates}
+time_guide <- data.frame(
+  Analysis_Type = c("Single analysis", "Small grid (3x3)", "Medium grid (5x5)", "Large grid (10x10)"),
+  Meanfield = c("30-60 sec", "5-10 min", "15-30 min", "2-4 hours"),
+  Fullrank = c("1-2 min", "10-20 min", "30-60 min", "4-8 hours"),
+  Notes = c("100 simulations", "900 total fits", "2500 total fits", "10000 total fits"),
+  stringsAsFactors = FALSE
+)
+
+print(time_guide)
+```
+
+
+
+
+## Resource Planning
+
+```{r resource_planning}
+# Quick calculator for analysis complexity
+calculate_complexity <- function(n_sample_sizes, n_effect_sizes, n_simulations) {
+  total_fits <- n_sample_sizes * n_effect_sizes * n_simulations
+
+  # Rough time estimates (minutes)
+  time_meanfield <- total_fits / 100 # ~100 fits per minute
+  time_fullrank <- total_fits / 50 # ~50 fits per minute
+
+  cat("Analysis complexity:\n")
+  cat("  Total model fits:", total_fits, "\n")
+  cat("  Estimated time (meanfield):", round(time_meanfield, 1), "minutes\n")
+  cat("  Estimated time (fullrank):", round(time_fullrank, 1), "minutes\n")
+}
+
+# Example: medium grid analysis
+calculate_complexity(n_sample_sizes = 5, n_effect_sizes = 5, n_simulations = 100)
+```
+
+# Conclusion
+
+Effective use of `rctbayespower` requires balancing computational efficiency with analytical precision:
+
+- **Start fast**: Use `meanfield` for exploration
+- **Refine carefully**: Use `fullrank` for detailed analysis  
+- **Confirm precisely**: Use `sampling` for final results
+- **Plan resources**: Estimate time and memory needs
+- **Monitor quality**: Check convergence and validate results
+
+The progressive workflow approach maximizes efficiency while maintaining result quality.
+
+# Session Information
+
+```{r session_info}
+sessionInfo()
+```

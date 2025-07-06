@@ -8,7 +8,7 @@ always_allow_html: true
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
-  fig.path = "../man/figures/README-",
+  fig.path = "vignettes/man/figures/01-introduction-",
   out.width = "90%",
   fig.width = 10,
   fig.height = 7,
@@ -17,7 +17,7 @@ knitr::opts_chunk$set(
 
 # Set up for examples (reduce simulation counts for faster vignette building)
 n_cores <- parallel::detectCores() - 1
-n_sims <- n_cores * 10
+n_sims <- n_cores * 7
 ```
 
 # Introduction
@@ -37,13 +37,17 @@ This vignette demonstrates the main functions of the package with practical exam
 # Install from GitHub (once package is published)
 # devtools::install_github("matthiaskloft/rctbayespower")
 
-# Load the package
-library(rctbayespower)
+# Check and install required packages
+required_packages <- c("brms", "ggplot2", "dplyr", "devtools")
+lapply(required_packages, function(pkg) {
+  if (!requireNamespace(pkg, quietly = TRUE)) {
+    install.packages(pkg, repos = "https://cloud.r-project.org")
+  }
+  library(pkg, character.only = TRUE)
+})
 
-# Required dependencies
-library(brms)
-library(ggplot2)
-library(dplyr)
+# load the package
+devtools::load_all(".")
 ```
 
 
@@ -75,7 +79,7 @@ power_result <- power_analysis_ancova(
   )
 )
 
-print(power_result)
+summary(power_result)
 ```
 
 The output shows:
@@ -83,6 +87,40 @@ The output shows:
 - **Power Futility**: Probability that the effect falls below the futility threshold
 - **Mean Effect Estimate**: Average estimated effect size across simulations
 - **Convergence**: Proportion of models that converged successfully
+
+
+# Frequentist Alpha Error (Type I Error) Calculation
+
+While this package focuses on Bayesian power analysis, it's useful to compare with traditional frequentist concepts. We can estimate the Type I error rate (alpha) by running a power analysis under the null hypothesis (effect size = 0).
+
+```{r alpha_error}
+# Calculate frequentist alpha error under null hypothesis
+alpha_result <- power_analysis_ancova(
+  n_control = 50,
+  n_treatment = 50,
+  effect_size = 0, # NULL hypothesis: no treatment effect
+  baseline_effect = 0.3,
+  outcome_type = "continuous",
+  threshold_success = 0.0, # Any positive effect counts as "significant"
+  threshold_futility = -0.3, # Negative threshold for futility
+  p_sig_success = 0.95, # Traditional 95% credible interval
+  p_sig_futility = 0.5,
+  n_simulations = n_sims,
+  n_cores = n_cores,
+  brms_args = list(
+    algorithm = "meanfield",
+    importance_resampling = TRUE,
+    iter = 1e4,
+    output_samples = 1e3
+  )
+)
+
+# The power_success represents the Type I error rate (alpha)
+cat("Estimated Type I error rate (alpha):", round(alpha_result$power_success, 3), "\n")
+```
+
+In frequentist statistics, alpha represents the probability of falsely rejecting the null hypothesis when it's true. In contrast, Bayesian power analysis provides probabilistic statements about effect sizes relative to clinically meaningful thresholds.
+
 
 
 # Grid Analysis: Sample Size and Effect Size Exploration
@@ -108,9 +146,13 @@ sample_size_result <- power_grid_analysis(
   n_simulations = n_sims,
   n_cores = n_cores
 )
-
-print(sample_size_result)
 ```
+
+Get a more comprehensive summary of the sample size analysis:
+```{r}
+summary(sample_size_result)
+```
+
 
 ```{r sample_size_plot}
 # Visualize the sample size analysis
@@ -138,7 +180,7 @@ effect_size_result <- power_grid_analysis(
   n_cores = n_cores
 )
 
-print(effect_size_result)
+summary(effect_size_result)
 ```
 
 ```{r effect_size_plot}
@@ -153,8 +195,8 @@ For comprehensive planning, analyze both sample sizes and effect sizes:
 ```{r grid_analysis}
 # Full grid analysis
 grid_result <- power_grid_analysis(
-  sample_sizes = c(70, 90),
-  effect_sizes = c(0.5, 0.7),
+  sample_sizes = c(50, 70),
+  effect_sizes = c(0.6, 0.8),
   design_prior = "normal(0.5, 0.1)",
   power_analysis_fn = "power_analysis_ancova",
   outcome_type = "continuous",
@@ -166,18 +208,20 @@ grid_result <- power_grid_analysis(
   n_simulations = n_sims,
   n_cores = n_cores
 )
-
-print(grid_result)
 ```
+
+Summary:
+```{r}
+summary(grid_result)
+```
+
 
 ```{r grid_plot}
 # Visualize as heatmap
 plot(grid_result, type = "heatmap")
 ```
 
-# Advanced Features: Custom Power Analysis
-
-## Building a Custom Model
+# Building a Custom Model
 
 For specialized designs, you can build custom models using the core `power_analysis()` function:
 
@@ -243,9 +287,13 @@ validation <- validate_power_design(
     output_samples = 1e3
   )
 )
-
-print(validation)
 ```
+
+Summary:
+```{r}
+summary(validation)
+```
+
 
 ```{r custom_model_power}
 # Run power analysis with custom model
@@ -269,9 +317,13 @@ custom_power <- power_analysis(
     output_samples = 1e3
   )
 )
-
-print(custom_power)
 ```
+
+Summary:
+```{r}
+summary(custom_power)
+```
+
 
 
 # Interpreting Results
@@ -317,6 +369,11 @@ Key advantages include:
 - Support for multiple outcome types and study designs
 
 For more advanced usage and specialized designs, see the additional vignettes and function documentation.
+
+
+
+***
+
 
 # Session Information
 
