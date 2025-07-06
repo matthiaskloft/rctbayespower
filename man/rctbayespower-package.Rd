@@ -35,6 +35,13 @@ equivalence (ROPE) for decision making.
 }
 }
 
+\seealso{
+Useful links:
+\itemize{
+  \item \url{https://matthiaskloft.github.io/rctbayespower/}
+}
+
+}
 \author{
 \strong{Maintainer}: Matthias Kloft \email{kloft.dev+rctbayespower@gmail.com} (\href{https://orcid.org/0000-0003-1845-6957}{ORCID}) [copyright holder]
 

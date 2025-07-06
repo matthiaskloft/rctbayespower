@@ -23,3 +23,8 @@
 ^_pkgdown\.yml$
 ^docs$
 ^pkgdown$
+^vignettes/
+^development/
+^Makefile$
+^\.gitattributes$
+^\..*Rcheck$

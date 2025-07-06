@@ -10,7 +10,12 @@
       "Bash(_R_CHECK_FORCE_SUGGESTS_=false R CMD check . --no-tests --no-vignettes --no-manual)",
       "Bash(mkdir:*)",
       "Bash(_R_CHECK_FORCE_SUGGESTS_=false R CMD check . --no-manual --no-tests)",
-      "Bash(_R_CHECK_FORCE_SUGGESTS_=false R CMD check --no-examples --no-tests --no-vignettes --no-install .)"
+      "Bash(_R_CHECK_FORCE_SUGGESTS_=false R CMD check --no-examples --no-tests --no-vignettes --no-install .)",
+      "Bash(ls:*)",
+      "Bash(sudo apt-get:*)",
+      "Bash(sudo apt-get install:*)",
+      "Bash(_R_CHECK_FORCE_SUGGESTS_=false R CMD check . --no-manual --no-vignettes)",
+      "Bash(git checkout:*)"
     ],
     "deny": []
   }

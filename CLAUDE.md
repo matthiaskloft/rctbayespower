@@ -22,8 +22,6 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Comprehensive plotting system with multiple visualization options
 - Robust parallelization with proper parameter handling
 - Package structure and dependencies stable and optimized
-- **Note**: Tests are currently minimal and will be implemented later when functions are complete
-- **Note**: Some functions like `effect_size_analysis` and `power_curve` will be implemented later
 
 ## Development Practices and R CMD Check Guidelines
 
@@ -31,6 +29,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Always update documentations directly in the .R file's roxygen documentation**
 - **CRITICAL**: After updating roxygen comments, run `devtools::document()` to regenerate .Rd files
 - **Never manually edit .Rd files** in the `man/` directory - they are auto-generated
+- Only edit the README.Rmd file, the README.md file will get build from it later.
+
 
 ### R CMD Check Best Practices
 
@@ -182,16 +182,14 @@ devtools::test()
 
 ### Testing
 ```r
-# Run all tests (currently minimal - tests will be implemented later)
+# Run all tests
 devtools::test()
-
-# Note: Individual test files are not yet implemented
 ```
 
 ### Documentation Building
 ```r
 # Build vignettes
-devtools::build_vignettes()
+roxygen2::roxygenise()
 ```
 
 ## Dependencies
@@ -285,6 +283,3 @@ The `workflow_template.R` file provides a complete example workflow for custom p
 - Shows model caching and performance optimization techniques
 - Serves as a template for researchers developing their own power analysis pipelines
 
-## Repository Memories and Notes
-
-- Only edit the README.Rmd file, the README.md file will get build from it later.

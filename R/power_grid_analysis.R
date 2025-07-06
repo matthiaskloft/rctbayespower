@@ -1768,7 +1768,25 @@ summary.rctbayespower_grid <- function(object, ...) {
     )
   }
 
-  invisible(object)
+  # Return structured summary for testing and programmatic access
+  summary_obj <- list(
+    analysis_info = list(
+      analysis_type = object$analysis_type,
+      target_power_success = object$target_power_success,
+      target_power_futility = object$target_power_futility,
+      threshold_success = object$threshold_success,
+      threshold_futility = object$threshold_futility,
+      sample_sizes = object$sample_sizes,
+      effect_sizes = object$effect_sizes,
+      design_prior = object$design_prior
+    ),
+    power_surface = object$power_surface,
+    optimal_combinations_success = object$optimal_combinations_success,
+    optimal_combinations_futility = object$optimal_combinations_futility,
+    integrated_power = object$integrated_power
+  )
+  
+  invisible(summary_obj)
 }
 
 #' Validate Weighting Function Implementation

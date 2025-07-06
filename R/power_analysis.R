@@ -768,6 +768,14 @@ power_analysis <- function(n_control,
 #' summary(result)
 #' }
 summary.rctbayespower <- function(object, ...) {
+  # Validate required fields
+  required_fields <- c("study_parameters", "n_simulations", "successful_fits", 
+                      "convergence_rate", "power_success", "power_futility")
+  missing_fields <- setdiff(required_fields, names(object))
+  if (length(missing_fields) > 0) {
+    stop("Missing required field(s): ", paste(missing_fields, collapse = ", "))
+  }
+  
   cat("\n=== Bayesian Power Analysis Summary ===\n\n")
 
   # Study design parameters
@@ -848,7 +856,29 @@ summary.rctbayespower <- function(object, ...) {
   # Footer
   cat("=== End Summary ===\n")
 
-  invisible(object)
+  # Return structured summary for testing and programmatic access
+  summary_obj <- list(
+    power_metrics = list(
+      power_success = object$power_success,
+      power_futility = object$power_futility,
+      mean_prob_success = object$mean_prob_success,
+      mean_prob_futility = object$mean_prob_futility
+    ),
+    effect_estimates = list(
+      mean_effect_estimate = object$mean_effect_estimate,
+      median_effect_estimate = object$median_effect_estimate,
+      sd_mean_effect_estimate = object$sd_mean_effect_estimate,
+      sd_median_effect_estimate = object$sd_median_effect_estimate
+    ),
+    study_info = list(
+      n_simulations = object$n_simulations,
+      successful_fits = object$successful_fits,
+      convergence_rate = object$convergence_rate,
+      study_parameters = object$study_parameters
+    )
+  )
+  
+  invisible(summary_obj)
 }
 
 #' Plot Power Analysis Results
@@ -1373,6 +1403,14 @@ validate_power_design <- function(n_control,
 #' @return Invisibly returns the input object. Used for side effects (printing).
 #' @export
 print.rctbayespower <- function(x, ...) {
+  # Validate required fields
+  required_fields <- c("study_parameters", "n_simulations", "successful_fits", 
+                      "convergence_rate", "power_success", "power_futility")
+  missing_fields <- setdiff(required_fields, names(x))
+  if (length(missing_fields) > 0) {
+    stop("Missing required field(s): ", paste(missing_fields, collapse = ", "))
+  }
+  
   cat("Bayesian RCT Power Analysis Results\n")
   cat("===================================\n\n")
 

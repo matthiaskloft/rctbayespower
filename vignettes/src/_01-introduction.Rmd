@@ -1,23 +1,17 @@
 ---
 title: "Getting Started with rctbayespower: Bayesian Power Analysis for RCTs"
 date: "`r Sys.Date()`"
-output: 
-  rmarkdown::html_vignette:
-    toc: true
-    toc_depth: 3
-vignette: >
-  %\VignetteIndexEntry{Getting Started with rctbayespower: Bayesian Power Analysis for RCTs}
-  %\VignetteEngine{knitr::rmarkdown}
-  %\VignetteEncoding{UTF-8}
+always_allow_html: true
 ---
 
-```{r setup, include = FALSE}
+```{r include = FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
-  fig.width = 7,
-  fig.height = 5,
-  warning = FALSE,
+  fig.path = "../man/figures/README-",
+  out.width = "90%",
+  fig.width = 10,
+  fig.height = 7,
   message = FALSE
 )
 
@@ -39,7 +33,7 @@ This vignette demonstrates the main functions of the package with practical exam
 
 ## Installation and Setup
 
-```{r install, eval=FALSE}
+```{r install}
 # Install from GitHub (once package is published)
 # devtools::install_github("matthiaskloft/rctbayespower")
 
@@ -52,11 +46,6 @@ library(ggplot2)
 library(dplyr)
 ```
 
-```{r load_libs, echo=FALSE}
-library(rctbayespower)
-library(ggplot2)
-library(dplyr)
-```
 
 # Basic Power Analysis Using ANCOVA Design
 
@@ -105,7 +94,7 @@ One of the most common questions in study planning is: "How many participants do
 ```{r sample_size_analysis}
 # Find sample size needed for 80% power
 sample_size_result <- power_grid_analysis(
-  sample_sizes = c(40, 60, 80, 100),
+  sample_sizes = c(80, 100),
   effect_sizes = 0.5, # Fixed effect size
   target_power_success = 0.8,
   target_power_futility = 0.8,
@@ -136,7 +125,7 @@ Understanding how power changes with effect size helps assess study sensitivity:
 # Generate power curve across different effect sizes
 effect_size_result <- power_grid_analysis(
   sample_sizes = 60, # Fixed sample size
-  effect_sizes = seq(0.2, 0.8, by = 0.1),
+  effect_sizes = c(0.6, 0.8),
   design_prior = "normal(0.5, 0.1)", # Prior knowledge about effect size
   power_analysis_fn = "power_analysis_ancova",
   outcome_type = "continuous",
@@ -164,8 +153,8 @@ For comprehensive planning, analyze both sample sizes and effect sizes:
 ```{r grid_analysis}
 # Full grid analysis
 grid_result <- power_grid_analysis(
-  sample_sizes = c(50, 70, 90),
-  effect_sizes = c(0.3, 0.5, 0.7),
+  sample_sizes = c(70, 90),
+  effect_sizes = c(0.5, 0.7),
   design_prior = "normal(0.5, 0.1)",
   power_analysis_fn = "power_analysis_ancova",
   outcome_type = "continuous",
