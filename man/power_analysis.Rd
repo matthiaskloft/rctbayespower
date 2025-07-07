@@ -70,7 +70,30 @@ power_analysis(
 \item{progress_updates}{Number of progress updates to show during parallel processing. Default is 10. Set to 0 to disable progress updates.}
 }
 \value{
-A list containing power analysis results
+A list of class "rctbayespower" containing the following elements:
+\describe{
+\item{n_simulations}{Number of simulations requested}
+\item{successful_fits}{Number of simulations that converged successfully}
+\item{convergence_rate}{Proportion of simulations that converged (successful_fits / n_simulations)}
+\item{power_success}{Proportion of successful simulations where P(treatment_effect > threshold_success) > p_sig_success}
+\item{power_futility}{Proportion of successful simulations where P(treatment_effect < threshold_futility) > p_sig_futility}
+\item{mean_prob_success}{Mean posterior probability that treatment effect exceeds success threshold across all successful simulations}
+\item{mean_prob_futility}{Mean posterior probability that treatment effect is below futility threshold across all successful simulations}
+\item{mcse_power_success}{Monte Carlo Standard Error for power_success}
+\item{mcse_power_futility}{Monte Carlo Standard Error for power_futility}
+\item{mcse_mean_prob_success}{Monte Carlo Standard Error for mean_prob_success}
+\item{mcse_mean_prob_futility}{Monte Carlo Standard Error for mean_prob_futility}
+\item{mean_effect_estimate}{Mean of the posterior means of the treatment effect across all successful simulations}
+\item{median_effect_estimate}{Median of the posterior medians of the treatment effect across all successful simulations}
+\item{sd_mean_effect_estimate}{Standard deviation of the posterior means of the treatment effect across all successful simulations}
+\item{sd_median_effect_estimate}{Standard deviation of the posterior medians of the treatment effect across all successful simulations}
+\item{study_parameters}{List containing the input parameters: n_control, n_treatment, target_param, thresholds, and probability thresholds}
+\item{true_parameters}{List containing the true parameter values used in data generation: fixef (fixed effects) and ranef (random effects, if any)}
+\item{model_formula_true_params}{The brms formula used for the design model with true parameters}
+\item{model_formula_estimation}{The brms formula used for the estimation model}
+\item{family}{The distributional family used for modeling}
+\item{simulation_results}{List containing the raw results from each successful simulation, including individual treatment effect estimates, probabilities, and convergence information}
+}
 }
 \description{
 Conduct Bayesian power analysis for randomized controlled trials using user-specified

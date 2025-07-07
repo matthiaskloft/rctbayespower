@@ -1,3 +1,46 @@
+#' Calculate Monte Carlo Standard Error for Integrated Power Metrics
+#'
+#' Calculate MCSE for integrated power metrics that are weighted averages across effect sizes.
+#'
+#' @param power_values Vector of power values across effect sizes for a given sample size
+#' @param weights Vector of weights corresponding to each effect size
+#' @param n_simulations_per_combo Number of simulations per combination
+#' @param is_power_metric Logical indicating if this is a power metric (TRUE) or probability metric (FALSE)
+#' @return Monte Carlo Standard Error for the integrated power
+#' @keywords internal
+calculate_mcse_integrated_power <- function(power_values, weights, n_simulations_per_combo, is_power_metric = TRUE) {
+  if (length(power_values) == 0 || length(weights) == 0 || n_simulations_per_combo == 0) {
+    return(NA_real_)
+  }
+  
+  # Remove NA values
+  valid_indices <- !is.na(power_values) & !is.na(weights)
+  power_values <- power_values[valid_indices]
+  weights <- weights[valid_indices]
+  
+  if (length(power_values) == 0) {
+    return(NA_real_)
+  }
+  
+  # Normalize weights
+  weights <- weights / sum(weights)
+  
+  # MCSE for weighted average: sqrt(sum(w_i^2 * var_i))
+  if (is_power_metric) {
+    # For power estimates, var_i = p_i * (1 - p_i) / n_sim
+    variances <- power_values * (1 - power_values) / n_simulations_per_combo
+  } else {
+    # For continuous probability metrics, we need to estimate variance differently
+    # Since we don't have individual variances, use a conservative approach
+    # Approximate variance as p * (1 - p) / n_sim for bounded [0,1] values
+    variances <- power_values * (1 - power_values) / n_simulations_per_combo
+  }
+  
+  mcse <- sqrt(sum(weights^2 * variances))
+  
+  return(mcse)
+}
+
 #' Power Grid Analysis for Bayesian RCTs
 #'
 #' Comprehensive analysis varying both sample sizes and effect sizes, with optional
@@ -50,8 +93,8 @@
 #'   \item sample_sizes: Vector of tested sample sizes
 #'   \item effect_sizes: Vector of tested effect sizes
 #'   \item design_prior: Design prior specification
-#'   \item power_surface: Data frame with power results for all combinations
-#'   \item integrated_power: If design prior provided, integrated power and probability across effect sizes
+#'   \item power_surface: Data frame with power results for all combinations, including Monte Carlo Standard Errors (MCSE) for all power and probability metrics
+#'   \item integrated_power: If design prior provided, integrated power and probability across effect sizes, including MCSE for integrated metrics
 #'   \item optimal_combinations: Sample size/effect size combinations achieving target power
 #'   \item detailed_results: Full power analysis results for each combination
 #' }
@@ -867,6 +910,10 @@ power_grid_analysis <- function(target_power_success = 0.9,
             power_futility = power_result$power_futility,
             mean_prob_success = power_result$mean_prob_success,
             mean_prob_futility = power_result$mean_prob_futility,
+            mcse_power_success = power_result$mcse_power_success,
+            mcse_power_futility = power_result$mcse_power_futility,
+            mcse_mean_prob_success = power_result$mcse_mean_prob_success,
+            mcse_mean_prob_futility = power_result$mcse_mean_prob_futility,
             convergence_rate = power_result$convergence_rate,
             full_result = power_result
           )
@@ -881,6 +928,10 @@ power_grid_analysis <- function(target_power_success = 0.9,
             power_futility = NA,
             mean_prob_success = NA,
             mean_prob_futility = NA,
+            mcse_power_success = NA,
+            mcse_power_futility = NA,
+            mcse_mean_prob_success = NA,
+            mcse_mean_prob_futility = NA,
             convergence_rate = NA,
             error = as.character(e)
           )
@@ -922,6 +973,26 @@ power_grid_analysis <- function(target_power_success = 0.9,
       } else {
         x$mean_prob_futility
       },
+      mcse_power_success = if (is.null(x$mcse_power_success)) {
+        NA_real_
+      } else {
+        x$mcse_power_success
+      },
+      mcse_power_futility = if (is.null(x$mcse_power_futility)) {
+        NA_real_
+      } else {
+        x$mcse_power_futility
+      },
+      mcse_mean_prob_success = if (is.null(x$mcse_mean_prob_success)) {
+        NA_real_
+      } else {
+        x$mcse_mean_prob_success
+      },
+      mcse_mean_prob_futility = if (is.null(x$mcse_mean_prob_futility)) {
+        NA_real_
+      } else {
+        x$mcse_mean_prob_futility
+      },
       convergence_rate = if (is.null(x$convergence_rate)) {
         NA_real_
       } else {
@@ -954,12 +1025,30 @@ power_grid_analysis <- function(target_power_success = 0.9,
         weighted_prob_success <- sum(subset_data$mean_prob_success * weights)
         weighted_prob_futility <- sum(subset_data$mean_prob_futility * weights)
 
+        # Calculate MCSE for integrated power metrics
+        mcse_integrated_power_success <- calculate_mcse_integrated_power(
+          subset_data$power_success, weights, n_simulations, is_power_metric = TRUE
+        )
+        mcse_integrated_power_futility <- calculate_mcse_integrated_power(
+          subset_data$power_futility, weights, n_simulations, is_power_metric = TRUE
+        )
+        mcse_integrated_prob_success <- calculate_mcse_integrated_power(
+          subset_data$mean_prob_success, weights, n_simulations, is_power_metric = FALSE
+        )
+        mcse_integrated_prob_futility <- calculate_mcse_integrated_power(
+          subset_data$mean_prob_futility, weights, n_simulations, is_power_metric = FALSE
+        )
+
         integrated_results[[length(integrated_results) + 1]] <- data.frame(
           n_total = as.integer(n),
           integrated_power_success = weighted_power_success,
           integrated_power_futility = weighted_power_futility,
           integrated_prob_success = weighted_prob_success,
           integrated_prob_futility = weighted_prob_futility,
+          mcse_integrated_power_success = mcse_integrated_power_success,
+          mcse_integrated_power_futility = mcse_integrated_power_futility,
+          mcse_integrated_prob_success = mcse_integrated_prob_success,
+          mcse_integrated_prob_futility = mcse_integrated_prob_futility,
           stringsAsFactors = FALSE
         )
       }
@@ -1590,10 +1679,32 @@ summary.rctbayespower_grid <- function(object, ...) {
       "power_futility",
       "mean_prob_futility"
     )]
-    display_df$power_success <- paste0(round(display_df$power_success * 100, 1), "%")
-    display_df$power_futility <- paste0(round(display_df$power_futility * 100, 1), "%")
-    display_df$mean_prob_success <- paste0(round(display_df$mean_prob_success * 100, 1), "%")
-    display_df$mean_prob_futility <- paste0(round(display_df$mean_prob_futility * 100, 1), "%")
+    
+    # Format power metrics with MCSE if available
+    if ("mcse_power_success" %in% names(object$power_surface)) {
+      display_df$power_success <- paste0(
+        round(display_df$power_success * 100, 1), "% (±", 
+        round(object$power_surface$mcse_power_success * 100, 2), ")"
+      )
+      display_df$power_futility <- paste0(
+        round(display_df$power_futility * 100, 1), "% (±", 
+        round(object$power_surface$mcse_power_futility * 100, 2), ")"
+      )
+      display_df$mean_prob_success <- paste0(
+        round(display_df$mean_prob_success * 100, 1), "% (±", 
+        round(object$power_surface$mcse_mean_prob_success * 100, 2), ")"
+      )
+      display_df$mean_prob_futility <- paste0(
+        round(display_df$mean_prob_futility * 100, 1), "% (±", 
+        round(object$power_surface$mcse_mean_prob_futility * 100, 2), ")"
+      )
+    } else {
+      display_df$power_success <- paste0(round(display_df$power_success * 100, 1), "%")
+      display_df$power_futility <- paste0(round(display_df$power_futility * 100, 1), "%")
+      display_df$mean_prob_success <- paste0(round(display_df$mean_prob_success * 100, 1), "%")
+      display_df$mean_prob_futility <- paste0(round(display_df$mean_prob_futility * 100, 1), "%")
+    }
+    
     display_df$convergence_rate <- paste0(round(display_df$convergence_rate * 100, 1), "%")
     names(display_df) <- c(
       "Effect_Size",
@@ -1618,14 +1729,32 @@ summary.rctbayespower_grid <- function(object, ...) {
       power_df$power_futility >= object$target_power_futility
     power_df$futility_target <- ifelse(futility_achieved, "OK", "x")
 
-    # Format the power values as percentages
-    power_df$power_success_pct <- paste0(round(power_df$power_success * 100, 1), "%")
-    power_df$power_futility_pct <- paste0(round(power_df$power_futility * 100, 1), "%")
+    # Format the power values as percentages with MCSE if available
+    if ("mcse_power_success" %in% names(power_df)) {
+      power_df$power_success_pct <- paste0(
+        round(power_df$power_success * 100, 1), "% (±", 
+        round(power_df$mcse_power_success * 100, 2), ")"
+      )
+      power_df$power_futility_pct <- paste0(
+        round(power_df$power_futility * 100, 1), "% (±", 
+        round(power_df$mcse_power_futility * 100, 2), ")"
+      )
+      power_df$pr_success_pct <- paste0(
+        round(power_df$mean_prob_success * 100, 1), "% (±", 
+        round(power_df$mcse_mean_prob_success * 100, 2), ")"
+      )
+      power_df$pr_futility_pct <- paste0(
+        round(power_df$mean_prob_futility * 100, 1), "% (±", 
+        round(power_df$mcse_mean_prob_futility * 100, 2), ")"
+      )
+    } else {
+      power_df$power_success_pct <- paste0(round(power_df$power_success * 100, 1), "%")
+      power_df$power_futility_pct <- paste0(round(power_df$power_futility * 100, 1), "%")
+      power_df$pr_success_pct <- paste0(round(power_df$mean_prob_success * 100, 1), "%")
+      power_df$pr_futility_pct <- paste0(round(power_df$mean_prob_futility * 100, 1), "%")
+    }
+    
     power_df$convergence_pct <- paste0(round(power_df$convergence_rate * 100, 1), "%")
-
-    # Format the posterior probability values as percentages
-    power_df$pr_success_pct <- paste0(round(power_df$mean_prob_success * 100, 1), "%")
-    power_df$pr_futility_pct <- paste0(round(power_df$mean_prob_futility * 100, 1), "%")
 
     # Create display table (consistent naming format)
     display_df <- data.frame(
@@ -1653,10 +1782,32 @@ summary.rctbayespower_grid <- function(object, ...) {
       "power_futility",
       "mean_prob_futility"
     )]
-    display_df$power_success <- paste0(round(display_df$power_success * 100, 1), "%")
-    display_df$power_futility <- paste0(round(display_df$power_futility * 100, 1), "%")
-    display_df$mean_prob_success <- paste0(round(display_df$mean_prob_success * 100, 1), "%")
-    display_df$mean_prob_futility <- paste0(round(display_df$mean_prob_futility * 100, 1), "%")
+    
+    # Format power metrics with MCSE if available
+    if ("mcse_power_success" %in% names(object$power_surface)) {
+      display_df$power_success <- paste0(
+        round(display_df$power_success * 100, 1), "% (±", 
+        round(object$power_surface$mcse_power_success * 100, 2), ")"
+      )
+      display_df$power_futility <- paste0(
+        round(display_df$power_futility * 100, 1), "% (±", 
+        round(object$power_surface$mcse_power_futility * 100, 2), ")"
+      )
+      display_df$mean_prob_success <- paste0(
+        round(display_df$mean_prob_success * 100, 1), "% (±", 
+        round(object$power_surface$mcse_mean_prob_success * 100, 2), ")"
+      )
+      display_df$mean_prob_futility <- paste0(
+        round(display_df$mean_prob_futility * 100, 1), "% (±", 
+        round(object$power_surface$mcse_mean_prob_futility * 100, 2), ")"
+      )
+    } else {
+      display_df$power_success <- paste0(round(display_df$power_success * 100, 1), "%")
+      display_df$power_futility <- paste0(round(display_df$power_futility * 100, 1), "%")
+      display_df$mean_prob_success <- paste0(round(display_df$mean_prob_success * 100, 1), "%")
+      display_df$mean_prob_futility <- paste0(round(display_df$mean_prob_futility * 100, 1), "%")
+    }
+    
     display_df$convergence_rate <- paste0(round(display_df$convergence_rate * 100, 1), "%")
     names(display_df) <- c(
       "N_Total",
@@ -1723,32 +1874,45 @@ summary.rctbayespower_grid <- function(object, ...) {
 
     integrated_display <- object$integrated_power
 
-    # Format as percentages
-    integrated_display$integrated_power_success <- paste0(
-      round(integrated_display$integrated_power_success * 100, 1),
-      "%"
-    )
-    integrated_display$integrated_power_futility <- paste0(
-      round(integrated_display$integrated_power_futility * 100, 1),
-      "%"
-    )
-    integrated_display$integrated_prob_success <- paste0(
-      round(integrated_display$integrated_prob_success * 100, 1),
-      "%"
-    )
-    integrated_display$integrated_prob_futility <- paste0(
-      round(integrated_display$integrated_prob_futility * 100, 1),
-      "%"
-    )
+    # Format as percentages with MCSE if available
+    if ("mcse_integrated_power_success" %in% names(integrated_display)) {
+      integrated_display$integrated_power_success <- paste0(
+        round(integrated_display$integrated_power_success * 100, 1), "% (±",
+        round(integrated_display$mcse_integrated_power_success * 100, 2), ")"
+      )
+      integrated_display$integrated_power_futility <- paste0(
+        round(integrated_display$integrated_power_futility * 100, 1), "% (±",
+        round(integrated_display$mcse_integrated_power_futility * 100, 2), ")"
+      )
+      integrated_display$integrated_prob_success <- paste0(
+        round(integrated_display$integrated_prob_success * 100, 1), "% (±",
+        round(integrated_display$mcse_integrated_prob_success * 100, 2), ")"
+      )
+      integrated_display$integrated_prob_futility <- paste0(
+        round(integrated_display$integrated_prob_futility * 100, 1), "% (±",
+        round(integrated_display$mcse_integrated_prob_futility * 100, 2), ")"
+      )
+    } else {
+      integrated_display$integrated_power_success <- paste0(
+        round(integrated_display$integrated_power_success * 100, 1), "%"
+      )
+      integrated_display$integrated_power_futility <- paste0(
+        round(integrated_display$integrated_power_futility * 100, 1), "%"
+      )
+      integrated_display$integrated_prob_success <- paste0(
+        round(integrated_display$integrated_prob_success * 100, 1), "%"
+      )
+      integrated_display$integrated_prob_futility <- paste0(
+        round(integrated_display$integrated_prob_futility * 100, 1), "%"
+      )
+    }
 
     # Reorder columns to preferred order: N_total, Power_Success, Prob_Success, Power_Futility, Prob_Futility
-    integrated_display <- integrated_display[, c(
-      "n_total",
-      "integrated_power_success",
-      "integrated_prob_success",
-      "integrated_power_futility",
-      "integrated_prob_futility"
-    )]
+    # Only select the main columns for display (MCSE are included in the formatted strings)
+    display_columns <- c("n_total", "integrated_power_success", "integrated_prob_success", 
+                        "integrated_power_futility", "integrated_prob_futility")
+    available_columns <- intersect(display_columns, names(integrated_display))
+    integrated_display <- integrated_display[, available_columns, drop = FALSE]
 
     names(integrated_display) <- c(
       "N_total",
@@ -1765,6 +1929,9 @@ summary.rctbayespower_grid <- function(object, ...) {
     )
     cat(
       "Power = probability of making correct decision, Mean Probability = mean posterior probability of exceeding threshold.\n"
+    )
+    cat(
+      "Values shown as percentage (±MCSE) where MCSE = Monte Carlo Standard Error.\n"
     )
   }
 

@@ -12,8 +12,8 @@ power_analysis_ancova(
   baseline_effect,
   intercept_value = 0,
   sigma_value = 1,
-  threshold_success,
-  threshold_futility,
+  threshold_success = NULL,
+  threshold_futility = NULL,
   p_sig_success = 0.975,
   p_sig_futility = 0.5,
   n_simulations = 1000,
@@ -44,15 +44,15 @@ power_analysis_ancova(
 
 \item{sigma_value}{True residual standard deviation (for continuous outcomes only)}
 
-\item{threshold_success}{Upper threshold for success determination}
+\item{threshold_success}{Upper threshold for success determination (not needed if compile_models_only=TRUE)}
 
-\item{threshold_futility}{Lower threshold for futility determination (required)}
+\item{threshold_futility}{Lower threshold for futility determination (not needed if compile_models_only=TRUE)}
 
-\item{p_sig_success}{Probability threshold for declaring success (default 0.975)}
+\item{p_sig_success}{Probability threshold for declaring success (default 0.975, not needed if compile_models_only=TRUE)}
 
-\item{p_sig_futility}{Probability threshold for declaring futility (default 0.5)}
+\item{p_sig_futility}{Probability threshold for declaring futility (default 0.5, not needed if compile_models_only=TRUE)}
 
-\item{n_simulations}{Number of simulation iterations}
+\item{n_simulations}{Number of simulation iterations (not needed if compile_models_only=TRUE)}
 
 \item{priors_treatment}{Prior for treatment effect (default: student_t(3, 0, 2))}
 
@@ -73,10 +73,13 @@ power_analysis_ancova(
 \item{compile_models_only}{If TRUE, only compile the brms models and return them without running simulations. Used for model caching in power_grid_analysis(). Default is FALSE.}
 }
 \value{
-A list containing power analysis results, or if compile_models_only=TRUE, a list with compiled models and arguments for later use
+A list containing power analysis results, or if
+compile_models_only=TRUE, a list with compiled models and arguments for later
+use. See \code{\link[=power_analysis]{power_analysis()}} for details. Power metrics include Monte Carlo
+Standard Errors (MCSE) for all power and probability estimates.
 }
 \description{
-Convenience wrapper for power analysis using the ANCOVA model with baseline covariate.
+Convenience wrapper for \code{\link[=power_analysis]{power_analysis()}} using the ANCOVA model with baseline covariate.
 This function automates the setup for a standard randomized controlled trial with
 a baseline covariate following the exact template workflow. Supports continuous,
 binary, and count outcomes.
@@ -100,4 +103,7 @@ power_result <- power_analysis_ancova(
   progress_updates = 5
 )
 }
+}
+\seealso{
+\code{\link[=power_analysis]{power_analysis()}}
 }

@@ -1,0 +1,169 @@
+---
+title: "Getting Started with rctbayespower: Bayesian Power Analysis for RCTs"
+date: "`r Sys.Date()`"
+always_allow_html: true
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.path = "vignettes/man/figures/04-algorithm_performance-",
+  out.width = "90%",
+  fig.width = 10,
+  fig.height = 7,
+  message = FALSE
+)
+
+# Check and install required packages
+packages <- c("tidyverse", "devtools")
+if (!require("pacman")) install.packages("pacman") 
+pacman::p_load(packages, update = F, character.only = T)
+
+# Load the package
+devtools::load_all(".")
+
+# Fast performance testing settings
+n_cores <- parallel::detectCores() - 1
+  n_sims <- 1e3
+```
+
+
+
+# Algorithm Performance and Computational Considerations
+
+This vignette provides guidance on algorithm selection, performance optimization, and computational considerations when using the `rctbayespower` package for Bayesian power analysis.
+
+
+## Algorithm Overview
+
+The `rctbayespower` package supports multiple algorithms with different speed-accuracy trade-offs:
+
+**Recommended workflow:**
+1. **Exploration**: `meanfield` for faster roundtrip
+2. **Refinement**: `fullrank` as an alternative to `meanfield` for more accuracy, however might not converge
+3. **Confirmation**: `sampling` for final results
+
+
+
+# Performance Comparison
+
+```{r basic_performance}
+model_compiled <- power_analysis_ancova(
+  n_control = 100,
+  n_treatment = 100,
+  effect_size = 0.6,
+  baseline_effect = 0.3,
+  outcome_type = "continuous",
+  compile_models_only = TRUE
+)
+
+# Compare core algorithms on standard problem
+performance_results <- data.frame(
+  Algorithm = character(),
+  Time_Seconds = numeric(),
+  Power_Success = numeric(),
+  Probability_Success = numeric(),
+  Power_Futility = numeric(),
+  Probability_Futility = numeric(),
+  Convergence = numeric(),
+  stringsAsFactors = FALSE
+)
+
+algorithms <- c("meanfield", "fullrank", "sampling")
+
+for (alg in algorithms) {
+  cat("Testing algorithm:", alg, "\n")
+  
+  start_time <- Sys.time()
+  
+  # Use power_analysis_ancova for meanfield and fullrank
+  if (alg %in% c("meanfield", "fullrank")) {
+    power_result <- power_analysis(
+      brms_design_estimation = model_compiled$brms_design_estimation,
+      brms_design_true_params = model_compiled$brms_design_true_params,
+      simulate_data_fn = model_compiled$simulate_data,
+      target_param = model_compiled$target_param,
+      threshold_success = .5,
+      threshold_futility = .1,
+      p_sig_success = .975,
+      p_sig_futility = .5, 
+      n_simulations = n_sims,
+      n_cores = n_cores,
+      brms_args = list(
+        algorithm = alg,
+        importance_resampling = TRUE,
+        iter = 1e4,
+        output_samples = 1e3
+      )
+    )
+  }
+  # Use power_analysis for sampling
+  if (alg == "sampling") {
+    power_result <- power_analysis(
+      brms_design_estimation = model_compiled$brms_design_estimation,
+      brms_design_true_params = model_compiled$brms_design_true_params,
+      simulate_data_fn = model_compiled$simulate_data,
+      target_param = model_compiled$target_param,
+      threshold_success = .5,
+      threshold_futility = .1,
+      p_sig_success = .975,
+      p_sig_futility = .5, 
+      n_simulations = n_sims,
+      n_cores = n_cores,
+      brms_args = list(
+        chains = 4,
+        iter = 800,
+        warmup = 300
+      )
+    )
+  }
+  
+  elapsed_time <- as.numeric(difftime(Sys.time(), start_time, units = "secs"))
+  # time in hours:minutes:seconds
+  elapsed_time_formatted <- sprintf(
+    "%02d:%02d:%02d",
+    as.integer(elapsed_time / 3600),
+    as.integer((elapsed_time %% 3600) / 60),
+    as.integer(elapsed_time %% 60)
+  )
+  
+  performance_results <- rbind(
+    performance_results,
+    data.frame(
+      Algorithm = alg,
+      N_simulations = n_sims,
+      Time = elapsed_time_formatted,
+      Power_Success = power_result$power_success,
+      Probability_Success = power_result$mean_prob_success,
+      Power_Futility = power_result$power_futility,
+      Probability_Futility = power_result$mean_prob_futility,
+      Convergence = power_result$convergence
+    )
+  )
+}
+
+print(performance_results) |> 
+  kableExtra::kable(digits = 2
+  ) 
+```
+
+
+# Conclusion
+
+- **Start fast**: Use `meanfield` for exploration
+- **Refine carefully**: Use `fullrank` for detailed analysis  
+- **Confirm precisely**: Use `sampling` for final results
+- **Plan resources**: Estimate time and memory needs
+- **Monitor quality**: Check convergence and validate results
+
+
+
+***
+
+
+# Session Information
+
+```{r session_info}
+sessionInfo()
+```

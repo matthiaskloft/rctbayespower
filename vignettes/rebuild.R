@@ -49,4 +49,5 @@ build_vignette <- function(f)
 
 clean()
 
-build_vignette(here("vignettes", "src", "_01-introduction.Rmd"))
+#build_vignette(here("vignettes", "src", "_01-introduction.Rmd"))
+build_vignette(here("vignettes", "src", "_04-algorithm-performance.Rmd"))

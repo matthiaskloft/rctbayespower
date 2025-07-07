@@ -1,3 +1,57 @@
+#' Monte Carlo Standard Error (MCSE) Calculation
+#'
+#' Calculate Monte Carlo Standard Error for power metrics based on simulation results.
+#' MCSE provides an estimate of the uncertainty in power estimates due to Monte Carlo sampling.
+#'
+#' @param successes Vector of success indicators (TRUE/FALSE or 1/0)
+#' @param n_simulations Total number of simulations
+#' @return Monte Carlo Standard Error
+#' @keywords internal
+calculate_mcse_power <- function(successes, n_simulations) {
+  if (length(successes) == 0 || n_simulations == 0) {
+    return(NA_real_)
+  }
+  
+  # Convert to numeric if needed
+  if (is.logical(successes)) {
+    successes <- as.numeric(successes)
+  }
+  
+  # Calculate proportion
+  p <- mean(successes, na.rm = TRUE)
+  
+  # MCSE for proportion = sqrt(p * (1 - p) / n)
+  mcse <- sqrt(p * (1 - p) / n_simulations)
+  
+  return(mcse)
+}
+
+#' Monte Carlo Standard Error for Continuous Metrics
+#'
+#' Calculate Monte Carlo Standard Error for continuous metrics like mean probabilities.
+#'
+#' @param values Vector of continuous values
+#' @param n_simulations Total number of simulations
+#' @return Monte Carlo Standard Error
+#' @keywords internal
+calculate_mcse_mean <- function(values, n_simulations) {
+  if (length(values) == 0 || n_simulations == 0) {
+    return(NA_real_)
+  }
+  
+  # Remove NA values
+  values <- values[!is.na(values)]
+  
+  if (length(values) == 0) {
+    return(NA_real_)
+  }
+  
+  # MCSE for mean = standard deviation / sqrt(n)
+  mcse <- sd(values) / sqrt(length(values))
+  
+  return(mcse)
+}
+
 #' Flexible Bayesian Power Analysis for RCTs
 #'
 #' Conduct Bayesian power analysis for randomized controlled trials using user-specified
@@ -25,7 +79,30 @@
 #' @param brms_design_estimation Optional pre-fitted brms model template for estimation. If provided, this model will be used instead of fitting a new design model.
 #' @param progress_updates Number of progress updates to show during parallel processing. Default is 10. Set to 0 to disable progress updates.
 #'
-#' @return A list containing power analysis results
+#' @return A list of class "rctbayespower" containing the following elements:
+#'   \describe{
+#'     \item{n_simulations}{Number of simulations requested}
+#'     \item{successful_fits}{Number of simulations that converged successfully}
+#'     \item{convergence_rate}{Proportion of simulations that converged (successful_fits / n_simulations)}
+#'     \item{power_success}{Proportion of successful simulations where P(treatment_effect > threshold_success) > p_sig_success}
+#'     \item{power_futility}{Proportion of successful simulations where P(treatment_effect < threshold_futility) > p_sig_futility}
+#'     \item{mean_prob_success}{Mean posterior probability that treatment effect exceeds success threshold across all successful simulations}
+#'     \item{mean_prob_futility}{Mean posterior probability that treatment effect is below futility threshold across all successful simulations}
+#'     \item{mcse_power_success}{Monte Carlo Standard Error for power_success}
+#'     \item{mcse_power_futility}{Monte Carlo Standard Error for power_futility}
+#'     \item{mcse_mean_prob_success}{Monte Carlo Standard Error for mean_prob_success}
+#'     \item{mcse_mean_prob_futility}{Monte Carlo Standard Error for mean_prob_futility}
+#'     \item{mean_effect_estimate}{Mean of the posterior means of the treatment effect across all successful simulations}
+#'     \item{median_effect_estimate}{Median of the posterior medians of the treatment effect across all successful simulations}
+#'     \item{sd_mean_effect_estimate}{Standard deviation of the posterior means of the treatment effect across all successful simulations}
+#'     \item{sd_median_effect_estimate}{Standard deviation of the posterior medians of the treatment effect across all successful simulations}
+#'     \item{study_parameters}{List containing the input parameters: n_control, n_treatment, target_param, thresholds, and probability thresholds}
+#'     \item{true_parameters}{List containing the true parameter values used in data generation: fixef (fixed effects) and ranef (random effects, if any)}
+#'     \item{model_formula_true_params}{The brms formula used for the design model with true parameters}
+#'     \item{model_formula_estimation}{The brms formula used for the estimation model}
+#'     \item{family}{The distributional family used for modeling}
+#'     \item{simulation_results}{List containing the raw results from each successful simulation, including individual treatment effect estimates, probabilities, and convergence information}
+#'   }
 #' @export
 #' @importFrom parallel makeCluster stopCluster clusterExport clusterEvalQ parLapply detectCores
 #' @importFrom stats median sd setNames
@@ -210,6 +287,9 @@ power_analysis <- function(n_control,
     model_formula_true_params <- brms_design_true_params$formula
     model_formula_estimation <- brms_design_estimation$formula
     family <- brms_design_estimation$family
+    n_control <- sum(brms_design_true_params[["data"]][["group"]] == "ctrl")
+    n_treatment <- sum(brms_design_true_params[["data"]][["group"]] == "treat")
+    
   } else {
     # If not using pre-fitted models, validate that all required model specification parameters are provided
     if (is.null(model_formula_true_params)) {
@@ -488,13 +568,7 @@ power_analysis <- function(n_control,
       # Progress tracking with batched execution
       if (progress_updates > 0 &&
         n_simulations > progress_updates) {
-        cat(
-          "Running",
-          n_simulations,
-          "simulations in parallel using",
-          n_cores,
-          "cores...\n"
-        )
+        # Note: Initial progress message already printed above
 
         # Calculate batch size for progress updates
         batch_size <- max(1, floor(n_simulations / progress_updates))
@@ -618,26 +692,29 @@ power_analysis <- function(n_control,
   }
 
   # Calculate summary statistics
+  
+  # Extract success/futility decisions and probabilities for MCSE calculations
+  success_decisions <- sapply(successful_results, function(x) x$success_decision)
+  futility_decisions <- sapply(successful_results, function(x) x$futility_decision)
+  prob_success_values <- sapply(successful_results, function(x) x$prob_above_success)
+  prob_futility_values <- sapply(successful_results, function(x) x$prob_below_futility)
+  
   power_summary <- list(
     n_simulations = n_simulations,
     successful_fits = successful_fits,
     convergence_rate = successful_fits / n_simulations,
 
     # Power estimates
-    power_success = mean(sapply(successful_results, function(x) {
-      x$success_decision
-    })),
-    power_futility = mean(sapply(successful_results, function(x) {
-      x$futility_decision
-    })),
-    mean_prob_success = mean(sapply(successful_results, function(x) {
-      x$prob_above_success
-    })),
-    mean_prob_futility = mean(
-      sapply(successful_results, function(x) {
-        x$prob_below_futility
-      })
-    ),
+    power_success = mean(success_decisions),
+    power_futility = mean(futility_decisions),
+    mean_prob_success = mean(prob_success_values),
+    mean_prob_futility = mean(prob_futility_values),
+
+    # Monte Carlo Standard Errors
+    mcse_power_success = calculate_mcse_power(success_decisions, successful_fits),
+    mcse_power_futility = calculate_mcse_power(futility_decisions, successful_fits),
+    mcse_mean_prob_success = calculate_mcse_mean(prob_success_values, successful_fits),
+    mcse_mean_prob_futility = calculate_mcse_mean(prob_futility_values, successful_fits),
 
     # Effect size estimates
     mean_effect_estimate = mean(
@@ -843,15 +920,31 @@ summary.rctbayespower <- function(object, ...) {
   cat("  Mean effect estimate (median):", round(object$median_effect_estimate, 3), "\n")
   cat("  SD of effect estimates (median):", round(object$sd_median_effect_estimate, 3), "\n\n")
 
-  # Power estimates
+  # Power estimates with MCSE
   cat("Power Analysis Results:\n")
-  cat("  Power - Success:", round(object$power_success, 3), "\n")
-  cat("  Power - Futility:", round(object$power_futility, 3), "\n\n")
+  cat("  Power - Success:", round(object$power_success, 3))
+  if (!is.null(object$mcse_power_success) && !is.na(object$mcse_power_success)) {
+    cat(" (MCSE:", round(object$mcse_power_success, 4), ")")
+  }
+  cat("\n")
+  cat("  Power - Futility:", round(object$power_futility, 3))
+  if (!is.null(object$mcse_power_futility) && !is.na(object$mcse_power_futility)) {
+    cat(" (MCSE:", round(object$mcse_power_futility, 4), ")")
+  }
+  cat("\n\n")
 
-  # Probability thresholds
+  # Probability thresholds with MCSE
   cat("Decision Probabilities:\n")
-  cat("  Mean probability of success:", round(object$mean_prob_success, 3), "\n")
-  cat("  Mean probability of futility:", round(object$mean_prob_futility, 3), "\n\n")
+  cat("  Mean probability of success:", round(object$mean_prob_success, 3))
+  if (!is.null(object$mcse_mean_prob_success) && !is.na(object$mcse_mean_prob_success)) {
+    cat(" (MCSE:", round(object$mcse_mean_prob_success, 4), ")")
+  }
+  cat("\n")
+  cat("  Mean probability of futility:", round(object$mean_prob_futility, 3))
+  if (!is.null(object$mcse_mean_prob_futility) && !is.na(object$mcse_mean_prob_futility)) {
+    cat(" (MCSE:", round(object$mcse_mean_prob_futility, 4), ")")
+  }
+  cat("\n\n")
 
   # Footer
   cat("=== End Summary ===\n")
@@ -862,7 +955,11 @@ summary.rctbayespower <- function(object, ...) {
       power_success = object$power_success,
       power_futility = object$power_futility,
       mean_prob_success = object$mean_prob_success,
-      mean_prob_futility = object$mean_prob_futility
+      mean_prob_futility = object$mean_prob_futility,
+      mcse_power_success = object$mcse_power_success,
+      mcse_power_futility = object$mcse_power_futility,
+      mcse_mean_prob_success = object$mcse_mean_prob_success,
+      mcse_mean_prob_futility = object$mcse_mean_prob_futility
     ),
     effect_estimates = list(
       mean_effect_estimate = object$mean_effect_estimate,
@@ -1437,10 +1534,26 @@ print.rctbayespower <- function(x, ...) {
   cat("  SD of effect estimate (median):", round(x$sd_median_effect_estimate, 3), "\n\n")
 
   cat("Power Results:\n")
-  cat("  Power - Success:", round(x$power_success, 3), "\n")
-  cat("  Power - Futility:", round(x$power_futility, 3), "\n")
-  cat("  Mean probability of success:", round(x$mean_prob_success, 3), "\n")
-  cat("  Mean probability of futility:", round(x$mean_prob_futility, 3), "\n")
+  cat("  Power - Success:", round(x$power_success, 3))
+  if (!is.null(x$mcse_power_success) && !is.na(x$mcse_power_success)) {
+    cat(" (MCSE:", round(x$mcse_power_success, 4), ")")
+  }
+  cat("\n")
+  cat("  Power - Futility:", round(x$power_futility, 3))
+  if (!is.null(x$mcse_power_futility) && !is.na(x$mcse_power_futility)) {
+    cat(" (MCSE:", round(x$mcse_power_futility, 4), ")")
+  }
+  cat("\n")
+  cat("  Mean probability of success:", round(x$mean_prob_success, 3))
+  if (!is.null(x$mcse_mean_prob_success) && !is.na(x$mcse_mean_prob_success)) {
+    cat(" (MCSE:", round(x$mcse_mean_prob_success, 4), ")")
+  }
+  cat("\n")
+  cat("  Mean probability of futility:", round(x$mean_prob_futility, 3))
+  if (!is.null(x$mcse_mean_prob_futility) && !is.na(x$mcse_mean_prob_futility)) {
+    cat(" (MCSE:", round(x$mcse_mean_prob_futility, 4), ")")
+  }
+  cat("\n")
 
   invisible(x)
 }

@@ -56,8 +56,8 @@ A list of class "rctbayespower_grid" containing:
 \item sample_sizes: Vector of tested sample sizes
 \item effect_sizes: Vector of tested effect sizes
 \item design_prior: Design prior specification
-\item power_surface: Data frame with power results for all combinations
-\item integrated_power: If design prior provided, integrated power and probability across effect sizes
+\item power_surface: Data frame with power results for all combinations, including Monte Carlo Standard Errors (MCSE) for all power and probability metrics
+\item integrated_power: If design prior provided, integrated power and probability across effect sizes, including MCSE for integrated metrics
 \item optimal_combinations: Sample size/effect size combinations achieving target power
 \item detailed_results: Full power analysis results for each combination
 }
