@@ -17,7 +17,7 @@ knitr::opts_chunk$set(
 
 # Check and install required packages
 packages <- c("tidyverse", "devtools")
-if (!require("pacman")) install.packages("pacman") 
+if (!require("pacman")) install.packages("pacman")
 pacman::p_load(packages, update = F, character.only = T)
 
 # Load the package
@@ -25,7 +25,7 @@ devtools::load_all(".")
 
 # Fast performance testing settings
 n_cores <- parallel::detectCores() - 1
-  n_sims <- 1e3
+n_sims <- 1e3
 ```
 
 
@@ -74,9 +74,9 @@ algorithms <- c("meanfield", "fullrank", "sampling")
 
 for (alg in algorithms) {
   cat("Testing algorithm:", alg, "\n")
-  
+
   start_time <- Sys.time()
-  
+
   # Use power_analysis_ancova for meanfield and fullrank
   if (alg %in% c("meanfield", "fullrank")) {
     power_result <- power_analysis(
@@ -87,7 +87,7 @@ for (alg in algorithms) {
       threshold_success = .5,
       threshold_futility = .1,
       p_sig_success = .975,
-      p_sig_futility = .5, 
+      p_sig_futility = .5,
       n_simulations = n_sims,
       n_cores = n_cores,
       brms_args = list(
@@ -108,7 +108,7 @@ for (alg in algorithms) {
       threshold_success = .5,
       threshold_futility = .1,
       p_sig_success = .975,
-      p_sig_futility = .5, 
+      p_sig_futility = .5,
       n_simulations = n_sims,
       n_cores = n_cores,
       brms_args = list(
@@ -118,7 +118,7 @@ for (alg in algorithms) {
       )
     )
   }
-  
+
   elapsed_time <- as.numeric(difftime(Sys.time(), start_time, units = "secs"))
   # time in hours:minutes:seconds
   elapsed_time_formatted <- sprintf(
@@ -127,7 +127,7 @@ for (alg in algorithms) {
     as.integer((elapsed_time %% 3600) / 60),
     as.integer(elapsed_time %% 60)
   )
-  
+
   performance_results <- rbind(
     performance_results,
     data.frame(
@@ -143,9 +143,8 @@ for (alg in algorithms) {
   )
 }
 
-print(performance_results) |> 
-  kableExtra::kable(digits = 2
-  ) 
+print(performance_results) |>
+  kableExtra::kable(digits = 2)
 ```
 
 
