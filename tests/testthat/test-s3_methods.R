@@ -10,10 +10,10 @@ create_mock_rctbayespower <- function(outcome_type = "continuous",
                                       n_simulations = 100) {
   # Create realistic simulation results
   n_successful <- floor(n_simulations * convergence_rate)
-  
+
   # Mock posterior draws for treatment effect
   effect_estimates <- rnorm(n_successful, mean = 0.5, sd = 0.15)
-  
+
   # Mock simulation results
   simulation_results <- lapply(1:n_successful, function(i) {
     list(
@@ -28,16 +28,18 @@ create_mock_rctbayespower <- function(outcome_type = "continuous",
       prob_futility = rbinom(1, 1, 0.2)
     )
   })
-  
+
   # Create mock result object
   result <- list(
     n_simulations = n_simulations,
     successful_fits = n_successful,
     convergence_rate = convergence_rate,
-    power_success = mean(sapply(simulation_results, function(x)
-      x$prob_success)),
-    power_futility = mean(sapply(simulation_results, function(x)
-      x$prob_futility)),
+    power_success = mean(sapply(simulation_results, function(x) {
+      x$prob_success
+    })),
+    power_futility = mean(sapply(simulation_results, function(x) {
+      x$prob_futility
+    })),
     mean_prob_success = 0.75,
     mean_prob_futility = 0.25,
     mean_effect_estimate = mean(effect_estimates),
@@ -62,15 +64,16 @@ create_mock_rctbayespower <- function(outcome_type = "continuous",
     ),
     model_formula_true_params = brms::bf(outcome ~ baseline + group, center = FALSE),
     model_formula_estimation = brms::bf(outcome ~ baseline + group),
-    family = if (outcome_type == "continuous")
+    family = if (outcome_type == "continuous") {
       stats::gaussian()
-    else if (outcome_type == "binary")
+    } else if (outcome_type == "binary") {
       stats::binomial()
-    else
-      stats::poisson(),
+    } else {
+      stats::poisson()
+    },
     simulation_results = simulation_results
   )
-  
+
   class(result) <- "rctbayespower"
   return(result)
 }
@@ -80,11 +83,12 @@ create_mock_rctbayespower_grid <- function(analysis_type = "sample_only",
                                            with_design_prior = FALSE) {
   # Create power surface data
   sample_sizes <- c(60, 80, 100)
-  effect_sizes <- if (analysis_type == "sample_only")
+  effect_sizes <- if (analysis_type == "sample_only") {
     0.5
-  else
+  } else {
     c(0.3, 0.5, 0.7)
-  
+  }
+
   # Generate grid combinations
   if (analysis_type == "sample_only") {
     combinations <- data.frame(
@@ -106,7 +110,7 @@ create_mock_rctbayespower_grid <- function(analysis_type = "sample_only",
     combinations$n_control <- floor(combinations$n_total * 0.5)
     combinations$n_treatment <- ceiling(combinations$n_total * 0.5)
   }
-  
+
   # Add power results
   combinations$power_success <- pmax(0.1, pmin(
     0.95,
@@ -119,7 +123,7 @@ create_mock_rctbayespower_grid <- function(analysis_type = "sample_only",
   combinations$mean_prob_success <- combinations$power_success + rnorm(nrow(combinations), 0, 0.05)
   combinations$mean_prob_futility <- combinations$power_futility + rnorm(nrow(combinations), 0, 0.05)
   combinations$convergence_rate <- runif(nrow(combinations), 0.9, 1.0)
-  
+
   # Create integrated power (if design prior provided)
   integrated_power <- NULL
   if (with_design_prior && analysis_type != "sample_only") {
@@ -148,32 +152,36 @@ create_mock_rctbayespower_grid <- function(analysis_type = "sample_only",
       )$x
     )
   }
-  
+
   # Find optimal combinations
   optimal_success <- combinations[combinations$power_success >= 0.8, ]
   optimal_futility <- combinations[combinations$power_futility >= 0.8, ]
-  
+
   result <- list(
     target_power_success = 0.8,
     target_power_futility = 0.8,
     threshold_success = 0.3,
     threshold_futility = 0.1,
-    sample_sizes = if (analysis_type == "effect_only")
+    sample_sizes = if (analysis_type == "effect_only") {
       80
-    else
-      sample_sizes,
-    effect_sizes = if (analysis_type == "sample_only")
+    } else {
+      sample_sizes
+    },
+    effect_sizes = if (analysis_type == "sample_only") {
       0.5
-    else
-      effect_sizes,
-    design_prior = if (with_design_prior)
+    } else {
+      effect_sizes
+    },
+    design_prior = if (with_design_prior) {
       "normal(0.5, 0.15)"
-    else
-      NULL,
-    design_prior_type = if (with_design_prior)
+    } else {
+      NULL
+    },
+    design_prior_type = if (with_design_prior) {
       "brms"
-    else
-      "none",
+    } else {
+      "none"
+    },
     analysis_type = analysis_type,
     percent_group_treat = 50,
     power_analysis_fn = "power_analysis_ancova",
@@ -182,39 +190,44 @@ create_mock_rctbayespower_grid <- function(analysis_type = "sample_only",
     integrated_power = integrated_power,
     optimal_combinations_success = optimal_success,
     optimal_combinations_futility = optimal_futility,
-    min_n_success = if (nrow(optimal_success) > 0)
+    min_n_success = if (nrow(optimal_success) > 0) {
       min(optimal_success$n_total)
-    else
-      NA,
-    min_n_futility = if (nrow(optimal_futility) > 0)
+    } else {
+      NA
+    },
+    min_n_futility = if (nrow(optimal_futility) > 0) {
       min(optimal_futility$n_total)
-    else
-      NA,
+    } else {
+      NA
+    },
     min_n_integrated_success = if (!is.null(integrated_power)) {
       valid_success <- integrated_power$n_total[integrated_power$integrated_power_success >= 0.8]
-      if (length(valid_success) > 0)
+      if (length(valid_success) > 0) {
         min(valid_success)
-      else
+      } else {
         NA
+      }
     } else {
       NA
     },
     min_n_integrated_futility = if (!is.null(integrated_power)) {
       valid_futility <- integrated_power$n_total[integrated_power$integrated_power_futility >= 0.8]
-      if (length(valid_futility) > 0)
+      if (length(valid_futility) > 0) {
         min(valid_futility)
-      else
+      } else {
         NA
+      }
     } else {
       NA
     },
-    
+
     # Backward compatibility
     power_curve = combinations,
-    effect_size = if (analysis_type == "sample_only")
+    effect_size = if (analysis_type == "sample_only") {
       0.5
-    else
-      NULL,
+    } else {
+      NULL
+    },
     detailed_results = vector("list", nrow(combinations)),
     analysis_parameters = list(
       outcome_type = "continuous",
@@ -223,7 +236,7 @@ create_mock_rctbayespower_grid <- function(analysis_type = "sample_only",
       n_cores = 2
     )
   )
-  
+
   class(result) <- "rctbayespower_grid"
   return(result)
 }
@@ -231,30 +244,32 @@ create_mock_rctbayespower_grid <- function(analysis_type = "sample_only",
 # Tests for rctbayespower class
 test_that("rctbayespower S3 methods work correctly", {
   mock_result <- create_mock_rctbayespower()
-  
+
   # Test class assignment
   expect_s3_class(mock_result, "rctbayespower")
-  
+
   # Test print method
   expect_output(print(mock_result), "Bayesian RCT Power Analysis Results")
   expect_output(print(mock_result), "Sample size \\(control\\):")
   expect_output(print(mock_result), "Power - Success:")
   expect_output(print(mock_result), "Power - Futility:")
   expect_output(print(mock_result), "Convergence rate:")
-  
+
   # Test summary method
   summary_result <- summary(mock_result)
   expect_type(summary_result, "list")
   expect_true("power_metrics" %in% names(summary_result))
   expect_true("effect_estimates" %in% names(summary_result))
   expect_true("study_info" %in% names(summary_result))
-  
+
   # Test that summary output is printed
-  expect_output(summary(mock_result),
-                "=== Bayesian Power Analysis Summary ===")
+  expect_output(
+    summary(mock_result),
+    "=== Bayesian Power Analysis Summary ==="
+  )
   expect_output(summary(mock_result), "Study Design:")
   expect_output(summary(mock_result), "Power Analysis Results:")
-  
+
   # Test plot method (should not error)
   expect_no_error(plot(mock_result))
 })
@@ -263,32 +278,34 @@ test_that("rctbayespower S3 methods work correctly", {
 test_that("rctbayespower_grid S3 methods work correctly", {
   # Test sample_only analysis
   mock_grid_sample <- create_mock_rctbayespower_grid("sample_only")
-  
+
   expect_s3_class(mock_grid_sample, "rctbayespower_grid")
-  
+
   # Test print method
   expect_output(print(mock_grid_sample), "Bayesian RCT Sample Size Analysis")
   expect_output(print(mock_grid_sample), "Fixed effect size:")
   expect_output(print(mock_grid_sample), "Sample sizes tested:")
   expect_output(print(mock_grid_sample), "Target power - Success:")
-  
+
   # Test summary method
   summary_result <- summary(mock_grid_sample)
   expect_type(summary_result, "list")
   expect_true("analysis_info" %in% names(summary_result))
   expect_true("power_surface" %in% names(summary_result))
-  
-  expect_output(summary(mock_grid_sample),
-                "Bayesian RCT Sample Size Analysis - Detailed Summary")
+
+  expect_output(
+    summary(mock_grid_sample),
+    "Bayesian RCT Sample Size Analysis - Detailed Summary"
+  )
   expect_output(summary(mock_grid_sample), "Analysis Parameters:")
-  
+
   # Test plot method
   expect_no_error(plot(mock_grid_sample))
 })
 
 test_that("rctbayespower_grid works with effect_only analysis", {
   mock_grid_effect <- create_mock_rctbayespower_grid("effect_only")
-  
+
   expect_s3_class(mock_grid_effect, "rctbayespower_grid")
   expect_output(print(mock_grid_effect), "Effect sizes tested:")
   expect_no_error(plot(mock_grid_effect))
@@ -296,7 +313,7 @@ test_that("rctbayespower_grid works with effect_only analysis", {
 
 test_that("rctbayespower_grid works with both analysis and design prior", {
   mock_grid_both <- create_mock_rctbayespower_grid("both", with_design_prior = TRUE)
-  
+
   expect_s3_class(mock_grid_both, "rctbayespower_grid")
   expect_output(print(mock_grid_both), "Design prior:")
   expect_output(print(mock_grid_both), "Integrated power")
@@ -307,20 +324,20 @@ test_that("rctbayespower_grid works with both analysis and design prior", {
 test_that("S3 method dispatch works correctly", {
   mock_single <- create_mock_rctbayespower()
   mock_grid <- create_mock_rctbayespower_grid()
-  
+
   # Test that S3 methods exist by checking if they can be retrieved
   expect_true(is.function(getS3method("print", "rctbayespower")))
   expect_true(is.function(getS3method("summary", "rctbayespower")))
   expect_true(is.function(getS3method("plot", "rctbayespower")))
-  
+
   expect_true(is.function(getS3method("print", "rctbayespower_grid")))
   expect_true(is.function(getS3method("summary", "rctbayespower_grid")))
   expect_true(is.function(getS3method("plot", "rctbayespower_grid")))
-  
+
   # Test that different classes use different methods
   print_single <- capture.output(print(mock_single))
   print_grid <- capture.output(print(mock_grid))
-  
+
   expect_true(any(grepl(
     "Bayesian RCT Power Analysis Results", print_single
   )))
@@ -332,11 +349,11 @@ test_that("S3 methods handle invalid objects gracefully", {
   # Test with invalid class
   invalid_obj <- list(some_data = 1:10)
   class(invalid_obj) <- "rctbayespower"
-  
+
   # Methods should handle missing required fields gracefully
   expect_error(print(invalid_obj), "Missing required field")
   expect_error(summary(invalid_obj), "Missing required field")
-  
+
   # Test with completely wrong object
   expect_error(rctbayespower:::print.rctbayespower("not an object"))
 })
@@ -346,11 +363,11 @@ test_that("S3 methods work with different outcome types", {
   mock_continuous <- create_mock_rctbayespower("continuous")
   mock_binary <- create_mock_rctbayespower("binary")
   mock_count <- create_mock_rctbayespower("count")
-  
+
   expect_no_error(print(mock_continuous))
   expect_no_error(print(mock_binary))
   expect_no_error(print(mock_count))
-  
+
   expect_no_error(summary(mock_continuous))
   expect_no_error(summary(mock_binary))
   expect_no_error(summary(mock_count))
