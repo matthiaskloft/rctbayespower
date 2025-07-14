@@ -8,12 +8,15 @@ always_allow_html: true
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
-  fig.path = "vignettes/man/figures/04-algorithm_performance-",
+  fig.path = "vignettes/man/figures/03-algorithm_performance-",
   out.width = "90%",
   fig.width = 10,
   fig.height = 7,
   message = FALSE
 )
+
+# Set CRAN mirror
+options(repos = c(CRAN = "https://cloud.r-project.org/"))
 
 # Check and install required packages
 packages <- c("tidyverse", "devtools")

@@ -18,9 +18,32 @@ Invisibly returns the input object. Used for side effects (printing summary).
 Provides a structured summary of Bayesian power analysis results.
 }
 \examples{
-\dontrun{
-# Assuming you have a power analysis result
-result <- power_analysis(...)
-summary(result)
+\donttest{
+# Create a mock power analysis result object
+power_result <- structure(list(
+  study_parameters = list(
+    n_control = 100,
+    n_treatment = 100,
+    target_param = "grouptreat",
+    threshold_success = 0.2,
+    threshold_futility = 0,
+    p_sig_success = 0.975,
+    p_sig_futility = 0.5,
+    target_power_success = 0.8,
+    target_power_futility = 0.2
+  ),
+  power_success = 0.85,
+  power_futility = 0.25,
+  mean_prob_success = 0.82,
+  mean_prob_futility = 0.23,
+  convergence_rate = 0.95,
+  n_simulations = 1000,
+  successful_fits = 950,
+  median_effect_estimate = 0.48,
+  sd_median_effect_estimate = 0.12
+), class = "rctbayespower")
+
+# Print summary of the mock power analysis result
+summary(power_result)
 }
 }

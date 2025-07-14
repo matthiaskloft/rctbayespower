@@ -35,19 +35,4 @@ This validation function tests:
 \item Error handling for invalid inputs
 }
 }
-\examples{
-\dontrun{
-# Run validation with default settings
-validation_results <- validate_weighting_function()
-
-# Run validation quietly
-validation_results <- validate_weighting_function(verbose = FALSE)
-
-# Check if all tests passed
-if (validation_results$all_tests_passed) {
-  message("All weighting function tests passed!")
-} else {
-  message("Some tests failed. Check validation_results$test_results for details.")
-}
-}
-}
+\keyword{internal}

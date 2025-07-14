@@ -1989,24 +1989,10 @@ summary.rctbayespower_grid <- function(object, ...) {
 #'   \item Error handling for invalid inputs
 #' }
 #'
-#' @export
 #' @importFrom stats dnorm qnorm
-#'
-#' @examples
-#' \dontrun{
-#' # Run validation with default settings
-#' validation_results <- validate_weighting_function()
-#'
-#' # Run validation quietly
-#' validation_results <- validate_weighting_function(verbose = FALSE)
-#'
-#' # Check if all tests passed
-#' if (validation_results$all_tests_passed) {
-#'   message("All weighting function tests passed!")
-#' } else {
-#'   message("Some tests failed. Check validation_results$test_results for details.")
-#' }
-#' }
+#' @keywords internal
+#' 
+
 validate_weighting_function <- function(effect_sizes = seq(0.2, 0.8, 0.1),
                                         verbose = TRUE) {
   if (verbose) {

@@ -40,8 +40,8 @@
 #' \donttest{
 #' # Continuous outcome ANCOVA
 #' power_result <- power_analysis_ancova(
-#'   n_control = 100,
-#'   n_treatment = 100,
+#'   n_control = 50,
+#'   n_treatment = 50,
 #'   outcome_type = "continuous",
 #'   effect_size = 0.5,
 #'   baseline_effect = 0.2,

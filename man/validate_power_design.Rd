@@ -60,23 +60,5 @@ validation <- validate_power_design(
   priors_estimation = priors_est,
   target_param = "grouptreat"
 )
-
-# Use the compiled models from validation in power analysis
-power_result <- power_analysis(
-  n_control = 50, 
-  n_treatment = 50,
-  simulate_data_fn = simulate_data,
-  target_param = "grouptreat",
-  threshold_success = 0.2,
-  threshold_futility = 0,
-  p_sig_success = 0.95,
-  p_sig_futility = 0.5,
-  n_simulations = 2,
-  brms_design_true_params = validation$brms_design_true_params,
-  brms_design_estimation = validation$brms_design_estimation
-  brms_args = list(algorithm = "meanfield"),
-  n_cores = 1,
-  progress_updates = 5
-)
 }
 }

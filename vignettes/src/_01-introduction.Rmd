@@ -8,12 +8,24 @@ always_allow_html: true
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
-  fig.path = "vignettes/man/figures/01-introduction-",
+  fig.path = "/man/figures/01-introduction-",
   out.width = "90%",
   fig.width = 10,
   fig.height = 7,
   message = FALSE
 )
+
+# Set CRAN mirror
+options(repos = c(CRAN = "https://cloud.r-project.org/"))
+
+# Check and install required packages
+packages <- c("tidyverse", "devtools")
+install.packages(setdiff(packages, rownames(installed.packages())))
+invisible(lapply(packages, require, character.only = TRUE))
+
+# load the package
+devtools::load_all(".")
+
 
 # Set up for examples (reduce simulation counts for faster vignette building)
 n_cores <- parallel::detectCores() - 1
@@ -30,25 +42,6 @@ The `rctbayespower` package provides tools for conducting Bayesian power analysi
 - Account for uncertainty in parameter estimates
 
 This vignette demonstrates the main functions of the package with practical examples using real model fitting.
-
-## Installation and Setup
-
-```{r install}
-# Install from GitHub (once package is published)
-# devtools::install_github("matthiaskloft/rctbayespower")
-
-# Check and install required packages
-required_packages <- c("brms", "ggplot2", "dplyr", "devtools")
-lapply(required_packages, function(pkg) {
-  if (!requireNamespace(pkg, quietly = TRUE)) {
-    install.packages(pkg, repos = "https://cloud.r-project.org")
-  }
-  library(pkg, character.only = TRUE)
-})
-
-# load the package
-devtools::load_all(".")
-```
 
 
 # Basic Power Analysis Using ANCOVA Design

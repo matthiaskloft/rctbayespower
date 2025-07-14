@@ -1,57 +1,3 @@
-#' Monte Carlo Standard Error (MCSE) Calculation
-#'
-#' Calculate Monte Carlo Standard Error for power metrics based on simulation results.
-#' MCSE provides an estimate of the uncertainty in power estimates due to Monte Carlo sampling.
-#'
-#' @param successes Vector of success indicators (TRUE/FALSE or 1/0)
-#' @param n_simulations Total number of simulations
-#' @return Monte Carlo Standard Error
-#' @keywords internal
-calculate_mcse_power <- function(successes, n_simulations) {
-  if (length(successes) == 0 || n_simulations == 0) {
-    return(NA_real_)
-  }
-  
-  # Convert to numeric if needed
-  if (is.logical(successes)) {
-    successes <- as.numeric(successes)
-  }
-  
-  # Calculate proportion
-  p <- mean(successes, na.rm = TRUE)
-  
-  # MCSE for proportion = sqrt(p * (1 - p) / n)
-  mcse <- sqrt(p * (1 - p) / n_simulations)
-  
-  return(mcse)
-}
-
-#' Monte Carlo Standard Error for Continuous Metrics
-#'
-#' Calculate Monte Carlo Standard Error for continuous metrics like mean probabilities.
-#'
-#' @param values Vector of continuous values
-#' @param n_simulations Total number of simulations
-#' @return Monte Carlo Standard Error
-#' @keywords internal
-calculate_mcse_mean <- function(values, n_simulations) {
-  if (length(values) == 0 || n_simulations == 0) {
-    return(NA_real_)
-  }
-  
-  # Remove NA values
-  values <- values[!is.na(values)]
-  
-  if (length(values) == 0) {
-    return(NA_real_)
-  }
-  
-  # MCSE for mean = standard deviation / sqrt(n)
-  mcse <- sd(values) / sqrt(length(values))
-  
-  return(mcse)
-}
-
 #' Flexible Bayesian Power Analysis for RCTs
 #'
 #' Conduct Bayesian power analysis for randomized controlled trials using user-specified
@@ -127,6 +73,7 @@ calculate_mcse_mean <- function(values, n_simulations) {
 #' model_formula_est <- brms::bf(outcome ~ baseline + group)
 #' priors_true <- c(
 #'   brms::set_prior("constant(.2)", class = "b", coef = "baseline"),
+#'   # Effect size is defined by this prior
 #'   brms::set_prior("constant(.5)", class = "b", coef = "grouptreat"),
 #'   brms::set_prior("constant(0)", class = "b", coef = "Intercept"),
 #'   brms::set_prior("constant(1)", class = "sigma")
@@ -140,27 +87,6 @@ calculate_mcse_mean <- function(values, n_simulations) {
 #'
 #' # Run power analysis with optimized brms_args
 #' power_result <- power_analysis(
-#'   n_control = 100, 
-#'   n_treatment = 100,
-#'   simulate_data_fn = simulate_data,
-#'   model_formula_true_params = model_formula_true,
-#'   model_formula_estimation = model_formula_est,
-#'   family = gaussian(),
-#'   priors_true_params = priors_true,
-#'   priors_estimation = priors_est,
-#'   target_param = "grouptreat",
-#'   threshold_success = 0.2,
-#'   threshold_futility = 0,
-#'   p_sig_success = 0.95,
-#'   p_sig_futility = 0.8,
-#'   n_simulations = 2,
-#'   brms_args = list(algorithm = "meanfield"),
-#'   n_cores = 1,
-#'   progress_updates = 5
-#' )
-#'
-#' # Run power analysis with progress updates
-#' power_result_custom <- power_analysis(
 #'   n_control = 50, 
 #'   n_treatment = 50,
 #'   simulate_data_fn = simulate_data,
@@ -173,41 +99,11 @@ calculate_mcse_mean <- function(values, n_simulations) {
 #'   threshold_success = 0.2,
 #'   threshold_futility = 0,
 #'   p_sig_success = 0.95,
-#'   p_sig_futility = 0.7,
-#'   n_simulations = 2,
-#'   brms_args = list(algorithm = "meanfield"),
-#'   n_cores = 1,
-#'   progress_updates = 5
-#' )
-#'
-#' # Alternative: Use pre-fitted models (e.g., from validate_power_design)
-#' validation <- validate_power_design(
-#'   n_control = 100, 
-#'   n_treatment = 100,
-#'   simulate_data_fn = simulate_data,
-#'   model_formula_true_params = model_formula_true,
-#'   model_formula_estimation = model_formula_est,
-#'   family = gaussian(),
-#'   priors_true_params = priors_true,
-#'   priors_estimation = priors_est,
-#'   target_param = "grouptreat"
-#' )
-#'
-#' power_result_prefitted <- power_analysis(
-#'   n_control = 100, 
-#'   n_treatment = 100,
-#'   simulate_data_fn = simulate_data,
-#'   target_param = "grouptreat",
-#'   threshold_success = 0.2,
-#'   threshold_futility = 0,
-#'   p_sig_success = 0.95,
-#'   p_sig_futility = 0.7,
+#'   p_sig_futility = 0.5,
 #'   n_simulations = 1,
 #'   brms_args = list(algorithm = "meanfield"),
 #'   n_cores = 1,
-#'   progress_updates = 5,
-#'   brms_design_true_params = validation$brms_design_true_params,
-#'   brms_design_estimation = validation$brms_design_estimation
+#'   progress_updates = 5
 #' )
 #' }
 power_analysis <- function(n_control,
@@ -839,10 +735,33 @@ power_analysis <- function(n_control,
 #' @export
 #'
 #' @examples
-#' \dontrun{
-#' # Assuming you have a power analysis result
-#' result <- power_analysis(...)
-#' summary(result)
+#' \donttest{
+#' # Create a mock power analysis result object
+#' power_result <- structure(list(
+#'   study_parameters = list(
+#'     n_control = 100,
+#'     n_treatment = 100,
+#'     target_param = "grouptreat",
+#'     threshold_success = 0.2,
+#'     threshold_futility = 0,
+#'     p_sig_success = 0.975,
+#'     p_sig_futility = 0.5,
+#'     target_power_success = 0.8,
+#'     target_power_futility = 0.2
+#'   ),
+#'   power_success = 0.85,
+#'   power_futility = 0.25,
+#'   mean_prob_success = 0.82,
+#'   mean_prob_futility = 0.23,
+#'   convergence_rate = 0.95,
+#'   n_simulations = 1000,
+#'   successful_fits = 950,
+#'   median_effect_estimate = 0.48,
+#'   sd_median_effect_estimate = 0.12
+#' ), class = "rctbayespower")
+#' 
+#' # Print summary of the mock power analysis result
+#' summary(power_result)
 #' }
 summary.rctbayespower <- function(object, ...) {
   # Validate required fields
@@ -1181,24 +1100,6 @@ plot.rctbayespower <- function(x, type = "comparison", metric = "both", ...) {
 #'   priors_true_params = priors_true,
 #'   priors_estimation = priors_est,
 #'   target_param = "grouptreat"
-#' )
-#'
-#' # Use the compiled models from validation in power analysis
-#' power_result <- power_analysis(
-#'   n_control = 50, 
-#'   n_treatment = 50,
-#'   simulate_data_fn = simulate_data,
-#'   target_param = "grouptreat",
-#'   threshold_success = 0.2,
-#'   threshold_futility = 0,
-#'   p_sig_success = 0.95,
-#'   p_sig_futility = 0.5,
-#'   n_simulations = 2,
-#'   brms_design_true_params = validation$brms_design_true_params,
-#'   brms_design_estimation = validation$brms_design_estimation
-#'   brms_args = list(algorithm = "meanfield"),
-#'   n_cores = 1,
-#'   progress_updates = 5
 #' )
 #' }
 validate_power_design <- function(n_control,
