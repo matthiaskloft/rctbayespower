@@ -12,6 +12,7 @@
   show_target = TRUE,
   show_integrated = TRUE,
   facet_by = "effect_size",
+  design_prior = NULL,
   ...
 )
 }
@@ -50,6 +51,16 @@
 \item "effect_size" - Facet by effect size, vary sample size on x-axis (default)
 \item "sample_size" - Facet by sample size, vary effect size on x-axis
 }}
+
+\item{design_prior}{Optional design prior for runtime integrated power computation. Can be:
+\itemize{
+\item A string in brms prior syntax (e.g., "normal(0.3, 0.1)", "student_t(6, 0.5, 0.2)")
+\item An R function taking effect size as input (e.g., function(x) dnorm(x, 0.5, 0.2))
+\item NULL for no runtime integration (default)
+}
+If provided, integrated power will be computed using this design prior instead of
+any design prior specified in the original power_grid_analysis() call.
+Only valid when effect sizes vary (length > 1).}
 
 \item{...}{Additional arguments passed to ggplot2 functions}
 }

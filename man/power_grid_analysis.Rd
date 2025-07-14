@@ -69,8 +69,19 @@ power analysis across multiple scenarios and can compute weighted average
 power using user-specified prior distributions.
 }
 \details{
-This function runs power analyses across all combinations of sample_sizes and effect_sizes.
-When design_prior is provided, it computes integrated power by weighting each effect size
+This function runs power analyses across all combinations of sample_sizes and effect_sizes
+using a two-phase approach for optimal performance:
+
+\strong{Phase 1: Parallel Model Compilation}
+Models are compiled in parallel for each unique effect size when n_cores > 1 and
+multiple effect sizes are provided. This significantly reduces overall computation time
+by utilizing multiple CPU cores for the compilation-intensive brms model fitting.
+
+\strong{Phase 2: Grid Analysis with Cached Models}
+Each combination uses pre-compiled models from Phase 1, with simulations running in
+parallel within each power analysis call (controlled by n_cores parameter).
+
+When design_prior is provided, the function computes integrated power by weighting each effect size
 according to the specified design prior distribution.
 
 The design prior can be specified in two ways:

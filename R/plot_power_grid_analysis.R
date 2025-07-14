@@ -31,6 +31,15 @@
 #'     \item "effect_size" - Facet by effect size, vary sample size on x-axis (default)
 #'     \item "sample_size" - Facet by sample size, vary effect size on x-axis
 #'   }
+#' @param design_prior Optional design prior for runtime integrated power computation. Can be:
+#'   \itemize{
+#'     \item A string in brms prior syntax (e.g., "normal(0.3, 0.1)", "student_t(6, 0.5, 0.2)")
+#'     \item An R function taking effect size as input (e.g., function(x) dnorm(x, 0.5, 0.2))
+#'     \item NULL for no runtime integration (default)
+#'   }
+#'   If provided, integrated power will be computed using this design prior instead of
+#'   any design prior specified in the original power_grid_analysis() call.
+#'   Only valid when effect sizes vary (length > 1).
 #' @param ... Additional arguments passed to ggplot2 functions
 #'
 #' @return A ggplot2 object
@@ -128,6 +137,7 @@ plot.rctbayespower_grid <- function(x,
                                     show_target = TRUE,
                                     show_integrated = TRUE,
                                     facet_by = "effect_size",
+                                    design_prior = NULL,
                                     ...) {
   if (!requireNamespace("ggplot2", quietly = TRUE)) {
     stop("Package 'ggplot2' is required for plotting.")
@@ -150,6 +160,53 @@ plot.rctbayespower_grid <- function(x,
   missing_cols <- setdiff(required_cols, names(x$power_surface))
   if (length(missing_cols) > 0) {
     stop("Missing required columns in power_surface: ", paste(missing_cols, collapse = ", "))
+  }
+
+  # Validate and compute design prior integration for plotting
+  if (!is.null(design_prior)) {
+    # Validate design prior can only be used with varying effect sizes
+    if (length(x$effect_sizes) <= 1) {
+      stop("design_prior can only be specified when effect sizes vary (length > 1)")
+    }
+    
+    # Parse design prior using effect sizes from object
+    design_prior_parsed <- parse_design_prior(design_prior, x$effect_sizes, verbose = FALSE)
+    weight_fn <- design_prior_parsed$weight_fn
+    
+    if (!is.null(weight_fn)) {
+      # Get weights for each effect size
+      weights <- sapply(x$effect_sizes, weight_fn)
+      weights <- weights / sum(weights) # Normalize to sum to 1
+      
+      # For each sample size, compute weighted average power
+      integrated_results <- list()
+      
+      for (n in x$sample_sizes) {
+        subset_data <- x$power_surface[x$power_surface$n_total == n, ]
+        
+        if (nrow(subset_data) > 0 && all(!is.na(subset_data$power_success))) {
+          weighted_power_success <- sum(subset_data$power_success * weights)
+          weighted_power_futility <- sum(subset_data$power_futility * weights)
+          weighted_prob_success <- sum(subset_data$mean_prob_success * weights)
+          weighted_prob_futility <- sum(subset_data$mean_prob_futility * weights)
+          
+          integrated_results[[length(integrated_results) + 1]] <- data.frame(
+            n_total = as.integer(n),
+            integrated_power_success = weighted_power_success,
+            integrated_power_futility = weighted_power_futility,
+            integrated_prob_success = weighted_prob_success,
+            integrated_prob_futility = weighted_prob_futility,
+            stringsAsFactors = FALSE
+          )
+        }
+      }
+      
+      if (length(integrated_results) > 0) {
+        # Update the object's integrated power with runtime computation
+        x$integrated_power <- do.call(rbind, integrated_results)
+        x$design_prior <- design_prior
+      }
+    }
   }
 
   # Auto-detect plot type based on analysis type

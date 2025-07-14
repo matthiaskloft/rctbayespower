@@ -26,7 +26,8 @@ power_analysis_ancova(
   seed = NULL,
   n_cores = 1,
   progress_updates = 10,
-  compile_models_only = FALSE
+  compile_models_only = FALSE,
+  ...
 )
 }
 \arguments{
@@ -48,11 +49,11 @@ power_analysis_ancova(
 
 \item{threshold_futility}{Lower threshold for futility determination (not needed if compile_models_only=TRUE)}
 
-\item{p_sig_success}{Probability threshold for declaring success (default 0.975, not needed if compile_models_only=TRUE)}
+\item{p_sig_success}{Probability threshold for declaring success (default 0.975)}
 
-\item{p_sig_futility}{Probability threshold for declaring futility (default 0.5, not needed if compile_models_only=TRUE)}
+\item{p_sig_futility}{Probability threshold for declaring futility (default 0.5)}
 
-\item{n_simulations}{Number of simulation iterations (not needed if compile_models_only=TRUE)}
+\item{n_simulations}{Number of simulation iterations}
 
 \item{priors_treatment}{Prior for treatment effect (default: student_t(3, 0, 2))}
 
@@ -73,10 +74,8 @@ power_analysis_ancova(
 \item{compile_models_only}{If TRUE, only compile the brms models and return them without running simulations. Used for model caching in power_grid_analysis(). Default is FALSE.}
 }
 \value{
-A list containing power analysis results, or if
-compile_models_only=TRUE, a list with compiled models and arguments for later
-use. See \code{\link[=power_analysis]{power_analysis()}} for details. Power metrics include Monte Carlo
-Standard Errors (MCSE) for all power and probability estimates.
+A list containing power analysis results, or if compile_models_only=TRUE, a list with compiled models and arguments for later use. See \code{\link[=power_analysis]{power_analysis()}} for details.
+Power metrics include Monte Carlo Standard Errors (MCSE) for all power and probability estimates.
 }
 \description{
 Convenience wrapper for \code{\link[=power_analysis]{power_analysis()}} using the ANCOVA model with baseline covariate.

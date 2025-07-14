@@ -14,8 +14,8 @@ power_analysis(
   priors_true_params = NULL,
   priors_estimation = NULL,
   target_param,
-  threshold_success,
-  threshold_futility,
+  threshold_success = NULL,
+  threshold_futility = NULL,
   p_sig_success = 0.975,
   p_sig_futility = 0.5,
   n_simulations = 1000,
@@ -25,7 +25,8 @@ power_analysis(
   n_cores = 1,
   brms_design_true_params = NULL,
   brms_design_estimation = NULL,
-  progress_updates = 10
+  progress_updates = 10,
+  compile_models_only = FALSE
 )
 }
 \arguments{
@@ -47,9 +48,9 @@ power_analysis(
 
 \item{target_param}{Name of the parameter to track for power calculation (without "b_" prefix)}
 
-\item{threshold_success}{Upper threshold for success determination}
+\item{threshold_success}{Upper threshold for success determination (not needed if compile_models_only=TRUE)}
 
-\item{threshold_futility}{Lower threshold for futility determination (required)}
+\item{threshold_futility}{Lower threshold for futility determination (not needed if compile_models_only=TRUE)}
 
 \item{p_sig_success}{Probability threshold for declaring success (default 0.975)}
 
@@ -68,9 +69,11 @@ power_analysis(
 \item{brms_design_estimation}{Optional pre-fitted brms model template for estimation. If provided, this model will be used instead of fitting a new design model.}
 
 \item{progress_updates}{Number of progress updates to show during parallel processing. Default is 10. Set to 0 to disable progress updates.}
+
+\item{compile_models_only}{If TRUE, only compile the brms models and return them without running simulations. Used for model caching in power_grid_analysis(). Default is FALSE.}
 }
 \value{
-A list of class "rctbayespower" containing the following elements:
+A list of class "rctbayespower" containing the following elements (when compile_models_only=FALSE), or a list with compiled models and arguments for later use (when compile_models_only=TRUE):
 \describe{
 \item{n_simulations}{Number of simulations requested}
 \item{successful_fits}{Number of simulations that converged successfully}

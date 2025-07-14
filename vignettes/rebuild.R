@@ -73,6 +73,6 @@ set_path_vignettes()
 
 #build_vignette(here("src", "_01-introduction.Rmd"))
 build_vignette(file.path("src", "_02-prior-specification.Rmd"))
-build_vignette(file.path("src", "_03-algorithm-performance.Rmd"))
+#build_vignette(file.path("src", "_03-algorithm-performance.Rmd"))
 
 set_path_project()

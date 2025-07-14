@@ -13,8 +13,8 @@
 #' @param priors_true_params Priors with true parameter values (as constants) for design model
 #' @param priors_estimation Priors for estimation in power simulation
 #' @param target_param Name of the parameter to track for power calculation (without "b_" prefix)
-#' @param threshold_success Upper threshold for success determination
-#' @param threshold_futility Lower threshold for futility determination (required)
+#' @param threshold_success Upper threshold for success determination (not needed if compile_models_only=TRUE)
+#' @param threshold_futility Lower threshold for futility determination (not needed if compile_models_only=TRUE)
 #' @param p_sig_success Probability threshold for declaring success (default 0.975)
 #' @param p_sig_futility Probability threshold for declaring futility (default 0.5)
 #' @param n_simulations Number of simulation iterations
@@ -24,8 +24,9 @@
 #' @param brms_design_true_params Optional pre-fitted brms model with true parameters. If provided, this model will be used instead of fitting a new design model.
 #' @param brms_design_estimation Optional pre-fitted brms model template for estimation. If provided, this model will be used instead of fitting a new design model.
 #' @param progress_updates Number of progress updates to show during parallel processing. Default is 10. Set to 0 to disable progress updates.
+#' @param compile_models_only If TRUE, only compile the brms models and return them without running simulations. Used for model caching in power_grid_analysis(). Default is FALSE.
 #'
-#' @return A list of class "rctbayespower" containing the following elements:
+#' @return A list of class "rctbayespower" containing the following elements (when compile_models_only=FALSE), or a list with compiled models and arguments for later use (when compile_models_only=TRUE):
 #'   \describe{
 #'     \item{n_simulations}{Number of simulations requested}
 #'     \item{successful_fits}{Number of simulations that converged successfully}
@@ -115,8 +116,8 @@ power_analysis <- function(n_control,
                            priors_true_params = NULL,
                            priors_estimation = NULL,
                            target_param,
-                           threshold_success,
-                           threshold_futility,
+                           threshold_success = NULL,
+                           threshold_futility = NULL,
                            p_sig_success = 0.975,
                            p_sig_futility = 0.5,
                            n_simulations = 1000,
@@ -133,7 +134,8 @@ power_analysis <- function(n_control,
                            n_cores = 1,
                            brms_design_true_params = NULL,
                            brms_design_estimation = NULL,
-                           progress_updates = 10) {
+                           progress_updates = 10,
+                           compile_models_only = FALSE) {
   if (!requireNamespace("brms", quietly = TRUE)) {
     stop("Package 'brms' is required for this function.")
   }
@@ -205,20 +207,24 @@ power_analysis <- function(n_control,
     }
   }
 
-  # Validate required threshold parameters
-  if (missing(threshold_success) || is.null(threshold_success)) {
-    stop("threshold_success is required and must be specified.")
-  }
-  if (missing(threshold_futility) || is.null(threshold_futility)) {
-    stop("threshold_futility is required and must be specified.")
+  # Validate required threshold parameters (only when not compile_models_only)
+  if (!compile_models_only) {
+    if (missing(threshold_success) || is.null(threshold_success)) {
+      stop("threshold_success is required and must be specified when compile_models_only=FALSE.")
+    }
+    if (missing(threshold_futility) || is.null(threshold_futility)) {
+      stop("threshold_futility is required and must be specified when compile_models_only=FALSE.")
+    }
   }
 
-  # Validate threshold parameter types
-  if (!is.numeric(threshold_success) || length(threshold_success) != 1) {
-    stop("threshold_success must be a single numeric value.")
-  }
-  if (!is.numeric(threshold_futility) || length(threshold_futility) != 1) {
-    stop("threshold_futility must be a single numeric value.")
+  # Validate threshold parameter types (only when not compile_models_only)
+  if (!compile_models_only) {
+    if (!is.numeric(threshold_success) || length(threshold_success) != 1) {
+      stop("threshold_success must be a single numeric value.")
+    }
+    if (!is.numeric(threshold_futility) || length(threshold_futility) != 1) {
+      stop("threshold_futility must be a single numeric value.")
+    }
   }
 
   # Storage for results
@@ -284,6 +290,41 @@ power_analysis <- function(n_control,
     )
   }
 
+  # If compile_models_only is TRUE, return compiled models and arguments for later use
+  if (compile_models_only) {
+    cat("Compiling models without running simulations...\n")
+    
+    # Extract true parameter values for return
+    fixef <- brms::fixef(brms_design_true_params) |>
+      as.data.frame() |>
+      dplyr::select(.data$Estimate) |>
+      tibble::rownames_to_column("parameter") |>
+      tidyr::pivot_wider(names_from = "parameter", values_from = "Estimate") |>
+      unlist()
+
+    ranef <- tryCatch(
+      brms::ranef(brms_design_true_params),
+      error = function(e) {
+        NULL
+      }
+    )
+
+    return(
+      list(
+        brms_design_true_params = brms_design_true_params,
+        brms_design_estimation = brms_design_estimation,
+        simulate_data_fn = simulate_data_fn,
+        model_formula_true_params = model_formula_true_params,
+        model_formula_estimation = model_formula_estimation,
+        family = family,
+        priors_true_params = priors_true_params,
+        priors_estimation = priors_estimation,
+        target_param = target_param,
+        true_parameters = list(fixef = fixef, ranef = ranef),
+        seed = seed
+      )
+    )
+  }
 
   # Extract true parameter values
   fixef <- brms::fixef(brms_design_true_params) |>
