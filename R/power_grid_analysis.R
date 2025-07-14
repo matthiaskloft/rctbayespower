@@ -1991,7 +1991,7 @@ summary.rctbayespower_grid <- function(object, ...) {
 #'
 #' @importFrom stats dnorm qnorm
 #' @keywords internal
-#' 
+#'
 
 validate_weighting_function <- function(effect_sizes = seq(0.2, 0.8, 0.1),
                                         verbose = TRUE) {

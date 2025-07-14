@@ -87,7 +87,7 @@
 #'
 #' # Run power analysis with optimized brms_args
 #' power_result <- power_analysis(
-#'   n_control = 50, 
+#'   n_control = 50,
 #'   n_treatment = 50,
 #'   simulate_data_fn = simulate_data,
 #'   model_formula_true_params = model_formula_true,
@@ -185,7 +185,6 @@ power_analysis <- function(n_control,
     family <- brms_design_estimation$family
     n_control <- sum(brms_design_true_params[["data"]][["group"]] == "ctrl")
     n_treatment <- sum(brms_design_true_params[["data"]][["group"]] == "treat")
-    
   } else {
     # If not using pre-fitted models, validate that all required model specification parameters are provided
     if (is.null(model_formula_true_params)) {
@@ -588,13 +587,13 @@ power_analysis <- function(n_control,
   }
 
   # Calculate summary statistics
-  
+
   # Extract success/futility decisions and probabilities for MCSE calculations
   success_decisions <- sapply(successful_results, function(x) x$success_decision)
   futility_decisions <- sapply(successful_results, function(x) x$futility_decision)
   prob_success_values <- sapply(successful_results, function(x) x$prob_above_success)
   prob_futility_values <- sapply(successful_results, function(x) x$prob_below_futility)
-  
+
   power_summary <- list(
     n_simulations = n_simulations,
     successful_fits = successful_fits,
@@ -759,19 +758,21 @@ power_analysis <- function(n_control,
 #'   median_effect_estimate = 0.48,
 #'   sd_median_effect_estimate = 0.12
 #' ), class = "rctbayespower")
-#' 
+#'
 #' # Print summary of the mock power analysis result
 #' summary(power_result)
 #' }
 summary.rctbayespower <- function(object, ...) {
   # Validate required fields
-  required_fields <- c("study_parameters", "n_simulations", "successful_fits", 
-                      "convergence_rate", "power_success", "power_futility")
+  required_fields <- c(
+    "study_parameters", "n_simulations", "successful_fits",
+    "convergence_rate", "power_success", "power_futility"
+  )
   missing_fields <- setdiff(required_fields, names(object))
   if (length(missing_fields) > 0) {
     stop("Missing required field(s): ", paste(missing_fields, collapse = ", "))
   }
-  
+
   cat("\n=== Bayesian Power Analysis Summary ===\n\n")
 
   # Study design parameters
@@ -893,7 +894,7 @@ summary.rctbayespower <- function(object, ...) {
       study_parameters = object$study_parameters
     )
   )
-  
+
   invisible(summary_obj)
 }
 
@@ -908,7 +909,7 @@ summary.rctbayespower <- function(object, ...) {
 #' @param metric Which power metric to display:
 #'   \itemize{
 #'     \item "success" - Success power and probability
-#'     \item "futility" - Futility power and probability  
+#'     \item "futility" - Futility power and probability
 #'     \item "both" - Both success and futility power and probabilities (default)
 #'   }
 #' @param ... Additional arguments (currently unused)
@@ -942,27 +943,27 @@ summary.rctbayespower <- function(object, ...) {
 #'   median_effect_estimate = 0.48,
 #'   sd_median_effect_estimate = 0.12
 #' ), class = "rctbayespower")
-#' 
+#'
 #' # Create plot showing both success and futility metrics
 #' plot(power_result)
-#' 
+#'
 #' # Show only success metrics
 #' plot(power_result, metric = "success")
-#' 
-#' # Show only futility metrics  
+#'
+#' # Show only futility metrics
 #' plot(power_result, metric = "futility")
 #' }
 plot.rctbayespower <- function(x, type = "comparison", metric = "both", ...) {
   if (!requireNamespace("ggplot2", quietly = TRUE)) {
     stop("Package 'ggplot2' is required for plotting.")
   }
-  
+
   # Validate type parameter - only comparison makes sense for single analysis
   if (type != "comparison") {
     warning("Only type='comparison' is supported for single power analysis results. Using 'comparison'.")
     type <- "comparison"
   }
-  
+
   # Convert single power analysis result to grid format for plotting
   mock_grid <- list(
     power_surface = data.frame(
@@ -981,35 +982,35 @@ plot.rctbayespower <- function(x, type = "comparison", metric = "both", ...) {
     threshold_success = x$study_parameters$threshold_success,
     threshold_futility = x$study_parameters$threshold_futility
   )
-  
+
   # Create the plot using ggplot2 directly since we have a single point
   plot_data <- mock_grid$power_surface
-  
+
   # Create base plot
   p <- ggplot2::ggplot(plot_data, ggplot2::aes(x = 1)) # Dummy x-axis for single point
-  
+
   # Add metrics based on parameter
   colors <- c(
     "Success Power" = "steelblue", "Success Probability" = "lightblue",
     "Futility Power" = "darkred", "Futility Probability" = "pink"
   )
-  
+
   y_values <- c()
   y_labels <- c()
   point_colors <- c()
-  
+
   if (metric == "success" || metric == "both") {
     y_values <- c(y_values, plot_data$power_success, plot_data$mean_prob_success)
     y_labels <- c(y_labels, "Success Power", "Success Probability")
     point_colors <- c(point_colors, colors["Success Power"], colors["Success Probability"])
   }
-  
+
   if (metric == "futility" || metric == "both") {
     y_values <- c(y_values, plot_data$power_futility, plot_data$mean_prob_futility)
     y_labels <- c(y_labels, "Futility Power", "Futility Probability")
     point_colors <- c(point_colors, colors["Futility Power"], colors["Futility Probability"])
   }
-  
+
   # Create data frame for plotting
   point_data <- data.frame(
     x = rep(1, length(y_values)),
@@ -1017,7 +1018,7 @@ plot.rctbayespower <- function(x, type = "comparison", metric = "both", ...) {
     metric = factor(y_labels, levels = y_labels),
     color = point_colors
   )
-  
+
   # Create the plot
   p <- ggplot2::ggplot(point_data, ggplot2::aes(x = .data$x, y = .data$y, color = .data$metric)) +
     ggplot2::geom_point(size = 8, alpha = 0.8) +
@@ -1047,7 +1048,7 @@ plot.rctbayespower <- function(x, type = "comparison", metric = "both", ...) {
       panel.grid.major.x = ggplot2::element_blank(),
       panel.grid.minor.x = ggplot2::element_blank()
     )
-  
+
   # Add target power reference lines if meaningful
   if (metric == "success" || metric == "both") {
     p <- p + ggplot2::geom_hline(
@@ -1055,14 +1056,14 @@ plot.rctbayespower <- function(x, type = "comparison", metric = "both", ...) {
       linetype = "dashed", color = "steelblue", alpha = 0.7
     )
   }
-  
+
   if (metric == "futility" || metric == "both") {
     p <- p + ggplot2::geom_hline(
       yintercept = mock_grid$target_power_futility,
       linetype = "dashed", color = "darkred", alpha = 0.7
     )
   }
-  
+
   return(p)
 }
 
@@ -1091,7 +1092,7 @@ plot.rctbayespower <- function(x, type = "comparison", metric = "both", ...) {
 #' \dontrun{
 #' # Validate design before running full power analysis
 #' validation <- validate_power_design(
-#'   n_control = 50, 
+#'   n_control = 50,
 #'   n_treatment = 50,
 #'   simulate_data_fn = simulate_data,
 #'   model_formula_true_params = model_formula_true,
@@ -1233,13 +1234,16 @@ validate_power_design <- function(n_control,
 
       # Show true parameter values safely
       cat("  True parameter values:\n")
-      tryCatch({
-        summary_output <- capture.output(print(summary(brms_design_true)))
-        cat(paste(summary_output, collapse = "\n"))
-        cat("\n")
-      }, error = function(e) {
-        cat("  (Summary output suppressed due to output connection issues)\n")
-      })
+      tryCatch(
+        {
+          summary_output <- capture.output(print(summary(brms_design_true)))
+          cat(paste(summary_output, collapse = "\n"))
+          cat("\n")
+        },
+        error = function(e) {
+          cat("  (Summary output suppressed due to output connection issues)\n")
+        }
+      )
     },
     error = function(e) {
       stop("Design model with true parameters failed: ", as.character(e))
@@ -1402,13 +1406,15 @@ validate_power_design <- function(n_control,
 #' @export
 print.rctbayespower <- function(x, ...) {
   # Validate required fields
-  required_fields <- c("study_parameters", "n_simulations", "successful_fits", 
-                      "convergence_rate", "power_success", "power_futility")
+  required_fields <- c(
+    "study_parameters", "n_simulations", "successful_fits",
+    "convergence_rate", "power_success", "power_futility"
+  )
   missing_fields <- setdiff(required_fields, names(x))
   if (length(missing_fields) > 0) {
     stop("Missing required field(s): ", paste(missing_fields, collapse = ", "))
   }
-  
+
   cat("Bayesian RCT Power Analysis Results\n")
   cat("===================================\n\n")
 
