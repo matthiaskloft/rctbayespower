@@ -20,8 +20,8 @@ options(repos = c(CRAN = "https://cloud.r-project.org/"))
 
 # Check and install required packages
 packages <- c("tidyverse", "devtools")
-if (!require("pacman")) install.packages("pacman")
-pacman::p_load(packages, update = F, character.only = T)
+install.packages(setdiff(packages, rownames(installed.packages())))
+invisible(lapply(packages, require, character.only = TRUE))
 
 # Load the package
 devtools::load_all(".")
