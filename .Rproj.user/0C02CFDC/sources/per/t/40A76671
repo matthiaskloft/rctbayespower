@@ -1,0 +1,27 @@
+{
+    "id": "40A76671",
+    "path": "~/GitHub/rctbayespower/vignettes/src/_02-prior-specification.Rmd",
+    "project_path": "vignettes/src/_02-prior-specification.Rmd",
+    "type": "r_markdown",
+    "hash": "1969697890",
+    "contents": "",
+    "dirty": false,
+    "created": 1752057193522.0,
+    "source_on_save": false,
+    "relative_order": 4,
+    "properties": {
+        "source_window_id": "",
+        "Source": "Source",
+        "cursorPosition": "174,0",
+        "scrollLine": "168",
+        "last_setup_crc32": "6f2b17012069bdd2"
+    },
+    "folds": "",
+    "lastKnownWriteTime": 1752507679,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1752515797709,
+    "read_only": false,
+    "read_only_alternatives": []
+}

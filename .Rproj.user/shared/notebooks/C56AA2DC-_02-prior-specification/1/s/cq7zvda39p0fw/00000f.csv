@@ -1,0 +1,89 @@
+"0","uninformative_analysis <- power_analysis_ancova("
+"0","  n_control = 60,"
+"0","  n_treatment = 60, "
+"0","  effect_size = 0.4, "
+"0","  baseline_effect = 0.3, "
+"0","  outcome_type = ""continuous"", "
+"0","  threshold_success = 0.3, "
+"0","  threshold_futility = 0.1, "
+"0","  n_simulation = n_sims, "
+"0","  n_cores = n_cores, "
+"0","  priors_treatment = ""normal(0, 100)"", "
+"0","  priors_baseline = ""normal(0, 100)"", "
+"0","  priors_intercept = ""normal(0, 100)"", "
+"0","  priors_sigma = ""normal(0, 100)"""
+"0","  )"
+"1","Running 150 power simulations in parallel using 15 cores...
+Setting up design model with true parameters...
+"
+"1","Setting up design model with estimation priors...
+"
+"1","Progress: 15/150 (10.0%) - Elapsed: 0.1 min - ETC: 0.6 min
+"
+"1","Progress: 30/150 (20.0%) - Elapsed: 0.1 min - ETC: 0.6 min
+"
+"1","Progress: 45/150 (30.0%) - Elapsed: 0.2 min - ETC: 0.4 min
+"
+"1","Progress: 60/150 (40.0%) - Elapsed: 0.2 min - ETC: 0.4 min
+"
+"1","Progress: 75/150 (50.0%) - Elapsed: 0.3 min - ETC: 0.3 min
+"
+"1","Progress: 90/150 (60.0%) - Elapsed: 0.4 min - ETC: 0.2 min
+"
+"1","Progress: 105/150 (70.0%) - Elapsed: 0.4 min - ETC: 0.2 min
+"
+"1","Progress: 120/150 (80.0%) - Elapsed: 0.5 min - ETC: 0.1 min
+"
+"1","Progress: 135/150 (90.0%) - Elapsed: 0.5 min - ETC: 0.1 min
+"
+"1","Completed: 150/150 (100%) - Total time: 0.6 min
+"
+"1","
+Power Analysis Complete!
+Successful fits: 150 out of 150 
+Mean effect estimate (median): 0.406 
+SD of effect estimate (median): 0.162 
+Power - Success: 0.04 
+Power - Futility: 0.033 
+Mean probability of success: 0.645 
+Mean probability of futility: 0.122 
+
+"
+"0","summary(uninformative_analysis)"
+"1","
+=== Bayesian Power Analysis Summary ===
+
+Study Design:
+  Control group size: 60 
+  Treatment group size: 60 
+  Target parameter: grouptreat 
+  Success threshold: 0.3 
+  Futility threshold: 0.1 
+  Success probability threshold: 0.975 
+
+  Futility probability threshold: 0.5 
+
+Model Information:
+  Family: gaussian(identity) 
+  Estimation formula: baseline + group 
+  Design formula: baseline + group 
+
+Simulation Overview:
+  Total simulations: 150 
+  Successful fits: 150 
+  Convergence rate: 100 %
+
+Treatment Effect Estimates:
+  Mean effect estimate (median): 0.406 
+  SD of effect estimates (median): 0.162 
+
+Power Analysis Results:
+  Power - Success: 0.04 (MCSE: 0.016 )
+  Power - Futility: 0.033 (MCSE: 0.0147 )
+
+Decision Probabilities:
+  Mean probability of success: 0.645 (MCSE: 0.0218 )
+  Mean probability of futility: 0.122 (MCSE: 0.0126 )
+
+=== End Summary ===
+"

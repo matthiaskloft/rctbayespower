@@ -1,0 +1,26 @@
+"1","Bayesian RCT Effect Size Analysis - Detailed Summary
+====================================================
+
+Analysis Parameters:
+  Target power - Success: 0.9 
+  Target power - Futility: 0.95 
+  Threshold - Success: 0.3 
+  Threshold - Futility: 0.1 
+  Fixed sample size: 160 
+  Effect sizes tested: 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8 
+  Allocation (treatment %): 50%
+  Power analysis function: power_analysis_ancova 
+  Design prior: normal(0.5, 0.1) 
+  Design prior type: brms 
+  Analysis time: 4.24 minutes
+
+Power Results Across Effect Sizes:
+==================================
+"
+"1","
+Optimal Combinations:
+====================
+No combinations achieved target success power.
+
+No combinations achieved target futility power.
+"

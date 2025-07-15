@@ -1,0 +1,17 @@
+"1","
+Optimal Combinations:
+====================
+No combinations achieved target success power.
+
+No combinations achieved target futility power.
+
+Integrated Power & Probability Results:
+======================================
+(Using runtime design prior: student_t(3, 0.5, 0.1) )
+
+"
+"1","
+Integrated results represent weighted averages across effect sizes using the specified design prior.
+Power = probability of making correct decision, Mean Probability = mean posterior probability of exceeding threshold.
+Values shown as percentage (±MCSE) where MCSE = Monte Carlo Standard Error.
+"

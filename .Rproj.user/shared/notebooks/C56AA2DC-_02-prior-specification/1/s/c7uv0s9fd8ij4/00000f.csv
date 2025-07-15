@@ -1,0 +1,18 @@
+"0","# Analysis with default priors
+default_analysis <- power_analysis_ancova(
+  n_control = 60,
+  n_treatment = 60,
+  effect_size = 0.4,
+  baseline_effect = 0.3,
+  outcome_type = ""continuous"",
+  threshold_success = 0.3,
+  threshold_futility = 0.1,
+  n_sims = n_sims,
+  n_cores = n_cores
+)
+"
+"2","G1;Fehler in power_analysis_ancova(n_control = 60, n_treatment = 60, effect_size = 0.4,  : 
+  unbenutztes Argument (n_sims = n_sims)
+Fehler während wrapup: nicht so viele einschließende Umgebungen im Stack
+Fehler: Keine weiteren Fehler-Behandler verfügbar (rekursive Fehler?); 'abort' restart wird ausgelöst
+g"

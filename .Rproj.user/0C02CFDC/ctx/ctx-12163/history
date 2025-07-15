@@ -1,0 +1,512 @@
+) |>
+# pivot this table
+tidyr::pivot_longer(
+cols = c("power_success", "power_futility", "p_success", "p_futility"),
+names_to = "metric",
+values_to = "value"
+)
+power_comparison
+power_comparison <- data.frame(
+method = c("MCMC", "Meanfield", "Fullrank"),
+convergence = c(
+power_mcmc$convergence,
+power_meanfield$convergence,
+power_fullrank$convergence
+),
+mean_effect_estimate = c(
+power_mcmc$mean_effect_estimate,
+power_meanfield$mean_effect_estimate,
+power_fullrank$mean_effect_estimate
+),
+power_success = c(
+power_mcmc$power_success,
+power_meanfield$power_success,
+power_fullrank$power_success
+),
+power_futility = c(
+power_mcmc$power_futility,
+power_meanfield$power_futility,
+power_fullrank$power_futility
+),
+p_success = c(
+power_mcmc$mean_prob_success,
+power_meanfield$mean_prob_success,
+power_fullrank$mean_prob_success
+),
+p_futility = c(
+power_mcmc$mean_prob_futility,
+power_meanfield$mean_prob_futility,
+power_fullrank$mean_prob_futility
+)
+) |>
+# pivot this table wider
+tidyr::pivot_longer(
+cols = c("power_success", "power_futility", "p_success", "p_futility"),
+names_to = "metric",
+values_to = "value"
+) |>
+power_comparison
+power_comparison <- data.frame(
+method = c("MCMC", "Meanfield", "Fullrank"),
+convergence = c(
+power_mcmc$convergence,
+power_meanfield$convergence,
+power_fullrank$convergence
+),
+mean_effect_estimate = c(
+power_mcmc$mean_effect_estimate,
+power_meanfield$mean_effect_estimate,
+power_fullrank$mean_effect_estimate
+),
+power_success = c(
+power_mcmc$power_success,
+power_meanfield$power_success,
+power_fullrank$power_success
+),
+power_futility = c(
+power_mcmc$power_futility,
+power_meanfield$power_futility,
+power_fullrank$power_futility
+),
+p_success = c(
+power_mcmc$mean_prob_success,
+power_meanfield$mean_prob_success,
+power_fullrank$mean_prob_success
+),
+p_futility = c(
+power_mcmc$mean_prob_futility,
+power_meanfield$mean_prob_futility,
+power_fullrank$mean_prob_futility
+)
+) |>
+# pivot this table wider
+tidyr::pivot_longer(
+cols = c("power_success", "power_futility", "p_success", "p_futility"),
+names_to = "metric",
+values_to = "value"
+)
+power_comparison
+power_comparison <- data.frame(
+method = c("MCMC", "Meanfield", "Fullrank"),
+convergence = c(
+power_mcmc$convergence,
+power_meanfield$convergence,
+power_fullrank$convergence
+),
+mean_effect_estimate = c(
+power_mcmc$mean_effect_estimate,
+power_meanfield$mean_effect_estimate,
+power_fullrank$mean_effect_estimate
+),
+power_success = c(
+power_mcmc$power_success,
+power_meanfield$power_success,
+power_fullrank$power_success
+),
+power_futility = c(
+power_mcmc$power_futility,
+power_meanfield$power_futility,
+power_fullrank$power_futility
+),
+p_success = c(
+power_mcmc$mean_prob_success,
+power_meanfield$mean_prob_success,
+power_fullrank$mean_prob_success
+),
+p_futility = c(
+power_mcmc$mean_prob_futility,
+power_meanfield$mean_prob_futility,
+power_fullrank$mean_prob_futility
+)
+) |>
+# pivot this table wider
+tidyr::pivot_wider(
+cols = c("power_success", "power_futility", "p_success", "p_futility"),
+names_to = "metric",
+values_to = "value"
+)
+power_comparison <- data.frame(
+method = c("MCMC", "Meanfield", "Fullrank"),
+convergence = c(
+power_mcmc$convergence,
+power_meanfield$convergence,
+power_fullrank$convergence
+),
+mean_effect_estimate = c(
+power_mcmc$mean_effect_estimate,
+power_meanfield$mean_effect_estimate,
+power_fullrank$mean_effect_estimate
+),
+power_success = c(
+power_mcmc$power_success,
+power_meanfield$power_success,
+power_fullrank$power_success
+),
+power_futility = c(
+power_mcmc$power_futility,
+power_meanfield$power_futility,
+power_fullrank$power_futility
+),
+p_success = c(
+power_mcmc$mean_prob_success,
+power_meanfield$mean_prob_success,
+power_fullrank$mean_prob_success
+),
+p_futility = c(
+power_mcmc$mean_prob_futility,
+power_meanfield$mean_prob_futility,
+power_fullrank$mean_prob_futility
+)
+) |>
+# pivot this table wider
+tidyr::pivot_wider(
+names_from = method,
+values_from = c(convergence, mean_effect_estimate, power_success, power_futility, p_success, p_futility)
+)
+power_comparison
+power_comparison <- data.frame(
+method = c("MCMC", "Meanfield", "Fullrank"),
+convergence = c(
+power_mcmc$convergence,
+power_meanfield$convergence,
+power_fullrank$convergence
+),
+mean_effect_estimate = c(
+power_mcmc$mean_effect_estimate,
+power_meanfield$mean_effect_estimate,
+power_fullrank$mean_effect_estimate
+),
+power_success = c(
+power_mcmc$power_success,
+power_meanfield$power_success,
+power_fullrank$power_success
+),
+power_futility = c(
+power_mcmc$power_futility,
+power_meanfield$power_futility,
+power_fullrank$power_futility
+),
+p_success = c(
+power_mcmc$mean_prob_success,
+power_meanfield$mean_prob_success,
+power_fullrank$mean_prob_success
+),
+p_futility = c(
+power_mcmc$mean_prob_futility,
+power_meanfield$mean_prob_futility,
+power_fullrank$mean_prob_futility
+)
+) |>
+# pivot this table wider
+tidyr::pivot_wider(id_cols = method,
+values_from = c(convergence, mean_effect_estimate, power_success, power_futility, p_success, p_futility)
+)
+power_comparison <- rbind(
+method = c("MCMC", "Meanfield", "Fullrank"),
+convergence = c(
+power_mcmc$convergence,
+power_meanfield$convergence,
+power_fullrank$convergence
+),
+mean_effect_estimate = c(
+power_mcmc$mean_effect_estimate,
+power_meanfield$mean_effect_estimate,
+power_fullrank$mean_effect_estimate
+),
+power_success = c(
+power_mcmc$power_success,
+power_meanfield$power_success,
+power_fullrank$power_success
+),
+power_futility = c(
+power_mcmc$power_futility,
+power_meanfield$power_futility,
+power_fullrank$power_futility
+),
+p_success = c(
+power_mcmc$mean_prob_success,
+power_meanfield$mean_prob_success,
+power_fullrank$mean_prob_success
+),
+p_futility = c(
+power_mcmc$mean_prob_futility,
+power_meanfield$mean_prob_futility,
+power_fullrank$mean_prob_futility
+)
+)
+power_comparison
+names(power_comparison) <- c(
+"MCMC",
+"Meanfield",
+"Fullrank"
+)
+power_comparison
+power_comparison <- rbind(
+convergence = c(
+power_mcmc$convergence,
+power_meanfield$convergence,
+power_fullrank$convergence
+),
+mean_effect_estimate = c(
+power_mcmc$mean_effect_estimate,
+power_meanfield$mean_effect_estimate,
+power_fullrank$mean_effect_estimate
+),
+power_success = c(
+power_mcmc$power_success,
+power_meanfield$power_success,
+power_fullrank$power_success
+),
+power_futility = c(
+power_mcmc$power_futility,
+power_meanfield$power_futility,
+power_fullrank$power_futility
+),
+p_success = c(
+power_mcmc$mean_prob_success,
+power_meanfield$mean_prob_success,
+power_fullrank$mean_prob_success
+),
+p_futility = c(
+power_mcmc$mean_prob_futility,
+power_meanfield$mean_prob_futility,
+power_fullrank$mean_prob_futility
+)
+) |>  as.data.frame()
+names(power_comparison) <- c(
+"MCMC",
+"Meanfield",
+"Fullrank"
+)
+power_comparison
+power_comparison <- rbind(
+convergence = c(
+power_mcmc$convergence,
+power_meanfield$convergence,
+power_fullrank$convergence
+),
+mean_effect_estimate = c(
+power_mcmc$mean_effect_estimate,
+power_meanfield$mean_effect_estimate,
+power_fullrank$mean_effect_estimate
+),
+power_success = c(
+power_mcmc$power_success,
+power_meanfield$power_success,
+power_fullrank$power_success
+),
+power_futility = c(
+power_mcmc$power_futility,
+power_meanfield$power_futility,
+power_fullrank$power_futility
+),
+p_success = c(
+power_mcmc$mean_prob_success,
+power_meanfield$mean_prob_success,
+power_fullrank$mean_prob_success
+),
+p_futility = c(
+power_mcmc$mean_prob_futility,
+power_meanfield$mean_prob_futility,
+power_fullrank$mean_prob_futility
+)
+) |>  as.data.frame() |> round(2)
+names(power_comparison) <- c(
+"MCMC",
+"Meanfield",
+"Fullrank"
+)
+power_comparison
+power_analysis_ANCOVA(
+n_control = 200,
+n_treatment = 200,
+effect_size = 0,
+baseline_effect = 0.2,
+threshold_success = 0.2,
+threshold_futility = .05,
+p_sig_futility = 0.5,
+outcome_type = "continuous",
+n_simulations = n_cores*20,
+n_cores = n_cores
+)
+power_ancova <-
+power_analysis_ANCOVA(
+n_control = 200,
+n_treatment = 200,
+effect_size = 0,
+baseline_effect = 0.2,
+threshold_success = 0.2,
+threshold_futility = .05,
+p_sig_futility = 0.5,
+outcome_type = "continuous",
+n_simulations = n_cores*20,
+n_cores = n_cores
+)
+summary(power_ancova)
+devtools::load_all(".")
+power_ancova <-
+power_analysis_ANCOVA(
+n_control = 500,
+n_treatment = 500,
+effect_size = 0,
+baseline_effect = 0.2,
+threshold_success = 0.3,
+threshold_futility = .05,
+p_sig_futility = 0.5,
+outcome_type = "continuous",
+n_simulations = n_cores*20,
+n_cores = n_cores
+)
+summary(power_ancova)
+devtools::load_all(".")
+n_cores <- parallel::detectCores() - 1  # use all but one core
+n_simulations <- n_cores * 10
+power_mcmc <-
+power_analysis(
+n_control = n_control,
+n_treatment = n_treatment,
+brms_design_true_params = val$brms_design_true_params,
+brms_design_estimation = val$brms_design_estimation,
+target_param = target_param,
+simulate_data_fn = simulate_data,
+threshold_success = threshold_success,
+threshold_futility = threshold_futility,
+p_sig_success = 0.95,
+p_sig_futility = 0.5,
+n_simulations = n_simulations,
+n_cores = n_cores,
+brms_args = list(
+algorithm = "sampling",
+iter = 1500,
+warmup = 500,
+chains = 2,
+cores = 1,
+init = .1,
+control = list(adapt_delta = 0.9)
+),
+)
+summary(power_mcmc)
+power_meanfield <-
+power_analysis(
+n_control = n_control,
+n_treatment = n_treatment,
+brms_design_true_params = val$brms_design_true_params,
+brms_design_estimation = val$brms_design_estimation,
+target_param = target_param,
+simulate_data_fn = simulate_data,
+threshold_success = threshold_success,
+threshold_futility = threshold_futility,
+p_sig_success = 0.95,
+p_sig_futility = 0.5,
+n_simulations = n_simulations,
+n_cores = n_cores,
+brms_args = list(
+algorithm = "meanfield",
+importance_resampling = TRUE,
+iter = 1e5,
+output_samples = 5e3
+)
+)
+summary(power_meanfield)
+power_fullrank <-
+power_analysis(
+n_control = n_control,
+n_treatment = n_treatment,
+brms_design_true_params = val$brms_design_true_params,
+brms_design_estimation = val$brms_design_estimation,
+target_param = target_param,
+simulate_data_fn = simulate_data,
+threshold_success = threshold_success,
+threshold_futility = threshold_futility,
+p_sig_success = 0.95,
+p_sig_futility = 0.5,
+n_simulations = n_simulations,
+n_cores = n_cores,
+brms_args = list(
+algorithm = "fullrank",
+importance_resampling = TRUE,
+iter = 1e5,
+output_samples = 5e3
+)
+)
+summary(power_fullrank)
+# Compare powers
+power_comparison <- rbind(
+convergence = c(
+power_mcmc$convergence,
+power_meanfield$convergence,
+power_fullrank$convergence
+),
+mean_effect_estimate = c(
+power_mcmc$mean_effect_estimate,
+power_meanfield$mean_effect_estimate,
+power_fullrank$mean_effect_estimate
+),
+power_success = c(
+power_mcmc$power_success,
+power_meanfield$power_success,
+power_fullrank$power_success
+),
+power_futility = c(
+power_mcmc$power_futility,
+power_meanfield$power_futility,
+power_fullrank$power_futility
+),
+p_success = c(
+power_mcmc$mean_prob_success,
+power_meanfield$mean_prob_success,
+power_fullrank$mean_prob_success
+),
+p_futility = c(
+power_mcmc$mean_prob_futility,
+power_meanfield$mean_prob_futility,
+power_fullrank$mean_prob_futility
+)
+) |>  as.data.frame() |> round(3)
+names(power_comparison) <- c(
+"MCMC",
+"Meanfield",
+"Fullrank"
+)
+power_comparison
+power_ancova <-
+power_analysis_ANCOVA(
+n_control = 500,
+n_treatment = 500,
+effect_size = 0,
+baseline_effect = 0.2,
+threshold_success = 0.3,
+threshold_futility = .05,
+p_sig_futility = 0.5,
+outcome_type = "continuous",
+n_simulations = n_cores*20,
+n_cores = n_cores
+)
+sample_size_analysis(
+power_analysis_fn = "power_analysis_ANCOVA",
+outcome_type = "continuous",n_simulations = n_cores * 20,n_cores = n_cores,
+effect_size = 0.5,
+baseline_effect = 0.2
+)
+sample_size_analysis(
+power_analysis_fn = "power_analysis_ANCOVA",
+outcome_type = "continuous",effect_size = 0,
+baseline_effect = 0.2,
+threshold_success = 0.3,
+threshold_futility = .05,
+p_sig_futility = 0.5,
+outcome_type = "continuous",
+n_simulations = n_cores * 20,
+n_cores = n_cores
+)
+sample_size_analysis(
+power_analysis_fn = "power_analysis_ANCOVA",
+outcome_type = "continuous",
+effect_size = 0,
+baseline_effect = 0.2,
+threshold_success = 0.3,
+threshold_futility = .05,
+p_sig_futility = 0.5,
+n_simulations = n_cores * 20,
+n_cores = n_cores
+)

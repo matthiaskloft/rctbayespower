@@ -1,0 +1,26 @@
+{
+    "id": "B507BF5B",
+    "path": "~/GitHub/rctbayespower/R/power_analysis_ancova.R",
+    "project_path": "R/power_analysis_ancova.R",
+    "type": "r_source",
+    "hash": "387083426",
+    "contents": "",
+    "dirty": false,
+    "created": 1752491843248.0,
+    "source_on_save": false,
+    "relative_order": 6,
+    "properties": {
+        "source_window_id": "",
+        "Source": "Source",
+        "cursorPosition": "22,58",
+        "scrollLine": "198"
+    },
+    "folds": "",
+    "lastKnownWriteTime": 1752529546,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1752529546,
+    "read_only": false,
+    "read_only_alternatives": []
+}

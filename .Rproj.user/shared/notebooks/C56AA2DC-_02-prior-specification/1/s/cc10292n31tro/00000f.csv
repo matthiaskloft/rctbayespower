@@ -1,0 +1,2 @@
+"0","summ_wide$integrated_power |>"
+"0","  dplyr::mutate(across(where( ~ is.numeric(.)), ~ round(.x, 3)))"

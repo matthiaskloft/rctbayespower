@@ -1,0 +1,40 @@
+knitr::opts_chunk$set(
+collapse = TRUE,
+comment = "#>",
+fig.path = "../man/figures/README-",
+out.width = "90%",
+fig.width = 10,
+fig.height = 7,
+message = FALSE
+)
+# Set up for examples (reduce simulation counts for faster vignette building)
+n_cores <- parallel::detectCores() - 1
+n_sims <- n_cores * 5
+# Install from GitHub (once package is published)
+# devtools::install_github("matthiaskloft/rctbayespower")
+# Load the package
+library(rctbayespower)
+# Required dependencies
+library(brms)
+library(ggplot2)
+library(dplyr)
+# Basic power analysis for continuous outcome with baseline covariate
+power_result <- power_analysis_ancova(
+n_control = 50,
+n_treatment = 50,
+effect_size = 0.5, # Cohen's d
+baseline_effect = 0.3, # Baseline covariate effect
+outcome_type = "continuous",
+threshold_success = 0.3, # Clinically meaningful effect
+threshold_futility = 0.1, # Futility threshold
+p_sig_success = 0.95, # Probability threshold for success
+p_sig_futility = 0.5, # Probability threshold for futility
+n_simulations = n_sims,
+n_cores = n_cores,
+brms_args = list(
+algorithm = "meanfield", # Fast algorithm for demo
+importance_resampling = TRUE,
+iter = 1e4,
+output_samples = 1e3
+)
+)

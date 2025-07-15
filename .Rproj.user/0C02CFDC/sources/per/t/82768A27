@@ -1,0 +1,27 @@
+{
+    "id": "82768A27",
+    "path": "~/GitHub/rctbayespower/R/power_grid_analysis.R",
+    "project_path": "R/power_grid_analysis.R",
+    "type": "r_source",
+    "hash": "3995620872",
+    "contents": "",
+    "dirty": false,
+    "created": 1752491448683.0,
+    "source_on_save": false,
+    "relative_order": 5,
+    "properties": {
+        "source_window_id": "",
+        "Source": "Source",
+        "cursorPosition": "778,8",
+        "scrollLine": "788",
+        "docOutlineVisible": "1"
+    },
+    "folds": "",
+    "lastKnownWriteTime": 1752539090,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1752539090,
+    "read_only": false,
+    "read_only_alternatives": []
+}

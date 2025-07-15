@@ -1,0 +1,3 @@
+"2","G1;Fehler in data.frame(Prior_Type = ""Informed Normal(0.4, 0.1)"", Integrated_Power = effect_size_informed$integrated_power_success,  : 
+  Argumente implizieren unterschiedliche Anzahl Zeilen: 1, 0
+g"

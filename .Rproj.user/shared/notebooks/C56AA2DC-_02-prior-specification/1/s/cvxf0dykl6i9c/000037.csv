@@ -1,0 +1,61 @@
+"0","fit_design_prior <- power_grid_analysis("
+"0","  sample_sizes = c(160),"
+"0","effect_sizes = seq(0.2, 0.8, 0.1),"
+"0","  design_prior = ""normal(0.5, 0.1)"",  # Informed design prior"
+"0","  power_analysis_fn = ""power_analysis_ancova"","
+"0","  outcome_type = ""continuous"","
+"0","  baseline_effect = 0.3,"
+"0","  threshold_success = 0.3,"
+"0","  threshold_futility = 0.1,"
+"0","  n_simulations = n_sims,"
+"0","  n_cores = n_cores"
+"0",")"
+"1","Successfully parsed design prior: normal(0.5, 0.1) 
+  Distribution: normal 
+  Density function: stats::dnorm(0.5, 0.1) (using stats package)
+  Quantile function: stats::qnorm(0.5, 0.1) (using stats package)
+NOTE: No brms_args provided. Using fast defaults:
+  algorithm = 'meanfield', iter = 50000, output_samples = 2000
+  For production use, consider sampling algorithms for better accuracy.
+
+
+=== Effect Size Analysis ===
+Fixed sample size: 160 
+Effect sizes to test: 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8 
+Threshold - Success: 0.3 
+Threshold - Futility: 0.1 
+Allocation (treatment %): 50 %
+Power analysis function: power_analysis_ancova 
+Design prior: normal(0.5, 0.1) 
+Total combinations: 7 
+
+
+=== Phase 1: Parallel Model Compilation ===
+Compiling models for 7 unique effect sizes in parallel using 15 cores...
+"
+"1","✓ Successfully compiled models for effect size 0.2 
+✓ Successfully compiled models for effect size 0.3 
+✓ Successfully compiled models for effect size 0.4 
+✓ Successfully compiled models for effect size 0.5 
+✓ Successfully compiled models for effect size 0.6 
+✓ Successfully compiled models for effect size 0.7 
+✓ Successfully compiled models for effect size 0.8 
+
+=== Phase 2: Grid-Level Parallel Analysis ===
+Processing 7 combinations"
+"1"," in parallel using 15 cores with parallel package (purrr < 1.1.0)...
+"
+"1","
+Total analysis time: 4.24 minutes
+
+WARNING: 7 out of 7 combinations failed and returned NA values
+Check the error messages above for details on why these combinations failed.
+"
+"1","
+Computing integrated power using design prior...
+
+=== Effect Size Analysis Complete ===
+Target success power not achieved with tested effect sizes
+Target futility power not achieved with tested effect sizes
+"
+"0","summary(fit_design_prior)"

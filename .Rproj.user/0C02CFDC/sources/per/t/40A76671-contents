@@ -1,0 +1,248 @@
+---
+title: "Prior Specifications in Bayesian Power Analysis"
+date: "`r Sys.Date()`"
+always_allow_html: true
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.path = "/man/figures/02-prior-specification-",
+  out.width = "90%",
+  message = FALSE
+)
+
+# Load the package
+devtools::load_all(".")
+
+# Fast settings for examples
+n_cores <- parallel::detectCores() - 1
+n_sims <- n_cores * 10
+```
+
+
+
+The `rctbayespower` package uses two types of priors: **estimation priors** (for Bayesian model fitting) and **design priors** (for integrating effect size uncertainty). This vignette demonstrates their impact on power analysis through two focused examples.
+
+# Example 1: Different Estimation Priors
+
+Estimation priors affect how treatment effects are estimated during Bayesian model fitting. Here we compare default priors versus informative priors.
+
+## Power Analysis with Different Priors
+
+```{r}
+uninformative_analysis <- power_analysis_ancova(
+  n_control = 60,
+  n_treatment = 60, 
+  effect_size = 0.4, 
+  baseline_effect = 0.3, 
+  outcome_type = "continuous", 
+  threshold_success = 0.3, 
+  threshold_futility = 0.1, 
+  n_simulation = n_sims, 
+  n_cores = n_cores, 
+  priors_treatment = "normal(0, 100)", 
+  priors_baseline = "normal(0, 100)", 
+  priors_intercept = "normal(0, 100)", 
+  priors_sigma = "normal(0, 100)"
+  )
+
+summary(uninformative_analysis)
+```
+Analysis with informative, sceptical prior:
+```{r}
+informative_analysis <- power_analysis_ancova(
+  n_control = 60,
+  n_treatment = 60,
+  effect_size = 0.4,
+  baseline_effect = 0.3,
+  outcome_type = "continuous",
+  threshold_success = 0.3,
+  threshold_futility = 0.1,
+  n_simulation = n_sims,
+  n_cores = n_cores,
+  priors_treatment = "student_t(3, 0, 1)",
+  priors_baseline = "student_t(3, 0, .5)",
+  priors_intercept = "student_t(3, 0, 1)",
+  priors_sigma = "student_t(3, 0, 2)"
+)
+summary(informative_analysis)
+```
+
+Comparing the results of the two analyses:
+```{r}
+estimation_comparison <- data.frame(
+  Prior_Type = c("Uninformative", "Sceptical"),
+  Power_Success = c(
+    uninformative_analysis$power_success,
+    informative_analysis$power_success
+  ),
+  Power_Futility = c(
+    uninformative_analysis$power_futility,
+    informative_analysis$power_futility
+  ),
+  Mean_Effect = c(
+    uninformative_analysis$mean_effect_estimate,
+    informative_analysis$mean_effect_estimate
+  ),
+  SD_Effect = c(
+    uninformative_analysis$sd_mean_effect_estimate,
+    informative_analysis$sd_mean_effect_estimate
+  )
+) |> 
+  # round the numeric columns for better readability
+  dplyr::mutate(
+    across(c(Power_Success, Power_Futility, Mean_Effect, SD_Effect), ~ round(.x, 3)))
+
+print(estimation_comparison)
+```
+
+
+## Alpha Error Rate
+
+To evaluate the alpha error rate (false positive rate) for both prior configurations, we need to run the power analysis under the null hypothesis (effect size = 0) and examine how often we incorrectly conclude for success. This tells us how well our Bayesian decision framework controls Type I error.
+
+```{r alpha_error_uninformative}
+# Alpha error rate with uninformative priors
+alpha_uninformative <- power_analysis_ancova(
+  n_control = 60,
+  n_treatment = 60, 
+  effect_size = 0,  # Null hypothesis: no effect
+  baseline_effect = 0.3, 
+  outcome_type = "continuous", 
+  threshold_success = 0.3, 
+  threshold_futility = 0.1, 
+  n_simulation = n_sims, 
+  n_cores = n_cores, 
+  priors_treatment = "normal(0, 100)", 
+  priors_baseline = "normal(0, 100)", 
+  priors_intercept = "normal(0, 100)", 
+  priors_sigma = "normal(0, 100)"
+)
+
+summary(alpha_uninformative)
+```
+
+```{r alpha_error_informative}
+# Alpha error rate with informative, sceptical priors
+alpha_informative <- power_analysis_ancova(
+  n_control = 60,
+  n_treatment = 60,
+  effect_size = 0,  # Null hypothesis: no effect
+  baseline_effect = 0.3,
+  outcome_type = "continuous",
+  threshold_success = 0.3,
+  threshold_futility = 0.1,
+  n_simulation = n_sims,
+  n_cores = n_cores,
+  priors_treatment = "student_t(3, 0, 1)",
+  priors_baseline = "student_t(3, 0, .5)",
+  priors_intercept = "student_t(3, 0, 1)",
+  priors_sigma = "student_t(3, 0, 2)"
+)
+
+summary(alpha_informative)
+```
+
+Comparing the alpha error rates:
+```{r alpha_comparison}
+# Compare alpha error rates
+alpha_comparison <- data.frame(
+  Prior_Type = c("Uninformative", "Sceptical"),
+  Alpha_Error_Rate = c(
+    alpha_uninformative$power_success,
+    alpha_informative$power_success
+  ),
+  Probabilty_False_Positive = c(
+    alpha_uninformative$mean_prob_success,
+    alpha_informative$mean_prob_success
+  )
+) |> 
+  dplyr::mutate(
+    across(c(Alpha_Error_Rate, Probabilty_False_Positive), ~ round(.x, 3))
+  )
+
+print(alpha_comparison)
+```
+
+Using a sceptical prior reduces the probability of falsely concluding success when there is no true effect, thus controlling the alpha error rate more effectively than the uninformative priors.
+
+
+***
+
+
+# Example 2: Design Prior vs No Design Prior
+
+Design priors integrate uncertainty about the true effect size. Here we compare integrated power (with design prior) versus point estimates (without design prior).
+
+```{r design_prior}
+fit_design_prior <- power_grid_analysis(
+  sample_sizes = c(160),
+effect_sizes = seq(0.2, 0.8, 0.1),
+  design_prior = "normal(0.5, 0.1)",  # Informed design prior
+  power_analysis_fn = "power_analysis_ancova",
+  outcome_type = "continuous",
+  baseline_effect = 0.3,
+  threshold_success = 0.3,
+  threshold_futility = 0.1,
+  n_simulations = n_sims,
+  n_cores = n_cores
+)
+
+summary(fit_design_prior)
+```
+
+Now let's demonstrate the flexibility of specifying different design priors in the summary method:
+
+```{r design_prior_flexibility, include=FALSE}
+summ_used <- 
+  summary(fit_design_prior)
+
+summ_optimistic <- 
+  summary(fit_design_prior, design_prior = "normal(0.7, 0.1)")
+
+summ_conservative <- summary(fit_design_prior, design_prior = "normal(0.4, 0.1)")
+
+summ_wide <- 
+  summary(fit_design_prior, design_prior = "student_t(3, 0.5, 0.1)")
+```
+
+Summary with design prior specified in fit:
+```{r}
+summ_used$integrated_power |>
+  dplyr::mutate(across(where( ~ is.numeric(.)), ~ round(.x, 3)))
+```
+
+Summary with optimistic design prior:
+```{r}
+summ_optimistic$integrated_power |>
+  dplyr::mutate(across(where( ~ is.numeric(.)), ~ round(.x, 3)))
+```
+
+Summary with conservative design prior:
+```{r}
+summ_conservative$integrated_power |>
+  dplyr::mutate(across(where( ~ is.numeric(.)), ~ round(.x, 3)))
+```
+
+Summary with wide design prior:
+```{r}
+summ_wide$integrated_power |>
+  dplyr::mutate(across(where( ~ is.numeric(.)), ~ round(.x, 3)))
+```
+
+
+
+
+This demonstrates the enhanced flexibility where you can:
+1. Run the analysis once to get raw results
+2. Try different design priors at summary time
+3. Compare how different assumptions about effect size uncertainty affect integrated power
+
+***
+
+
+```{r session_info}
+sessionInfo()
+```

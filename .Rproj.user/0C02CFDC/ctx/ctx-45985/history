@@ -1,0 +1,192 @@
+#!/usr/bin/env Rscript
+library(rmarkdown)
+library(here)
+rmf <- function(f)
+{
+if (file.exists(f))
+file.remove(f)
+}
+clean <- function()
+{
+files = dir(pattern = "*.Rmd", recursive = FALSE)
+for (f in files)
+rmf(f)
+}
+set_path_vignettes <- function()
+{
+while (!file.exists("DESCRIPTION"))
+{
+setwd("..")
+if (getwd() == "/home")
+stop("couldn't find package!")
+}
+setwd("vignettes")
+getwd()
+}
+set_path_project <- function()
+{
+while (!file.exists("DESCRIPTION"))
+{
+setwd("..")
+if (getwd() == "/home")
+stop("couldn't find package!")
+}
+getwd()
+}
+build_vignette <- function(f)
+{
+f_Rmd <- basename(f)
+of <- sub(f_Rmd, pattern = "^_", replacement = "")
+rmf(of)
+fmt <- rmarkdown::md_document(variant = "gfm",
+preserve_yaml = TRUE,
+ext = ".Rmd")
+rmarkdown::render(
+f,
+output_file = of,
+output_dir = getwd(),
+output_format = fmt
+)
+invisible(TRUE)
+}
+# ------------------------------------------------------------------------------
+set_path_vignettes()
+#clean()
+#build_vignette(here("src", "_01-introduction.Rmd"))
+build_vignette(file.path("src", "_02-prior-specification.Rmd"))
+#!/usr/bin/env Rscript
+library(rmarkdown)
+library(here)
+rmf <- function(f)
+{
+if (file.exists(f))
+file.remove(f)
+}
+clean <- function()
+{
+files = dir(pattern = "*.Rmd", recursive = FALSE)
+for (f in files)
+rmf(f)
+}
+set_path_vignettes <- function()
+{
+while (!file.exists("DESCRIPTION"))
+{
+setwd("..")
+if (getwd() == "/home")
+stop("couldn't find package!")
+}
+setwd("vignettes")
+getwd()
+}
+set_path_project <- function()
+{
+while (!file.exists("DESCRIPTION"))
+{
+setwd("..")
+if (getwd() == "/home")
+stop("couldn't find package!")
+}
+getwd()
+}
+build_vignette <- function(f)
+{
+f_Rmd <- basename(f)
+of <- sub(f_Rmd, pattern = "^_", replacement = "")
+rmf(of)
+fmt <- rmarkdown::md_document(variant = "gfm",
+preserve_yaml = TRUE,
+ext = ".Rmd")
+rmarkdown::render(
+f,
+output_file = of,
+output_dir = getwd(),
+output_format = fmt
+)
+invisible(TRUE)
+}
+# ------------------------------------------------------------------------------
+set_path_vignettes()
+#clean()
+#build_vignette(here("src", "_01-introduction.Rmd"))
+build_vignette(file.path("src", "_02-prior-specification.Rmd"))
+knitr::opts_chunk$set(
+collapse = TRUE,
+comment = "#>",
+fig.path = "/man/figures/02-prior-specification-",
+out.width = "90%",
+fig.width = 10,
+fig.height = 7,
+message = FALSE
+)
+# Set CRAN mirror
+options(repos = c(CRAN = "https://cloud.r-project.org/"))
+# Check and install required packages
+packages <- c("tidyverse", "devtools")
+install.packages(setdiff(packages, rownames(installed.packages())))
+invisible(lapply(packages, require, character.only = TRUE))
+# Load the package
+devtools::load_all(".")
+# Fast performance testing settings
+n_cores <- parallel::detectCores() - 1
+n_sims <- n_cores * 10
+# Conceptual overview
+prior_types <- data.frame(
+Prior_Type = c("Design Prior", "Model Prior"),
+Purpose = c("Effect size uncertainty", "Parameter estimation"),
+Usage = c("Grid analysis integration", "brms model fitting"),
+Example = c("normal(0.5, 0.1)", "student_t(3, 0, 1)"),
+Impact = c("Integrated power calculation", "Posterior inference"),
+stringsAsFactors = FALSE
+)
+print(prior_types)
+# Compare different design prior specifications
+design_prior_comparison <- data.frame(
+Prior_Type = character(),
+Integrated_Power = numeric(),
+Power_at_Point = numeric(),
+stringsAsFactors = FALSE
+)
+# Informative prior based on meta-analysis
+effect_size_informed <- power_grid_analysis(
+sample_sizes = 80,
+effect_sizes = seq(0.2, 0.6, by = 0.1),
+design_prior = "normal(0.4, 0.1)", # Informed prior centered at 0.4
+power_analysis_fn = "power_analysis_ancova",
+outcome_type = "continuous",
+baseline_effect = 0.3,
+threshold_success = 0.3,
+threshold_futility = 0.1,
+n_sims = n_sims,
+n_cores = n_cores
+)
+design_prior_comparison <- rbind(design_prior_comparison, data.frame(
+Prior_Type = "Informed Normal(0.4, 0.1)",
+Integrated_Power = effect_size_informed$integrated_power_success,
+Power_at_Point = effect_size_informed$power_success[effect_size_informed$effect_size == 0.4]
+))
+# Compare different design prior specifications
+design_prior_comparison <- data.frame(
+Prior_Type = character(),
+Integrated_Power = numeric(),
+Power_at_Point = numeric(),
+stringsAsFactors = FALSE
+)
+# Informative prior based on meta-analysis
+effect_size_informed <- power_grid_analysis(
+sample_sizes = 80,
+effect_sizes = seq(0.2, 0.6, by = 0.1),
+design_prior = "normal(0.4, 0.1)", # Informed prior centered at 0.4
+power_analysis_fn = "power_analysis_ancova",
+outcome_type = "continuous",
+baseline_effect = 0.3,
+threshold_success = 0.3,
+threshold_futility = 0.1,
+n_sims = n_sims,
+n_cores = n_cores
+)
+design_prior_comparison <- rbind(design_prior_comparison, data.frame(
+Prior_Type = "Normal(0.4, 0.1)",
+Integrated_Power = effect_size_informed$integrated_power_success,
+Power_at_Point = effect_size_informed$power_success[effect_size_informed$effect_size == 0.4]
+))

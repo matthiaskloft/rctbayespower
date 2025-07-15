@@ -1,0 +1,28 @@
+{
+    "id": "7D523A48",
+    "path": null,
+    "project_path": null,
+    "type": "object_explorer",
+    "hash": "0",
+    "contents": "",
+    "dirty": false,
+    "created": 1752536426502.0,
+    "source_on_save": false,
+    "relative_order": 9,
+    "properties": {
+        "id": "e3b916f65d3240d59106bf9db0d09d2d",
+        "name": "fit_design_prior",
+        "title": "fit_design_prior",
+        "language": "R",
+        "source_window_id": "",
+        "Source": "Source"
+    },
+    "folds": "",
+    "lastKnownWriteTime": 1752535683,
+    "encoding": "",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1752536426502,
+    "read_only": false,
+    "read_only_alternatives": []
+}

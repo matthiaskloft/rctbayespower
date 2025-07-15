@@ -1,0 +1,101 @@
+"0","# Compare different design prior specifications"
+"0","design_prior_comparison <- data.frame("
+"0","  Prior_Type = character(),"
+"0","  Integrated_Power = numeric(),"
+"0","  Power_at_Point = numeric(),"
+"0","  stringsAsFactors = FALSE"
+"0",")"
+"0",""
+"0","# Informative prior based on meta-analysis"
+"0","effect_size_informed <- power_grid_analysis("
+"0","  sample_sizes = 80,"
+"0","  effect_sizes = seq(0.2, 0.6, by = 0.1),"
+"0","  design_prior = ""normal(0.4, 0.1)"", # Informed prior centered at 0.4"
+"0","  power_analysis_fn = ""power_analysis_ancova"","
+"0","  outcome_type = ""continuous"","
+"0","  baseline_effect = 0.3,"
+"0","  threshold_success = 0.3,"
+"0","  threshold_futility = 0.1,"
+"0","  n_sims = n_sims,"
+"0","  n_cores = n_cores"
+"0",")"
+"1","Successfully parsed design prior: normal(0.4, 0.1) 
+  Distribution: normal 
+  Density function: stats::dnorm(0.4, 0.1) (using stats package)
+  Quantile function: stats::qnorm(0.4, 0.1) (using stats package)
+
+=== Effect Size Analysis ===
+Fixed sample size: 80 
+Effect sizes to test: 0.2, 0.3, 0.4, 0.5, 0.6 
+Threshold - Success: 0.3 
+Threshold - Futility: 0.1 
+Allocation (treatment %): 50 %
+Power analysis function: power_analysis_ancova 
+Design prior: normal(0.4, 0.1) 
+Total combinations: 5 
+
+
+--- Processing Effect Size 0.2 ( 1 of 5 ) ---
+Combinations for this effect size: 1 
+Compiling brms models for ANCOVA with effect size 0.2 ...
+Error compiling ANCOVA models for effect size 0.2 : "
+"2","G1;H1;Errorh in (function (n_control, n_treatment, outcome_type = ""continuous"", : unbenutztes Argument (n_sims = 150)
+ 
+Falling back to individual model compilation per combination.
+Testing combination 1 of 5 : N = 80 , Effect = 0.2
+  ERROR: Error in (function (n_control, n_treatment, outcome_type = ""continuous"", : unbenutztes Argument (n_sims = 150)
+ 
+
+--- Processing Effect Size 0.3 ( 2 of 5 ) ---
+Combinations for this effect size: 1 
+Compiling brms models for ANCOVA with effect size 0.3 ...
+Error compiling ANCOVA models for effect size 0.3 : Error in (function (n_control, n_treatment, outcome_type = ""continuous"", : unbenutztes Argument (n_sims = 150)
+ 
+Falling back to individual model compilation per combination.
+Testing combination 2 of 5 : N = 80 , Effect = 0.3
+  ERROR: Error in (function (n_control, n_treatment, outcome_type = ""continuous"", : unbenutztes Argument (n_sims = 150)
+ 
+
+--- Processing Effect Size 0.4 ( 3 of 5 ) ---
+Combinations for this effect size: 1 
+Compiling brms models for ANCOVA with effect size 0.4 ...
+Error compiling ANCOVA models for effect size 0.4 : Error in (function (n_control, n_treatment, outcome_type = ""continuous"", : unbenutztes Argument (n_sims = 150)
+ 
+Falling back to individual model compilation per combination.
+Testing combination 3 of 5 : N = 80 , Effect = 0.4
+  ERROR: Error in (function (n_control, n_treatment, outcome_type = ""continuous"", : unbenutztes Argument (n_sims = 150)
+ 
+
+--- Processing Effect Size 0.5 ( 4 of 5 ) ---
+Combinations for this effect size: 1 
+Compiling brms models for ANCOVA with effect size 0.5 ...
+Error compiling ANCOVA models for effect size 0.5 : Error in (function (n_control, n_treatment, outcome_type = ""continuous"", : unbenutztes Argument (n_sims = 150)
+ 
+Falling back to individual model compilation per combination.
+Testing combination 4 of 5 : N = 80 , Effect = 0.5
+  ERROR: Error in (function (n_control, n_treatment, outcome_type = ""continuous"", : unbenutztes Argument (n_sims = 150)
+ 
+
+--- Processing Effect Size 0.6 ( 5 of 5 ) ---
+Combinations for this effect size: 1 
+Compiling brms models for ANCOVA with effect size 0.6 ...
+Error compiling ANCOVA models for effect size 0.6 : Error in (function (n_control, n_treatment, outcome_type = ""continuous"", : unbenutztes Argument (n_sims = 150)
+ 
+Falling back to individual model compilation per combination.
+Testing combination 5 of 5 : N = 80 , Effect = 0.6
+  ERROR: Error in (function (n_control, n_treatment, outcome_type = ""continuous"", : unbenutztes Argument (n_sims = 150)
+ 
+
+Total analysis time: 0 minutes
+
+Computing integrated power using design prior...
+
+=== Effect Size Analysis Complete ===
+Target success power not achieved with tested effect sizes
+Target futility power not achieved with tested effect sizes
+g"
+"0","design_prior_comparison <- rbind(design_prior_comparison, data.frame("
+"0","  Prior_Type = ""Informed Normal(0.4, 0.1)"","
+"0","  Integrated_Power = effect_size_informed$integrated_power_success,"
+"0","  Power_at_Point = effect_size_informed$power_success[effect_size_informed$effect_size == 0.4]"
+"0","))"
