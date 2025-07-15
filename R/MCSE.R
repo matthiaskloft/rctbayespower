@@ -11,18 +11,18 @@ calculate_mcse_power <- function(successes, n_simulations) {
   if (length(successes) == 0 || n_simulations == 0) {
     return(NA_real_)
   }
-
+  
   # Convert to numeric if needed
   if (is.logical(successes)) {
     successes <- as.numeric(successes)
   }
-
+  
   # Calculate proportion
   p <- mean(successes, na.rm = TRUE)
-
+  
   # MCSE for proportion = sqrt(p * (1 - p) / n)
   mcse <- sqrt(p * (1 - p) / n_simulations)
-
+  
   return(mcse)
 }
 
@@ -38,16 +38,16 @@ calculate_mcse_mean <- function(values, n_simulations) {
   if (length(values) == 0 || n_simulations == 0) {
     return(NA_real_)
   }
-
+  
   # Remove NA values
   values <- values[!is.na(values)]
-
+  
   if (length(values) == 0) {
     return(NA_real_)
   }
-
+  
   # MCSE for mean = standard deviation / sqrt(n)
   mcse <- sd(values) / sqrt(length(values))
-
+  
   return(mcse)
 }
