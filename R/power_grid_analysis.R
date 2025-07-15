@@ -2359,7 +2359,7 @@ parse_design_prior <- function(design_prior, effect_sizes, verbose = TRUE) {
 #'
 #' @importFrom stats dnorm qnorm
 #' @keywords internal
-#' 
+#'
 
 validate_weighting_function <- function(effect_sizes = seq(0.2, 0.8, 0.1),
                                         verbose = TRUE) {
