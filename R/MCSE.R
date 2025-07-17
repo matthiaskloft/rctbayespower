@@ -67,26 +67,26 @@ calculate_mcse_integrated_power <- function(values, weights, n_simulations, is_p
   if (length(values) == 0 || length(weights) == 0 || n_simulations == 0) {
     return(NA_real_)
   }
-  
+
   if (length(values) != length(weights)) {
     stop("Values and weights must have the same length")
   }
-  
+
   # Remove NA values
   valid_idx <- !is.na(values) & !is.na(weights)
   values <- values[valid_idx]
   weights <- weights[valid_idx]
-  
+
   if (length(values) == 0) {
     return(NA_real_)
   }
-  
+
   # Normalize weights to sum to 1
   weights <- weights / sum(weights)
-  
+
   # Calculate weighted average
   weighted_avg <- sum(values * weights)
-  
+
   if (is_power_metric) {
     # For power metrics (proportions), use binomial-based MCSE
     # MCSE for weighted proportion approximation
@@ -97,6 +97,6 @@ calculate_mcse_integrated_power <- function(values, weights, n_simulations, is_p
     weighted_var <- sum(weights * (values - weighted_avg)^2)
     mcse <- sqrt(weighted_var / n_simulations)
   }
-  
+
   return(mcse)
 }

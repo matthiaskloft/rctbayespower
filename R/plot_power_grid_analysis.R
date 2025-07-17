@@ -168,28 +168,28 @@ plot.rctbayespower_grid <- function(x,
     if (length(x$effect_sizes) <= 1) {
       stop("design_prior can only be specified when effect sizes vary (length > 1)")
     }
-    
+
     # Parse design prior using effect sizes from object
     design_prior_parsed <- parse_design_prior(design_prior, x$effect_sizes, verbose = FALSE)
     weight_fn <- design_prior_parsed$weight_fn
-    
+
     if (!is.null(weight_fn)) {
       # Get weights for each effect size
       weights <- sapply(x$effect_sizes, weight_fn)
       weights <- weights / sum(weights) # Normalize to sum to 1
-      
+
       # For each sample size, compute weighted average power
       integrated_results <- list()
-      
+
       for (n in x$sample_sizes) {
         subset_data <- x$power_surface[x$power_surface$n_total == n, ]
-        
+
         if (nrow(subset_data) > 0 && all(!is.na(subset_data$power_success))) {
           weighted_power_success <- sum(subset_data$power_success * weights)
           weighted_power_futility <- sum(subset_data$power_futility * weights)
           weighted_prob_success <- sum(subset_data$mean_prob_success * weights)
           weighted_prob_futility <- sum(subset_data$mean_prob_futility * weights)
-          
+
           integrated_results[[length(integrated_results) + 1]] <- data.frame(
             n_total = as.integer(n),
             integrated_power_success = weighted_power_success,
@@ -200,7 +200,7 @@ plot.rctbayespower_grid <- function(x,
           )
         }
       }
-      
+
       if (length(integrated_results) > 0) {
         # Update the object's integrated power with runtime computation
         x$integrated_power <- do.call(rbind, integrated_results)

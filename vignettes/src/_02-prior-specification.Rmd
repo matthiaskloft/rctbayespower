@@ -34,19 +34,19 @@ Estimation priors affect how treatment effects are estimated during Bayesian mod
 ```{r}
 uninformative_analysis <- power_analysis_ancova(
   n_control = 60,
-  n_treatment = 60, 
-  effect_size = 0.4, 
-  baseline_effect = 0.3, 
-  outcome_type = "continuous", 
-  threshold_success = 0.3, 
-  threshold_futility = 0.1, 
-  n_simulation = n_sims, 
-  n_cores = n_cores, 
-  priors_treatment = "normal(0, 100)", 
-  priors_baseline = "normal(0, 100)", 
-  priors_intercept = "normal(0, 100)", 
+  n_treatment = 60,
+  effect_size = 0.4,
+  baseline_effect = 0.3,
+  outcome_type = "continuous",
+  threshold_success = 0.3,
+  threshold_futility = 0.1,
+  n_simulation = n_sims,
+  n_cores = n_cores,
+  priors_treatment = "normal(0, 100)",
+  priors_baseline = "normal(0, 100)",
+  priors_intercept = "normal(0, 100)",
   priors_sigma = "normal(0, 100)"
-  )
+)
 
 summary(uninformative_analysis)
 ```
@@ -90,10 +90,11 @@ estimation_comparison <- data.frame(
     uninformative_analysis$sd_mean_effect_estimate,
     informative_analysis$sd_mean_effect_estimate
   )
-) |> 
+) |>
   # round the numeric columns for better readability
   dplyr::mutate(
-    across(c(Power_Success, Power_Futility, Mean_Effect, SD_Effect), ~ round(.x, 3)))
+    across(c(Power_Success, Power_Futility, Mean_Effect, SD_Effect), ~ round(.x, 3))
+  )
 
 print(estimation_comparison)
 ```
@@ -107,17 +108,17 @@ To evaluate the alpha error rate (false positive rate) for both prior configurat
 # Alpha error rate with uninformative priors
 alpha_uninformative <- power_analysis_ancova(
   n_control = 60,
-  n_treatment = 60, 
-  effect_size = 0,  # Null hypothesis: no effect
-  baseline_effect = 0.3, 
-  outcome_type = "continuous", 
-  threshold_success = 0.3, 
-  threshold_futility = 0.1, 
-  n_simulation = n_sims, 
-  n_cores = n_cores, 
-  priors_treatment = "normal(0, 100)", 
-  priors_baseline = "normal(0, 100)", 
-  priors_intercept = "normal(0, 100)", 
+  n_treatment = 60,
+  effect_size = 0, # Null hypothesis: no effect
+  baseline_effect = 0.3,
+  outcome_type = "continuous",
+  threshold_success = 0.3,
+  threshold_futility = 0.1,
+  n_simulation = n_sims,
+  n_cores = n_cores,
+  priors_treatment = "normal(0, 100)",
+  priors_baseline = "normal(0, 100)",
+  priors_intercept = "normal(0, 100)",
   priors_sigma = "normal(0, 100)"
 )
 
@@ -129,7 +130,7 @@ summary(alpha_uninformative)
 alpha_informative <- power_analysis_ancova(
   n_control = 60,
   n_treatment = 60,
-  effect_size = 0,  # Null hypothesis: no effect
+  effect_size = 0, # Null hypothesis: no effect
   baseline_effect = 0.3,
   outcome_type = "continuous",
   threshold_success = 0.3,
@@ -158,7 +159,7 @@ alpha_comparison <- data.frame(
     alpha_uninformative$mean_prob_success,
     alpha_informative$mean_prob_success
   )
-) |> 
+) |>
   dplyr::mutate(
     across(c(Alpha_Error_Rate, Probabilty_False_Positive), ~ round(.x, 3))
   )
@@ -179,8 +180,8 @@ Design priors integrate uncertainty about the true effect size. Here we compare 
 ```{r design_prior}
 fit_design_prior <- power_grid_analysis(
   sample_sizes = c(160),
-effect_sizes = seq(0.2, 0.8, 0.1),
-  design_prior = "normal(0.5, 0.1)",  # Informed design prior
+  effect_sizes = seq(0.2, 0.8, 0.1),
+  design_prior = "normal(0.5, 0.1)", # Informed design prior
   power_analysis_fn = "power_analysis_ancova",
   outcome_type = "continuous",
   baseline_effect = 0.3,
@@ -196,40 +197,40 @@ summary(fit_design_prior)
 Now let's demonstrate the flexibility of specifying different design priors in the summary method:
 
 ```{r design_prior_flexibility, include=FALSE}
-summ_used <- 
+summ_used <-
   summary(fit_design_prior)
 
-summ_optimistic <- 
+summ_optimistic <-
   summary(fit_design_prior, design_prior = "normal(0.7, 0.1)")
 
 summ_conservative <- summary(fit_design_prior, design_prior = "normal(0.4, 0.1)")
 
-summ_wide <- 
+summ_wide <-
   summary(fit_design_prior, design_prior = "student_t(3, 0.5, 0.1)")
 ```
 
 Summary with design prior specified in fit:
 ```{r}
 summ_used$integrated_power |>
-  dplyr::mutate(across(where( ~ is.numeric(.)), ~ round(.x, 3)))
+  dplyr::mutate(across(where(~ is.numeric(.)), ~ round(.x, 3)))
 ```
 
 Summary with optimistic design prior:
 ```{r}
 summ_optimistic$integrated_power |>
-  dplyr::mutate(across(where( ~ is.numeric(.)), ~ round(.x, 3)))
+  dplyr::mutate(across(where(~ is.numeric(.)), ~ round(.x, 3)))
 ```
 
 Summary with conservative design prior:
 ```{r}
 summ_conservative$integrated_power |>
-  dplyr::mutate(across(where( ~ is.numeric(.)), ~ round(.x, 3)))
+  dplyr::mutate(across(where(~ is.numeric(.)), ~ round(.x, 3)))
 ```
 
 Summary with wide design prior:
 ```{r}
 summ_wide$integrated_power |>
-  dplyr::mutate(across(where( ~ is.numeric(.)), ~ round(.x, 3)))
+  dplyr::mutate(across(where(~ is.numeric(.)), ~ round(.x, 3)))
 ```
 
 

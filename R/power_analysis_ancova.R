@@ -28,7 +28,7 @@
 #' @param compile_models_only If TRUE, only compile the brms models and return them without running simulations. Used for model caching in power_grid_analysis(). Default is FALSE.
 #' @param ... Additional arguments passed to power_analysis()
 #'
-#' @return A list containing power analysis results, or if compile_models_only=TRUE, a list with compiled models and arguments for later use. See [power_analysis()] for details. 
+#' @return A list containing power analysis results, or if compile_models_only=TRUE, a list with compiled models and arguments for later use. See [power_analysis()] for details.
 #' Power metrics include Monte Carlo Standard Errors (MCSE) for all power and probability estimates.
 #' @export
 #' @importFrom stats rnorm gaussian poisson

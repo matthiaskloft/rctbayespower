@@ -25,16 +25,16 @@
 #' @details
 #' This function runs power analyses across all combinations of sample_sizes and effect_sizes
 #' using a two-phase approach for optimal performance:
-#' 
+#'
 #' \strong{Phase 1: Parallel Model Compilation}
-#' Models are compiled in parallel for each unique effect size when n_cores > 1 and 
+#' Models are compiled in parallel for each unique effect size when n_cores > 1 and
 #' multiple effect sizes are provided. This significantly reduces overall computation time
 #' by utilizing multiple CPU cores for the compilation-intensive brms model fitting.
-#' 
+#'
 #' \strong{Phase 2: Grid Analysis with Cached Models}
 #' Each combination uses pre-compiled models from Phase 1, with simulations running in
 #' parallel within each power analysis call (controlled by n_cores parameter).
-#' 
+#'
 #' When design_prior is provided, the function computes integrated power by weighting each effect size
 #' according to the specified design prior distribution.
 #'
@@ -321,20 +321,20 @@ power_grid_analysis <- function(target_power_success = 0.9,
 
   # Get n_cores from dots, default to 1 if not provided
   n_cores <- ifelse(is.null(dots$n_cores), 1, dots$n_cores)
-  
+
   # Validate n_cores
   if (!is.numeric(n_cores) || n_cores < 1) {
     n_cores <- 1
     warning("Invalid n_cores value. Using n_cores = 1.")
   }
-  
+
   # Filter dots based on the power analysis function being used (applies to both phases)
   if (power_analysis_fn == "power_analysis_ancova") {
     # Filter out parameters that power_analysis_ancova doesn't accept
     # Most importantly, remove simulate_data_fn since ANCOVA generates its own
     valid_ancova_params <- c(
       "outcome_type", "baseline_effect", "intercept_value", "sigma_value",
-      "p_sig_success", "p_sig_futility", "n_simulations", 
+      "p_sig_success", "p_sig_futility", "n_simulations",
       "priors_treatment", "priors_baseline", "priors_intercept", "priors_sigma",
       "brms_args", "seed", "n_cores", "progress_updates"
     )
@@ -353,7 +353,7 @@ power_grid_analysis <- function(target_power_success = 0.9,
   # Function to compile models for a single effect size
   compile_models_for_effect <- function(effect_idx, dots) {
     # dots parameter is required and should be pre-filtered
-    
+
     # Validate that dots is not empty for required parameters
     if (length(dots) == 0) {
       compilation_error <- "No parameters provided for model compilation"
@@ -363,128 +363,133 @@ power_grid_analysis <- function(target_power_success = 0.9,
         error = compilation_error
       ))
     }
-    
+
     current_effect <- unique_effects[effect_idx]
     effect_combinations <- combinations_by_effect[[as.character(current_effect)]]
-    
+
     # Use first combination for compilation
     first_combo <- effect_combinations[1, ]
     n_total_first <- first_combo$sample_size
     n_treatment_first <- round(n_total_first * percent_group_treat)
     n_control_first <- n_total_first - n_treatment_first
-    
+
     compiled_models <- NULL
     compilation_error <- NULL
-    
+
     if (power_analysis_fn == "power_analysis") {
       # For power_analysis, compile using compile_models_only option
-      tryCatch({
-        required_params <- c(
-          "simulate_data_fn",
-          "model_formula_true_params", 
-          "model_formula_estimation",
-          "family",
-          "priors_true_params",
-          "priors_estimation",
-          "target_param"
-        )
-        
-        if (all(required_params %in% names(dots))) {
-          # Filter to valid power_analysis parameters
-          valid_power_analysis_params <- c(
-            "simulate_data_fn", "model_formula_true_params", "model_formula_estimation",
-            "family", "priors_true_params", "priors_estimation", "target_param",
-            "p_sig_success", "p_sig_futility", "n_simulations", 
-            "brms_args", "seed", "n_cores", "progress_updates"
+      tryCatch(
+        {
+          required_params <- c(
+            "simulate_data_fn",
+            "model_formula_true_params",
+            "model_formula_estimation",
+            "family",
+            "priors_true_params",
+            "priors_estimation",
+            "target_param"
           )
-          
-          dots_filtered <- dots[names(dots) %in% valid_power_analysis_params]
-          
-          compile_args <- c(
-            list(
-              n_control = n_control_first,
-              n_treatment = n_treatment_first,
-              threshold_success = threshold_success,
-              threshold_futility = threshold_futility,
-              compile_models_only = TRUE
-            ),
-            dots_filtered
-          )
-          
-          power_analysis_compilation_result <- do.call(power_analysis, compile_args)
-          
-          compiled_models <- list(
-            brms_design_true_params = power_analysis_compilation_result$brms_design_true_params,
-            brms_design_estimation = power_analysis_compilation_result$brms_design_estimation,
-            simulate_data_fn = power_analysis_compilation_result$simulate_data_fn,
-            model_formula_true_params = power_analysis_compilation_result$model_formula_true_params,
-            model_formula_estimation = power_analysis_compilation_result$model_formula_estimation,
-            family = power_analysis_compilation_result$family,
-            priors_true_params = power_analysis_compilation_result$priors_true_params,
-            priors_estimation = power_analysis_compilation_result$priors_estimation,
-            target_param = power_analysis_compilation_result$target_param
-          )
-        } else {
-          missing_params <- setdiff(required_params, names(dots))
-          compilation_error <- paste("Missing required parameters for power_analysis:", paste(missing_params, collapse = ", "))
+
+          if (all(required_params %in% names(dots))) {
+            # Filter to valid power_analysis parameters
+            valid_power_analysis_params <- c(
+              "simulate_data_fn", "model_formula_true_params", "model_formula_estimation",
+              "family", "priors_true_params", "priors_estimation", "target_param",
+              "p_sig_success", "p_sig_futility", "n_simulations",
+              "brms_args", "seed", "n_cores", "progress_updates"
+            )
+
+            dots_filtered <- dots[names(dots) %in% valid_power_analysis_params]
+
+            compile_args <- c(
+              list(
+                n_control = n_control_first,
+                n_treatment = n_treatment_first,
+                threshold_success = threshold_success,
+                threshold_futility = threshold_futility,
+                compile_models_only = TRUE
+              ),
+              dots_filtered
+            )
+
+            power_analysis_compilation_result <- do.call(power_analysis, compile_args)
+
+            compiled_models <- list(
+              brms_design_true_params = power_analysis_compilation_result$brms_design_true_params,
+              brms_design_estimation = power_analysis_compilation_result$brms_design_estimation,
+              simulate_data_fn = power_analysis_compilation_result$simulate_data_fn,
+              model_formula_true_params = power_analysis_compilation_result$model_formula_true_params,
+              model_formula_estimation = power_analysis_compilation_result$model_formula_estimation,
+              family = power_analysis_compilation_result$family,
+              priors_true_params = power_analysis_compilation_result$priors_true_params,
+              priors_estimation = power_analysis_compilation_result$priors_estimation,
+              target_param = power_analysis_compilation_result$target_param
+            )
+          } else {
+            missing_params <- setdiff(required_params, names(dots))
+            compilation_error <- paste("Missing required parameters for power_analysis:", paste(missing_params, collapse = ", "))
+          }
+        },
+        error = function(e) {
+          compilation_error <- as.character(e)
         }
-      }, error = function(e) {
-        compilation_error <- as.character(e)
-      })
-      
+      )
     } else if (power_analysis_fn == "power_analysis_ancova") {
       # For power_analysis_ancova, compile using compile_models_only option (passed through to power_analysis)
-      tryCatch({
-        required_ancova_params <- c("outcome_type", "baseline_effect")
-        
-        if (all(required_ancova_params %in% names(dots))) {
-          # Filter out parameters that power_analysis_ancova doesn't accept
-          valid_ancova_params <- c(
-            "outcome_type", "baseline_effect", "intercept_value", "sigma_value",
-            "p_sig_success", "p_sig_futility", "n_simulations", 
-            "priors_treatment", "priors_baseline", "priors_intercept", "priors_sigma",
-            "brms_args", "seed", "n_cores", "progress_updates"
-          )
-          
-          dots_filtered <- dots[names(dots) %in% valid_ancova_params]
-          
-          compile_args <- c(
-            list(
-              n_control = n_control_first,
-              n_treatment = n_treatment_first,
-              effect_size = current_effect,
-              threshold_success = threshold_success,
-              threshold_futility = threshold_futility,
-              compile_models_only = TRUE
-            ),
-            dots_filtered
-          )
-          
-          ancova_compilation_result <- do.call(power_analysis_ancova, compile_args)
-          
-          compiled_models <- list(
-            brms_design_true_params = ancova_compilation_result$brms_design_true_params,
-            brms_design_estimation = ancova_compilation_result$brms_design_estimation,
-            simulate_data_fn = ancova_compilation_result$simulate_data_fn,
-            model_formula_true_params = ancova_compilation_result$model_formula_true_params,
-            model_formula_estimation = ancova_compilation_result$model_formula_estimation,
-            family = ancova_compilation_result$family,
-            priors_true_params = ancova_compilation_result$priors_true_params,
-            priors_estimation = ancova_compilation_result$priors_estimation,
-            target_param = ancova_compilation_result$target_param,
-            ancova_params = dots
-          )
-        } else {
-          missing_params <- setdiff(required_ancova_params, names(dots))
-          compilation_error <- paste("Missing required parameters for power_analysis_ancova:", paste(missing_params, collapse = ", "))
+      tryCatch(
+        {
+          required_ancova_params <- c("outcome_type", "baseline_effect")
+
+          if (all(required_ancova_params %in% names(dots))) {
+            # Filter out parameters that power_analysis_ancova doesn't accept
+            valid_ancova_params <- c(
+              "outcome_type", "baseline_effect", "intercept_value", "sigma_value",
+              "p_sig_success", "p_sig_futility", "n_simulations",
+              "priors_treatment", "priors_baseline", "priors_intercept", "priors_sigma",
+              "brms_args", "seed", "n_cores", "progress_updates"
+            )
+
+            dots_filtered <- dots[names(dots) %in% valid_ancova_params]
+
+            compile_args <- c(
+              list(
+                n_control = n_control_first,
+                n_treatment = n_treatment_first,
+                effect_size = current_effect,
+                threshold_success = threshold_success,
+                threshold_futility = threshold_futility,
+                compile_models_only = TRUE
+              ),
+              dots_filtered
+            )
+
+            ancova_compilation_result <- do.call(power_analysis_ancova, compile_args)
+
+            compiled_models <- list(
+              brms_design_true_params = ancova_compilation_result$brms_design_true_params,
+              brms_design_estimation = ancova_compilation_result$brms_design_estimation,
+              simulate_data_fn = ancova_compilation_result$simulate_data_fn,
+              model_formula_true_params = ancova_compilation_result$model_formula_true_params,
+              model_formula_estimation = ancova_compilation_result$model_formula_estimation,
+              family = ancova_compilation_result$family,
+              priors_true_params = ancova_compilation_result$priors_true_params,
+              priors_estimation = ancova_compilation_result$priors_estimation,
+              target_param = ancova_compilation_result$target_param,
+              ancova_params = dots
+            )
+          } else {
+            missing_params <- setdiff(required_ancova_params, names(dots))
+            compilation_error <- paste("Missing required parameters for power_analysis_ancova:", paste(missing_params, collapse = ", "))
+          }
+        },
+        error = function(e) {
+          compilation_error <- as.character(e)
         }
-      }, error = function(e) {
-        compilation_error <- as.character(e)
-      })
+      )
     } else {
       compilation_error <- paste("Model caching not supported for", power_analysis_fn)
     }
-    
+
     return(list(
       effect_size = current_effect,
       compiled_models = compiled_models,
@@ -495,19 +500,22 @@ power_grid_analysis <- function(target_power_success = 0.9,
   # Execute model compilation (parallel or sequential)
   if (n_cores > 1 && length(unique_effects) > 1) {
     # Parallel compilation
-    cl <- tryCatch({
-      parallel::makeCluster(n_cores)
-    }, error = function(e) {
-      warning("Failed to create parallel cluster: ", e$message, ". Falling back to sequential compilation.")
-      return(NULL)
-    })
-    
+    cl <- tryCatch(
+      {
+        parallel::makeCluster(n_cores)
+      },
+      error = function(e) {
+        warning("Failed to create parallel cluster: ", e$message, ". Falling back to sequential compilation.")
+        return(NULL)
+      }
+    )
+
     if (!is.null(cl)) {
       compilation_results <- tryCatch({
         # Export necessary objects to cluster
         parallel::clusterExport(cl, c(
           "unique_effects",
-          "combinations_by_effect", 
+          "combinations_by_effect",
           "percent_group_treat",
           "threshold_success",
           "threshold_futility",
@@ -516,17 +524,16 @@ power_grid_analysis <- function(target_power_success = 0.9,
           "power_analysis_ancova",
           "dots"
         ), envir = environment())
-        
+
         # Load required packages on cluster nodes
         parallel::clusterEvalQ(cl, {
           requireNamespace("brms", quietly = TRUE)
         })
-        
+
         # Run compilation in parallel
         parallel::parLapply(cl, 1:length(unique_effects), function(effect_idx) {
           compile_models_for_effect(effect_idx, dots)
         })
-        
       }, finally = {
         parallel::stopCluster(cl)
       })
@@ -547,7 +554,7 @@ power_grid_analysis <- function(target_power_success = 0.9,
   for (i in seq_along(compilation_results)) {
     result <- compilation_results[[i]]
     effect_size <- result$effect_size
-    
+
     if (is.null(result$error)) {
       compiled_models_cache[[as.character(effect_size)]] <- result$compiled_models
       cat("[SUCCESS] Successfully compiled models for effect size", effect_size, "\n")
@@ -581,7 +588,7 @@ power_grid_analysis <- function(target_power_success = 0.9,
 
     # Retrieve pre-compiled models from Phase 1 cache
     compiled_models <- compiled_models_cache[[as.character(current_effect)]]
-    
+
     if (!is.null(compiled_models)) {
       cat("Using pre-compiled models from Phase 1 cache\n")
     } else {
@@ -1354,40 +1361,40 @@ summary.rctbayespower_grid <- function(object, design_prior = NULL, print = TRUE
     if (length(object$effect_sizes) <= 1) {
       stop("design_prior can only be specified when effect sizes vary (length > 1)")
     }
-    
+
     cat("Computing integrated power with runtime design prior...\n")
-    
+
     # Parse design prior using effect sizes from object
     design_prior_parsed <- parse_design_prior(design_prior, object$effect_sizes, verbose = TRUE)
     weight_fn <- design_prior_parsed$weight_fn
-    
+
     # Validate n_simulations for MCSE calculations
     n_sims_for_mcse <- object$n_simulations
     if (is.null(n_sims_for_mcse) || !is.numeric(n_sims_for_mcse) || n_sims_for_mcse <= 0) {
-      n_sims_for_mcse <- 1000  # Safe default
+      n_sims_for_mcse <- 1000 # Safe default
       warning("n_simulations not found or invalid in result object, using default value of 1000 for MCSE calculations")
     }
-    
+
     if (!is.null(weight_fn)) {
       # Get weights for each effect size
       weights <- sapply(object$effect_sizes, weight_fn)
       weights <- weights / sum(weights) # Normalize to sum to 1
-      
+
       # For each sample size, compute weighted average power
       integrated_results <- list()
-      
+
       for (n in object$sample_sizes) {
         subset_data <- object$power_surface[object$power_surface$n_total == n, ]
-        
+
         if (nrow(subset_data) > 0 && all(!is.na(subset_data$power_success))) {
           weighted_power_success <- sum(subset_data$power_success * weights)
           weighted_power_futility <- sum(subset_data$power_futility * weights)
           weighted_prob_success <- sum(subset_data$mean_prob_success * weights)
           weighted_prob_futility <- sum(subset_data$mean_prob_futility * weights)
-          
+
           # Calculate MCSE for integrated power metrics
           mcse_integrated_power_success <- calculate_mcse_integrated_power(
-            subset_data$power_success, weights, 
+            subset_data$power_success, weights,
             n_sims_for_mcse,
             is_power_metric = TRUE
           )
@@ -1406,7 +1413,7 @@ summary.rctbayespower_grid <- function(object, design_prior = NULL, print = TRUE
             n_sims_for_mcse,
             is_power_metric = FALSE
           )
-          
+
           integrated_results[[length(integrated_results) + 1]] <- data.frame(
             n_total = as.integer(n),
             integrated_power_success = weighted_power_success,
@@ -1421,7 +1428,7 @@ summary.rctbayespower_grid <- function(object, design_prior = NULL, print = TRUE
           )
         }
       }
-      
+
       if (length(integrated_results) > 0) {
         runtime_integrated_power <- do.call(rbind, integrated_results)
       }
@@ -1430,386 +1437,385 @@ summary.rctbayespower_grid <- function(object, design_prior = NULL, print = TRUE
 
   if (print) {
     cat("Analysis Parameters:\n")
-  cat("  Target power - Success:", object$target_power_success, "\n")
-  cat(
-    "  Target power - Futility:",
-    object$target_power_futility,
-    "\n"
-  )
-  cat("  Threshold - Success:", object$threshold_success, "\n")
-  cat("  Threshold - Futility:", object$threshold_futility, "\n")
-
-  if (object$analysis_type == "effect_only") {
-    cat("  Fixed sample size:", object$sample_sizes[1], "\n")
+    cat("  Target power - Success:", object$target_power_success, "\n")
     cat(
-      "  Effect sizes tested:",
-      paste(object$effect_sizes, collapse = ", "),
+      "  Target power - Futility:",
+      object$target_power_futility,
       "\n"
     )
-  } else if (object$analysis_type == "sample_only") {
-    cat("  Effect size:", object$effect_size, "\n")
-    cat(
-      "  Sample sizes tested:",
-      paste(object$sample_sizes, collapse = ", "),
-      "\n"
-    )
-  } else {
-    cat(
-      "  Sample sizes:",
-      paste(object$sample_sizes, collapse = ", "),
-      "\n"
-    )
-    cat(
-      "  Effect sizes:",
-      paste(object$effect_sizes, collapse = ", "),
-      "\n"
-    )
-  }
+    cat("  Threshold - Success:", object$threshold_success, "\n")
+    cat("  Threshold - Futility:", object$threshold_futility, "\n")
 
-  cat(
-    "  Allocation (treatment %):",
-    paste0(object$percent_group_treat * 100, "%\n")
-  )
-  cat("  Power analysis function:", object$power_analysis_fn, "\n")
-
-  if (!is.null(object$design_prior)) {
-    cat("  Design prior:", object$design_prior, "\n")
-    cat("  Design prior type:", object$design_prior_type, "\n")
-  }
-
-  cat(
-    "  Analysis time:",
-    round(object$analysis_time_minutes, 2),
-    "minutes\n\n"
-  )
-
-  # For sample_only mode, show minimum sample sizes section like original
-  if (object$analysis_type == "sample_only") {
-    cat("Minimum Required Total Sample Sizes:\n")
-    if (!is.na(object$min_n_success)) {
+    if (object$analysis_type == "effect_only") {
+      cat("  Fixed sample size:", object$sample_sizes[1], "\n")
       cat(
-        "  Success power (>=",
-        object$target_power_success,
-        "):",
-        object$min_n_success,
+        "  Effect sizes tested:",
+        paste(object$effect_sizes, collapse = ", "),
+        "\n"
+      )
+    } else if (object$analysis_type == "sample_only") {
+      cat("  Effect size:", object$effect_size, "\n")
+      cat(
+        "  Sample sizes tested:",
+        paste(object$sample_sizes, collapse = ", "),
         "\n"
       )
     } else {
-      cat("  Success power: Target not achieved with tested sample sizes\n")
-    }
-
-    if (!is.na(object$min_n_futility)) {
       cat(
-        "  Futility power (>=",
-        object$target_power_futility,
-        "):",
-        object$min_n_futility,
+        "  Sample sizes:",
+        paste(object$sample_sizes, collapse = ", "),
         "\n"
       )
-    } else {
-      cat("  Futility power: Target not achieved with tested sample sizes\n")
+      cat(
+        "  Effect sizes:",
+        paste(object$effect_sizes, collapse = ", "),
+        "\n"
+      )
     }
 
-    cat("\nPower Analysis Across Sample Sizes:\n")
-    cat("===================================\n")
-  }
+    cat(
+      "  Allocation (treatment %):",
+      paste0(object$percent_group_treat * 100, "%\n")
+    )
+    cat("  Power analysis function:", object$power_analysis_fn, "\n")
 
-  # Display results based on analysis type
-  if (object$analysis_type == "effect_only") {
-    # For effect size analysis, show detailed table with probabilities
-    cat("Power Results Across Effect Sizes:\n")
-    cat("==================================\n")
-
-    display_df <- object$power_surface[, c(
-      "effect_size",
-      "convergence_rate",
-      "power_success",
-      "mean_prob_success",
-      "power_futility",
-      "mean_prob_futility"
-    )]
-
-    # Format power metrics with MCSE if available
-    if ("mcse_power_success" %in% names(object$power_surface)) {
-      display_df$power_success <- paste0(
-        round(display_df$power_success * 100, 1), "% (+/-",
-        round(object$power_surface$mcse_power_success * 100, 2), ")"
-      )
-      display_df$power_futility <- paste0(
-        round(display_df$power_futility * 100, 1), "% (+/-",
-        round(object$power_surface$mcse_power_futility * 100, 2), ")"
-      )
-      display_df$mean_prob_success <- paste0(
-        round(display_df$mean_prob_success * 100, 1), "% (+/-",
-        round(object$power_surface$mcse_mean_prob_success * 100, 2), ")"
-      )
-      display_df$mean_prob_futility <- paste0(
-        round(display_df$mean_prob_futility * 100, 1), "% (+/-",
-        round(object$power_surface$mcse_mean_prob_futility * 100, 2), ")"
-      )
-    } else {
-      display_df$power_success <- paste0(round(display_df$power_success * 100, 1), "%")
-      display_df$power_futility <- paste0(round(display_df$power_futility * 100, 1), "%")
-      display_df$mean_prob_success <- paste0(round(display_df$mean_prob_success * 100, 1), "%")
-      display_df$mean_prob_futility <- paste0(round(display_df$mean_prob_futility * 100, 1), "%")
+    if (!is.null(object$design_prior)) {
+      cat("  Design prior:", object$design_prior, "\n")
+      cat("  Design prior type:", object$design_prior_type, "\n")
     }
 
-    display_df$convergence_rate <- paste0(round(display_df$convergence_rate * 100, 1), "%")
-    names(display_df) <- c(
-      "Effect_Size",
-      "Convergence",
-      "Power_Success",
-      "Prob_Success",
-      "Power_Futility",
-      "Prob_Futility"
+    cat(
+      "  Analysis time:",
+      round(object$analysis_time_minutes, 2),
+      "minutes\n\n"
     )
 
-    print(display_df, row.names = FALSE)
-  } else if (object$analysis_type == "sample_only") {
-    # For sample size analysis, show detailed table like original
-    power_df <- object$power_surface
+    # For sample_only mode, show minimum sample sizes section like original
+    if (object$analysis_type == "sample_only") {
+      cat("Minimum Required Total Sample Sizes:\n")
+      if (!is.na(object$min_n_success)) {
+        cat(
+          "  Success power (>=",
+          object$target_power_success,
+          "):",
+          object$min_n_success,
+          "\n"
+        )
+      } else {
+        cat("  Success power: Target not achieved with tested sample sizes\n")
+      }
 
-    # Add target achievement indicators
-    success_achieved <- !is.na(power_df$power_success) &
-      power_df$power_success >= object$target_power_success
-    power_df$success_target <- ifelse(success_achieved, "OK", "x")
+      if (!is.na(object$min_n_futility)) {
+        cat(
+          "  Futility power (>=",
+          object$target_power_futility,
+          "):",
+          object$min_n_futility,
+          "\n"
+        )
+      } else {
+        cat("  Futility power: Target not achieved with tested sample sizes\n")
+      }
 
-    futility_achieved <- !is.na(power_df$power_futility) &
-      power_df$power_futility >= object$target_power_futility
-    power_df$futility_target <- ifelse(futility_achieved, "OK", "x")
-
-    # Format the power values as percentages with MCSE if available
-    if ("mcse_power_success" %in% names(power_df)) {
-      power_df$power_success_pct <- paste0(
-        round(power_df$power_success * 100, 1), "% (+/-",
-        round(power_df$mcse_power_success * 100, 2), ")"
-      )
-      power_df$power_futility_pct <- paste0(
-        round(power_df$power_futility * 100, 1), "% (+/-",
-        round(power_df$mcse_power_futility * 100, 2), ")"
-      )
-      power_df$pr_success_pct <- paste0(
-        round(power_df$mean_prob_success * 100, 1), "% (+/-",
-        round(power_df$mcse_mean_prob_success * 100, 2), ")"
-      )
-      power_df$pr_futility_pct <- paste0(
-        round(power_df$mean_prob_futility * 100, 1), "% (+/-",
-        round(power_df$mcse_mean_prob_futility * 100, 2), ")"
-      )
-    } else {
-      power_df$power_success_pct <- paste0(round(power_df$power_success * 100, 1), "%")
-      power_df$power_futility_pct <- paste0(round(power_df$power_futility * 100, 1), "%")
-      power_df$pr_success_pct <- paste0(round(power_df$mean_prob_success * 100, 1), "%")
-      power_df$pr_futility_pct <- paste0(round(power_df$mean_prob_futility * 100, 1), "%")
+      cat("\nPower Analysis Across Sample Sizes:\n")
+      cat("===================================\n")
     }
 
-    power_df$convergence_pct <- paste0(round(power_df$convergence_rate * 100, 1), "%")
+    # Display results based on analysis type
+    if (object$analysis_type == "effect_only") {
+      # For effect size analysis, show detailed table with probabilities
+      cat("Power Results Across Effect Sizes:\n")
+      cat("==================================\n")
 
-    # Create display table (consistent naming format)
-    display_df <- data.frame(
-      "N_Total" = power_df$n_total,
-      "Convergence" = power_df$convergence_pct,
-      "Power_Success" = power_df$power_success_pct,
-      "Prob_Success" = power_df$pr_success_pct,
-      "Power_Futility" = power_df$power_futility_pct,
-      "Prob_Futility" = power_df$pr_futility_pct,
-      check.names = FALSE
-    )
+      display_df <- object$power_surface[, c(
+        "effect_size",
+        "convergence_rate",
+        "power_success",
+        "mean_prob_success",
+        "power_futility",
+        "mean_prob_futility"
+      )]
 
-    if (print) {
+      # Format power metrics with MCSE if available
+      if ("mcse_power_success" %in% names(object$power_surface)) {
+        display_df$power_success <- paste0(
+          round(display_df$power_success * 100, 1), "% (+/-",
+          round(object$power_surface$mcse_power_success * 100, 2), ")"
+        )
+        display_df$power_futility <- paste0(
+          round(display_df$power_futility * 100, 1), "% (+/-",
+          round(object$power_surface$mcse_power_futility * 100, 2), ")"
+        )
+        display_df$mean_prob_success <- paste0(
+          round(display_df$mean_prob_success * 100, 1), "% (+/-",
+          round(object$power_surface$mcse_mean_prob_success * 100, 2), ")"
+        )
+        display_df$mean_prob_futility <- paste0(
+          round(display_df$mean_prob_futility * 100, 1), "% (+/-",
+          round(object$power_surface$mcse_mean_prob_futility * 100, 2), ")"
+        )
+      } else {
+        display_df$power_success <- paste0(round(display_df$power_success * 100, 1), "%")
+        display_df$power_futility <- paste0(round(display_df$power_futility * 100, 1), "%")
+        display_df$mean_prob_success <- paste0(round(display_df$mean_prob_success * 100, 1), "%")
+        display_df$mean_prob_futility <- paste0(round(display_df$mean_prob_futility * 100, 1), "%")
+      }
+
+      display_df$convergence_rate <- paste0(round(display_df$convergence_rate * 100, 1), "%")
+      names(display_df) <- c(
+        "Effect_Size",
+        "Convergence",
+        "Power_Success",
+        "Prob_Success",
+        "Power_Futility",
+        "Prob_Futility"
+      )
+
       print(display_df, row.names = FALSE)
-    }
-  } else {
-    # For power grid (both varying), show detailed table
-    cat("Power Grid Results:\n")
-    cat("==================\n")
+    } else if (object$analysis_type == "sample_only") {
+      # For sample size analysis, show detailed table like original
+      power_df <- object$power_surface
 
-    display_df <- object$power_surface[, c(
-      "n_total",
-      "effect_size",
-      "convergence_rate",
-      "power_success",
-      "mean_prob_success",
-      "power_futility",
-      "mean_prob_futility"
-    )]
+      # Add target achievement indicators
+      success_achieved <- !is.na(power_df$power_success) &
+        power_df$power_success >= object$target_power_success
+      power_df$success_target <- ifelse(success_achieved, "OK", "x")
 
-    # Format power metrics with MCSE if available
-    if ("mcse_power_success" %in% names(object$power_surface)) {
-      display_df$power_success <- paste0(
-        round(display_df$power_success * 100, 1), "% (+/-",
-        round(object$power_surface$mcse_power_success * 100, 2), ")"
+      futility_achieved <- !is.na(power_df$power_futility) &
+        power_df$power_futility >= object$target_power_futility
+      power_df$futility_target <- ifelse(futility_achieved, "OK", "x")
+
+      # Format the power values as percentages with MCSE if available
+      if ("mcse_power_success" %in% names(power_df)) {
+        power_df$power_success_pct <- paste0(
+          round(power_df$power_success * 100, 1), "% (+/-",
+          round(power_df$mcse_power_success * 100, 2), ")"
+        )
+        power_df$power_futility_pct <- paste0(
+          round(power_df$power_futility * 100, 1), "% (+/-",
+          round(power_df$mcse_power_futility * 100, 2), ")"
+        )
+        power_df$pr_success_pct <- paste0(
+          round(power_df$mean_prob_success * 100, 1), "% (+/-",
+          round(power_df$mcse_mean_prob_success * 100, 2), ")"
+        )
+        power_df$pr_futility_pct <- paste0(
+          round(power_df$mean_prob_futility * 100, 1), "% (+/-",
+          round(power_df$mcse_mean_prob_futility * 100, 2), ")"
+        )
+      } else {
+        power_df$power_success_pct <- paste0(round(power_df$power_success * 100, 1), "%")
+        power_df$power_futility_pct <- paste0(round(power_df$power_futility * 100, 1), "%")
+        power_df$pr_success_pct <- paste0(round(power_df$mean_prob_success * 100, 1), "%")
+        power_df$pr_futility_pct <- paste0(round(power_df$mean_prob_futility * 100, 1), "%")
+      }
+
+      power_df$convergence_pct <- paste0(round(power_df$convergence_rate * 100, 1), "%")
+
+      # Create display table (consistent naming format)
+      display_df <- data.frame(
+        "N_Total" = power_df$n_total,
+        "Convergence" = power_df$convergence_pct,
+        "Power_Success" = power_df$power_success_pct,
+        "Prob_Success" = power_df$pr_success_pct,
+        "Power_Futility" = power_df$power_futility_pct,
+        "Prob_Futility" = power_df$pr_futility_pct,
+        check.names = FALSE
       )
-      display_df$power_futility <- paste0(
-        round(display_df$power_futility * 100, 1), "% (+/-",
-        round(object$power_surface$mcse_power_futility * 100, 2), ")"
-      )
-      display_df$mean_prob_success <- paste0(
-        round(display_df$mean_prob_success * 100, 1), "% (+/-",
-        round(object$power_surface$mcse_mean_prob_success * 100, 2), ")"
-      )
-      display_df$mean_prob_futility <- paste0(
-        round(display_df$mean_prob_futility * 100, 1), "% (+/-",
-        round(object$power_surface$mcse_mean_prob_futility * 100, 2), ")"
-      )
+
+      if (print) {
+        print(display_df, row.names = FALSE)
+      }
     } else {
-      display_df$power_success <- paste0(round(display_df$power_success * 100, 1), "%")
-      display_df$power_futility <- paste0(round(display_df$power_futility * 100, 1), "%")
-      display_df$mean_prob_success <- paste0(round(display_df$mean_prob_success * 100, 1), "%")
-      display_df$mean_prob_futility <- paste0(round(display_df$mean_prob_futility * 100, 1), "%")
+      # For power grid (both varying), show detailed table
+      cat("Power Grid Results:\n")
+      cat("==================\n")
+
+      display_df <- object$power_surface[, c(
+        "n_total",
+        "effect_size",
+        "convergence_rate",
+        "power_success",
+        "mean_prob_success",
+        "power_futility",
+        "mean_prob_futility"
+      )]
+
+      # Format power metrics with MCSE if available
+      if ("mcse_power_success" %in% names(object$power_surface)) {
+        display_df$power_success <- paste0(
+          round(display_df$power_success * 100, 1), "% (+/-",
+          round(object$power_surface$mcse_power_success * 100, 2), ")"
+        )
+        display_df$power_futility <- paste0(
+          round(display_df$power_futility * 100, 1), "% (+/-",
+          round(object$power_surface$mcse_power_futility * 100, 2), ")"
+        )
+        display_df$mean_prob_success <- paste0(
+          round(display_df$mean_prob_success * 100, 1), "% (+/-",
+          round(object$power_surface$mcse_mean_prob_success * 100, 2), ")"
+        )
+        display_df$mean_prob_futility <- paste0(
+          round(display_df$mean_prob_futility * 100, 1), "% (+/-",
+          round(object$power_surface$mcse_mean_prob_futility * 100, 2), ")"
+        )
+      } else {
+        display_df$power_success <- paste0(round(display_df$power_success * 100, 1), "%")
+        display_df$power_futility <- paste0(round(display_df$power_futility * 100, 1), "%")
+        display_df$mean_prob_success <- paste0(round(display_df$mean_prob_success * 100, 1), "%")
+        display_df$mean_prob_futility <- paste0(round(display_df$mean_prob_futility * 100, 1), "%")
+      }
+
+      display_df$convergence_rate <- paste0(round(display_df$convergence_rate * 100, 1), "%")
+      names(display_df) <- c(
+        "N_Total",
+        "Effect_Size",
+        "Convergence",
+        "Power_Success",
+        "Prob_Success",
+        "Power_Futility",
+        "Prob_Futility"
+      )
+
+      if (print) {
+        print(display_df, row.names = FALSE)
+      }
     }
 
-    display_df$convergence_rate <- paste0(round(display_df$convergence_rate * 100, 1), "%")
-    names(display_df) <- c(
-      "N_Total",
-      "Effect_Size",
-      "Convergence",
-      "Power_Success",
-      "Prob_Success",
-      "Power_Futility",
-      "Prob_Futility"
-    )
+    # Optimal combinations
+    cat("\nOptimal Combinations:\n")
+    cat("====================\n")
 
-    if (print) {
-      print(display_df, row.names = FALSE)
+    if (!is.null(object$optimal_combinations_success) &&
+      nrow(object$optimal_combinations_success) > 0) {
+      cat("Combinations achieving target success power:\n")
+      success_display <- object$optimal_combinations_success[, c(
+        "n_total",
+        "effect_size",
+        "power_success",
+        "mean_prob_success"
+      )]
+      success_display$power_success <- paste0(round(success_display$power_success * 100, 1), "%")
+      success_display$mean_prob_success <- paste0(round(success_display$mean_prob_success * 100, 1), "%")
+      names(success_display) <- c("N_total", "Effect_size", "Power_success", "Prob_success")
+      if (print) {
+        print(success_display, row.names = FALSE)
+      }
+    } else {
+      cat("No combinations achieved target success power.\n")
     }
-  }
 
-  # Optimal combinations
-  cat("\nOptimal Combinations:\n")
-  cat("====================\n")
-
-  if (!is.null(object$optimal_combinations_success) &&
-    nrow(object$optimal_combinations_success) > 0) {
-    cat("Combinations achieving target success power:\n")
-    success_display <- object$optimal_combinations_success[, c(
-      "n_total",
-      "effect_size",
-      "power_success",
-      "mean_prob_success"
-    )]
-    success_display$power_success <- paste0(round(success_display$power_success * 100, 1), "%")
-    success_display$mean_prob_success <- paste0(round(success_display$mean_prob_success * 100, 1), "%")
-    names(success_display) <- c("N_total", "Effect_size", "Power_success", "Prob_success")
-    if (print) {
-      print(success_display, row.names = FALSE)
-    }
-  } else {
-    cat("No combinations achieved target success power.\n")
-  }
-
-  cat("\n")
-
-  if (!is.null(object$optimal_combinations_futility) &&
-    nrow(object$optimal_combinations_futility) > 0) {
-    cat("Combinations achieving target futility power:\n")
-    futility_display <- object$optimal_combinations_futility[, c(
-      "n_total",
-      "effect_size",
-      "power_futility",
-      "mean_prob_futility"
-    )]
-    futility_display$power_futility <- paste0(round(futility_display$power_futility * 100, 1), "%")
-    futility_display$mean_prob_futility <- paste0(round(futility_display$mean_prob_futility * 100, 1), "%")
-    names(futility_display) <- c(
-      "N_total",
-      "Effect_size",
-      "Power_futility",
-      "Prob_futility"
-    )
-    if (print) {
-      print(futility_display, row.names = FALSE)
-    }
-  } else {
-    cat("No combinations achieved target futility power.\n")
-  }
-
-  # Integrated power results
-  # Use runtime integrated power if available, otherwise use existing integrated power
-  integrated_power_to_display <- runtime_integrated_power
-  if (is.null(integrated_power_to_display)) {
-    integrated_power_to_display <- object$integrated_power
-  }
-  
-  if (!is.null(integrated_power_to_display)) {
-    cat("\nIntegrated Power & Probability Results:\n")
-    cat("======================================\n")
-    
-    if (!is.null(runtime_integrated_power)) {
-      cat("(Using runtime design prior:", design_prior, ")\n")
-    } else if (!is.null(object$design_prior)) {
-      cat("(Using design prior from main analysis:", object$design_prior, ")\n")
-    }
     cat("\n")
 
-    integrated_display <- integrated_power_to_display
-
-    # Format as percentages with MCSE if available
-    if ("mcse_integrated_power_success" %in% names(integrated_display)) {
-      integrated_display$integrated_power_success <- paste0(
-        round(integrated_display$integrated_power_success * 100, 1), "% (+/-",
-        round(integrated_display$mcse_integrated_power_success * 100, 2), ")"
+    if (!is.null(object$optimal_combinations_futility) &&
+      nrow(object$optimal_combinations_futility) > 0) {
+      cat("Combinations achieving target futility power:\n")
+      futility_display <- object$optimal_combinations_futility[, c(
+        "n_total",
+        "effect_size",
+        "power_futility",
+        "mean_prob_futility"
+      )]
+      futility_display$power_futility <- paste0(round(futility_display$power_futility * 100, 1), "%")
+      futility_display$mean_prob_futility <- paste0(round(futility_display$mean_prob_futility * 100, 1), "%")
+      names(futility_display) <- c(
+        "N_total",
+        "Effect_size",
+        "Power_futility",
+        "Prob_futility"
       )
-      integrated_display$integrated_power_futility <- paste0(
-        round(integrated_display$integrated_power_futility * 100, 1), "% (+/-",
-        round(integrated_display$mcse_integrated_power_futility * 100, 2), ")"
-      )
-      integrated_display$integrated_prob_success <- paste0(
-        round(integrated_display$integrated_prob_success * 100, 1), "% (+/-",
-        round(integrated_display$mcse_integrated_prob_success * 100, 2), ")"
-      )
-      integrated_display$integrated_prob_futility <- paste0(
-        round(integrated_display$integrated_prob_futility * 100, 1), "% (+/-",
-        round(integrated_display$mcse_integrated_prob_futility * 100, 2), ")"
-      )
+      if (print) {
+        print(futility_display, row.names = FALSE)
+      }
     } else {
-      integrated_display$integrated_power_success <- paste0(
-        round(integrated_display$integrated_power_success * 100, 1), "%"
-      )
-      integrated_display$integrated_power_futility <- paste0(
-        round(integrated_display$integrated_power_futility * 100, 1), "%"
-      )
-      integrated_display$integrated_prob_success <- paste0(
-        round(integrated_display$integrated_prob_success * 100, 1), "%"
-      )
-      integrated_display$integrated_prob_futility <- paste0(
-        round(integrated_display$integrated_prob_futility * 100, 1), "%"
-      )
+      cat("No combinations achieved target futility power.\n")
     }
 
-    # Reorder columns to preferred order: N_total, Power_Success, Prob_Success, Power_Futility, Prob_Futility
-    # Only select the main columns for display (MCSE are included in the formatted strings)
-    display_columns <- c(
-      "n_total", "integrated_power_success", "integrated_prob_success",
-      "integrated_power_futility", "integrated_prob_futility"
-    )
-    available_columns <- intersect(display_columns, names(integrated_display))
-    integrated_display <- integrated_display[, available_columns, drop = FALSE]
-
-    names(integrated_display) <- c(
-      "N_total",
-      "Power_Success",
-      "Prob_Success",
-      "Power_Futility",
-      "Prob_Futility"
-    )
-
-    if (print) {
-      print(integrated_display, row.names = FALSE)
+    # Integrated power results
+    # Use runtime integrated power if available, otherwise use existing integrated power
+    integrated_power_to_display <- runtime_integrated_power
+    if (is.null(integrated_power_to_display)) {
+      integrated_power_to_display <- object$integrated_power
     }
 
-    cat(
-      "\nIntegrated results represent weighted averages across effect sizes using the specified design prior.\n"
-    )
-    cat(
-      "Power = probability of making correct decision, Mean Probability = mean posterior probability of exceeding threshold.\n"
-    )
-    cat(
-      "Values shown as percentage (+/-MCSE) where MCSE = Monte Carlo Standard Error.\n"
-    )
-  }
-  
-  }  # End of if (print) block
+    if (!is.null(integrated_power_to_display)) {
+      cat("\nIntegrated Power & Probability Results:\n")
+      cat("======================================\n")
+
+      if (!is.null(runtime_integrated_power)) {
+        cat("(Using runtime design prior:", design_prior, ")\n")
+      } else if (!is.null(object$design_prior)) {
+        cat("(Using design prior from main analysis:", object$design_prior, ")\n")
+      }
+      cat("\n")
+
+      integrated_display <- integrated_power_to_display
+
+      # Format as percentages with MCSE if available
+      if ("mcse_integrated_power_success" %in% names(integrated_display)) {
+        integrated_display$integrated_power_success <- paste0(
+          round(integrated_display$integrated_power_success * 100, 1), "% (+/-",
+          round(integrated_display$mcse_integrated_power_success * 100, 2), ")"
+        )
+        integrated_display$integrated_power_futility <- paste0(
+          round(integrated_display$integrated_power_futility * 100, 1), "% (+/-",
+          round(integrated_display$mcse_integrated_power_futility * 100, 2), ")"
+        )
+        integrated_display$integrated_prob_success <- paste0(
+          round(integrated_display$integrated_prob_success * 100, 1), "% (+/-",
+          round(integrated_display$mcse_integrated_prob_success * 100, 2), ")"
+        )
+        integrated_display$integrated_prob_futility <- paste0(
+          round(integrated_display$integrated_prob_futility * 100, 1), "% (+/-",
+          round(integrated_display$mcse_integrated_prob_futility * 100, 2), ")"
+        )
+      } else {
+        integrated_display$integrated_power_success <- paste0(
+          round(integrated_display$integrated_power_success * 100, 1), "%"
+        )
+        integrated_display$integrated_power_futility <- paste0(
+          round(integrated_display$integrated_power_futility * 100, 1), "%"
+        )
+        integrated_display$integrated_prob_success <- paste0(
+          round(integrated_display$integrated_prob_success * 100, 1), "%"
+        )
+        integrated_display$integrated_prob_futility <- paste0(
+          round(integrated_display$integrated_prob_futility * 100, 1), "%"
+        )
+      }
+
+      # Reorder columns to preferred order: N_total, Power_Success, Prob_Success, Power_Futility, Prob_Futility
+      # Only select the main columns for display (MCSE are included in the formatted strings)
+      display_columns <- c(
+        "n_total", "integrated_power_success", "integrated_prob_success",
+        "integrated_power_futility", "integrated_prob_futility"
+      )
+      available_columns <- intersect(display_columns, names(integrated_display))
+      integrated_display <- integrated_display[, available_columns, drop = FALSE]
+
+      names(integrated_display) <- c(
+        "N_total",
+        "Power_Success",
+        "Prob_Success",
+        "Power_Futility",
+        "Prob_Futility"
+      )
+
+      if (print) {
+        print(integrated_display, row.names = FALSE)
+      }
+
+      cat(
+        "\nIntegrated results represent weighted averages across effect sizes using the specified design prior.\n"
+      )
+      cat(
+        "Power = probability of making correct decision, Mean Probability = mean posterior probability of exceeding threshold.\n"
+      )
+      cat(
+        "Values shown as percentage (+/-MCSE) where MCSE = Monte Carlo Standard Error.\n"
+      )
+    }
+  } # End of if (print) block
 
   # Return structured summary for testing and programmatic access
   summary_obj <- list(
@@ -1848,11 +1854,11 @@ parse_design_prior <- function(design_prior, effect_sizes, verbose = TRUE) {
   weight_fn <- NULL
   weight_type <- "none"
   quantile_fn <- NULL
-  
+
   if (is.null(design_prior)) {
     return(list(weight_fn = weight_fn, quantile_fn = quantile_fn, weight_type = weight_type))
   }
-  
+
   if (is.character(design_prior)) {
     # Use brms density functions with generic evaluation
     weight_type <- "brms"
@@ -1861,23 +1867,23 @@ parse_design_prior <- function(design_prior, effect_sizes, verbose = TRUE) {
         if (!requireNamespace("brms", quietly = TRUE)) {
           stop("Package 'brms' is required for parsing brms design prior syntax.")
         }
-        
+
         # Validate basic syntax
         if (!grepl("^[a-zA-Z_][a-zA-Z0-9_]*\\(.*\\)$", design_prior)) {
           stop(
             "Invalid brms prior syntax. Expected format: 'distribution_name(param1, param2, ...)'"
           )
         }
-        
+
         # Extract distribution name
         dist_name <- gsub("\\(.*\\)", "", design_prior)
-        
+
         # Create density and quantile function calls
         # Priority: stats package first, then brms, then error
         density_call <- NULL
         quantile_call <- NULL
         source_package <- NULL
-        
+
         # Define mapping from brms names to stats names
         brms_to_stats_map <- list(
           "normal" = "norm",
@@ -1896,7 +1902,7 @@ parse_design_prior <- function(design_prior, effect_sizes, verbose = TRUE) {
           "weibull" = "weibull",
           "wilcox" = "wilcox"
         )
-        
+
         # Try stats package first
         stats_name <- brms_to_stats_map[[dist_name]]
         if (!is.null(stats_name)) {
@@ -1904,7 +1910,7 @@ parse_design_prior <- function(design_prior, effect_sizes, verbose = TRUE) {
           stats_call <- sub(dist_name, stats_name, design_prior)
           test_density_call <- paste0("stats::d", stats_call)
           test_quantile_call <- paste0("stats::q", stats_call)
-          
+
           # Test the stats functions
           stats_works <- tryCatch(
             {
@@ -1917,7 +1923,7 @@ parse_design_prior <- function(design_prior, effect_sizes, verbose = TRUE) {
               FALSE
             }
           )
-          
+
           if (stats_works) {
             density_call <- test_density_call
             quantile_call <- test_quantile_call
@@ -1928,13 +1934,13 @@ parse_design_prior <- function(design_prior, effect_sizes, verbose = TRUE) {
         } else {
           stats_works <- FALSE
         }
-        
+
         # If stats doesn't work, try brms
         if (!stats_works) {
           density_call <- paste0("brms::d", design_prior)
           quantile_call <- paste0("brms::q", design_prior)
           source_package <- "brms"
-          
+
           # Test brms functions
           brms_works <- tryCatch(
             {
@@ -1947,7 +1953,7 @@ parse_design_prior <- function(design_prior, effect_sizes, verbose = TRUE) {
               FALSE
             }
           )
-          
+
           if (!brms_works) {
             stop(
               paste0(
@@ -1958,7 +1964,7 @@ parse_design_prior <- function(design_prior, effect_sizes, verbose = TRUE) {
             )
           }
         }
-        
+
         # Create weight function
         weight_fn <- function(x) {
           # Replace the first parameter (or add x as first parameter)
@@ -1979,7 +1985,7 @@ parse_design_prior <- function(design_prior, effect_sizes, verbose = TRUE) {
             }
           )
         }
-        
+
         # Try to create quantile function
         quantile_fn <- NULL
         test_quantile_call <- gsub("\\(", "(0.5,", quantile_call)
@@ -1987,7 +1993,7 @@ parse_design_prior <- function(design_prior, effect_sizes, verbose = TRUE) {
           {
             test_result <- eval(parse(text = test_quantile_call))
             if (is.numeric(test_result) &&
-                length(test_result) == 1 && !is.na(test_result)) {
+              length(test_result) == 1 && !is.na(test_result)) {
               # Create actual quantile function
               quantile_fn <<- function(p) {
                 modified_call <- gsub("\\(", paste0("(", p, ","), quantile_call)
@@ -2016,7 +2022,7 @@ parse_design_prior <- function(design_prior, effect_sizes, verbose = TRUE) {
             FALSE
           }
         )
-        
+
         if (!quantile_available) {
           warning(
             paste0(
@@ -2026,7 +2032,7 @@ parse_design_prior <- function(design_prior, effect_sizes, verbose = TRUE) {
             )
           )
         }
-        
+
         if (verbose) {
           cat("Successfully parsed design prior:", design_prior, "\n")
           cat("  Distribution:", dist_name, "\n")
@@ -2085,18 +2091,18 @@ parse_design_prior <- function(design_prior, effect_sizes, verbose = TRUE) {
   } else {
     stop("design_prior must be either a character string (brms syntax) or an R function")
   }
-  
+
   # Compute quantiles and check coverage
   if (!is.null(quantile_fn)) {
     tryCatch(
       {
         q10 <- quantile_fn(0.1)
         q90 <- quantile_fn(0.9)
-        
+
         # Check if effect sizes adequately cover the prior distribution
         min_effect <- min(effect_sizes)
         max_effect <- max(effect_sizes)
-        
+
         if (max_effect < q90) {
           warning(
             paste0(
@@ -2108,7 +2114,7 @@ parse_design_prior <- function(design_prior, effect_sizes, verbose = TRUE) {
             )
           )
         }
-        
+
         if (min_effect > q10) {
           warning(
             paste0(
@@ -2133,7 +2139,7 @@ parse_design_prior <- function(design_prior, effect_sizes, verbose = TRUE) {
       }
     )
   }
-  
+
   return(list(weight_fn = weight_fn, quantile_fn = quantile_fn, weight_type = weight_type))
 }
 

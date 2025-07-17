@@ -292,7 +292,7 @@ power_analysis <- function(n_control,
   # If compile_models_only is TRUE, return compiled models and arguments for later use
   if (compile_models_only) {
     cat("Compiling models without running simulations...\n")
-    
+
     # Extract true parameter values for return
     fixef <- brms::fixef(brms_design_true_params) |>
       as.data.frame() |>
