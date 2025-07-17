@@ -550,10 +550,10 @@ power_grid_analysis <- function(target_power_success = 0.9,
     
     if (is.null(result$error)) {
       compiled_models_cache[[as.character(effect_size)]] <- result$compiled_models
-      cat("✓ Successfully compiled models for effect size", effect_size, "\n")
+      cat("[SUCCESS] Successfully compiled models for effect size", effect_size, "\n")
     } else {
       compiled_models_cache[[as.character(effect_size)]] <- NULL
-      cat("✗ Failed to compile models for effect size", effect_size, ":", result$error, "\n")
+      cat("[ERROR] Failed to compile models for effect size", effect_size, ":", result$error, "\n")
     }
   }
 
@@ -1532,19 +1532,19 @@ summary.rctbayespower_grid <- function(object, design_prior = NULL, print = TRUE
     # Format power metrics with MCSE if available
     if ("mcse_power_success" %in% names(object$power_surface)) {
       display_df$power_success <- paste0(
-        round(display_df$power_success * 100, 1), "% (±",
+        round(display_df$power_success * 100, 1), "% (+/-",
         round(object$power_surface$mcse_power_success * 100, 2), ")"
       )
       display_df$power_futility <- paste0(
-        round(display_df$power_futility * 100, 1), "% (±",
+        round(display_df$power_futility * 100, 1), "% (+/-",
         round(object$power_surface$mcse_power_futility * 100, 2), ")"
       )
       display_df$mean_prob_success <- paste0(
-        round(display_df$mean_prob_success * 100, 1), "% (±",
+        round(display_df$mean_prob_success * 100, 1), "% (+/-",
         round(object$power_surface$mcse_mean_prob_success * 100, 2), ")"
       )
       display_df$mean_prob_futility <- paste0(
-        round(display_df$mean_prob_futility * 100, 1), "% (±",
+        round(display_df$mean_prob_futility * 100, 1), "% (+/-",
         round(object$power_surface$mcse_mean_prob_futility * 100, 2), ")"
       )
     } else {
@@ -1581,19 +1581,19 @@ summary.rctbayespower_grid <- function(object, design_prior = NULL, print = TRUE
     # Format the power values as percentages with MCSE if available
     if ("mcse_power_success" %in% names(power_df)) {
       power_df$power_success_pct <- paste0(
-        round(power_df$power_success * 100, 1), "% (±",
+        round(power_df$power_success * 100, 1), "% (+/-",
         round(power_df$mcse_power_success * 100, 2), ")"
       )
       power_df$power_futility_pct <- paste0(
-        round(power_df$power_futility * 100, 1), "% (±",
+        round(power_df$power_futility * 100, 1), "% (+/-",
         round(power_df$mcse_power_futility * 100, 2), ")"
       )
       power_df$pr_success_pct <- paste0(
-        round(power_df$mean_prob_success * 100, 1), "% (±",
+        round(power_df$mean_prob_success * 100, 1), "% (+/-",
         round(power_df$mcse_mean_prob_success * 100, 2), ")"
       )
       power_df$pr_futility_pct <- paste0(
-        round(power_df$mean_prob_futility * 100, 1), "% (±",
+        round(power_df$mean_prob_futility * 100, 1), "% (+/-",
         round(power_df$mcse_mean_prob_futility * 100, 2), ")"
       )
     } else {
@@ -1637,19 +1637,19 @@ summary.rctbayespower_grid <- function(object, design_prior = NULL, print = TRUE
     # Format power metrics with MCSE if available
     if ("mcse_power_success" %in% names(object$power_surface)) {
       display_df$power_success <- paste0(
-        round(display_df$power_success * 100, 1), "% (±",
+        round(display_df$power_success * 100, 1), "% (+/-",
         round(object$power_surface$mcse_power_success * 100, 2), ")"
       )
       display_df$power_futility <- paste0(
-        round(display_df$power_futility * 100, 1), "% (±",
+        round(display_df$power_futility * 100, 1), "% (+/-",
         round(object$power_surface$mcse_power_futility * 100, 2), ")"
       )
       display_df$mean_prob_success <- paste0(
-        round(display_df$mean_prob_success * 100, 1), "% (±",
+        round(display_df$mean_prob_success * 100, 1), "% (+/-",
         round(object$power_surface$mcse_mean_prob_success * 100, 2), ")"
       )
       display_df$mean_prob_futility <- paste0(
-        round(display_df$mean_prob_futility * 100, 1), "% (±",
+        round(display_df$mean_prob_futility * 100, 1), "% (+/-",
         round(object$power_surface$mcse_mean_prob_futility * 100, 2), ")"
       )
     } else {
@@ -1747,19 +1747,19 @@ summary.rctbayespower_grid <- function(object, design_prior = NULL, print = TRUE
     # Format as percentages with MCSE if available
     if ("mcse_integrated_power_success" %in% names(integrated_display)) {
       integrated_display$integrated_power_success <- paste0(
-        round(integrated_display$integrated_power_success * 100, 1), "% (±",
+        round(integrated_display$integrated_power_success * 100, 1), "% (+/-",
         round(integrated_display$mcse_integrated_power_success * 100, 2), ")"
       )
       integrated_display$integrated_power_futility <- paste0(
-        round(integrated_display$integrated_power_futility * 100, 1), "% (±",
+        round(integrated_display$integrated_power_futility * 100, 1), "% (+/-",
         round(integrated_display$mcse_integrated_power_futility * 100, 2), ")"
       )
       integrated_display$integrated_prob_success <- paste0(
-        round(integrated_display$integrated_prob_success * 100, 1), "% (±",
+        round(integrated_display$integrated_prob_success * 100, 1), "% (+/-",
         round(integrated_display$mcse_integrated_prob_success * 100, 2), ")"
       )
       integrated_display$integrated_prob_futility <- paste0(
-        round(integrated_display$integrated_prob_futility * 100, 1), "% (±",
+        round(integrated_display$integrated_prob_futility * 100, 1), "% (+/-",
         round(integrated_display$mcse_integrated_prob_futility * 100, 2), ")"
       )
     } else {
@@ -1805,7 +1805,7 @@ summary.rctbayespower_grid <- function(object, design_prior = NULL, print = TRUE
       "Power = probability of making correct decision, Mean Probability = mean posterior probability of exceeding threshold.\n"
     )
     cat(
-      "Values shown as percentage (±MCSE) where MCSE = Monte Carlo Standard Error.\n"
+      "Values shown as percentage (+/-MCSE) where MCSE = Monte Carlo Standard Error.\n"
     )
   }
   

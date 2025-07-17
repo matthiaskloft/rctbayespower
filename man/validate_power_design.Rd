@@ -50,7 +50,7 @@ Performs a single simulation run and checks for convergence and parameter extrac
 \dontrun{
 # Validate design before running full power analysis
 validation <- validate_power_design(
-  n_control = 50, 
+  n_control = 50,
   n_treatment = 50,
   simulate_data_fn = simulate_data,
   model_formula_true_params = model_formula_true,

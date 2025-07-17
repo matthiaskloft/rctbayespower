@@ -72,6 +72,8 @@ power_analysis_ancova(
 \item{progress_updates}{Number of progress updates to show during parallel processing. Default is 10. Set to 0 to disable progress updates.}
 
 \item{compile_models_only}{If TRUE, only compile the brms models and return them without running simulations. Used for model caching in power_grid_analysis(). Default is FALSE.}
+
+\item{...}{Additional arguments passed to power_analysis()}
 }
 \value{
 A list containing power analysis results, or if compile_models_only=TRUE, a list with compiled models and arguments for later use. See \code{\link[=power_analysis]{power_analysis()}} for details.

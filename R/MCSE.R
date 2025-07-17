@@ -51,3 +51,52 @@ calculate_mcse_mean <- function(values, n_simulations) {
 
   return(mcse)
 }
+
+#' Monte Carlo Standard Error for Integrated Power Metrics
+#'
+#' Calculate Monte Carlo Standard Error for integrated power metrics that combine
+#' results across multiple effect sizes or sample sizes using weighted averages.
+#'
+#' @param values Vector of power or probability values
+#' @param weights Vector of weights for integration
+#' @param n_simulations Total number of simulations
+#' @param is_power_metric Logical indicating if this is a power metric (TRUE) or probability metric (FALSE)
+#' @return Monte Carlo Standard Error for integrated metric
+#' @keywords internal
+calculate_mcse_integrated_power <- function(values, weights, n_simulations, is_power_metric = TRUE) {
+  if (length(values) == 0 || length(weights) == 0 || n_simulations == 0) {
+    return(NA_real_)
+  }
+  
+  if (length(values) != length(weights)) {
+    stop("Values and weights must have the same length")
+  }
+  
+  # Remove NA values
+  valid_idx <- !is.na(values) & !is.na(weights)
+  values <- values[valid_idx]
+  weights <- weights[valid_idx]
+  
+  if (length(values) == 0) {
+    return(NA_real_)
+  }
+  
+  # Normalize weights to sum to 1
+  weights <- weights / sum(weights)
+  
+  # Calculate weighted average
+  weighted_avg <- sum(values * weights)
+  
+  if (is_power_metric) {
+    # For power metrics (proportions), use binomial-based MCSE
+    # MCSE for weighted proportion approximation
+    mcse <- sqrt(weighted_avg * (1 - weighted_avg) / n_simulations)
+  } else {
+    # For probability metrics (continuous), use weighted variance approach
+    # Approximate MCSE using weighted variance
+    weighted_var <- sum(weights * (values - weighted_avg)^2)
+    mcse <- sqrt(weighted_var / n_simulations)
+  }
+  
+  return(mcse)
+}

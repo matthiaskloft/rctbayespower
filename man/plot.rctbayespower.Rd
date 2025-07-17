@@ -60,7 +60,7 @@ plot(power_result)
 # Show only success metrics
 plot(power_result, metric = "success")
 
-# Show only futility metrics  
+# Show only futility metrics
 plot(power_result, metric = "futility")
 }
 }

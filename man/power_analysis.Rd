@@ -135,7 +135,7 @@ priors_est <- c(
 
 # Run power analysis with optimized brms_args
 power_result <- power_analysis(
-  n_control = 50, 
+  n_control = 50,
   n_treatment = 50,
   simulate_data_fn = simulate_data,
   model_formula_true_params = model_formula_true,
