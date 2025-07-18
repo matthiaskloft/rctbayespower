@@ -31,19 +31,19 @@
 #' @details
 #' The rctbayespower_design class combines model specifications with analysis
 #' decision criteria:
-#' 
+#'
 #' \strong{Model Integration:} Inherits the data simulation function, compiled brms
 #' model, and metadata from the rctbayespower_model object.
-#' 
+#'
 #' \strong{Decision Thresholds:} Success and futility thresholds define the
 #' regions of practical equivalence (ROPE) for decision making. Effects above
 #' the success threshold are considered clinically meaningful, while effects
 #' below the futility threshold suggest treatment ineffectiveness.
-#' 
+#'
 #' \strong{Probability Thresholds:} The p_sig_success and p_sig_futility parameters
 #' control the certainty required for decisions. Higher values require stronger
 #' evidence.
-#' 
+#'
 #' \strong{Validation:} All parameters are validated for consistency with the
 #' underlying model structure and each other.
 #'
@@ -66,7 +66,7 @@
 #' \donttest{
 #' # Create an ANCOVA model
 #' ancova_model <- model_ancova_continuous()
-#' 
+#'
 #' # Create a design for analyzing treatment effect
 #' my_design <- rctbayespower_design(
 #'   rctbayespower_model = ancova_model,
