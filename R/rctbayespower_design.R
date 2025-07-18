@@ -1,19 +1,84 @@
-# Needs to contain:
-# - the rctbayespower_model object
-# - vector of target parameters
-# - arguments that translate to further attributes
-#   - n_endpoints
-#   - n_treatment_arms
-#   - n_repeated_measures
-#   - n_interim_analyses
-# - thresholds_success: vector matching target parameters
-# - thresholds_futility: vector matching target parameters
-# - p_sig_success: numeric probability
-# - p_sig_futility: numeric probability
-# - optional: allocation function for adaptive designs
-# There are no defaults geiven by the function.
-# All arguments need to be specified explicitly by the user !
-
+#' Create an rctbayespower_design Object
+#'
+#' Constructs an rctbayespower_design object that combines an rctbayespower_model
+#' with analysis configuration parameters for Bayesian power analysis. This object
+#' encapsulates all information needed to conduct power simulations.
+#'
+#' @param rctbayespower_model An object of class "rctbayespower_model" created by
+#'   \code{\link{rctbayespower_model}} or predefined model functions
+#' @param target_params Character vector specifying which model parameters to
+#'   analyze for power. Must be valid parameter names from the brms model
+#'   (e.g., "b_grouptreat" for treatment effect)
+#' @param n_interim_analyses Number of interim analyses planned during the study.
+#'   Use 0 for studies with only final analysis. Must be non-negative integer.
+#' @param thresholds_success Numeric vector of success thresholds for each target
+#'   parameter. Length must match target_params. These represent the minimum
+#'   clinically meaningful effect sizes.
+#' @param thresholds_futility Numeric vector of futility thresholds for each target
+#'   parameter. Length must match target_params. These represent effect sizes
+#'   below which the treatment is considered ineffective.
+#' @param p_sig_success Probability threshold for declaring success. The posterior
+#'   probability that the effect exceeds the success threshold must be greater
+#'   than this value to declare success (typically 0.975 or 0.95).
+#' @param p_sig_futility Probability threshold for declaring futility. The posterior
+#'   probability that the effect is below the futility threshold must be greater
+#'   than this value to declare futility (typically 0.5).
+#' @param interim_function Optional function for adaptive interim analyses. If provided,
+#'   must accept an interim_parameters argument defined as a call to list().
+#'   Currently not fully implemented.
+#' @param design_name Optional character string providing a descriptive name for the design
+#'
+#' @details
+#' The rctbayespower_design class combines model specifications with analysis
+#' decision criteria:
+#' 
+#' \strong{Model Integration:} Inherits the data simulation function, compiled brms
+#' model, and metadata from the rctbayespower_model object.
+#' 
+#' \strong{Decision Thresholds:} Success and futility thresholds define the
+#' regions of practical equivalence (ROPE) for decision making. Effects above
+#' the success threshold are considered clinically meaningful, while effects
+#' below the futility threshold suggest treatment ineffectiveness.
+#' 
+#' \strong{Probability Thresholds:} The p_sig_success and p_sig_futility parameters
+#' control the certainty required for decisions. Higher values require stronger
+#' evidence.
+#' 
+#' \strong{Validation:} All parameters are validated for consistency with the
+#' underlying model structure and each other.
+#'
+#' @return An object of class "rctbayespower_design" containing all elements from
+#'   the rctbayespower_model plus the analysis configuration. Key components include:
+#' \describe{
+#'   \item{data_simulation_fn}{Data simulation function from the model}
+#'   \item{brms_model}{Compiled brms model template}
+#'   \item{target_params}{Target parameters for analysis}
+#'   \item{thresholds_success}{Success thresholds}
+#'   \item{thresholds_futility}{Futility thresholds}
+#'   \item{p_sig_success}{Success probability threshold}
+#'   \item{p_sig_futility}{Futility probability threshold}
+#' }
+#'
+#' @export
+#' @seealso [rctbayespower_model()], [simulate_single_run()]
+#'
+#' @examples
+#' \donttest{
+#' # Create an ANCOVA model
+#' ancova_model <- model_ancova_continuous()
+#' 
+#' # Create a design for analyzing treatment effect
+#' my_design <- rctbayespower_design(
+#'   rctbayespower_model = ancova_model,
+#'   target_params = "b_grouptreat",
+#'   n_interim_analyses = 0,
+#'   thresholds_success = 0.2,
+#'   thresholds_futility = 0,
+#'   p_sig_success = 0.975,
+#'   p_sig_futility = 0.5,
+#'   design_name = "ANCOVA Treatment Effect Analysis"
+#' )
+#' }
 rctbayespower_design <- function(rctbayespower_model = NULL,
                                  target_params = NULL,
                                  n_interim_analyses = NULL,
@@ -173,7 +238,17 @@ rctbayespower_design <- function(rctbayespower_model = NULL,
 }
 
 
-# print S3 method for rctbayespower_design
+#' Print Method for rctbayespower_design Objects
+#'
+#' Displays a comprehensive summary of an rctbayespower_design object, showing
+#' both model specifications and analysis configuration in an organized format.
+#'
+#' @param x An object of class "rctbayespower_design"
+#' @param ... Additional arguments (currently unused)
+#'
+#' @return Invisibly returns the input object. Used for side effects (printing).
+#' @export
+#' @method print rctbayespower_design
 print.rctbayespower_design <- function(x, ...) {
   cat("\nObject of Class: 'rctbayespower_design'\n")
   # model

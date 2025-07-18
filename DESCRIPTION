@@ -23,7 +23,8 @@ Imports:
     tibble,
     parallel,
     scales,
-    rlang
+    rlang,
+    stringr
 Suggests: 
     testthat (>= 3.0.0),
     knitr,

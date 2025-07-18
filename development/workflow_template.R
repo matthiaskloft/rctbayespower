@@ -8,7 +8,7 @@ devtools::load_all(.)
 #------------------------------------------------------------------------------>
 # 1. Build rctbayespower_model
 #------------------------------------------------------------------------------>
-# Building function needs to contain:
+# Building function needs:
 # - the data simulation function
 # - the compiled brms model
 
@@ -39,20 +39,15 @@ simulate_data_ancova <- function(n_total,
   )
 }
 
-# simulate some data
-n_total <- 100
-allocation_probs <- c(0.5, 0.5)  # equal allocation
-b_grouptreat <- 0.5  # treatment effect
-b_baseline <- 0.2  # baseline effect
-
+# simulate some data to fit the model
 mock_data_ancova <- simulate_data_ancova(
-  n_total = n_total,
-  allocation_probs = allocation_probs,
+  n_total = 100,
+  allocation_probs = c(0.5, 0.5),
   true_parameter_values = list(
     intercept = 0,
     sigma = 1,
-    b_grouptreat = b_grouptreat,
-    b_baseline = b_baseline
+    b_grouptreat = 0.5,
+    b_baseline = 0.2
   )
 )
 
@@ -85,15 +80,11 @@ model_ancova_user <-
     model_name = "ancova"
   )
 
-model_ancova_user
-
-
-  
 print(model_ancova_user)
 
 
 
-
+# or use the predefined model
 model_ancova_continuous <- rctbayespower_model_ancova_continuous()
 
 model_ancova_continuous
@@ -239,6 +230,31 @@ attr(ancova_design, "parameter_names_sim_fn")
 
 
 
+
+ancova_model <- model_ancova_continuous()
+design <- rctbayespower_design(
+  rctbayespower_model = ancova_model,
+  target_params = "b_grouptreat",
+  n_interim_analyses = 0,
+  thresholds_success = 0.2,
+  thresholds_futility = 0,
+  p_sig_success = 0.975,
+  p_sig_futility = 0.5
+)
+
+result <- simulate_single_run(
+  n_total = 100,
+  allocation_probs = c(0.5, 0.5),
+  rctbayespower_design = design,
+  true_parameter_values = list(
+    intercept = 0,
+    sigma = 1,
+    b_grouptreat = 0.5,
+    b_baseline = 0.2
+  ),
+  chains = 1
+)
+summary(result)
 
 
 

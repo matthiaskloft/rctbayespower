@@ -56,4 +56,5 @@ my_function <- function(p_sig_success = 0.975) { ... }
 
 **Recent fixes applied**: Updated documentation for `p_sig_success` in `power_analysis.R` and `power_analysis_ancova.R`, and `target_power_futility` in `power_grid_analysis.R`.
 
-[... rest of the document remains unchanged ...]
+### Documentation Conventions
+- Don't use \code{\link{function_name}} in roxygen docs. Use [functionname()] instead.
