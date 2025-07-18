@@ -3,6 +3,235 @@
 
 library(brms)
 
+
+### 1. Build rctbayespower_model
+
+# Needs to contain:
+# - the data simulation function
+# - the compiled brms model
+
+# data simulation function
+# create a function that simulates data to fit the design brms object with
+simulate_data_ancova <- function(n_total,
+                                 allocation_probs,
+                                 intercept,
+                                 sigma,
+                                 b_group_treat,
+                                 b_baseline) {
+  data.frame(
+    baseline = rnorm(n_total),
+    group = factor(
+      sample(
+        x = c(0, 1),
+        size = n_total,
+        prob = allocation_probs,
+        replace = TRUE
+      ),
+      levels = c(0, 1),
+      labels = c("ctrl", "treat")
+    ),
+    outcome = rnorm(
+      n_total,
+      mean = intercept + b_group_treat + b_baseline * rnorm(n_total),
+      sd = sigma
+    )
+  )
+}
+
+# simulate some data
+n_total <- 100
+allocation_probs <- c(0.5, 0.5)  # equal allocation
+b_group_treat <- 0.5  # treatment effect
+b_baseline <- 0.2  # baseline effect
+mock_data_ancova <- simulate_data_ancova(
+  n_total = n_total,
+  allocation_probs = allocation_probs,
+  b_group_treat = b_group_treat,
+  b_baseline = b_baseline
+)
+
+
+
+# fit the brms model
+brms_model_ancova <- brms::brm(
+  formula = outcome ~ 1 + baseline + group,
+  data = mock_data_ancova,
+  family = gaussian(),
+  prior = c(
+    brms::set_prior("student_t(3, 0, 1)", class = "b", coef = "baseline"),
+    brms::set_prior("student_t(3, 0, 1)", class = "b", coef = "grouptreat"),
+    brms::set_prior("normal(0, 10)", class = "Intercept"),
+    brms::set_prior("normal(0, 10)", class = "sigma")
+  ),
+  sample_prior = "only",
+  algorithm = "fixed_param",
+  iter = 500,
+  warmup = 250,
+  chains = 4,
+  cores = 4
+)
+
+summary(brms_model_ancova)
+
+
+# fit again with chain = 0 to create an empty fit for later use
+brms_model_ancova_compiled <- update(brms_model_ancova, chains = 0)
+
+
+# function that builds the class rctbayespower_model (implemented in the package)
+rctbayespower_model <- function(
+  data_simulation_fn,
+  brms_model
+) {
+  
+  # validate model
+  if (!inherits(brms_model, "brmsfit")) {
+    stop("The brms_model must be a valid brmsfit object.")
+  }
+  if (!is.function(data_simulation_fn)) {
+    stop("The data_simulation_fn must be a valid function.")
+  }
+  
+  
+  # create the output list with the data simulation function and the brms model
+  output_list <- list(
+    data_simulation_fn = data_simulation_fn,
+    brms_model = brms_model
+  )
+  
+  # assign class to the output list
+  class(output_list) <- "rctbayespower_model"
+  
+  return(output_list)
+}
+
+
+# create the rctbayespower_model object
+rctbayespower_model_ancova <- rctbayespower_model(
+  data_simulation_fn = simulate_data_ancova,
+  brms_model = brms_model_ancova_compiled
+)
+
+rctbayespower_model_ancova
+
+# for implemented default models there is a proprietary function that creates 
+# the rctbayespower_model object (implemented in the package)
+# example: ancova with baseline covariate and treatment effect
+# we give users the option to specify priors for the model
+
+rctbayespower_model_ancova <- function(prior_intercept = NULL,
+                                       prior_sigma = NULL,
+                                       prior_baseline = NULL,
+                                       prior_treatment = NULL) {
+  
+  # create the data simulation function
+  simulate_data_ancova <- function(n_total,
+                                   allocation_probs,
+                                   intercept,
+                                   sigma,
+                                   b_group_treat,
+                                   b_baseline) {
+    data.frame(
+      baseline = rnorm(n_total),
+      group = factor(
+        sample(
+          x = c(0, 1),
+          size = n_total,
+          prob = allocation_probs,
+          replace = TRUE
+        ),
+        levels = c(0, 1),
+        labels = c("ctrl", "treat")
+      ),
+      outcome = rnorm(
+        n_total,
+        mean = intercept + b_group_treat + b_baseline * rnorm(n_total),
+        sd = sigma
+      )
+    )
+  }
+  # simulate some data
+  mock_data_ancova <- simulate_data_ancova(
+    n_total = 100,
+    allocation_probs = c(0.5, 0.5),
+    intercept = 0,
+    sigma = 1,
+    b_group_treat = 0.5,
+    b_baseline = 0.2
+  )
+  
+  # use user-specified priors if !is.null(prior_intercept) else use default priors
+  # check that the priors are specified with brms::set_prior()
+  if (is.null(prior_intercept)) {
+    prior_intercept <- brms::set_prior("normal(0, 10)", class = "Intercept")
+  } else if (!inherits(prior_intercept, "brmsprior")) {
+    stop("The prior_intercept must be a valid brmsprior object.")
+  }
+  if (is.null(prior_sigma)) {
+    prior_sigma <- brms::set_prior("normal(0, 10)", class = "sigma")
+  } else if (!inherits(prior_sigma, "brmsprior")) {
+    stop("The prior_sigma must be a valid brmsprior object.")
+  }
+  if (is.null(prior_baseline)) {
+    prior_baseline <- brms::set_prior("student_t(3, 0, 1)", class = "b", coef = "baseline")
+  } else if (!inherits(prior_baseline, "brmsprior")) {
+    stop("The prior_baseline must be a valid brmsprior object.")
+  }
+  if (is.null(prior_treatment)) {
+    prior_treatment <- brms::set_prior("student_t(3, 0, 1)", class = "b", coef = "grouptreat")
+  } else if (!inherits(prior_treatment, "brmsprior")) {
+    stop("The prior_treatment must be a valid brmsprior object.")
+  }
+  
+  priors <- c(prior_baseline,
+              prior_treatment,
+              prior_intercept,
+              prior_sigma)
+  
+  # fit the brms model
+  brms_model_ancova <- brms::brm(
+    formula = outcome ~ baseline + group,
+    data = mock_data_ancova,
+    family = gaussian(),
+    prior = priors,
+    chains = 0,
+  )
+  
+  rctbayespower_model <-
+    rctbayespower_model(data_simulation_fn = simulate_data_ancova, 
+                        brms_model = brms_model_ancova_compiled)
+  
+  return(rctbayespower_model)
+}
+
+rctbayespower_model_ancova <- rctbayespower_model_ancova()
+
+
+#------------------------------------------------------------------------------>
+
+### 2. Build rctbayespower_design 
+# Needs to contain:
+# - the rctbayespower_model object
+# - vector of target parameters
+# - arguments that translate to further attributes
+#
+# - optional: allocation function for adaptive designs
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ### Everything from here on is specified before hand by the user ---------------
 
 # define the number of participants in the control and treatment groups
