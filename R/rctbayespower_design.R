@@ -27,7 +27,7 @@ rctbayespower_design <- function(rctbayespower_model = NULL,
   if (!inherits(rctbayespower_model, "rctbayespower_model")) {
     stop("The rctbayespower_model must be a valid rctbayespower_model object.")
   }
-  
+
   # retrieve attributes from the rctbayespower_model
   n_endpoints <- attr(rctbayespower_model, "n_endpoints")
   endpoint_types <- attr(rctbayespower_model, "endpoint_types")
@@ -35,36 +35,36 @@ rctbayespower_design <- function(rctbayespower_model = NULL,
   n_repeated_measures <- attr(rctbayespower_model, "n_repeated_measures")
   parameter_names_sim_fn <- attr(rctbayespower_model, "parameter_names_sim_fn")
   parameter_names_brms <- attr(rctbayespower_model, "parameter_names_brms")
-  
-  
+
+
   # validate n_interim_analyses
   if (!is.null(n_interim_analyses) &&
-      (!is.numeric(n_interim_analyses) || n_interim_analyses < 0)) {
+    (!is.numeric(n_interim_analyses) || n_interim_analyses < 0)) {
     stop("n_interim_analyses must be a non-negative numeric value.")
   }
-  
+
   # validate thresholds_success
   if (is.null(thresholds_success) ||
-      !is.numeric(thresholds_success)) {
+    !is.numeric(thresholds_success)) {
     stop("thresholds_success must be a non-null numeric vector.")
   }
-  
+
   # validate thresholds_futility
   if (is.null(thresholds_futility) ||
-      !is.numeric(thresholds_futility)) {
+    !is.numeric(thresholds_futility)) {
     stop("thresholds_futility must be a non-null numeric vector.")
   }
-  
+
   # validate target_params
   if (is.null(target_params) || !is.character(target_params)) {
     stop("target_params must be a non-null character vector.")
   }
-  
+
   # check that target_params is a subset of the parameter names in the model
   if (!all(target_params %in% parameter_names_brms)) {
     stop("target_params must be a subset of the parameter names in the rctbayespower_model.")
   }
-  
+
   # check that thresholds_success and thresholds_futility have the same length as target_params
   if (length(thresholds_success) != length(target_params)) {
     stop("thresholds_success must have the same length as target_params.")
@@ -72,30 +72,30 @@ rctbayespower_design <- function(rctbayespower_model = NULL,
   if (length(thresholds_futility) != length(target_params)) {
     stop("thresholds_futility must have the same length as target_params.")
   }
-  
+
   # validate p_sig_success, must be a probability value
   if (is.null(p_sig_success) || !is.numeric(p_sig_success) ||
-      p_sig_success < 0 || p_sig_success > 1) {
+    p_sig_success < 0 || p_sig_success > 1) {
     stop("p_sig_success must be a numeric value between 0 and 1.")
   }
-  
+
   # validate p_sig_futility, must be a probability value
   if (is.null(p_sig_futility) || !is.numeric(p_sig_futility) ||
-      p_sig_futility < 0 || p_sig_futility > 1) {
+    p_sig_futility < 0 || p_sig_futility > 1) {
     stop("p_sig_futility must be a numeric value between 0 and 1.")
   }
-  
+
   # validate interim_function
   if (!is.null(interim_function) &&
-      !is.function(interim_function)) {
+    !is.function(interim_function)) {
     stop("interim_function must be a valid function or NULL.")
   }
-  
+
   # validate design_name
   if (!is.null(design_name) && !is.character(design_name)) {
     stop("design_name must be a character string or NULL.")
   }
-  
+
   # if interim_function is not NULL, check that it has the required arguments
   if (!is.null(interim_function)) {
     # check that interim_function has an argument called interim_parameters
@@ -104,16 +104,16 @@ rctbayespower_design <- function(rctbayespower_model = NULL,
     }
     # check that interim_parameters is a call to list()
     if (!is.call(formals(interim_function)$interim_parameters) ||
-        formals(interim_function)$interim_parameters[[1]] != as.name("list")) {
+      formals(interim_function)$interim_parameters[[1]] != as.name("list")) {
       stop("interim_function's 'interim_parameters' must be a call to list().")
     }
-    
+
     # retrieve the names of the interim_parameters by
     # parsing formals(interim_function)$interim_parameters
     expr <- formals(simulate_data_ancova)$interim_parameters
     # Ensure it's a call to list()
     if (is.call(expr) && expr[[1]] == as.name("list")) {
-      parameter_names_interim_fn <- as.character(expr[-1])  # Drop the 'list' symbol, keep arguments
+      parameter_names_interim_fn <- as.character(expr[-1]) # Drop the 'list' symbol, keep arguments
     } else {
       stop("interim_function's 'interim_parameters' must be a call to list().")
     }
@@ -121,7 +121,7 @@ rctbayespower_design <- function(rctbayespower_model = NULL,
     # if interim_function is NULL, set parameter_names_interim_fn to NULL
     parameter_names_interim_fn <- NULL
   }
-  
+
   # create the output list with the rctbayespower_model and the other attributes
   output_list <- list(
     data_simulation_fn = rctbayespower_model$data_simulation_fn,
@@ -135,16 +135,16 @@ rctbayespower_design <- function(rctbayespower_model = NULL,
     parameter_names_brms = parameter_names_brms,
     parameter_names_interim_fn = parameter_names_interim_fn,
     target_params = target_params,
-    n_interim_analyses = n_interim_analyses, 
-    thresholds_success = thresholds_success, 
-    thresholds_futility = thresholds_futility, 
-    p_sig_success = p_sig_success, 
+    n_interim_analyses = n_interim_analyses,
+    thresholds_success = thresholds_success,
+    thresholds_futility = thresholds_futility,
+    p_sig_success = p_sig_success,
     p_sig_futility = p_sig_futility
   )
-  
+
   # overwrite class
   class(output_list) <- "rctbayespower_design"
-  
+
   # add attributes not inherited from the rctbayespower_model
   attr(output_list, "design_name") <- attr(rctbayespower_model, "design_name")
   attr(output_list, "target_params") <- attr(rctbayespower_model, "target_params")
@@ -155,7 +155,7 @@ rctbayespower_design <- function(rctbayespower_model = NULL,
   attr(output_list, "p_sig_futility") <- attr(rctbayespower_model, "p_sig_futility")
   attr(output_list, "interim_function") <- attr(rctbayespower_model, "interim_function")
   attr(output_list, "parameter_names_interim_fn") <- attr(rctbayespower_model, "parameter_names_interim_fn")
-  
+
   # attributes from the rctbayespower_model
   attr(output_list, "n_endpoints") <- n_endpoints
   attr(output_list, "endpoint_types") <- endpoint_types
@@ -164,12 +164,11 @@ rctbayespower_design <- function(rctbayespower_model = NULL,
   attr(output_list, "model_name") <- attr(rctbayespower_model, "model_name")
   attr(output_list, "parameter_names_sim_fn") <- attr(rctbayespower_model, "parameter_names_sim_fn")
   attr(output_list, "parameter_names_brms") <- parameter_names_brms
-  
-  
-  
+
+
+
   # return the output list
   return(output_list)
-  
 }
 
 
@@ -182,8 +181,10 @@ print.rctbayespower_design <- function(x, ...) {
   cat("Endpoint types:", paste(x$endpoint_types, collapse = ", "), "\n")
   cat("Number of treatment arms:", x$n_treatment_arms, "\n")
   cat("Number of repeated measures:", x$n_repeated_measures, "\n")
-  cat("Parameter names - simulation function:", 
-      paste(x$parameter_names_sim_fn, collapse = ", "), "\n")
+  cat(
+    "Parameter names - simulation function:",
+    paste(x$parameter_names_sim_fn, collapse = ", "), "\n"
+  )
   cat("Parameter names - brms model:", paste(x$parameter_names_brms, collapse = ", "), "\n")
   # design
   cat("\n\n=== Design Specifications ===\n\n")
