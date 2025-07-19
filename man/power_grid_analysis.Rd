@@ -6,12 +6,12 @@
 \usage{
 power_grid_analysis(
   conditions,
-  static_parameters = list(),
   design_prior = NULL,
   n_simulations = 500,
   brms_args = list(),
   n_cores = parallel::detectCores() - 1,
-  progress_updates = 10
+  progress_updates = 10,
+  ...
 )
 }
 \arguments{
@@ -20,9 +20,6 @@ power_grid_analysis(
 \item design: An rctbayespower_design object with model specifications
 \item condition_arguments: List of prepared condition arguments for simulation
 }}
-
-\item{static_parameters}{List of parameters that override design defaults across all conditions.
-Can include: target_power_success, target_power_futility, true_parameter_values, etc.}
 
 \item{design_prior}{Optional design prior for integrated power computation. Can be:
 \itemize{
@@ -38,13 +35,14 @@ Can include: target_power_success, target_power_futility, true_parameter_values,
 \item{n_cores}{Number of parallel cores for condition execution (default: detectCores() - 1)}
 
 \item{progress_updates}{Show progress every N conditions when running sequentially (default: 10)}
+
+\item{...}{Additional arguments passed to brms for model fitting. These have the highest priority and will override both defaults and 'brms_args'.}
 }
 \value{
 A list of class "rctbayespower_grid" containing:
 \itemize{
 \item design: The design object used for analysis
 \item conditions: The condition specifications used
-\item static_parameters: Static parameter overrides applied
 \item target_power_success: Target power level for success
 \item target_power_futility: Target power level for futility
 \item power_surface: Data frame with power results for all conditions
@@ -104,13 +102,8 @@ conditions <- expand_conditions(
 
 # Run power grid analysis
 result <- power_grid_analysis(
-  design = design,
   conditions = conditions,
-  static_parameters = list(
-    target_power_success = 0.8,
-    target_power_futility = 0.9
-  ),
-  n_simulations = 100,  # Low for example
+  n_simulations = 100, # Low for example
   n_cores = 1
 )
 }

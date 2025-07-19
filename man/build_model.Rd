@@ -107,10 +107,14 @@ simulate_ancova_data <- function(n_total, p_alloc,
 
 
 # Create mock data and fit template model
-mock_data <- simulate_ancova_data(100, c(0.5, 0.5),
-                                  list(intercept = 0, b_grouptreat = 0.5,
-                                       b_baseline = 0.2, sigma = 1))
-mock_data$outcome <- rnorm(100)  # Add outcome for model fitting
+mock_data <- simulate_ancova_data(
+  100, c(0.5, 0.5),
+  list(
+    intercept = 0, b_grouptreat = 0.5,
+    b_baseline = 0.2, sigma = 1
+  )
+)
+mock_data$outcome <- rnorm(100) # Add outcome for model fitting
 
 template_model <- brms::brm(
   outcome ~ baseline + group,

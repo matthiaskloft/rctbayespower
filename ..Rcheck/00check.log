@@ -6,19 +6,44 @@
     GNU Fortran (Ubuntu 13.3.0-6ubuntu2~24.04) 13.3.0
 * running under: Ubuntu 24.04.2 LTS
 * using session charset: UTF-8
-* using options ‘--no-manual --no-build-vignettes’
+* using options ‘--no-manual --no-vignettes’
 * checking for file ‘./DESCRIPTION’ ... OK
 * this is package ‘rctbayespower’ version ‘0.1.0’
 * package encoding: UTF-8
 * checking package namespace information ... OK
-* checking package dependencies ... ERROR
-Package suggested but not available: ‘covr’
+* checking package dependencies ... INFO
+Package suggested but not available for checking: ‘covr’
+* checking if this is a source package ... OK
+* checking if there is a namespace ... OK
+* checking for executable files ... OK
+* checking for hidden files and directories ... NOTE
+Found the following hidden files and directories:
+  .gitattributes
+  .github/.gitignore
+  .gitignore
+  ..Rcheck
+  .Rproj.user
+  .claude
+  .git
+  .github
+These were most likely included in error. See section ‘Package
+structure’ in the ‘Writing R Extensions’ manual.
+* checking for portable file names ... NOTE
+Found the following non-portable file paths:
+  rctbayespower/.Rproj.user/shared/notebooks/4277B5B2-_02-prior-specification/1/0C02CFDC25eb6fb1/chunks.json
+  rctbayespower/.Rproj.user/shared/notebooks/4277B5B2-_02-prior-specification/1/s/ck7rbpnfudppx/00000f.csv
+  rctbayespower/.Rproj.user/shared/notebooks/4277B5B2-_02-prior-specification/1/s/csetup_chunk/00000f.csv
+  rctbayespower/.Rproj.user/shared/notebooks/4277B5B2-_02-prior-specification/1/s/csqqjumsw04q7/00000f.csv
+  rctbayespower/.Rproj.user/shared/notebooks/4277B5B2-_02-prior-specification/1/s/csqqjumsw04q7/execution.lock
+  rctbayespower/.Rproj.user/shared/notebooks/4277B5B2-_02-prior-specification/1/s/csqqjumsw04q7_t/execution.lock
 
-The suggested packages are required for a complete check.
-Checking can be attempted without them by setting the environment
-variable _R_CHECK_FORCE_SUGGESTS_ to a false value.
-
-See section ‘The DESCRIPTION file’ in the ‘Writing R Extensions’
-manual.
+Tarballs are only required to store paths of up to 100 bytes and cannot
+store those of more than 256 bytes, with restrictions including to 100
+bytes for the final component.
+See section ‘Package structure’ in the ‘Writing R Extensions’ manual.
+* checking for sufficient/correct file permissions ... OK
+* checking whether package ‘rctbayespower’ can be installed ... ERROR
+Installation failed.
+See ‘/mnt/c/Users/Matze/Documents/GitHub/rctbayespower/..Rcheck/00install.out’ for details.
 * DONE
-Status: 1 ERROR
+Status: 1 ERROR, 2 NOTEs

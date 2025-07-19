@@ -278,5 +278,3 @@ result <- power_grid_analysis(
   n_simulations = 1000,
   progress_updates = 100)
 
-print(result)
-summary(result)
