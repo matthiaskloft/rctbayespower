@@ -6,10 +6,10 @@
 #' all necessary argument combinations for simulation runs.
 #'
 #' @param design An rctbayespower_design object that defines the study design
-#' @param condition_values A named list where each element contains vectors of 
+#' @param condition_values A named list where each element contains vectors of
 #'   parameter values to vary across conditions. All combinations will be created.
 #' @param static_values A named list of parameter values that remain constant
-#'   across all conditions  
+#'   across all conditions
 #'
 #' @return An rctbayespower_conditions object containing:
 #'   \item{conditions_grid}{A data.frame with all parameter combinations}
@@ -39,7 +39,7 @@
 #'     baseline_effect = 0.1
 #'   )
 #' )
-#' 
+#'
 #' # Print the conditions
 #' print(conditions)
 #' }
@@ -52,16 +52,18 @@ build_conditions <- function(design,
   if (!inherits(design, "rctbayespower_design")) {
     stop("'design' must be a valid rctbayespower_design object.")
   }
-  
+
   # validate inputs
-  if (!is.list(condition_values))
+  if (!is.list(condition_values)) {
     stop("'condition_values' must be a list.")
-  if (!is.list(static_values))
+  }
+  if (!is.list(static_values)) {
     stop("'static_values' must be a list.")
-  
+  }
+
   # gather provided parameter names
   params_given <- c(names(condition_values), names(static_values))
-  
+
   # check for overlapping names between condition_values and static_values
   params_overlap <- intersect(names(condition_values), names(static_values))
   if (length(params_overlap) > 0) {
@@ -82,10 +84,10 @@ build_conditions <- function(design,
       )
     )
   }
-  
+
   # required parameters
   params_needed <- required_parameters(design, print = FALSE)
-  
+
   # check for missing param values
   if (!all(params_needed$params_all %in% params_given)) {
     stop(paste(
@@ -96,10 +98,10 @@ build_conditions <- function(design,
       )
     ))
   }
-  
+
   # merge inputs
   all_values <- c(condition_values, static_values)
-  
+
   # check p_alloc
   if ("p_alloc" %in% names(all_values)) {
     if (!is.list(all_values[["p_alloc"]])) {
@@ -108,15 +110,15 @@ build_conditions <- function(design,
   } else {
     stop("'p_alloc' is missing from condition_values and static_values.")
   }
-  
+
   # expansion of conditions ----------------------------------------------------
-  
+
   # create condition grid (data frame of combinations)
   df_grid <- do.call(tidyr::expand_grid, condition_values)
-  
+
   # Convert each row into a list of named values
   condition_arguments_flat <- apply(df_grid, 1, as.list)
-  
+
   # Combine simulation and interim arguments per condition
   condition_arguments <- lapply(condition_arguments_flat, function(condition) {
     # --- Simulation arguments ---
@@ -157,13 +159,15 @@ build_conditions <- function(design,
     # Return both sets of args
     list(sim_args = sim_args, interim_args = interim_args)
   })
-  
-  
+
+
   # list to return
-  return_list <- list(conditions_grid = df_grid,
-                      condition_arguments = condition_arguments,
-                      design = design)
-  
+  return_list <- list(
+    conditions_grid = df_grid,
+    condition_arguments = condition_arguments,
+    design = design
+  )
+
   # assign class
   class(return_list) <- "rctbayespower_conditions"
   # add attribute: number of conditions
@@ -172,7 +176,7 @@ build_conditions <- function(design,
   attr(return_list, "n_params") <- length(condition_values)
   # add attribute: number of static parameters
   attr(return_list, "n_static_params") <- length(static_values)
-  
+
   # return
   return_list
 }
@@ -181,7 +185,7 @@ build_conditions <- function(design,
 #' Print Method for rctbayespower_conditions Objects
 #'
 #' Prints a formatted summary of condition grids created by [build_conditions()].
-#' Shows the condition grid with all parameter combinations and provides 
+#' Shows the condition grid with all parameter combinations and provides
 #' summary information about the number of conditions and parameters.
 #'
 #' @param x An rctbayespower_conditions object created by [build_conditions()]
@@ -192,25 +196,25 @@ build_conditions <- function(design,
 #' @examples
 #' \dontrun{
 #' conditions <- build_conditions(design, condition_values, static_values)
-#' print(conditions)  # or just: conditions
+#' print(conditions) # or just: conditions
 #' }
 #'
 #' @export
 print.rctbayespower_conditions <- function(x, ...) {
   cat("\nrctbayespower_conditions object\n")
   cat("==============================\n\n")
-  
+
   # Print basic info
   n_conditions <- nrow(x$conditions_grid)
   n_params <- ncol(x$conditions_grid)
-  
+
   cat("Number of conditions:", n_conditions, "\n")
   cat("Number of varying parameters:", n_params, "\n\n")
-  
+
   # Print the conditions grid
   cat("Condition Grid:\n")
   print(x$conditions_grid, ...)
-  
+
   invisible(x)
 }
 
@@ -230,12 +234,13 @@ print.rctbayespower_conditions <- function(x, ...) {
 #' @examples
 #' # Define a function with mixed default/non-default arguments
 #' test_fn <- function(a, b = 1, c, d = "default") {}
-#' get_args_without_defaults(test_fn)  # Returns c("a", "c")
+#' get_args_without_defaults(test_fn) # Returns c("a", "c")
 #'
 get_args_without_defaults <- function(fn) {
   fmls <- formals(fn)
-  is_missing_default <- vapply(fmls, function(x)
-    identical(x, quote(expr = )), logical(1))
+  is_missing_default <- vapply(fmls, function(x) {
+    identical(x, quote(expr = ))
+  }, logical(1))
   names(fmls)[is_missing_default]
 }
 
@@ -271,10 +276,10 @@ required_parameters_design <- function(design, print = TRUE) {
   if (!inherits(design, "rctbayespower_design")) {
     stop("'design' must be a valid rctbayespower_design object.")
   }
-  
+
   # get args without defaults for the data simulation function
   params_sim <- get_args_without_defaults(design$data_simulation_fn)
-  
+
   # if interim analysis function is not NULL, get args without defaults
   if (!is.null(design$interim_analysis_fn)) {
     params_interim <-
@@ -284,7 +289,7 @@ required_parameters_design <- function(design, print = TRUE) {
     params_interim <- NULL
     params <- params_sim
   }
-  
+
   # print the parameters if requested
   if (print) {
     # print the parameters needed for the design
@@ -293,9 +298,8 @@ required_parameters_design <- function(design, print = TRUE) {
     cat(paste(params_sim, collapse = ", "), "\n")
     cat("\nInterim function:\n")
     cat(paste(params_interim, collapse = ", "), "\n")
-    
   }
-  
+
   # return the parameters needed for the design
   invisible(list(
     params_sim = params_sim,
@@ -307,7 +311,7 @@ required_parameters_design <- function(design, print = TRUE) {
 
 #' Identify Required Parameters for a Model
 #'
-#' Extracts the required parameters (those without default values) from the 
+#' Extracts the required parameters (those without default values) from the
 #' brms design function of an rctbayespower model object.
 #'
 #' @param model An rctbayespower_model object
@@ -322,7 +326,7 @@ required_parameters_design <- function(design, print = TRUE) {
 #'   brms_design_fn = function(n, effect_size) {}
 #' )
 #' class(model) <- "rctbayespower_model"
-#' 
+#'
 #' # Check required parameters
 #' required_parameters_model(model)
 #' }
@@ -333,24 +337,24 @@ required_parameters_model <- function(model, print = TRUE) {
   if (!inherits(model, "rctbayespower_model")) {
     stop("'model' must be a valid rctbayespower_model object.")
   }
-  
+
   # get args without defaults for the model
   params <- get_args_without_defaults(model$data_simulation_fn)
-  
+
   # print the parameters if requested
   if (print) {
     cat("\nRequired parameters without defaults for the model.\n")
     cat("\nSimulation function:\n")
     cat(paste(params, collapse = ", "), "\n")
   }
-  
+
   invisible(params)
 }
 
 #' Identify Required Parameters for Design or Model Objects
 #'
-#' Generic wrapper function that identifies required parameters for either 
-#' rctbayespower_design or rctbayespower_model objects by dispatching to the 
+#' Generic wrapper function that identifies required parameters for either
+#' rctbayespower_design or rctbayespower_model objects by dispatching to the
 #' appropriate specific function.
 #'
 #' @param object Either an rctbayespower_design or rctbayespower_model object
