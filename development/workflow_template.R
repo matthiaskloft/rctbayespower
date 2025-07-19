@@ -1,5 +1,9 @@
 
 
+
+
+
+
 ### Template for the workfölow of the power simulation ###
 
 library(brms)
@@ -15,10 +19,9 @@ devtools::load_all(.)
 # data simulation function
 # create a function that simulates data to fit the design brms object with
 simulate_data_ancova <- function(n_total,
-                                 allocation_probs,
+                                 p_alloc,
                                  true_parameter_values =
-                                   list(intercept, sigma, b_grouptreat, b_baseline)
-)
+                                   list(intercept, sigma, b_grouptreat, b_baseline))
 {
   data.frame(
     baseline = stats::rnorm(n_total),
@@ -26,13 +29,16 @@ simulate_data_ancova <- function(n_total,
       sample(
         x = c(0, 1),
         size = n_total,
-        prob = allocation_probs,
+        prob = p_alloc,
         replace = TRUE
-      ), levels = c(0, 1), labels = c("ctrl", "treat")
-    ), outcome = stats::rnorm(
+      ),
+      levels = c(0, 1),
+      labels = c("ctrl", "treat")
+    ),
+    outcome = stats::rnorm(
       n_total,
-      mean = true_parameter_values$intercept + 
-        true_parameter_values$b_grouptreat + 
+      mean = true_parameter_values$intercept +
+        true_parameter_values$b_grouptreat +
         true_parameter_values$b_baseline * stats::rnorm(n_total),
       sd = true_parameter_values$sigma
     )
@@ -42,7 +48,7 @@ simulate_data_ancova <- function(n_total,
 # simulate some data to fit the model
 mock_data_ancova <- simulate_data_ancova(
   n_total = 100,
-  allocation_probs = c(0.5, 0.5),
+  p_alloc = c(0.5, 0.5),
   true_parameter_values = list(
     intercept = 0,
     sigma = 1,
@@ -85,11 +91,11 @@ print(model_ancova_user)
 
 
 # or use the predefined model
-model_ancova_continuous <- rctbayespower_model_ancova_continuous()
+build_model_ancova_cont <- rctbayespower_build_model_ancova_cont()
 
-model_ancova_continuous
+build_model_ancova_cont
 
-class(model_ancova_continuous)
+class(build_model_ancova_cont)
 
 
 #------------------------------------------------------------------------------>
@@ -97,7 +103,7 @@ class(model_ancova_continuous)
 #------------------------------------------------------------------------------>
 
 ancova_design <- rctbayespower_design(
-  rctbayespower_model = model_ancova_continuous,
+  rctbayespower_model = build_model_ancova_cont,
   target_params = "b_grouptreat",
   n_interim_analyses = 0,
   thresholds_success = c(0.2),
@@ -119,33 +125,29 @@ print(ancova_design)
 # Function to simulatte a single repitition of a single condition
 
 simulate_single_run <- function(n_total = NULL,
-                                allocation_probs = NULL,
+                                p_alloc = NULL,
                                 rctbayespower_design = NULL,
                                 true_parameter_values = NULL,
                                 ...) {
   # validate the rctbayespower_design
   if (!inherits(rctbayespower_design, "rctbayespower_design")) {
-    stop("The rctbayespower_design must be a valid rctbayespower_design object.")
+    stop("'rctbayespower_design' must be a valid rctbayespower_design object.")
   }
   
   # validate n_total
   if (!is.numeric(n_total) || n_total <= 0) {
-    stop("n_total must be a positive numeric value.")
+    stop("'n_total' must be a positive numeric value.")
   }
   
-  # validate allocation_probs: type, range
-  if (!is.numeric(allocation_probs) ||
-      length(allocation_probs) != 2 ||
-      any(allocation_probs < 0) || sum(allocation_probs) != 1) {
-    stop(
-      "allocation_probs must be a numeric vector of length 2 with non-negative values that sum to 1."
-    )
+  # validate p_alloc: type, range
+  if (!is.numeric(p_alloc) ||
+      length(p_alloc) != 2 ||
+      any(p_alloc < 0) || sum(p_alloc) != 1) {
+    stop("'p_alloc' must be a numeric vector of length 2 with non-negative values that sum to 1.")
   }
-  # check that allocation_probs match the number of treatment arms in the design
-  if (length(allocation_probs) != rctbayespower_design$n_treatment_arms) {
-    stop(
-      "allocation_probs must match the number of treatment arms in the rctbayespower_design."
-    )
+  # check that p_alloc match the number of treatment arms in the design
+  if (length(p_alloc) != rctbayespower_design$n_treatment_arms) {
+    stop("'p_alloc' must match the number of treatment arms in the rctbayespower_design.")
   }
   
   # validate true_parameter_values, must be a named list of real numbers
@@ -170,7 +172,7 @@ simulate_single_run <- function(n_total = NULL,
   
   # simulate data using the data simulation function
   simulated_data <- data_simulation_fn(n_total = n_total,
-                                       allocation_probs = allocation_probs,
+                                       p_alloc = p_alloc,
                                        true_parameter_values)
   
   # default brms arguments
@@ -199,7 +201,7 @@ simulate_single_run <- function(n_total = NULL,
 
 # condition arguments
 n_total <- 100  # total number of participants
-allocation_probs <- c(0.5, 0.5)  # equal allocation
+p_alloc <- c(0.5, 0.5)  # equal allocation
 # true parameter values for the simulation
 true_parameter_values <- list(
   intercept = 0,
@@ -212,7 +214,7 @@ true_parameter_values <- list(
 system.time(
   fitted_model_single_run <- simulate_single_run(
     n_total = n_total,
-    allocation_probs = allocation_probs,
+    p_alloc = p_alloc,
     rctbayespower_design = ancova_design,
     true_parameter_values = true_parameter_values
   )
@@ -220,7 +222,7 @@ system.time(
 
 fitted_model_single_run <- simulate_single_run(
   n_total = n_total,
-  allocation_probs = allocation_probs,
+  p_alloc = p_alloc,
   rctbayespower_design = ancova_design,
   true_parameter_values = true_parameter_values
 )
@@ -230,32 +232,47 @@ attr(ancova_design, "parameter_names_sim_fn")
 
 
 
+#------------------------------------------------------------------------------>
 
-ancova_model <- model_ancova_continuous()
-design <- rctbayespower_design(
-  rctbayespower_model = ancova_model,
+# 1. Create model
+ancova_model <- build_model_ancova_cont()
+
+
+# 2. Create design
+design <- build_design(
+  model = ancova_model,
   target_params = "b_grouptreat",
-  n_interim_analyses = 0,
   thresholds_success = 0.2,
-  thresholds_futility = 0,
+  thresholds_futility = 0.0,
   p_sig_success = 0.975,
   p_sig_futility = 0.5
 )
+# check the required parameters for the design
+required_parameters(design)
 
-result <- simulate_single_run(
-  n_total = 100,
-  allocation_probs = c(0.5, 0.5),
-  rctbayespower_design = design,
-  true_parameter_values = list(
-    intercept = 0,
-    sigma = 1,
-    b_grouptreat = 0.5,
-    b_baseline = 0.2
+
+# 3. Create conditions
+conditions <- build_conditions(
+  design = design,
+  condition_values = list(
+    # two sample sizes
+    n_total = c(200, 400),
+    # two effect sizes
+    b_grouptreat = c(0.3, 0.5)
   ),
-  chains = 1
+  static_values = list(
+    # equal allocation
+    p_alloc =
+      list(c(0.5, 0.5)),
+    # baseline effect
+    b_baseline = 0.2
+  )
 )
-summary(result)
+print(conditions)
 
-
-
-
+# 4. Run analysis
+result <- power_grid_analysis(
+  design = design,
+  conditions = conditions,
+  n_cores = 4  # Full parallelization
+)

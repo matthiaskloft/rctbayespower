@@ -58,3 +58,7 @@ my_function <- function(p_sig_success = 0.975) { ... }
 
 ### Documentation Conventions
 - Don't use \code{\link{function_name}} in roxygen docs. Use [functionname()] instead.
+
+### Code Writing Guidelines
+- **Output and Messaging Best Practices**:
+  - Always wrap argument names in quotes when displaying them in printed output such as in stop(), warning(), message(), or documentation. This improves clarity and avoids confusion with actual values or natural language.

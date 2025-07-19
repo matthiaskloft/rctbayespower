@@ -69,7 +69,7 @@ calculate_mcse_integrated_power <- function(values, weights, n_simulations, is_p
   }
 
   if (length(values) != length(weights)) {
-    stop("Values and weights must have the same length")
+    stop("'values' and 'weights' must have the same length")
   }
 
   # Remove NA values

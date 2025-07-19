@@ -5,6 +5,8 @@
 \title{Print method for power grid analysis objects}
 \usage{
 \method{print}{rctbayespower_grid}(x, ...)
+
+\method{print}{rctbayespower_grid}(x, ...)
 }
 \arguments{
 \item{x}{An rctbayespower_grid object}
@@ -12,5 +14,7 @@
 \item{...}{Additional arguments (unused)}
 }
 \description{
+Print method for power grid analysis objects
+
 Print method for power grid analysis objects
 }

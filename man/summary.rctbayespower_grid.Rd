@@ -5,6 +5,8 @@
 \title{Summary method for power grid analysis objects}
 \usage{
 \method{summary}{rctbayespower_grid}(object, design_prior = NULL, print = TRUE, ...)
+
+\method{summary}{rctbayespower_grid}(object, design_prior = NULL, print = TRUE, ...)
 }
 \arguments{
 \item{object}{An rctbayespower_grid object}
@@ -25,5 +27,7 @@ When FALSE, suppresses all console output and only returns the summary object.}
 \item{...}{Additional arguments (unused)}
 }
 \description{
+Summary method for power grid analysis objects
+
 Summary method for power grid analysis objects
 }

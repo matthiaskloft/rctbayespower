@@ -2,117 +2,123 @@
 % Please edit documentation in R/power_grid_analysis.R
 \name{power_grid_analysis}
 \alias{power_grid_analysis}
-\title{Power Grid Analysis for Bayesian RCTs}
+\title{Power Grid Analysis for Bayesian RCTs (New API)}
 \usage{
 power_grid_analysis(
-  target_power_success = 0.9,
-  target_power_futility = 0.95,
-  sample_sizes,
-  effect_sizes,
-  threshold_success,
-  threshold_futility,
+  design,
+  conditions,
+  static_parameters = list(),
   design_prior = NULL,
-  percent_group_treat = 0.5,
-  power_analysis_fn = "power_analysis",
   n_simulations = 500,
+  n_cores = parallel::detectCores() - 1,
+  progress_updates = 10,
   ...
 )
 }
 \arguments{
-\item{target_power_success}{Desired power level for success decisions (default: 0.9)}
+\item{design}{An rctbayespower_design object containing the model
+specifications, target parameters, thresholds, and analysis configuration}
 
-\item{target_power_futility}{Desired power level for futility decisions (default: 0.95)}
-
-\item{sample_sizes}{Vector of total sample sizes to test}
-
-\item{effect_sizes}{Vector of effect sizes to test}
-
-\item{threshold_success}{Upper threshold for success determination (required)}
-
-\item{threshold_futility}{Lower threshold for futility determination (required)}
-
-\item{design_prior}{Optional design prior for the effect size for integrated power. Can be:
+\item{conditions}{List of condition specifications. Each condition must include:
 \itemize{
-\item A string in brms prior syntax (e.g., "normal(0.3, 0.1)", "student_t(6, 0.5, 0.2)", "gamma(2, 3)", "beta(2, 5)", "exponential(1)", "uniform(0, 1)", etc.). Any distribution supported by brms with a corresponding density function is supported.
+\item n_total: Total sample size for this condition
+\item effect_sizes: Named list of effect sizes matching target_params from design
+\item n_interim_analyses: Number of interim analyses (optional, defaults to design value)
+\item p_alloc: Treatment allocation probabilities (optional, defaults to c(0.5, 0.5))
+\item true_parameter_values: Additional simulation parameters (optional)
+}}
+
+\item{static_parameters}{List of parameters that override design defaults across all conditions.
+Can include: target_power_success, target_power_futility, true_parameter_values, etc.}
+
+\item{design_prior}{Optional design prior for integrated power computation. Can be:
+\itemize{
+\item A string in brms prior syntax (e.g., "normal(0.3, 0.1)", "student_t(6, 0.5, 0.2)")
 \item An R function taking effect size as input (e.g., function(x) dnorm(x, 0.5, 0.2))
 \item NULL for no design prior (default)
 }}
 
-\item{percent_group_treat}{Percentage of total sample allocated to treatment group (default: .5)}
+\item{n_simulations}{Number of MCMC iterations per condition (default: 500)}
 
-\item{power_analysis_fn}{Power analysis function to use. Either "power_analysis" for custom models or "power_analysis_ancova" for ANCOVA wrapper (default: "power_analysis")}
+\item{n_cores}{Number of parallel cores for condition execution (default: detectCores() - 1)}
 
-\item{n_simulations}{Number of simulations per combination (default: 500)}
+\item{progress_updates}{Show progress every N conditions when running sequentially (default: 10)}
 
-\item{...}{All arguments required by the chosen power analysis function (except n_control, n_treatment, effect_size, threshold_success, and threshold_futility which are handled automatically)}
+\item{...}{Additional arguments passed to brms fitting (e.g., algorithm, chains)}
 }
 \value{
 A list of class "rctbayespower_grid" containing:
 \itemize{
-\item target_power_success: Desired success power level
-\item target_power_futility: Desired futility power level
-\item threshold_success: Success threshold used in analysis
-\item threshold_futility: Futility threshold used in analysis
-\item sample_sizes: Vector of tested sample sizes
-\item effect_sizes: Vector of tested effect sizes
-\item design_prior: Design prior specification
-\item power_surface: Data frame with power results for all combinations, including Monte Carlo Standard Errors (MCSE) for all power and probability metrics
-\item integrated_power: If design prior provided, integrated power and probability across effect sizes, including MCSE for integrated metrics
-\item optimal_combinations: Sample size/effect size combinations achieving target power
-\item detailed_results: Full power analysis results for each combination
+\item design: The design object used for analysis
+\item conditions: The condition specifications used
+\item static_parameters: Static parameter overrides applied
+\item target_power_success: Target power level for success
+\item target_power_futility: Target power level for futility
+\item power_surface: Data frame with power results for all conditions
+\item optimal_combinations_success: Conditions achieving target success power
+\item optimal_combinations_futility: Conditions achieving target futility power
+\item sample_sizes: Unique sample sizes tested
+\item unique_effect_combinations: Unique effect size combinations tested
+\item detailed_results: Full simulation results for each condition
 }
 }
 \description{
-Comprehensive analysis varying both sample sizes and effect sizes, with optional
-design prior for integrated power computation. This function provides flexible
-power analysis across multiple scenarios and can compute weighted average
-power using user-specified prior distributions.
+Comprehensive power analysis across multiple conditions using the new object-oriented
+API. This function provides flexible power analysis by varying sample sizes, effect
+sizes, interim analyses, and other parameters across a grid of conditions.
 }
 \details{
-This function runs power analyses across all combinations of sample_sizes and effect_sizes
-using a two-phase approach for optimal performance:
+This modernized function uses the new object-oriented API and provides several advantages:
 
-\strong{Phase 1: Parallel Model Compilation}
-Models are compiled in parallel for each unique effect size when n_cores > 1 and
-multiple effect sizes are provided. This significantly reduces overall computation time
-by utilizing multiple CPU cores for the compilation-intensive brms model fitting.
+\strong{Unified Parameter Management:} All model and analysis specifications are contained
+in the rctbayespower_design object, ensuring consistency and reducing parameter errors.
 
-\strong{Phase 2: Grid Analysis with Cached Models}
-Each combination uses pre-compiled models from Phase 1, with simulations running in
-parallel within each power analysis call (controlled by n_cores parameter).
+\strong{Flexible Condition Specification:} Conditions can vary any combination of sample sizes,
+effect sizes, interim analyses, allocation ratios, and other parameters independently.
 
-When design_prior is provided, the function computes integrated power by weighting each effect size
-according to the specified design prior distribution.
+\strong{Full Parallelization:} All conditions are executed in parallel when n_cores > 1,
+maximizing computational efficiency across the entire parameter grid.
 
-The design prior can be specified in two ways:
-\itemize{
-\item \strong{brms syntax}: String expressions like "normal(0.5, 0.2)" or "student_t(6, 0.3, 0.1)"
-\item \strong{R function}: User-defined function, e.g., function(x) dnorm(x, 0.5, 0.2)
-}
+\strong{Named Effect Sizes:} Effect sizes must be specified as named lists matching the
+target_params from the design object, enabling multi-parameter analysis.
 
-For custom power analysis (power_analysis_fn = "power_analysis"), you must provide:
-simulate_data_fn, model_formula_true_params, model_formula_estimation, family,
-priors_true_params, priors_estimation, target_param
-
-For ANCOVA power analysis (power_analysis_fn = "power_analysis_ancova"), you must provide:
-outcome_type, baseline_effect
+\strong{Extensible Design:} Easy to add new condition parameters (e.g., interim analyses)
+without changing the function signature.
 }
 \examples{
 \donttest{
-# Basic analysis across sample sizes and effect sizes
-grid_result <- power_grid_analysis(
-  target_power_success = 0.8,
+# Create an ANCOVA model and design
+ancova_model <- build_model_ancova_cont()
+design <- build_design(
+  build_model = ancova_model,
+  target_params = "b_grouptreat",
+  n_interim_analyses = 0,
+  thresholds_success = 0.2,
+  thresholds_futility = 0.0,
+  p_sig_success = 0.975,
+  p_sig_futility = 0.5
+)
+
+# Create conditions grid
+conditions <- expand_conditions(
   sample_sizes = c(100, 200),
-  effect_sizes = c(0.4, 0.8),
-  threshold_success = 0.2,
-  threshold_futility = 0,
-  power_analysis_fn = "power_analysis_ancova",
-  outcome_type = "continuous",
-  baseline_effect = 0.2,
-  n_simulations = 1,
-  brms_args = list(algorithm = "meanfield"), # fast algorithm for testing
-  n_cores = 1,
-  progress_updates = 5
+  effect_sizes_grid = list(
+    list(b_grouptreat = 0.3),
+    list(b_grouptreat = 0.5)
+  ),
+  n_interim_analyses = c(0, 1)
+)
+
+# Run power grid analysis
+result <- power_grid_analysis(
+  design = design,
+  conditions = conditions,
+  static_parameters = list(
+    target_power_success = 0.8,
+    target_power_futility = 0.9
+  ),
+  n_simulations = 100,  # Low for example
+  n_cores = 1
 )
 }
 }

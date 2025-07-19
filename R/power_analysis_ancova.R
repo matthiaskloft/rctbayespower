@@ -86,50 +86,50 @@ power_analysis_ancova <- function(n_control,
                                   ...) {
   # Validate ANCOVA-specific required parameters
   if (missing(effect_size) || is.null(effect_size)) {
-    stop("effect_size is required and must be specified.")
+    stop("'effect_size' is required and must be specified.")
   }
   if (missing(baseline_effect) || is.null(baseline_effect)) {
-    stop("baseline_effect is required and must be specified.")
+    stop("'baseline_effect' is required and must be specified.")
   }
   # Validate ANCOVA-specific parameters only
   # (Other parameters will be validated by power_analysis())
   if (!is.numeric(effect_size) || length(effect_size) != 1) {
-    stop("effect_size must be a single numeric value.")
+    stop("'effect_size' must be a single numeric value.")
   }
   if (!is.numeric(baseline_effect) ||
     length(baseline_effect) != 1) {
-    stop("baseline_effect must be a single numeric value.")
+    stop("'baseline_effect' must be a single numeric value.")
   }
 
   # Validate outcome type
   if (!outcome_type %in% c("continuous", "binary", "count")) {
-    stop("outcome_type must be one of: 'continuous', 'binary', 'count'")
+    stop("'outcome_type' must be one of: 'continuous', 'binary', 'count'")
   }
 
   # Validate ANCOVA-specific optional numeric parameters
   if (!is.numeric(intercept_value) ||
     length(intercept_value) != 1) {
-    stop("intercept_value must be a single numeric value.")
+    stop("'intercept_value' must be a single numeric value.")
   }
   if (!is.numeric(sigma_value) ||
     length(sigma_value) != 1 || sigma_value <= 0) {
-    stop("sigma_value must be a single positive number.")
+    stop("'sigma_value' must be a single positive number.")
   }
   # Validate ANCOVA-specific prior specifications
   if (!is.character(priors_treatment) ||
     length(priors_treatment) != 1) {
-    stop("priors_treatment must be a single character string.")
+    stop("'priors_treatment' must be a single character string.")
   }
   if (!is.character(priors_baseline) ||
     length(priors_baseline) != 1) {
-    stop("priors_baseline must be a single character string.")
+    stop("'priors_baseline' must be a single character string.")
   }
   if (!is.character(priors_intercept) ||
     length(priors_intercept) != 1) {
-    stop("priors_intercept must be a single character string.")
+    stop("'priors_intercept' must be a single character string.")
   }
   if (!is.character(priors_sigma) || length(priors_sigma) != 1) {
-    stop("priors_sigma must be a single character string.")
+    stop("'priors_sigma' must be a single character string.")
   }
 
   # Create data simulation function following template exactly

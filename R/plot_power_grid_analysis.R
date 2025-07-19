@@ -166,7 +166,7 @@ plot.rctbayespower_grid <- function(x,
   if (!is.null(design_prior)) {
     # Validate design prior can only be used with varying effect sizes
     if (length(x$effect_sizes) <= 1) {
-      stop("design_prior can only be specified when effect sizes vary (length > 1)")
+      stop("'design_prior' can only be specified when effect sizes vary (length > 1)")
     }
 
     # Parse design prior using effect sizes from object
@@ -224,15 +224,15 @@ plot.rctbayespower_grid <- function(x,
 
   # Validate parameters
   if (!metric %in% c("success", "futility", "both")) {
-    stop("metric must be 'success', 'futility', or 'both'")
+    stop("'metric' must be 'success', 'futility', or 'both'")
   }
 
   if (!values %in% c("power", "post_prob", "both")) {
-    stop("values must be 'power', 'post_prob', or 'both'")
+    stop("'values' must be 'power', 'post_prob', or 'both'")
   }
 
   if (!facet_by %in% c("effect_size", "sample_size")) {
-    stop("facet_by must be 'effect_size' or 'sample_size'")
+    stop("'facet_by' must be 'effect_size' or 'sample_size'")
   }
 
   # Create plot based on type

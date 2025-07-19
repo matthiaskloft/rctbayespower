@@ -6,8 +6,8 @@
 \usage{
 simulate_single_run(
   n_total = NULL,
-  allocation_probs = NULL,
-  rctbayespower_design = NULL,
+  p_alloc = NULL,
+  design = NULL,
   true_parameter_values = NULL,
   ...
 )
@@ -15,9 +15,9 @@ simulate_single_run(
 \arguments{
 \item{n_total}{Total sample size}
 
-\item{allocation_probs}{Vector of allocation probabilities for each treatment arm (must sum to 1)}
+\item{p_alloc}{Vector of allocation probabilities for each treatment arm (must sum to 1)}
 
-\item{rctbayespower_design}{A rctbayespower_design object containing the simulation and model specifications}
+\item{design}{A rctbayespower_design object containing the simulation and model specifications}
 
 \item{true_parameter_values}{Named list of true parameter values for data simulation}
 
@@ -33,9 +33,9 @@ This function is the core simulation engine used by power analysis functions.
 \examples{
 \dontrun{
 # Example with ANCOVA model
-ancova_model <- model_ancova_continuous()
-design <- rctbayespower_design(
-  rctbayespower_model = ancova_model,
+ancova_model <- build_model_ancova_cont()
+design <- build_design(
+  build_model = ancova_model,
   target_params = "b_grouptreat",
   n_interim_analyses = 0,
   thresholds_success = 0.2,
@@ -46,8 +46,8 @@ design <- rctbayespower_design(
 
 result <- simulate_single_run(
   n_total = 100,
-  allocation_probs = c(0.5, 0.5),
-  rctbayespower_design = design,
+  p_alloc = c(0.5, 0.5),
+  design = design,
   true_parameter_values = list(
     intercept = 0,
     sigma = 1,
