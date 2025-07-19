@@ -4,18 +4,11 @@
 #' API. This function provides flexible power analysis by varying sample sizes, effect 
 #' sizes, interim analyses, and other parameters across a grid of conditions.
 #'
-#' @param design An rctbayespower_design object containing the model 
-#'   specifications, target parameters, thresholds, and analysis configuration
-#' @param conditions List of condition specifications. Each condition must include:
+#' @param conditions A conditions object created by [build_conditions()] containing:
 #'   \itemize{
-#'     \item n_total: Total sample size for this condition
-#'     \item effect_sizes: Named list of effect sizes matching target_params from design
-#'     \item n_interim_analyses: Number of interim analyses (optional, defaults to design value)
-#'     \item p_alloc: Treatment allocation probabilities (optional, defaults to c(0.5, 0.5))
-#'     \item true_parameter_values: Additional simulation parameters (optional)
+#'     \item design: An rctbayespower_design object with model specifications
+#'     \item condition_arguments: List of prepared condition arguments for simulation
 #'   }
-#' @param static_parameters List of parameters that override design defaults across all conditions.
-#'   Can include: target_power_success, target_power_futility, true_parameter_values, etc.
 #' @param design_prior Optional design prior for integrated power computation. Can be:
 #'   \itemize{
 #'     \item A string in brms prior syntax (e.g., "normal(0.3, 0.1)", "student_t(6, 0.5, 0.2)")
@@ -23,9 +16,10 @@
 #'     \item NULL for no design prior (default)
 #'   }
 #' @param n_simulations Number of MCMC iterations per condition (default: 500)
+#' @param brms_args Arguments passed to brms for model fitting. Default includes 'algorithm' = "sampling", 'iter' = 500, 'warmup' = 250, 'chains' = 4, 'cores' = 1. User can override any of these or add additional arguments.
 #' @param n_cores Number of parallel cores for condition execution (default: detectCores() - 1)
 #' @param progress_updates Show progress every N conditions when running sequentially (default: 10)
-#' @param ... Additional arguments passed to brms fitting (e.g., algorithm, chains)
+#' @param ... Additional arguments passed to brms for model fitting. These have the highest priority and will override both defaults and 'brms_args'.
 #'
 #' @details
 #' This modernized function uses the new object-oriented API and provides several advantages:
@@ -99,21 +93,26 @@
 #'   n_cores = 1
 #' )
 #' }
-power_grid_analysis <- function(design,
-                                conditions,
-                                static_parameters = list(),
+power_grid_analysis <- function(conditions,
                                 design_prior = NULL,
                                 n_simulations = 500,
+                                brms_args = list(),
                                 n_cores = parallel::detectCores() - 1,
                                 progress_updates = 10,
                                 ...) {
   # Validate inputs
-  if (!inherits(design, "rctbayespower_design")) {
-    stop("'design' must be a valid rctbayespower_design object")
-  }
-
   if (!is.list(conditions) || length(conditions) == 0) {
     stop("'conditions' must be a non-empty list of condition specifications")
+  }
+  
+  # Extract design from conditions and validate
+  if (is.null(conditions$design)) {
+    stop("'conditions' must contain a 'design' component")
+  }
+  
+  design <- conditions$design
+  if (!inherits(design, "rctbayespower_design")) {
+    stop("'conditions$design' must be a valid rctbayespower_design object")
   }
 
   if (!is.numeric(n_simulations) || n_simulations <= 0) {
@@ -125,30 +124,21 @@ power_grid_analysis <- function(design,
     warning("Invalid n_cores value. Using n_cores = 1.")
   }
 
-  # Validate each condition
-  for (i in seq_along(conditions)) {
-    tryCatch(
-      validate_condition_parameters(conditions[[i]], design),
-      error = function(e) {
-        stop("Condition ", i, " validation failed: ", e$message)
-      }
-    )
+  # Extract condition_arguments from conditions structure
+  if (is.null(conditions$condition_arguments)) {
+    stop("'conditions' must contain a 'condition_arguments' component")
   }
+  
+  condition_arguments <- conditions$condition_arguments
 
   # Extract unique sample sizes and effect sizes for analysis summary
-  sample_sizes <- unique(sapply(conditions, function(x) x$n_total))
-  all_effect_sizes <- lapply(conditions, function(x) x$effect_sizes)
+  sample_sizes <- unique(sapply(condition_arguments, function(x) x$sim_args$n_total))
+  all_effect_sizes <- lapply(condition_arguments, function(x) x$sim_args$true_parameter_values)
   unique_effect_combinations <- unique(all_effect_sizes)
 
   # Extract target power levels from design object
   target_power_success <- 0.9  # Default values
   target_power_futility <- 0.95
-  if (!is.null(static_parameters$target_power_success)) {
-    target_power_success <- static_parameters$target_power_success
-  }
-  if (!is.null(static_parameters$target_power_futility)) {
-    target_power_futility <- static_parameters$target_power_futility
-  }
 
   # Parse and validate design prior for integrated power
   design_prior_parsed <- NULL
@@ -175,7 +165,7 @@ power_grid_analysis <- function(design,
   cat("\n=== Power Grid Analysis (New API) ===\n")
   cat("Design name:", attr(design, "design_name"), "\n")
   cat("Target parameters:", paste(design$target_params, collapse = ", "), "\n")
-  cat("Total conditions to test:", length(conditions), "\n")
+  cat("Total conditions to test:", length(condition_arguments), "\n")
   cat("Sample sizes:", paste(sample_sizes, collapse = ", "), "\n")
   cat("Number of simulations per condition:", n_simulations, "\n")
   if (n_cores > 1) {
@@ -197,57 +187,51 @@ power_grid_analysis <- function(design,
       
       # Export necessary objects to cluster
       parallel::clusterEvalQ(cl, library(rctbayespower))
-      parallel::clusterExport(cl, c("design", "static_parameters", "n_simulations"), 
+      parallel::clusterExport(cl, c("design", "n_simulations", "brms_args"), 
                              envir = environment())
       
       # Run parallel computation
-      results_list <- parallel::parLapply(cl, seq_along(conditions), function(i) {
-        condition <- conditions[[i]]
-        
-        # Resolve parameters for this condition
-        resolved_true_params <- resolve_simulation_parameters(condition, design, static_parameters)
-        resolved_allocation <- condition$p_alloc %||% c(0.5, 0.5)
-        
-        # Create design copy with condition-specific parameters if needed
-        design_copy <- design
-        if (!is.null(condition$n_interim_analyses) && condition$n_interim_analyses != design_copy$n_interim_analyses) {
-          design_copy$n_interim_analyses <- condition$n_interim_analyses
-        }
+      results_list <- parallel::parLapply(cl, seq_along(condition_arguments), function(i) {
+        condition_arg <- condition_arguments[[i]]
         
         # Execute single simulation run
         tryCatch({
+          
+          # Merge brms arguments: base defaults < brms_args < ... arguments
+          merged_brms_args <- utils::modifyList(
+            utils::modifyList(list(iter = n_simulations), brms_args),
+            list(...)
+          )
+          
           fitted_model <- simulate_single_run(
-            n_total = condition$n_total,
-            p_alloc = resolved_allocation,
-            design = design_copy,
-            true_parameter_values = resolved_true_params,
-            iter = n_simulations,
-            ...
+            condition_arguments = condition_arg,
+            design = design,
+            brms_args = merged_brms_args
           )
           
           # Extract posterior samples and compute power metrics
           posterior_samples <- brms::posterior_samples(fitted_model)
           
           # Compute success and futility probabilities for each target parameter
-          success_probs <- sapply(design_copy$target_params, function(param) {
+          success_probs <- sapply(design$target_params, function(param) {
             if (param %in% names(posterior_samples)) {
-              mean(posterior_samples[[param]] > design_copy$thresholds_success[which(design_copy$target_params == param)])
+              mean(posterior_samples[[param]] > design$thresholds_success[which(design$target_params == param)])
             } else {
               NA_real_
             }
           })
           
-          futility_probs <- sapply(design_copy$target_params, function(param) {
+          futility_probs <- sapply(design$target_params, function(param) {
             if (param %in% names(posterior_samples)) {
-              mean(posterior_samples[[param]] < design_copy$thresholds_futility[which(design_copy$target_params == param)])
+              mean(posterior_samples[[param]] < design$thresholds_futility[which(design$target_params == param)])
             } else {
               NA_real_
             }
           })
           
           # Power calculations (probability of correct decision)
-          power_success <- mean(success_probs >= design_copy$p_sig_success, na.rm = TRUE)
-          power_futility <- mean(futility_probs >= design_copy$p_sig_futility, na.rm = TRUE)
+          power_success <- mean(success_probs >= design$p_sig_success, na.rm = TRUE)
+          power_futility <- mean(futility_probs >= design$p_sig_futility, na.rm = TRUE)
           
           # Mean probabilities
           mean_prob_success <- mean(success_probs, na.rm = TRUE)
@@ -258,9 +242,9 @@ power_grid_analysis <- function(design,
           
           list(
             condition_id = i,
-            n_total = condition$n_total,
-            effect_sizes = condition$effect_sizes,
-            n_interim_analyses = condition$n_interim_analyses %||% 0,
+            n_total = condition_arg$sim_args$n_total,
+            effect_sizes = condition_arg$sim_args$true_parameter_values,
+            n_interim_analyses = condition_arg$interim_args$n_interim_analyses %||% 0,
             power_success = power_success,
             power_futility = power_futility,
             mean_prob_success = mean_prob_success,
@@ -271,9 +255,9 @@ power_grid_analysis <- function(design,
         }, error = function(e) {
           list(
             condition_id = i,
-            n_total = condition$n_total,
-            effect_sizes = condition$effect_sizes,
-            n_interim_analyses = condition$n_interim_analyses %||% 0,
+            n_total = condition_arg$sim_args$n_total,
+            effect_sizes = condition_arg$sim_args$true_parameter_values,
+            n_interim_analyses = condition_arg$interim_args$n_interim_analyses %||% 0,
             power_success = NA_real_,
             power_futility = NA_real_,
             mean_prob_success = NA_real_,
@@ -295,32 +279,26 @@ power_grid_analysis <- function(design,
     cat("Running conditions sequentially...\n")
     results_list <- list()
     
-    for (i in seq_along(conditions)) {
-      condition <- conditions[[i]]
+    for (i in seq_along(condition_arguments)) {
+      condition_arg <- condition_arguments[[i]]
       
-      if (i %% progress_updates == 0 || i == length(conditions)) {
-        cat("Processing condition", i, "of", length(conditions), "\n")
-      }
-      
-      # Resolve parameters for this condition
-      resolved_true_params <- resolve_simulation_parameters(condition, design, static_parameters)
-      resolved_allocation <- condition$p_alloc %||% c(0.5, 0.5)
-      
-      # Create design copy with condition-specific parameters if needed
-      design_copy <- design
-      if (!is.null(condition$n_interim_analyses) && condition$n_interim_analyses != design_copy$n_interim_analyses) {
-        design_copy$n_interim_analyses <- condition$n_interim_analyses
+      if (i %% progress_updates == 0 || i == length(condition_arguments)) {
+        cat("Processing condition", i, "of", length(condition_arguments), "\n")
       }
       
       # Execute single simulation run
       results_list[[i]] <- tryCatch({
+        
+        # Merge brms arguments: base defaults < brms_args < ... arguments
+        merged_brms_args <- utils::modifyList(
+          utils::modifyList(list(iter = n_simulations), brms_args),
+          list(...)
+        )
+        
         fitted_model <- simulate_single_run(
-          n_total = condition$n_total,
-          p_alloc = resolved_allocation,
-          design = design_copy,
-          true_parameter_values = resolved_true_params,
-          iter = n_simulations,
-          ...
+          condition_arguments = condition_arg,
+          design = design,
+          brms_args = merged_brms_args
         )
         
         # Extract posterior samples and compute power metrics
@@ -356,9 +334,9 @@ power_grid_analysis <- function(design,
         
         list(
           condition_id = i,
-          n_total = condition$n_total,
-          effect_sizes = condition$effect_sizes,
-          n_interim_analyses = condition$n_interim_analyses %||% 0,
+          n_total = condition_arg$sim_args$n_total,
+          effect_sizes = condition_arg$sim_args$true_parameter_values,
+          n_interim_analyses = condition_arg$interim_args$n_interim_analyses %||% 0,
           power_success = power_success,
           power_futility = power_futility,
           mean_prob_success = mean_prob_success,
@@ -370,9 +348,9 @@ power_grid_analysis <- function(design,
         cat("  ERROR in condition", i, ":", as.character(e), "\n")
         list(
           condition_id = i,
-          n_total = condition$n_total,
-          effect_sizes = condition$effect_sizes,
-          n_interim_analyses = condition$n_interim_analyses %||% 0,
+          n_total = condition_arg$sim_args$n_total,
+          effect_sizes = condition_arg$sim_args$true_parameter_values,
+          n_interim_analyses = condition_arg$interim_args$n_interim_analyses %||% 0,
           power_success = NA_real_,
           power_futility = NA_real_,
           mean_prob_success = NA_real_,
@@ -428,7 +406,6 @@ power_grid_analysis <- function(design,
     # Analysis metadata
     design = design,
     conditions = conditions,
-    static_parameters = static_parameters,
     target_power_success = target_power_success,
     target_power_futility = target_power_futility,
     
@@ -2736,370 +2713,3 @@ validate_weighting_function <- function(effect_sizes = seq(0.2, 0.8, 0.1),
   ))
 }
 
-#' Single Run Simulation for RCT Bayesian Power Analysis
-#'
-#' Executes a single simulation run for a given sample size and effect size.
-#' This function is the core simulation engine used by power analysis functions.
-#'
-#' @param n_total Total sample size
-#' @param p_alloc Vector of allocation probabilities for each treatment arm (must sum to 1)
-#' @param design A rctbayespower_design object containing the simulation and model specifications
-#' @param true_parameter_values Named list of true parameter values for data simulation
-#' @param ... Additional arguments passed to brms fitting (e.g., iter, chains, cores)
-#'
-#' @return A fitted brms model object
-#'
-#' @examples
-#' \dontrun{
-#' # Example with ANCOVA model
-#' ancova_model <- build_model_ancova_cont()
-#' design <- build_design(
-#'   build_model = ancova_model,
-#'   target_params = "b_grouptreat",
-#'   n_interim_analyses = 0,
-#'   thresholds_success = 0.2,
-#'   thresholds_futility = 0,
-#'   p_sig_success = 0.975,
-#'   p_sig_futility = 0.5
-#' )
-#'
-#' result <- simulate_single_run(
-#'   n_total = 100,
-#'   p_alloc = c(0.5, 0.5),
-#'   design = design,
-#'   true_parameter_values = list(
-#'     intercept = 0,
-#'     sigma = 1,
-#'     b_grouptreat = 0.5,
-#'     b_baseline = 0.2
-#'   )
-#' )
-#' }
-#' @export
-simulate_single_run <- function(n_total = NULL,
-                                p_alloc = NULL,
-                                design = NULL,
-                                true_parameter_values = NULL,
-                                ...) {
-  # validate the design
-  if (!inherits(design, "rctbayespower_design")) {
-    stop("The design must be a valid rctbayespower_design object.")
-  }
-
-  # validate n_total
-  if (!is.numeric(n_total) || n_total <= 0) {
-    stop("'n_total' must be a positive numeric value.")
-  }
-
-  # validate p_alloc: type, range
-  if (!is.numeric(p_alloc) ||
-    length(p_alloc) != design$n_treatment_arms ||
-    any(p_alloc < 0) || abs(sum(p_alloc) - 1) > 1e-8) {
-    stop(
-      "p_alloc must be a numeric vector of length ",
-      design$n_treatment_arms,
-      " with non-negative values that sum to 1."
-    )
-  }
-
-  # validate true_parameter_values, must be a named list of real numbers
-  if (!is.null(true_parameter_values) &&
-    (
-      !is.list(true_parameter_values) ||
-        any(
-          !names(true_parameter_values) %in% design$parameter_names_sim_fn
-        ) ||
-        any(!sapply(true_parameter_values, is.numeric))
-    )) {
-    stop(
-      "true_parameter_values must be a named list of numeric values matching the parameter names in the design."
-    )
-  }
-
-  # extract the data simulation function and the brms model from the design
-  data_simulation_fn <- design$data_simulation_fn
-  brms_model <- design$brms_model
-
-  # simulate data using the data simulation function
-  simulated_data <- data_simulation_fn(
-    n_total = n_total,
-    p_alloc = p_alloc,
-    true_parameter_values = true_parameter_values
-  )
-
-  # default brms arguments
-  brms_args <- list(
-    algorithm = "sampling",
-    iter = 500,
-    warmup = 250,
-    chains = 4,
-    cores = 1,
-    init = 0.1,
-    refresh = 0,
-    silent = 2
-  )
-
-  # update the default brms arguments with any additional arguments passed to the function
-  brms_args_final <- utils::modifyList(brms_args, list(...))
-
-  # fit the model to the simulated data
-  fitted_model <- do.call(function(...) {
-    stats::update(object = brms_model, newdata = simulated_data, ...)
-  }, brms_args_final)
-
-  return(fitted_model)
-}
-
-# Parameter Resolution Helper Functions ----------------------------------------
-
-#' Resolve Data Simulation Parameters from Condition
-#'
-#' Maps condition values to data simulation function parameters, handling
-#' effect size mapping and parameter precedence resolution.
-#'
-#' @param condition List containing condition-specific parameters
-#' @param design rctbayespower_design object
-#' @param static_overrides List of static parameter overrides
-#' @return Named list of resolved true parameter values
-#' @keywords internal
-resolve_simulation_parameters <- function(condition, design, static_overrides = list()) {
-  # Start with default values from design object if available
-  base_params <- list()
-  
-  # Extract parameter names required by simulation function
-  required_params <- design$parameter_names_sim_fn
-  
-  # Initialize with any static overrides
-  if (!is.null(static_overrides$true_parameter_values)) {
-    base_params <- static_overrides$true_parameter_values
-  }
-  
-  # Apply condition-specific true_parameter_values if provided
-  if (!is.null(condition$true_parameter_values)) {
-    base_params <- utils::modifyList(base_params, condition$true_parameter_values)
-  }
-  
-  # Handle effect_sizes mapping - must be named list matching target_params
-  if (!is.null(condition$effect_sizes)) {
-    if (!is.list(condition$effect_sizes) || is.null(names(condition$effect_sizes))) {
-      stop("effect_sizes must be a named list matching target_params: ", 
-           paste(design$target_params, collapse = ", "))
-    }
-    
-    # Validate that effect_sizes names match target_params
-    target_params <- design$target_params
-    missing_targets <- setdiff(target_params, names(condition$effect_sizes))
-    if (length(missing_targets) > 0) {
-      stop("effect_sizes missing values for target parameters: ", 
-           paste(missing_targets, collapse = ", "))
-    }
-    
-    extra_effects <- setdiff(names(condition$effect_sizes), target_params)
-    if (length(extra_effects) > 0) {
-      warning("effect_sizes contains parameters not in target_params: ", 
-              paste(extra_effects, collapse = ", "))
-    }
-    
-    # Map effect sizes to simulation parameters
-    # Target params are brms parameter names, need to map to simulation function names
-    for (target_param in target_params) {
-      if (target_param %in% names(condition$effect_sizes)) {
-        # Find corresponding simulation parameter name
-        # For most cases, target_param corresponds directly to simulation param
-        # Remove "b_" prefix if present to match simulation function parameter names
-        sim_param <- gsub("^b_", "", target_param)
-        
-        # Common mappings
-        if (sim_param == "grouptreat") {
-          sim_param <- "b_grouptreat"
-        }
-        
-        # Check if this parameter exists in simulation function
-        if (sim_param %in% required_params) {
-          base_params[[sim_param]] <- condition$effect_sizes[[target_param]]
-        } else {
-          # Try the original target_param name
-          if (target_param %in% required_params) {
-            base_params[[target_param]] <- condition$effect_sizes[[target_param]]
-          } else {
-            warning("Could not map target parameter '", target_param, 
-                   "' to simulation function parameter. Available: ", 
-                   paste(required_params, collapse = ", "))
-          }
-        }
-      }
-    }
-  }
-  
-  # Validate that all required parameters are present
-  missing_params <- setdiff(required_params, names(base_params))
-  if (length(missing_params) > 0) {
-    stop("Missing required simulation parameters: ", paste(missing_params, collapse = ", "))
-  }
-  
-  return(base_params)
-}
-
-#' Resolve Interim Parameters from Condition
-#'
-#' Maps condition values to interim function parameters when interim analyses
-#' are specified in the condition.
-#'
-#' @param condition List containing condition-specific parameters
-#' @param design rctbayespower_design object
-#' @param static_overrides List of static parameter overrides
-#' @return Named list of resolved interim parameters or NULL if no interim function
-#' @keywords internal
-resolve_interim_parameters <- function(condition, design, static_overrides = list()) {
-  # Return NULL if no interim function is defined
-  if (is.null(design$interim_function)) {
-    return(NULL)
-  }
-  
-  # Initialize with static overrides
-  base_params <- list()
-  if (!is.null(static_overrides$interim_parameters)) {
-    base_params <- static_overrides$interim_parameters
-  }
-  
-  # Apply condition-specific interim parameters
-  if (!is.null(condition$interim_parameters)) {
-    base_params <- utils::modifyList(base_params, condition$interim_parameters)
-  }
-  
-  # Map n_interim_analyses if provided in condition
-  if (!is.null(condition$n_interim_analyses)) {
-    base_params$n_interim_analyses <- condition$n_interim_analyses
-  }
-  
-  return(base_params)
-}
-
-#' Validate Condition Parameters
-#'
-#' Ensures condition parameters are valid and compatible with the design object.
-#'
-#' @param condition List containing condition parameters
-#' @param design rctbayespower_design object
-#' @return Logical indicating validity (stops on error)
-#' @keywords internal
-validate_condition_parameters <- function(condition, design) {
-  # Required parameters
-  if (is.null(condition$n_total) || !is.numeric(condition$n_total) || condition$n_total <= 0) {
-    stop("Each condition must specify a positive numeric n_total")
-  }
-  
-  # Effect sizes validation - must be named list matching target_params
-  if (!is.null(condition$effect_sizes)) {
-    if (!is.list(condition$effect_sizes) || is.null(names(condition$effect_sizes))) {
-      stop("effect_sizes must be a named list matching target_params: ", 
-           paste(design$target_params, collapse = ", "))
-    }
-    
-    if (!all(sapply(condition$effect_sizes, is.numeric))) {
-      stop("All 'effect_sizes' values must be numeric")
-    }
-    
-    # Validate names match target_params
-    target_params <- design$target_params
-    missing_targets <- setdiff(target_params, names(condition$effect_sizes))
-    if (length(missing_targets) > 0) {
-      stop("effect_sizes missing values for target parameters: ", 
-           paste(missing_targets, collapse = ", "))
-    }
-  }
-  
-  # Allocation probabilities validation if provided
-  if (!is.null(condition$p_alloc)) {
-    if (!is.numeric(condition$p_alloc) || 
-        length(condition$p_alloc) != design$n_treatment_arms ||
-        any(condition$p_alloc < 0) || 
-        abs(sum(condition$p_alloc) - 1) > 1e-8) {
-      stop("p_alloc must be a numeric vector of length ", design$n_treatment_arms, 
-           " with non-negative values that sum to 1")
-    }
-  }
-  
-  # Interim analyses validation if provided
-  if (!is.null(condition$n_interim_analyses) && 
-      (!is.numeric(condition$n_interim_analyses) || condition$n_interim_analyses < 0)) {
-    stop("'n_interim_analyses' must be a non-negative numeric value")
-  }
-  
-  # True parameter values validation if provided
-  if (!is.null(condition$true_parameter_values)) {
-    if (!is.list(condition$true_parameter_values) || 
-        any(!sapply(condition$true_parameter_values, is.numeric))) {
-      stop("'true_parameter_values' must be a named list of numeric values")
-    }
-    
-    # Check parameter names are valid for the simulation function
-    invalid_params <- setdiff(names(condition$true_parameter_values), design$parameter_names_sim_fn)
-    if (length(invalid_params) > 0) {
-      stop("Invalid parameter names in true_parameter_values: ", paste(invalid_params, collapse = ", "))
-    }
-  }
-  
-  return(TRUE)
-}
-
-#' Expand Conditions Grid
-#'
-#' Helper function to create a conditions list from standard grid parameters.
-#'
-#' @param sample_sizes Vector of sample sizes
-#' @param effect_sizes_grid List where each element is a named list of effect sizes for target parameters
-#' @param n_interim_analyses Vector of interim analysis counts (default: 0)
-#' @param p_alloc Vector of allocation probabilities (default: c(0.5, 0.5))
-#' @param ... Additional parameters to include in each condition
-#' @return List of condition specifications
-#' @export
-#' @examples
-#' \dontrun{
-#' # For a design with target_params = "b_grouptreat"
-#' conditions <- expand_conditions(
-#'   sample_sizes = c(100, 200),
-#'   effect_sizes_grid = list(
-#'     list(b_grouptreat = 0.3),
-#'     list(b_grouptreat = 0.5)
-#'   ),
-#'   n_interim_analyses = c(0, 1)
-#' )
-#' }
-expand_conditions <- function(sample_sizes, effect_sizes_grid, n_interim_analyses = 0, 
-                             p_alloc = c(0.5, 0.5), ...) {
-  # Validate inputs
-  if (!is.list(effect_sizes_grid) || 
-      !all(sapply(effect_sizes_grid, function(x) is.list(x) && !is.null(names(x))))) {
-    stop("'effect_sizes_grid' must be a list of named lists")
-  }
-  
-  # Create grid of all combinations
-  grid_data <- expand.grid(
-    sample_idx = seq_along(sample_sizes),
-    effect_idx = seq_along(effect_sizes_grid),
-    interim_idx = seq_along(n_interim_analyses),
-    stringsAsFactors = FALSE
-  )
-  
-  # Convert to list of conditions
-  conditions <- list()
-  for (i in seq_len(nrow(grid_data))) {
-    condition <- list(
-      n_total = sample_sizes[grid_data$sample_idx[i]],
-      effect_sizes = effect_sizes_grid[[grid_data$effect_idx[i]]],
-      n_interim_analyses = n_interim_analyses[grid_data$interim_idx[i]],
-      p_alloc = p_alloc
-    )
-    
-    # Add any additional parameters
-    extra_params <- list(...)
-    if (length(extra_params) > 0) {
-      condition <- c(condition, extra_params)
-    }
-    
-    conditions[[i]] <- condition
-  }
-  
-  return(conditions)
-}

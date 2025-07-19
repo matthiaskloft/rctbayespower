@@ -270,9 +270,13 @@ conditions <- build_conditions(
 )
 print(conditions)
 
+
 # 4. Run analysis
 result <- power_grid_analysis(
-  design = design,
   conditions = conditions,
-  n_cores = 4  # Full parallelization
-)
+  n_cores = 12,
+  n_simulations = 1000,
+  progress_updates = 100)
+
+print(result)
+summary(result)

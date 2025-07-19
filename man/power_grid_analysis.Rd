@@ -5,27 +5,20 @@
 \title{Power Grid Analysis for Bayesian RCTs (New API)}
 \usage{
 power_grid_analysis(
-  design,
   conditions,
   static_parameters = list(),
   design_prior = NULL,
   n_simulations = 500,
+  brms_args = list(),
   n_cores = parallel::detectCores() - 1,
-  progress_updates = 10,
-  ...
+  progress_updates = 10
 )
 }
 \arguments{
-\item{design}{An rctbayespower_design object containing the model
-specifications, target parameters, thresholds, and analysis configuration}
-
-\item{conditions}{List of condition specifications. Each condition must include:
+\item{conditions}{A conditions object created by \code{\link[=build_conditions]{build_conditions()}} containing:
 \itemize{
-\item n_total: Total sample size for this condition
-\item effect_sizes: Named list of effect sizes matching target_params from design
-\item n_interim_analyses: Number of interim analyses (optional, defaults to design value)
-\item p_alloc: Treatment allocation probabilities (optional, defaults to c(0.5, 0.5))
-\item true_parameter_values: Additional simulation parameters (optional)
+\item design: An rctbayespower_design object with model specifications
+\item condition_arguments: List of prepared condition arguments for simulation
 }}
 
 \item{static_parameters}{List of parameters that override design defaults across all conditions.
@@ -40,11 +33,11 @@ Can include: target_power_success, target_power_futility, true_parameter_values,
 
 \item{n_simulations}{Number of MCMC iterations per condition (default: 500)}
 
+\item{brms_args}{Arguments passed to brms for model fitting. Default includes 'algorithm' = "sampling", 'iter' = 500, 'warmup' = 250, 'chains' = 4, 'cores' = 1. User can override any of these or add additional arguments.}
+
 \item{n_cores}{Number of parallel cores for condition execution (default: detectCores() - 1)}
 
 \item{progress_updates}{Show progress every N conditions when running sequentially (default: 10)}
-
-\item{...}{Additional arguments passed to brms fitting (e.g., algorithm, chains)}
 }
 \value{
 A list of class "rctbayespower_grid" containing:

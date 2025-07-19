@@ -1,4 +1,3 @@
-
 #' Build Condition Grid for Power Analysis
 #'
 #' Creates a structured condition grid and argument lists for power analysis
