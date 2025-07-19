@@ -32,6 +32,7 @@
 #' The rctbayespower_design class combines model specifications with analysis
 #' decision criteria:
 #'
+#'
 #' \strong{Model Integration:} Inherits the data simulation function, compiled brms
 #' model, and metadata from the model object.
 #'

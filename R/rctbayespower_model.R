@@ -27,12 +27,15 @@
 #' The build_model class encapsulates all components needed for power
 #' analysis simulation:
 #'
+#'
 #' \strong{Predefined Models:} For convenience, users can specify pre_defined_model
 #' to use ready-made model configurations. This is the recommended approach for
 #' standard analyses. When using predefined models, other parameters are ignored.
 #'
+#'
 #' \strong{Custom Models:} For advanced users, custom models can be created by
 #' providing all required parameters:
+#'
 #'
 #' \strong{Data Simulation Function:} Must accept n_total (total sample size),
 #' p_alloc (vector of allocation probabilities), and true_parameter_values
@@ -84,6 +87,7 @@
 #'   )
 #' }
 #'
+#'
 #' # Create mock data and fit template model
 #' mock_data <- simulate_ancova_data(100, c(0.5, 0.5),
 #'                                   list(intercept = 0, b_grouptreat = 0.5,
@@ -94,7 +98,7 @@
 #'   outcome ~ baseline + group,
 #'   data = mock_data,
 #'   family = gaussian(),
-#'   chains = 0,  # Compile only
+#'   chains = 0, # Compile only
 #'   silent = 2
 #' )
 #'
@@ -130,7 +134,7 @@ build_model <- function(data_simulation_fn,
       return(build_model_ancova_cont())
     }
   }
-  
+
   # validate model
   if (!inherits(brms_model, "brmsfit")) {
     stop("'brms_model' must be a valid brmsfit object.")
@@ -263,7 +267,9 @@ print.build_model <- function(x, ...) {
 #' @details
 #' This function creates a complete ANCOVA model with the following structure:
 #'
+#'
 #' \strong{Model Formula:} outcome ~ baseline + group
+#'
 #'
 #' \strong{Data Structure:} The generated data includes:
 #' \itemize{
@@ -272,8 +278,10 @@ print.build_model <- function(x, ...) {
 #'   \item outcome: Continuous outcome generated from the linear model
 #' }
 #'
+#'
 #' \strong{Parameters:} The model includes parameters for intercept, baseline effect,
 #' treatment effect (b_grouptreat), and residual standard deviation (sigma).
+#'
 #'
 #' \strong{Model Compilation:} The function compiles the brms model during creation,
 #' which may take some time but enables efficient power analysis later.

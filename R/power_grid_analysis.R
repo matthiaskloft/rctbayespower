@@ -2762,7 +2762,7 @@ validate_weighting_function <- function(effect_sizes = seq(0.2, 0.8, 0.1),
 #'   p_sig_success = 0.975,
 #'   p_sig_futility = 0.5
 #' )
-#' 
+#'
 #' result <- simulate_single_run(
 #'   n_total = 100,
 #'   p_alloc = c(0.5, 0.5),
@@ -2785,46 +2785,48 @@ simulate_single_run <- function(n_total = NULL,
   if (!inherits(design, "rctbayespower_design")) {
     stop("The design must be a valid rctbayespower_design object.")
   }
-  
+
   # validate n_total
   if (!is.numeric(n_total) || n_total <= 0) {
     stop("'n_total' must be a positive numeric value.")
   }
-  
+
   # validate p_alloc: type, range
   if (!is.numeric(p_alloc) ||
-      length(p_alloc) != design$n_treatment_arms ||
-      any(p_alloc < 0) || abs(sum(p_alloc) - 1) > 1e-8) {
+    length(p_alloc) != design$n_treatment_arms ||
+    any(p_alloc < 0) || abs(sum(p_alloc) - 1) > 1e-8) {
     stop(
-      "p_alloc must be a numeric vector of length ", 
-      design$n_treatment_arms, 
+      "p_alloc must be a numeric vector of length ",
+      design$n_treatment_arms,
       " with non-negative values that sum to 1."
     )
   }
-  
+
   # validate true_parameter_values, must be a named list of real numbers
   if (!is.null(true_parameter_values) &&
-      (
-        !is.list(true_parameter_values) ||
+    (
+      !is.list(true_parameter_values) ||
         any(
           !names(true_parameter_values) %in% design$parameter_names_sim_fn
         ) ||
         any(!sapply(true_parameter_values, is.numeric))
-      )) {
+    )) {
     stop(
       "true_parameter_values must be a named list of numeric values matching the parameter names in the design."
     )
   }
-  
+
   # extract the data simulation function and the brms model from the design
   data_simulation_fn <- design$data_simulation_fn
   brms_model <- design$brms_model
-  
+
   # simulate data using the data simulation function
-  simulated_data <- data_simulation_fn(n_total = n_total,
-                                       p_alloc = p_alloc,
-                                       true_parameter_values = true_parameter_values)
-  
+  simulated_data <- data_simulation_fn(
+    n_total = n_total,
+    p_alloc = p_alloc,
+    true_parameter_values = true_parameter_values
+  )
+
   # default brms arguments
   brms_args <- list(
     algorithm = "sampling",
@@ -2836,15 +2838,15 @@ simulate_single_run <- function(n_total = NULL,
     refresh = 0,
     silent = 2
   )
-  
+
   # update the default brms arguments with any additional arguments passed to the function
   brms_args_final <- utils::modifyList(brms_args, list(...))
-  
+
   # fit the model to the simulated data
   fitted_model <- do.call(function(...) {
     stats::update(object = brms_model, newdata = simulated_data, ...)
   }, brms_args_final)
-  
+
   return(fitted_model)
 }
 
