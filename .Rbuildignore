@@ -28,3 +28,4 @@
 ^Makefile$
 ^\.gitattributes$
 ^\..*Rcheck$
+^test_model_ancova.rds$

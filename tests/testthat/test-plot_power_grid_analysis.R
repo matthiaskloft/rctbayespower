@@ -1,15 +1,15 @@
 # # Test file for plot_power_grid_analysis.R
 # # Tests for plotting functions using mock objects
-# 
+#
 # library(testthat)
 # library(rctbayespower)
 # library(ggplot2)
-# 
+#
 # # Helper function to create mock rctbayespower object for plotting
 # create_mock_rctbayespower_plot <- function(outcome_type = "continuous") {
 #   # Create a simple mock object with required fields for plotting
 #   effect_estimates <- rnorm(95, mean = 0.5, sd = 0.15)
-# 
+#
 #   result <- list(
 #     n_simulations = 100,
 #     successful_fits = 95,
@@ -31,7 +31,7 @@
 #       p_sig_success = 0.95,
 #       p_sig_futility = 0.5
 #     ),
-# 
+#
 #     # Add simulation results for plotting
 #     simulation_results = lapply(1:95, function(i) {
 #       list(
@@ -46,11 +46,11 @@
 #       )
 #     })
 #   )
-# 
+#
 #   class(result) <- "rctbayespower"
 #   return(result)
 # }
-# 
+#
 # # Helper function to create mock rctbayespower_grid object for plotting
 # create_mock_rctbayespower_grid_plot <- function(analysis_type = "sample_only",
 #                                                 with_design_prior = FALSE) {
@@ -98,7 +98,7 @@
 #     power_surface$mean_prob_futility <- power_surface$power_futility + 0.05
 #     power_surface$convergence_rate <- rep(0.95, nrow(power_surface))
 #   }
-# 
+#
 #   # Create integrated power if design prior provided
 #   integrated_power <- NULL
 #   if (with_design_prior && analysis_type != "sample_only") {
@@ -123,7 +123,7 @@
 #       )$x
 #     )
 #   }
-# 
+#
 #   result <- list(
 #     target_power_success = 0.8,
 #     target_power_futility = 0.8,
@@ -139,7 +139,7 @@
 #     analysis_time_minutes = 8.5,
 #     power_surface = power_surface,
 #     integrated_power = integrated_power,
-# 
+#
 #     # Backward compatibility
 #     power_curve = power_surface,
 #     effect_size = if (analysis_type == "sample_only") 0.5 else NULL,
@@ -153,200 +153,200 @@
 #       n_cores = 2
 #     )
 #   )
-# 
+#
 #   class(result) <- "rctbayespower_grid"
 #   return(result)
 # }
-# 
+#
 # # Tests for rctbayespower plotting
 # test_that("plot.rctbayespower works correctly", {
 #   mock_result <- create_mock_rctbayespower_plot()
-# 
+#
 #   # Test basic plotting
 #   p <- plot(mock_result)
 #   expect_s3_class(p, "ggplot")
-# 
+#
 #   # Test that plot has appropriate elements
 #   expect_true(length(p$layers) > 0)
 #   expect_true("data" %in% names(p))
-# 
+#
 #   # Test different plot types - these should give warnings but not errors
 #   expect_warning(plot(mock_result, type = "effect_distribution"))
 #   expect_warning(plot(mock_result, type = "power_summary"))
 # })
-# 
+#
 # # Tests for rctbayespower_grid plotting
 # test_that("plot.rctbayespower_grid works with sample_only analysis", {
 #   mock_grid <- create_mock_rctbayespower_grid_plot("sample_only")
-# 
+#
 #   # Test auto-detection (should create power curve)
 #   p <- plot(mock_grid)
 #   expect_s3_class(p, "ggplot")
-# 
+#
 #   # Test explicit power curve
 #   p_curve <- plot(mock_grid, type = "power_curve")
 #   expect_s3_class(p_curve, "ggplot")
-# 
+#
 #   # Test power curve plot (replaces sample_size)
 #   p_sample <- plot(mock_grid, type = "power_curve")
 #   expect_s3_class(p_sample, "ggplot")
 # })
-# 
+#
 # test_that("plot.rctbayespower_grid works with effect_only analysis", {
 #   mock_grid <- create_mock_rctbayespower_grid_plot("effect_only")
-# 
+#
 #   # Test auto-detection (should create power curve)
 #   p <- plot(mock_grid)
 #   expect_s3_class(p, "ggplot")
-# 
+#
 #   # Test explicit power curve
 #   p_curve <- plot(mock_grid, type = "power_curve")
 #   expect_s3_class(p_curve, "ggplot")
-# 
+#
 #   # Test power curve plot (replaces effect_size)
 #   p_effect <- plot(mock_grid, type = "power_curve")
 #   expect_s3_class(p_effect, "ggplot")
 # })
-# 
+#
 # test_that("plot.rctbayespower_grid works with both analysis", {
 #   mock_grid <- create_mock_rctbayespower_grid_plot("both")
-# 
+#
 #   # Test auto-detection (should create heatmap)
 #   p <- plot(mock_grid)
 #   expect_s3_class(p, "ggplot")
-# 
+#
 #   # Test explicit heatmap
 #   p_heatmap <- plot(mock_grid, type = "heatmap")
 #   expect_s3_class(p_heatmap, "ggplot")
-# 
+#
 #   # Test power curve with faceting
 #   p_curve <- plot(mock_grid, type = "power_curve")
 #   expect_s3_class(p_curve, "ggplot")
 # })
-# 
+#
 # test_that("plot.rctbayespower_grid works with design prior and integrated power", {
 #   mock_grid <- create_mock_rctbayespower_grid_plot("effect_only", with_design_prior = TRUE)
-# 
+#
 #   # Test integrated power plot
 #   p_integrated <- plot(mock_grid, type = "integrated")
 #   expect_s3_class(p_integrated, "ggplot")
-# 
+#
 #   # Test power curve with integrated power shown
 #   p_curve <- plot(mock_grid, type = "power_curve", show_integrated = TRUE)
 #   expect_s3_class(p_curve, "ggplot")
 # })
-# 
+#
 # test_that("plot.rctbayespower_grid handles different metrics", {
 #   mock_grid <- create_mock_rctbayespower_grid_plot("sample_only")
-# 
+#
 #   # Test different metrics
 #   p_success <- plot(mock_grid, metric = "success")
 #   expect_s3_class(p_success, "ggplot")
-# 
+#
 #   p_futility <- plot(mock_grid, metric = "futility")
 #   expect_s3_class(p_futility, "ggplot")
-# 
+#
 #   p_both <- plot(mock_grid, metric = "both")
 #   expect_s3_class(p_both, "ggplot")
 # })
-# 
+#
 # test_that("plot.rctbayespower_grid handles faceting options", {
 #   mock_grid <- create_mock_rctbayespower_grid_plot("both")
-# 
+#
 #   # Test faceting by effect size
 #   p_facet_effect <- plot(mock_grid, type = "power_curve", facet_by = "effect_size")
 #   expect_s3_class(p_facet_effect, "ggplot")
-# 
+#
 #   # Test faceting by sample size
 #   p_facet_sample <- plot(mock_grid, type = "power_curve", facet_by = "sample_size")
 #   expect_s3_class(p_facet_sample, "ggplot")
 # })
-# 
+#
 # test_that("plot.rctbayespower_grid handles comparison plots", {
 #   mock_grid <- create_mock_rctbayespower_grid_plot("sample_only")
-# 
+#
 #   # Test comparison plot
 #   p_comparison <- plot(mock_grid, type = "comparison")
 #   expect_s3_class(p_comparison, "ggplot")
 # })
-# 
+#
 # test_that("plotting functions handle target power lines", {
 #   mock_grid <- create_mock_rctbayespower_grid_plot("sample_only")
-# 
+#
 #   # Test that target power lines are added
 #   p <- plot(mock_grid, type = "power_curve")
 #   expect_s3_class(p, "ggplot")
-# 
+#
 #   # Check that target power is referenced in the plot
 #   # (This is a basic check; more detailed checks would require inspecting plot layers)
 #   expect_true(length(p$layers) > 1) # Should have more than just the main data layer
 # })
-# 
+#
 # test_that("plotting functions handle invalid inputs gracefully", {
 #   mock_grid <- create_mock_rctbayespower_grid_plot("sample_only")
-# 
+#
 #   # Test invalid plot type
 #   expect_error(plot(mock_grid, type = "invalid_type"))
-# 
+#
 #   # Test invalid metric
 #   expect_error(plot(mock_grid, metric = "invalid_metric"))
-# 
+#
 #   # Test invalid facet_by
 #   expect_error(plot(mock_grid, facet_by = "invalid_facet"))
 # })
-# 
+#
 # test_that("plotting functions work with missing optional data", {
 #   mock_grid <- create_mock_rctbayespower_grid_plot("sample_only")
-# 
+#
 #   # Remove optional integrated power data
 #   mock_grid$integrated_power <- NULL
-# 
+#
 #   # Should still work for basic plots
 #   expect_no_error(plot(mock_grid, type = "power_curve"))
-# 
+#
 #   # Should error for integrated power plot
 #   expect_error(plot(mock_grid, type = "integrated"))
 # })
-# 
+#
 # test_that("plotting functions handle data validation", {
 #   mock_grid <- create_mock_rctbayespower_grid_plot("sample_only")
-# 
+#
 #   # Test with corrupted power_surface
 #   mock_grid$power_surface <- data.frame(incomplete = 1:3)
-# 
+#
 #   # Should handle missing columns gracefully
 #   expect_error(plot(mock_grid), "Missing required column")
 # })
-# 
+#
 # test_that("plotting functions produce appropriate labels and titles", {
 #   mock_grid <- create_mock_rctbayespower_grid_plot("sample_only")
-# 
+#
 #   p <- plot(mock_grid, type = "power_curve")
-# 
+#
 #   # Check that plot has labels
 #   expect_true(!is.null(p$labels$x))
 #   expect_true(!is.null(p$labels$y))
 #   expect_true(!is.null(p$labels$title))
 # })
-# 
+#
 # test_that("plotting functions handle different outcome types", {
 #   # Test with different mock outcomes
 #   mock_continuous <- create_mock_rctbayespower_plot("continuous")
 #   mock_binary <- create_mock_rctbayespower_plot("binary")
 #   mock_count <- create_mock_rctbayespower_plot("count")
-# 
+#
 #   expect_no_error(plot(mock_continuous))
 #   expect_no_error(plot(mock_binary))
 #   expect_no_error(plot(mock_count))
 # })
-# 
+#
 # test_that("plotting functions handle edge cases", {
 #   # Test with minimal data
 #   mock_grid <- create_mock_rctbayespower_grid_plot("sample_only")
-# 
+#
 #   # Reduce to single data point
 #   mock_grid$power_surface <- mock_grid$power_surface[1, ]
-# 
+#
 #   # Should handle gracefully
 #   expect_no_error(plot(mock_grid, type = "power_curve"))
 # })

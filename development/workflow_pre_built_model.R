@@ -63,25 +63,16 @@ print(conditions)
 
 #-------------------------------------------------------------------------------
 # 4. Run analysis
-
-n_cores <- 2
+future::plan("sequential")
+n_cores <- 14
 result <- power_grid_analysis(
   conditions = conditions,
   n_cores = n_cores,
-  n_simulations = n_cores * 100
+  n_simulations = n_cores * 20
 )
 
 result
 
-
-conditions$condition_arguments[[1]]
-
-brmsfit <- simulate_single_run(
-  condition_arguments = conditions$condition_arguments[[1]],
-  design = conditions$design
-)
-
-res_df <- compute_measures_brmsfit(brmsfit, conditions$design)
 
 # design$target_params <- c("b_grouptreat", "b_Intercept")
 # design$thresholds_success <- c(0.2, 0.0)

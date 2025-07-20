@@ -16,10 +16,4 @@ A character vector containing the names of arguments without default values
 Extracts the names of function arguments that do not have default values.
 This is a utility function used for identifying required parameters.
 }
-\examples{
-# Define a function with mixed default/non-default arguments
-test_fn <- function(a, b = 1, c, d = "default") {}
-get_args_without_defaults(test_fn) # Returns c("a", "c")
-
-}
 \keyword{internal}

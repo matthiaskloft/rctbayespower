@@ -87,7 +87,7 @@ evidence.
 underlying model structure and each other.
 }
 \examples{
-\donttest{
+\dontrun{
 # Create an ANCOVA model
 ancova_model <- build_model_ancova_cont()
 

@@ -117,7 +117,7 @@ build_conditions <- function(design,
   df_grid <- do.call(tidyr::expand_grid, condition_values)
   # add id per condition
   df_grid <- tibble::rowid_to_column(df_grid, var = "id_condition")
-  
+
   # Convert each row into a list of named values
   condition_arguments_flat <- apply(df_grid, 1, as.list)
 
@@ -159,7 +159,7 @@ build_conditions <- function(design,
       }
     }
     # Return both sets of args
-    list(id_condition= condition$id_condition ,sim_args = sim_args, interim_args = interim_args)
+    list(id_condition = condition$id_condition, sim_args = sim_args, interim_args = interim_args)
   })
 
 
@@ -232,11 +232,6 @@ print.rctbayespower_conditions <- function(x, ...) {
 #' @return A character vector containing the names of arguments without default values
 #'
 #' @keywords internal
-#'
-#' @examples
-#' # Define a function with mixed default/non-default arguments
-#' test_fn <- function(a, b = 1, c, d = "default") {}
-#' get_args_without_defaults(test_fn) # Returns c("a", "c")
 #'
 get_args_without_defaults <- function(fn) {
   fmls <- formals(fn)

@@ -77,7 +77,7 @@ target_params from the design object, enabling multi-parameter analysis.
 without changing the function signature.
 }
 \examples{
-\donttest{
+\dontrun{
 # Create an ANCOVA model and design
 ancova_model <- build_model_ancova_cont()
 design <- build_design(
@@ -92,18 +92,14 @@ design <- build_design(
 
 # Create conditions grid
 conditions <- expand_conditions(
-  sample_sizes = c(100, 200),
-  effect_sizes_grid = list(
-    list(b_grouptreat = 0.3),
-    list(b_grouptreat = 0.5)
-  ),
-  n_interim_analyses = c(0, 1)
+  sample_sizes = c(100),
+  b_grouptreat = c(0.5),
 )
 
 # Run power grid analysis
 result <- power_grid_analysis(
   conditions = conditions,
-  n_simulations = 100, # Low for example
+  n_simulations = 10, # Low for example
   n_cores = 1
 )
 }

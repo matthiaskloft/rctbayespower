@@ -88,14 +88,19 @@ as a compilation template only.
 has the required parameter structure and that the brms model is properly fitted.
 }
 \examples{
-\donttest{
+\dontrun{
 # Method 1: Use predefined model (recommended)
 ancova_model <- build_model(pre_defined_model = "ancova_cont")
 
 # Method 2: Create custom model
 # Define a simple data simulation function
-simulate_ancova_data <- function(n_total, p_alloc,
-                                 true_parameter_values = list(intercept, b_grouptreat, b_baseline, sigma)) {
+simulate_ancova_data <- 
+  function(n_total, 
+           p_alloc,
+           intercept, 
+           b_grouptreat, 
+           b_baseline, 
+           sigma)) {
   data.frame(
     baseline = rnorm(n_total),
     group = factor(

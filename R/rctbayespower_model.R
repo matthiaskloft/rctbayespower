@@ -70,22 +70,27 @@
 #' @seealso [build_design()], [build_model_ancova_cont()]
 #'
 #' @examples
-#' \donttest{
+#' \dontrun{
 #' # Method 1: Use predefined model (recommended)
 #' ancova_model <- build_model(pre_defined_model = "ancova_cont")
 #'
 #' # Method 2: Create custom model
 #' # Define a simple data simulation function
-#' simulate_ancova_data <- function(n_total, p_alloc,
-#'                                  true_parameter_values = list(intercept, b_grouptreat, b_baseline, sigma)) {
-#'   data.frame(
-#'     baseline = rnorm(n_total),
-#'     group = factor(
-#'       sample(c(0, 1), size = n_total, prob = p_alloc, replace = TRUE),
-#'       levels = c(0, 1), labels = c("ctrl", "treat")
+#' simulate_ancova_data <-
+#'   function(n_total,
+#'            p_alloc,
+#'            intercept,
+#'            b_grouptreat,
+#'            b_baseline,
+#'            sigma) {
+#'     data.frame(
+#'       baseline = rnorm(n_total),
+#'       group = factor(
+#'         sample(c(0, 1), size = n_total, prob = p_alloc, replace = TRUE),
+#'         levels = c(0, 1), labels = c("ctrl", "treat")
+#'       )
 #'     )
-#'   )
-#' }
+#'   }
 #'
 #'
 #' # Create mock data and fit template model
@@ -192,7 +197,7 @@ build_model <- function(data_simulation_fn,
   parameter_names_brms <- stringr::str_subset(brms::variables(brms_model), pattern = "^b_")
 
   # strip brms model from posterior draws
-  brms_model <- suppressMessages(update(brms_model, chains = 0, silent = 2))
+  brms_model <- suppressMessages(stats::update(brms_model, chains = 0, silent = 2))
 
   # create the output list with the data simulation function and the brms model
   output_list <- list(data_simulation_fn = data_simulation_fn, brms_model = brms_model)
@@ -230,7 +235,7 @@ build_model <- function(data_simulation_fn,
 print.build_model <- function(x, ...) {
   cat("\nObject of class: 'rctbayespower_model'\n")
   cat("--------------------------------------------------\n\n")
-  
+
   cat("Model name:", attr(x, "model_name"), "\n")
   cat("Number of endpoints:", attr(x, "n_endpoints"), "\n")
   cat("Endpoint types:", paste(attr(x, "endpoint_types"), collapse = ", "), "\n")
@@ -307,7 +312,7 @@ print.build_model <- function(x, ...) {
 #' @seealso [build_model()], [build_design()]
 #'
 #' @examples
-#' \donttest{
+#' \dontrun{
 #' # Create ANCOVA model with default priors
 #' ancova_model <- build_model_ancova_cont()
 #'

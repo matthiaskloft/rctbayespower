@@ -53,7 +53,7 @@ treatment effect (b_grouptreat), and residual standard deviation (sigma).
 which may take some time but enables efficient power analysis later.
 }
 \examples{
-\donttest{
+\dontrun{
 # Create ANCOVA model with default priors
 ancova_model <- build_model_ancova_cont()
 

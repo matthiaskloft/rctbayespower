@@ -24,7 +24,11 @@ Imports:
     parallel,
     scales,
     rlang,
-    stringr
+    stringr,
+    purrr,
+    furrr,
+    future,
+    progressr
 Suggests: 
     testthat (>= 3.0.0),
     knitr,

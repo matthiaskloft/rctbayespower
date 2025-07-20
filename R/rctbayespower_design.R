@@ -64,7 +64,7 @@
 #' @seealso [build_model()], [simulate_single_run()]
 #'
 #' @examples
-#' \donttest{
+#' \dontrun{
 #' # Create an ANCOVA model
 #' ancova_model <- build_model_ancova_cont()
 #'

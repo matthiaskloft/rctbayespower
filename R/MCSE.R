@@ -6,6 +6,7 @@
 #' @param successes Vector of success indicators (TRUE/FALSE or 1/0)
 #' @param n_simulations Total number of simulations
 #' @return Monte Carlo Standard Error
+#' @importFrom stats sd
 #' @keywords internal
 calculate_mcse_power <- function(successes, n_simulations) {
   if (length(successes) == 0 || n_simulations == 0) {
