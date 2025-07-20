@@ -16,9 +16,9 @@
 #'     \item NULL for no design prior (default)
 #'   }
 #' @param n_simulations Number of MCMC iterations per condition (default: 500)
+#' @param n_cores Number of parallel cores for condition execution (default: 1)
+#' @param n_progress_updates Show progress every N conditions when running sequentially (default: 10)
 #' @param brms_args Arguments passed to brms for model fitting. Default includes 'algorithm' = "sampling", 'iter' = 500, 'warmup' = 250, 'chains' = 4, 'cores' = 1. User can override any of these or add additional arguments.
-#' @param n_cores Number of parallel cores for condition execution (default: detectCores() - 1)
-#' @param progress_updates Show progress every N conditions when running sequentially (default: 10)
 #' @param ... Additional arguments passed to brms for model fitting. These have the highest priority and will override both defaults and 'brms_args'.
 #'
 #' @details
@@ -90,472 +90,179 @@
 power_grid_analysis <- function(conditions,
                                 design_prior = NULL,
                                 n_simulations = 500,
+                                n_cores = 1,
+                                n_progress_updates = 10,
                                 brms_args = list(),
-                                n_cores = parallel::detectCores() - 1,
-                                progress_updates = 10,
                                 ...) {
-  # Validate inputs
-  if (!is.list(conditions) || length(conditions) == 0) {
-    stop("'conditions' must be a non-empty list of condition specifications")
+  # Validate conditions, must be of class rctbayespower_conditions
+  if (!inherits(conditions, "rctbayespower_conditions")) {
+    stop("'conditions' must be a valid rctbayespower_conditions object")
   }
   
-  # Extract design from conditions and validate
-  if (is.null(conditions$design)) {
-    stop("'conditions' must contain a 'design' component")
-  }
-  
-  design <- conditions$design
-  if (!inherits(design, "rctbayespower_design")) {
-    stop("'conditions$design' must be a valid rctbayespower_design object")
-  }
-  
+  # Validate n_simulations, must be a positive integer
   if (!is.numeric(n_simulations) || n_simulations <= 0) {
     stop("'n_simulations' must be a positive number")
   }
   
+  # Validate n_cores, must be a positive integer
   if (!is.numeric(n_cores) || n_cores <= 0) {
     n_cores <- 1
     warning("Invalid n_cores value. Using n_cores = 1.")
   }
   
-  # Extract condition_arguments from conditions structure
-  if (is.null(conditions$condition_arguments)) {
-    stop("'conditions' must contain a 'condition_arguments' component")
+  # expand condition_arguments_list to match n_simulations
+  condition_arguments_list <- rep(conditions$condition_arguments, each = n_simulations)
+  
+  # Extract design from conditions object
+  design <- conditions$design
+  
+  # Validate design object
+  if (!inherits(design, "rctbayespower_design")) {
+    stop("'design' must be a valid rctbayespower_design object")
   }
   
-  condition_arguments <- conditions$condition_arguments
-  
-  # Extract unique sample sizes and effect sizes for analysis summary
-  sample_sizes <- unique(sapply(condition_arguments, function(x)
-    x$sim_args$n_total))
-  all_effect_sizes <- lapply(condition_arguments, function(x)
-    x$sim_args$true_parameter_values)
-  unique_effect_combinations <- unique(all_effect_sizes)
-  
-  # Extract target power levels from design object
-  target_power_success <- 0.9 # Default values
-  target_power_futility <- 0.95
-  
-  # Parse and validate design prior for integrated power
+  # Design Prior ---------------------------------------------------------------
+  # Set design prior parameters to NULL initially
   design_prior_parsed <- NULL
   weight_fn <- NULL
   weight_type <- "none"
-  if (!is.null(design_prior)) {
-    # Extract all unique effect sizes for prior parsing
-    all_effects_for_prior <- unique(unlist(lapply(all_effect_sizes, function(x) {
-      # For now, use first target parameter for prior parsing
-      if (length(design$target_params) > 0) {
-        return(x[[design$target_params[1]]])
-      }
-      return(numeric(0))
-    })))
-    
-    if (length(all_effects_for_prior) > 1) {
+  
+  # If multiple target parameters: do not use design prior
+  if (length(design$target_params) > 1 && !is.null(design_prior)) {
+    warning(
+      "Design prior is not supported for multiple target parameters. Ignoring design prior."
+    )
+  } else{
+    # Parse and validate design prior for integrated power
+    design_prior_parsed <- NULL
+    weight_fn <- NULL
+    weight_type <- "none"
+    if (!is.null(design_prior)) {
+      # Extract all unique effect sizes for prior parsing
+      all_effects_for_prior <- unique(conditions$conditions_grid[, design$target_params])
       design_prior_parsed <- parse_design_prior(design_prior, all_effects_for_prior, verbose = TRUE)
       weight_fn <- design_prior_parsed$weight_fn
       weight_type <- design_prior_parsed$weight_type
     }
   }
   
-  # Log analysis start
-  cat("\n=== Power Grid Analysis (New API) ===\n")
+  # Simulation -----------------------------------------------------------------
+  
+  # Log simulation start
+  cat("\n=== Power Grid Analysis ===\n")
   cat("Design name:", attr(design, "design_name"), "\n")
   cat("Target parameters:",
       paste(design$target_params, collapse = ", "),
       "\n")
   cat("Total conditions to test:",
-      length(condition_arguments),
+      attr(conditions, "n_conditions"),
       "\n")
-  cat("Sample sizes:", paste(sample_sizes, collapse = ", "), "\n")
+  cat("Conditions:\n")
+  print(conditions$conditions_grid)
+  cat("\n")
   cat("Number of simulations per condition:", n_simulations, "\n")
+  cat(
+    "Number of total simulations :",
+    n_simulations * attr(conditions, "n_conditions"),
+    "\n"
+  )
   if (n_cores > 1) {
     cat("Parallel cores:", n_cores, "\n")
   }
   cat("\n")
   
-  # Parallel execution over all conditions
+  # time start
   start_time <- Sys.time()
   
+  
+  # Set up parallelization -----------------------------------------------------
   if (n_cores > 1) {
-    # Set up parallel backend
-    if (requireNamespace("parallel", quietly = TRUE)) {
-      cat("Running conditions in parallel...\n")
-      
-      # Create cluster for parallel execution
-      cl <- parallel::makeCluster(n_cores)
-      on.exit(parallel::stopCluster(cl), add = TRUE)
-      
-      # Export necessary objects to cluster
-      parallel::clusterEvalQ(cl, library(rctbayespower))
-      parallel::clusterExport(cl, c("design", "n_simulations", "brms_args"), envir = environment())
-      
-      # Run parallel computation
-      results_list <- parallel::parLapply(cl, seq_along(condition_arguments), function(i) {
-        condition_arg <- condition_arguments[[i]]
-        
-        # Execute single simulation run
-        tryCatch({
-          # Merge brms arguments: base defaults < brms_args < ... arguments
-          merged_brms_args <- utils::modifyList(utils::modifyList(list(iter = n_simulations), brms_args), list(...))
-          
-          fitted_model <- simulate_single_run(
-            condition_arguments = condition_arg,
-            design = design,
-            brms_args = merged_brms_args
-          )
-          
-          # Extract posterior samples and compute power metrics
-          posterior_samples <- brms::posterior_samples(fitted_model)
-          
-          # Compute success and futility probabilities for each target parameter
-          success_probs <- sapply(design$target_params, function(param) {
-            if (param %in% names(posterior_samples)) {
-              mean(posterior_samples[[param]] > design$thresholds_success[which(design$target_params == param)])
-            } else {
-              NA_real_
-            }
-          })
-          
-          futility_probs <- sapply(design$target_params, function(param) {
-            if (param %in% names(posterior_samples)) {
-              mean(posterior_samples[[param]] < design$thresholds_futility[which(design$target_params == param)])
-            } else {
-              NA_real_
-            }
-          })
-          
-          # Power calculations (probability of correct decision)
-          power_success <- mean(success_probs >= design$p_sig_success, na.rm = TRUE)
-          power_futility <- mean(futility_probs >= design$p_sig_futility, na.rm = TRUE)
-          
-          # Mean probabilities
-          mean_prob_success <- mean(success_probs, na.rm = TRUE)
-          mean_prob_futility <- mean(futility_probs, na.rm = TRUE)
-          
-          # Convergence rate (simplified)
-          convergence_rate <- 1.0 # Assume convergence for now
-          
-          list(
-            condition_id = i,
-            n_total = condition_arg$sim_args$n_total,
-            effect_sizes = condition_arg$sim_args$true_parameter_values,
-            n_interim_analyses = condition_arg$interim_args$n_interim_analyses %||% 0,
-            power_success = power_success,
-            power_futility = power_futility,
-            mean_prob_success = mean_prob_success,
-            mean_prob_futility = mean_prob_futility,
-            convergence_rate = convergence_rate,
-            error = NULL
-          )
-        }, error = function(e) {
-          cat("  ERROR in condition", i, ":", as.character(e), "\n")
-          list(
-            condition_id = i,
-            n_total = condition_arg$sim_args$n_total,
-            effect_sizes = condition_arg$sim_args$true_parameter_values,
-            n_interim_analyses = condition_arg$interim_args$n_interim_analyses %||% 0,
-            power_success = NA_real_,
-            power_futility = NA_real_,
-            mean_prob_success = NA_real_,
-            mean_prob_futility = NA_real_,
-            convergence_rate = NA_real_,
-            error = as.character(e)
-          )
-        })
-      })
-    } else {
-      warning("parallel package not available, running sequentially")
-      n_cores <- 1
-    }
-    
-    if (n_cores == 1) {
-      # Sequential execution
-      cat("Running conditions sequentially...\n")
-      results_list <- list()
-      
-      for (i in seq_along(condition_arguments)) {
-        condition_arg <- condition_arguments[[i]]
-        
-        if (i %% progress_updates == 0 ||
-            i == length(condition_arguments)) {
-          cat("Processing condition",
-              i,
-              "of",
-              length(condition_arguments),
-              "\n")
-        }
-        
-        # Execute single simulation run
-        results_list[[i]] <- tryCatch({
-          # Merge brms arguments: base defaults < brms_args < ... arguments
-          merged_brms_args <- utils::modifyList(utils::modifyList(list(iter = n_simulations), brms_args), list(...))
-          
-          fitted_model <- simulate_single_run(
-            condition_arguments = condition_arg,
-            design = design,
-            brms_args = merged_brms_args
-          )
-          
-          # Extract posterior samples and compute power metrics
-          posterior_samples <- brms::posterior_samples(fitted_model)
-          
-          # Compute success and futility probabilities for each target parameter
-          success_probs <- sapply(design$target_params, function(param) {
-            if (param %in% names(posterior_samples)) {
-              mean(posterior_samples[[param]] > design$thresholds_success[which(design$target_params == param)])
-            } else {
-              NA_real_
-            }
-          })
-          
-          futility_probs <- sapply(design$target_params, function(param) {
-            if (param %in% names(posterior_samples)) {
-              mean(posterior_samples[[param]] < design$thresholds_futility[which(design$target_params == param)])
-            } else {
-              NA_real_
-            }
-          })
-          
-          # Power calculations (probability of correct decision)
-          power_success <- mean(success_probs >= design$p_sig_success, na.rm = TRUE)
-          power_futility <- mean(futility_probs >= design$p_sig_futility, na.rm = TRUE)
-          
-          # Mean probabilities
-          mean_prob_success <- mean(success_probs, na.rm = TRUE)
-          mean_prob_futility <- mean(futility_probs, na.rm = TRUE)
-          
-          # Convergence rate (simplified)
-          convergence_rate <- 1.0  # Assume convergence for now
-          
-          list(
-            condition_id = i,
-            n_total = condition_arg$sim_args$n_total,
-            effect_sizes = condition_arg$sim_args$true_parameter_values,
-            n_interim_analyses = condition_arg$interim_args$n_interim_analyses %||% 0,
-            power_success = power_success,
-            power_futility = power_futility,
-            mean_prob_success = mean_prob_success,
-            mean_prob_futility = mean_prob_futility,
-            convergence_rate = convergence_rate,
-            error = NULL
-          )
-        }, error = function(e) {
-          cat("  ERROR in condition", i, ":", as.character(e), "\n")
-          list(
-            condition_id = i,
-            n_total = condition_arg$sim_args$n_total,
-            effect_sizes = condition_arg$sim_args$true_parameter_values,
-            n_interim_analyses = condition_arg$interim_args$n_interim_analyses %||% 0,
-            power_success = NA_real_,
-            power_futility = NA_real_,
-            mean_prob_success = NA_real_,
-            mean_prob_futility = NA_real_,
-            convergence_rate = NA_real_,
-            error = as.character(e)
-          )
-        })
-      }
-    } else {
-      warning("parallel package not available, running sequentially")
-      n_cores <- 1
-    }
+    cat("Running conditions in parallel ...\n")
+    future::plan("multisession", workers = n_cores)
+  }
+  if (n_cores == 1) {
+    cat("Running conditions sequentially ...\n")
+    future::plan("sequential")
   }
   
-  if (n_cores == 1) {
-    # Sequential execution
-    cat("Running conditions sequentially...\n")
-    results_list <- list()
+  progressr::with_progress({
+  p <- progressr::progressor(steps = length(condition_arguments_list))
+  
+  
+  # Map over all conditions ----------------------------------------------------
+  
+  # Use future_map (parallel version of purrr::map)
+  results_list <- furrr::future_imap_dfr(condition_arguments_list, function(condition_args, i, p) {
+    #  update progress
+    p()
+    Sys.sleep(0.1)
     
-    for (i in seq_along(condition_arguments)) {
-      condition_arg <- condition_arguments[[i]]
+    # Execute single simulation run
+    tryCatch({
+      brmsfit <- simulate_single_run(
+        condition_arguments = condition_args,
+        design = design,
+        brms_args = brms_args
+      )
+      # compute power measures and parameter estimates from brmsfit
+      measures_df <- compute_measures_brmsfit(brmsfit, design)
+      # add condition id and simulation id
+      results_df <-
+        measures_df |>
+        dplyr::mutate(
+          id_sim = i,
+          id_cond = condition_args$id_condition,
+          converged = 1,
+          # Assume convergence for now
+          error = NA_character_
+        )
       
-      if (i %% progress_updates == 0 ||
-          i == length(condition_arguments)) {
-        cat("Processing condition",
-            i,
-            "of",
-            length(condition_arguments),
-            "\n")
-      }
-      
-      # Execute single simulation run
-      results_list[[i]] <- tryCatch({
-        # Merge brms arguments: base defaults < brms_args < ... arguments
-        merged_brms_args <- utils::modifyList(utils::modifyList(list(iter = n_simulations), brms_args), list(...))
-        
-        fitted_model <- simulate_single_run(
-          condition_arguments = condition_arg,
-          design = design,
-          brms_args = merged_brms_args
-        )
-        
-        # Extract posterior samples and compute power metrics
-        posterior_samples <- brms::posterior_samples(fitted_model)
-        
-        # Compute success and futility probabilities for each target parameter
-        success_probs <- sapply(design$target_params, function(param) {
-          if (param %in% names(posterior_samples)) {
-            mean(posterior_samples[[param]] > design$thresholds_success[which(design$target_params == param)])
-          } else {
-            NA_real_
-          }
-        })
-        
-        futility_probs <- sapply(design$target_params, function(param) {
-          if (param %in% names(posterior_samples)) {
-            mean(posterior_samples[[param]] < design$thresholds_futility[which(design$target_params == param)])
-          } else {
-            NA_real_
-          }
-        })
-        
-        # Power calculations (probability of correct decision)
-        power_success <- mean(success_probs >= design$p_sig_success, na.rm = TRUE)
-        power_futility <- mean(futility_probs >= design$p_sig_futility, na.rm = TRUE)
-        
-        # Mean probabilities
-        mean_prob_success <- mean(success_probs, na.rm = TRUE)
-        mean_prob_futility <- mean(futility_probs, na.rm = TRUE)
-        
-        # Convergence rate (simplified)
-        convergence_rate <- 1.0  # Assume convergence for now
-        
-        list(
-          condition_id = i,
-          n_total = condition_arg$sim_args$n_total,
-          effect_sizes = condition_arg$sim_args$true_parameter_values,
-          n_interim_analyses = condition_arg$interim_args$n_interim_analyses %||% 0,
-          power_success = power_success,
-          power_futility = power_futility,
-          mean_prob_success = mean_prob_success,
-          mean_prob_futility = mean_prob_futility,
-          convergence_rate = convergence_rate,
-          error = NULL
-        )
-      }, error = function(e) {
-        cat("  ERROR in condition", i, ":", as.character(e), "\n")
-        list(
-          condition_id = i,
-          n_total = condition_arg$sim_args$n_total,
-          effect_sizes = condition_arg$sim_args$true_parameter_values,
-          n_interim_analyses = condition_arg$interim_args$n_interim_analyses %||% 0,
-          power_success = NA_real_,
-          power_futility = NA_real_,
-          mean_prob_success = NA_real_,
-          mean_prob_futility = NA_real_,
-          convergence_rate = NA_real_,
-          error = as.character(e)
-        )
-      })
-    }
-  }
+      return(results_df)
+    }, error = function(e) {
+      cat("  ERROR in condition", i, ":", as.character(e), "\n")
+      data.frame(
+        parameter = NA_character_,
+        threshold_success = NA_real_,
+        threshold_futility = NA_real_,
+        success_prob = NA_real_,
+        futility_prob = NA_real_,
+        sig_success = NA_real_,
+        sig_futility = NA_real_,
+        est_median = NA_real_,
+        est_mad = NA_real_,
+        est_mean = NA_real_,
+        est_sd = NA_real_,
+        rhat = NA_real_,
+        ess_bulk = NA_real_,
+        ess_tail = NA_real_,
+        id_sim = i,
+        id_cond = condition_args$id_condition,
+        convergence_rate = NA_real_,
+        error = as.character(e)
+      )
+    }) # end tryCatch
+  },
+  p = p,
+  .options = furrr::furrr_options(
+    packages = "rctbayespower",
+    seed = TRUE,
+    globals = TRUE
+  )) # end function and future_imap
+  
+  }) # end progressr::with_progress
+  
+  future::plan("sequential")
   
   elapsed_time <- difftime(Sys.time(), start_time, units = "mins")
-  cat("\nTotal analysis time:", round(as.numeric(elapsed_time), 2), "minutes\n")
+  cat("\n\nTotal analysis time:",
+      round(as.numeric(elapsed_time), 2),
+      "minutes\n\n")
   
-  # Create power surface data frame
-  power_surface <- do.call(rbind, lapply(results_list, function(x) {
-    # Flatten effect_sizes for the data frame
-    effect_cols <- list()
-    if (!is.null(x$effect_sizes)) {
-      for (param_name in names(x$effect_sizes)) {
-        effect_cols[[paste0("effect_", param_name)]] <- x$effect_sizes[[param_name]]
-      }
-    }
-    
-    basic_cols <- data.frame(
-      condition_id = x$condition_id,
-      n_total = x$n_total,
-      n_interim_analyses = x$n_interim_analyses,
-      power_success = x$power_success,
-      power_futility = x$power_futility,
-      mean_prob_success = x$mean_prob_success,
-      mean_prob_futility = x$mean_prob_futility,
-      convergence_rate = x$convergence_rate,
-      stringsAsFactors = FALSE
-    )
-    
-    if (length(effect_cols) > 0) {
-      cbind(basic_cols, as.data.frame(effect_cols))
-    } else {
-      basic_cols
-    }
-  }))
-  
-  # Find optimal combinations
-  optimal_success <- power_surface[!is.na(power_surface$power_success) &
-                                     power_surface$power_success >= target_power_success, ]
-  
-  optimal_futility <- power_surface[!is.na(power_surface$power_futility) &
-                                      power_surface$power_futility >= target_power_futility, ]
-  
-  # Create result object
-  result <- list(
-    # Analysis metadata
-    design = design,
-    conditions = conditions,
-    target_power_success = target_power_success,
-    target_power_futility = target_power_futility,
-    
-    # Thresholds from design
-    threshold_success = design$thresholds_success,
-    threshold_futility = design$thresholds_futility,
-    
-    # Analysis results
-    power_surface = power_surface,
-    optimal_combinations_success = optimal_success,
-    optimal_combinations_futility = optimal_futility,
-    
-    # Summary information
-    sample_sizes = sample_sizes,
-    unique_effect_combinations = unique_effect_combinations,
-    design_prior = design_prior,
-    design_prior_type = weight_type,
-    n_simulations = n_simulations,
-    analysis_time_minutes = as.numeric(elapsed_time),
-    n_cores = n_cores,
-    
-    # Detailed results
-    detailed_results = results_list
-  )
-  
-  class(result) <- "rctbayespower_grid"
-  
-  # Print summary
-  cat("\n=== Power Grid Analysis Complete ===\n")
-  cat("Total conditions analyzed:", length(conditions), "\n")
-  
-  success_count <- sum(
-    !is.na(power_surface$power_success) &
-      power_surface$power_success >= target_power_success
-  )
-  futility_count <- sum(
-    !is.na(power_surface$power_futility) &
-      power_surface$power_futility >= target_power_futility
-  )
-  
-  cat(
-    "Conditions achieving target success power (>=",
-    target_power_success,
-    "):",
-    success_count,
-    "\n"
-  )
-  cat(
-    "Conditions achieving target futility power (>=",
-    target_power_futility,
-    "):",
-    futility_count,
-    "\n"
-  )
-  
-  error_count <- sum(sapply(results_list, function(x)
-    ! is.null(x$error)))
-  if (error_count > 0) {
-    cat("Conditions with errors:", error_count, "\n")
-  }
-  
-  return(result)
+  return(results_list)
 }
+
+
+
+
 
 

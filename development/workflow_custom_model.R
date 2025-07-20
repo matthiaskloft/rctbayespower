@@ -1,12 +1,3 @@
-
-
-
-
-
-
-### Template for the workfölow of the power simulation ###
-
-library(brms)
 devtools::load_all(.)
 
 #------------------------------------------------------------------------------>
@@ -229,52 +220,3 @@ fitted_model_single_run <- simulate_single_run(
 fitted_model_single_run
 
 attr(ancova_design, "parameter_names_sim_fn")
-
-
-
-#------------------------------------------------------------------------------>
-
-# 1. Create model
-ancova_model <- build_model_ancova_cont()
-
-
-# 2. Create design
-design <- build_design(
-  model = ancova_model,
-  target_params = "b_grouptreat",
-  thresholds_success = 0.2,
-  thresholds_futility = 0.0,
-  p_sig_success = 0.975,
-  p_sig_futility = 0.5
-)
-# check the required parameters for the design
-required_parameters(design)
-
-
-# 3. Create conditions
-conditions <- build_conditions(
-  design = design,
-  condition_values = list(
-    # two sample sizes
-    n_total = c(200, 400),
-    # two effect sizes
-    b_grouptreat = c(0.3, 0.5)
-  ),
-  static_values = list(
-    # equal allocation
-    p_alloc =
-      list(c(0.5, 0.5)),
-    # baseline effect
-    b_baseline = 0.2
-  )
-)
-print(conditions)
-
-
-# 4. Run analysis
-result <- power_grid_analysis(
-  conditions = conditions,
-  n_cores = 12,
-  n_simulations = 1000,
-  progress_updates = 100)
-

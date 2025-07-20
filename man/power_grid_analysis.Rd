@@ -8,9 +8,9 @@ power_grid_analysis(
   conditions,
   design_prior = NULL,
   n_simulations = 500,
+  n_cores = 1,
+  n_progress_updates = 10,
   brms_args = list(),
-  n_cores = parallel::detectCores() - 1,
-  progress_updates = 10,
   ...
 )
 }
@@ -30,11 +30,11 @@ power_grid_analysis(
 
 \item{n_simulations}{Number of MCMC iterations per condition (default: 500)}
 
+\item{n_cores}{Number of parallel cores for condition execution (default: 1)}
+
+\item{n_progress_updates}{Show progress every N conditions when running sequentially (default: 10)}
+
 \item{brms_args}{Arguments passed to brms for model fitting. Default includes 'algorithm' = "sampling", 'iter' = 500, 'warmup' = 250, 'chains' = 4, 'cores' = 1. User can override any of these or add additional arguments.}
-
-\item{n_cores}{Number of parallel cores for condition execution (default: detectCores() - 1)}
-
-\item{progress_updates}{Show progress every N conditions when running sequentially (default: 10)}
 
 \item{...}{Additional arguments passed to brms for model fitting. These have the highest priority and will override both defaults and 'brms_args'.}
 }

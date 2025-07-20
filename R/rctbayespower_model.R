@@ -228,7 +228,9 @@ build_model <- function(data_simulation_fn,
 #' @export
 #' @method print build_model
 print.build_model <- function(x, ...) {
-  cat(paste0("'", attr(x, "class"), "'"), "object\n")
+  cat("\nObject of class: 'rctbayespower_model'\n")
+  cat("--------------------------------------------------\n\n")
+  
   cat("Model name:", attr(x, "model_name"), "\n")
   cat("Number of endpoints:", attr(x, "n_endpoints"), "\n")
   cat("Endpoint types:", paste(attr(x, "endpoint_types"), collapse = ", "), "\n")

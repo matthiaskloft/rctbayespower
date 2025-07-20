@@ -115,7 +115,9 @@ build_conditions <- function(design,
 
   # create condition grid (data frame of combinations)
   df_grid <- do.call(tidyr::expand_grid, condition_values)
-
+  # add id per condition
+  df_grid <- tibble::rowid_to_column(df_grid, var = "id_condition")
+  
   # Convert each row into a list of named values
   condition_arguments_flat <- apply(df_grid, 1, as.list)
 
@@ -157,7 +159,7 @@ build_conditions <- function(design,
       }
     }
     # Return both sets of args
-    list(sim_args = sim_args, interim_args = interim_args)
+    list(id_condition= condition$id_condition ,sim_args = sim_args, interim_args = interim_args)
   })
 
 
@@ -201,8 +203,8 @@ build_conditions <- function(design,
 #'
 #' @export
 print.rctbayespower_conditions <- function(x, ...) {
-  cat("\nrctbayespower_conditions object\n")
-  cat("==============================\n\n")
+  cat("\nObject of class: 'rctbayespower_conditions'\n")
+  cat("--------------------------------------------------\n\n")
 
   # Print basic info
   n_conditions <- nrow(x$conditions_grid)

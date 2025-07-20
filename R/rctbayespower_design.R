@@ -246,7 +246,8 @@ build_design <- function(model = NULL,
 #' @export
 #' @method print rctbayespower_design
 print.rctbayespower_design <- function(x, ...) {
-  cat("\nObject of Class: 'rctbayespower_design'\n")
+  cat("\nObject of class: 'rctbayespower_design'\n")
+  cat("--------------------------------------------------\n")
   # model
   cat("\n=== Model Specifications ===\n\n")
   cat("Number of endpoints:", x$n_endpoints, "\n")

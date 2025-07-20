@@ -56,26 +56,22 @@
 simulate_single_run <- function(condition_arguments,
                                 design,
                                 brms_args = list()) {
-  # Basic validation (parameters pre-validated in build_conditions)
-  if (!inherits(design, "rctbayespower_design")) {
-    stop("design must be a valid rctbayespower_design object")
-  }
+  # no validations since this is the lowest level function
   
-  if (!is.list(condition_arguments) || is.null(condition_arguments$sim_args)) {
-    stop("condition_arguments must be a list with sim_args component")
-  }
-
   # Simulate data with error handling
   simulated_data <- tryCatch({
-    do.call(design$data_simulation_fn, 
-            args = condition_arguments$sim_args)
+    do.call(design$data_simulation_fn, args = condition_arguments$sim_args)
   }, error = function(e) {
     n_total <- condition_arguments$sim_args$n_total %||% "unknown"
-    warning("Data simulation failed for 'n_total'=", n_total, ": ", e$message)
+    warning("Data simulation failed for 'n_total'=",
+            n_total,
+            ": ",
+            e$message)
     return(NULL)
   })
   
-  if (is.null(simulated_data)) return(NULL)
+  if (is.null(simulated_data))
+    return(NULL)
   
   # default brms arguments
   brms_args_default <- list(
@@ -104,10 +100,12 @@ simulate_single_run <- function(condition_arguments,
     }, brms_args_final)
   }, error = function(e) {
     n_total <- condition_arguments$sim_args$n_total %||% "unknown"
-    warning("Model fitting failed for 'n_total'=", n_total, ": ", e$message)
+    warning("Model fitting failed for 'n_total'=",
+            n_total,
+            ": ",
+            e$message)
     return(NULL)
   })
   
   return(fitted_model)  # Either brmsfit object or NULL
 }
-
