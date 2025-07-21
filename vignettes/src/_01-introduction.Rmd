@@ -225,7 +225,7 @@ simulate_custom_data <- function(n_control, n_treatment) {
     outcome = rnorm(n_control + n_treatment),
     baseline = rnorm(n_control + n_treatment),
     age = rnorm(n_control + n_treatment, mean = 50, sd = 15),
-    group = factor(
+    arm = factor(
       rep(c(0, 1), times = c(n_control, n_treatment)),
       levels = c(0, 1),
       labels = c("ctrl", "treat")
@@ -237,8 +237,8 @@ simulate_custom_data <- function(n_control, n_treatment) {
 mock_data <- simulate_custom_data(25, 25)
 
 # Define model formulas
-model_formula_true_params <- bf(outcome ~ baseline + age + group, center = FALSE)
-model_formula_estimation <- bf(outcome ~ baseline + age + group)
+model_formula_true_params <- bf(outcome ~ baseline + age + arm, center = FALSE)
+model_formula_estimation <- bf(outcome ~ baseline + age + arm)
 
 # Define distributional family
 family <- gaussian()

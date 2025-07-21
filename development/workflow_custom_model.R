@@ -12,11 +12,11 @@ devtools::load_all(.)
 simulate_data_ancova <- function(n_total,
                                  p_alloc,
                                  true_parameter_values =
-                                   list(intercept, sigma, b_grouptreat, b_baseline))
+                                   list(intercept, sigma, b_armtreat, b_baseline))
 {
   data.frame(
     baseline = stats::rnorm(n_total),
-    group = factor(
+   arm= factor(
       sample(
         x = c(0, 1),
         size = n_total,
@@ -29,7 +29,7 @@ simulate_data_ancova <- function(n_total,
     outcome = stats::rnorm(
       n_total,
       mean = true_parameter_values$intercept +
-        true_parameter_values$b_grouptreat +
+        true_parameter_values$b_armtreat +
         true_parameter_values$b_baseline * stats::rnorm(n_total),
       sd = true_parameter_values$sigma
     )
@@ -43,19 +43,19 @@ mock_data_ancova <- simulate_data_ancova(
   true_parameter_values = list(
     intercept = 0,
     sigma = 1,
-    b_grouptreat = 0.5,
+    b_armtreat = 0.5,
     b_baseline = 0.2
   )
 )
 
 # fit the brms model
 brms_model_ancova <- brms::brm(
-  formula = outcome ~ 1 + baseline + group,
+  formula = outcome ~ 1 + baseline + arm,
   data = mock_data_ancova,
   family = gaussian(),
   prior = c(
     brms::set_prior("student_t(3, 0, 1)", class = "b", coef = "baseline"),
-    brms::set_prior("student_t(3, 0, 1)", class = "b", coef = "grouptreat"),
+    brms::set_prior("student_t(3, 0, 1)", class = "b", coef = "grouparm"),
     brms::set_prior("normal(0, 10)", class = "Intercept"),
     brms::set_prior("normal(0, 10)", class = "sigma")
   ),
@@ -95,7 +95,7 @@ class(build_model_ancova_cont)
 
 ancova_design <- rctbayespower_design(
   rctbayespower_model = build_model_ancova_cont,
-  target_params = "b_grouptreat",
+  target_params = "b_armtreat",
   n_interim_analyses = 0,
   thresholds_success = c(0.2),
   thresholds_futility = c(0),
@@ -197,7 +197,7 @@ p_alloc <- c(0.5, 0.5)  # equal allocation
 true_parameter_values <- list(
   intercept = 0,
   sigma = 1,
-  b_grouptreat = 0.5,
+  b_armtreat = 0.5,
   b_baseline = 0.2
 )
 

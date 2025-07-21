@@ -10,6 +10,7 @@ power_grid_analysis(
   n_simulations = 500,
   n_cores = 1,
   n_progress_updates = 10,
+  verbose = FALSE,
   brms_args = list(),
   ...
 )
@@ -33,6 +34,8 @@ power_grid_analysis(
 \item{n_cores}{Number of parallel cores for condition execution (default: 1)}
 
 \item{n_progress_updates}{Show progress every N conditions when running sequentially (default: 10)}
+
+\item{verbose}{Logical. Whether to show detailed progress information (default: FALSE)}
 
 \item{brms_args}{Arguments passed to brms for model fitting. Default includes 'algorithm' = "sampling", 'iter' = 500, 'warmup' = 250, 'chains' = 4, 'cores' = 1. User can override any of these or add additional arguments.}
 
@@ -59,6 +62,14 @@ API. This function provides flexible power analysis by varying sample sizes, eff
 sizes, interim analyses, and other parameters across a grid of conditions.
 }
 \details{
+This implementation is optimized for performance through:
+\itemize{
+\item Direct index-based parallel execution (no intermediate data structures)
+\item Efficient data combination using dplyr::bind_rows
+\item Minimal console output (controlled by verbose parameter)
+\item Simplified cluster setup without OS detection overhead
+}
+
 This modernized function uses the new object-oriented API and provides several advantages:
 
 \strong{Unified Parameter Management:} All model and analysis specifications are contained
@@ -82,7 +93,7 @@ without changing the function signature.
 ancova_model <- build_model_ancova_cont()
 design <- build_design(
   build_model = ancova_model,
-  target_params = "b_grouptreat",
+  target_params = "b_armtreat",
   n_interim_analyses = 0,
   thresholds_success = 0.2,
   thresholds_futility = 0.0,
@@ -93,7 +104,7 @@ design <- build_design(
 # Create conditions grid
 conditions <- expand_conditions(
   sample_sizes = c(100),
-  b_grouptreat = c(0.5),
+  b_armtreat = c(0.5),
 )
 
 # Run power grid analysis

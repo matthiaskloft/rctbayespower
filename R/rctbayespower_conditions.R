@@ -116,7 +116,7 @@ build_conditions <- function(design,
   # create condition grid (data frame of combinations)
   df_grid <- do.call(tidyr::expand_grid, condition_values)
   # add id per condition
-  df_grid <- tibble::rowid_to_column(df_grid, var = "id_condition")
+  df_grid <- tibble::rowid_to_column(df_grid, var = "id_cond")
 
   # Convert each row into a list of named values
   condition_arguments_flat <- apply(df_grid, 1, as.list)
@@ -159,7 +159,7 @@ build_conditions <- function(design,
       }
     }
     # Return both sets of args
-    list(id_condition = condition$id_condition, sim_args = sim_args, interim_args = interim_args)
+    list(id_cond = condition$id_cond, sim_args = sim_args, interim_args = interim_args)
   })
 
 

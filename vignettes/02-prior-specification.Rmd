@@ -61,9 +61,9 @@ summary(uninformative_analysis)
 #> === Bayesian Power Analysis Summary ===
 #> 
 #> Study Design:
-#>   Control group size: 60 
+#>   Control arm size: 60 
 #>   Treatment group size: 60 
-#>   Target parameter: grouptreat 
+#>   Target parameter: grouparm 
 #>   Success threshold: 0.3 
 #>   Futility threshold: 0.1 
 #>   Success probability threshold: 0.975 
@@ -72,8 +72,8 @@ summary(uninformative_analysis)
 #> 
 #> Model Information:
 #>   Family: gaussian(identity) 
-#>   Estimation formula: baseline + group 
-#>   Design formula: baseline + group 
+#>   Estimation formula: baseline +arm
+#>   Design formula: baseline +arm
 #> 
 #> Simulation Overview:
 #>   Total simulations: 150 
@@ -140,9 +140,9 @@ summary(informative_analysis)
 #> === Bayesian Power Analysis Summary ===
 #> 
 #> Study Design:
-#>   Control group size: 60 
+#>   Control arm size: 60 
 #>   Treatment group size: 60 
-#>   Target parameter: grouptreat 
+#>   Target parameter: grouparm 
 #>   Success threshold: 0.3 
 #>   Futility threshold: 0.1 
 #>   Success probability threshold: 0.975 
@@ -151,8 +151,8 @@ summary(informative_analysis)
 #> 
 #> Model Information:
 #>   Family: gaussian(identity) 
-#>   Estimation formula: baseline + group 
-#>   Design formula: baseline + group 
+#>   Estimation formula: baseline +arm
+#>   Design formula: baseline +arm
 #> 
 #> Simulation Overview:
 #>   Total simulations: 150 
@@ -259,9 +259,9 @@ summary(alpha_uninformative)
 #> === Bayesian Power Analysis Summary ===
 #> 
 #> Study Design:
-#>   Control group size: 60 
+#>   Control arm size: 60 
 #>   Treatment group size: 60 
-#>   Target parameter: grouptreat 
+#>   Target parameter: grouparm 
 #>   Success threshold: 0.3 
 #>   Futility threshold: 0.1 
 #>   Success probability threshold: 0.975 
@@ -270,8 +270,8 @@ summary(alpha_uninformative)
 #> 
 #> Model Information:
 #>   Family: gaussian(identity) 
-#>   Estimation formula: baseline + group 
-#>   Design formula: baseline + group 
+#>   Estimation formula: baseline +arm
+#>   Design formula: baseline +arm
 #> 
 #> Simulation Overview:
 #>   Total simulations: 150 
@@ -338,9 +338,9 @@ summary(alpha_informative)
 #> === Bayesian Power Analysis Summary ===
 #> 
 #> Study Design:
-#>   Control group size: 60 
+#>   Control arm size: 60 
 #>   Treatment group size: 60 
-#>   Target parameter: grouptreat 
+#>   Target parameter: grouparm 
 #>   Success threshold: 0.3 
 #>   Futility threshold: 0.1 
 #>   Success probability threshold: 0.975 
@@ -349,8 +349,8 @@ summary(alpha_informative)
 #> 
 #> Model Information:
 #>   Family: gaussian(identity) 
-#>   Estimation formula: baseline + group 
-#>   Design formula: baseline + group 
+#>   Estimation formula: baseline +arm
+#>   Design formula: baseline +arm
 #> 
 #> Simulation Overview:
 #>   Total simulations: 150 

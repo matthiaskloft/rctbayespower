@@ -122,9 +122,9 @@ summary(power_result)
 #> === Bayesian Power Analysis Summary ===
 #> 
 #> Study Design:
-#>   Control group size: 50 
+#>   Control arm size: 50 
 #>   Treatment group size: 50 
-#>   Target parameter: grouptreat 
+#>   Target parameter: grouparm 
 #>   Success threshold: 0.3 
 #>   Futility threshold: 0.1 
 #>   Success probability threshold: 0.95 
@@ -133,8 +133,8 @@ summary(power_result)
 #> 
 #> Model Information:
 #>   Family: gaussian(identity) 
-#>   Estimation formula: baseline + group 
-#>   Design formula: baseline + group 
+#>   Estimation formula: baseline +arm
+#>   Design formula: baseline +arm
 #> 
 #> Simulation Overview:
 #>   Total simulations: 105 
@@ -277,7 +277,7 @@ sample_size_result <- power_grid_analysis(
 #> Testing data simulation function...
 #> OK: Data simulation function works correctly
 #>   Generated data dimensions: 80 3 
-#>   Column names: outcome, baseline, group 
+#>   Column names: outcome, baseline,arm
 #> Testing design model with true parameters...
 #>   Using algorithm: fixed_param
 #>   Running brms::brm() with sample_prior = 'only'...
@@ -285,7 +285,7 @@ sample_size_result <- power_grid_analysis(
 #>   True parameter values:
 #>  Family: gaussian 
 #>   Links: mu = identity; sigma = identity 
-#> Formula: outcome ~ baseline + group 
+#> Formula: outcome ~ baseline +arm
 #>    Data: mock_data (Number of observations: 80) 
 #>   Draws: 1 chains, each with iter = 2; warmup = 1; thin = 1;
 #>          total post-warmup draws = 1
@@ -294,7 +294,7 @@ sample_size_result <- power_grid_analysis(
 #>            Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
 #> Intercept      0.00        NA     0.00     0.00   NA       NA       NA
 #> baseline       0.30        NA     0.30     0.30   NA       NA       NA
-#> grouptreat     0.50        NA     0.50     0.50   NA       NA       NA
+#> grouparm     0.50        NA     0.50     0.50   NA       NA       NA
 #> 
 #> Further Distributional Parameters:
 #>       Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
@@ -378,7 +378,7 @@ sample_size_result <- power_grid_analysis(
 #> Chain 2: 
 #>  Family: gaussian 
 #>   Links: mu = identity; sigma = identity 
-#> Formula: outcome ~ baseline + group 
+#> Formula: outcome ~ baseline +arm
 #>    Data: data_sim (Number of observations: 80) 
 #>   Draws: 2 chains, each with iter = 1500; warmup = 500; thin = 1;
 #>          total post-warmup draws = 2000
@@ -387,7 +387,7 @@ sample_size_result <- power_grid_analysis(
 #>            Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
 #> Intercept      0.22      0.17    -0.11     0.55 1.00     1785     1114
 #> baseline       0.19      0.11    -0.03     0.40 1.00     1860     1155
-#> grouptreat     0.66      0.24     0.21     1.12 1.00     1967     1242
+#> grouparm     0.66      0.24     0.21     1.12 1.00     1967     1242
 #> 
 #> Further Distributional Parameters:
 #>       Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
@@ -398,7 +398,7 @@ sample_size_result <- power_grid_analysis(
 #> scale reduction factor on split chains (at convergence, Rhat = 1).
 #> 
 #> OK: Single simulation run completed successfully
-#> OK: Target parameter b_grouptreat extracted successfully
+#> OK: Target parameter b_armtreat extracted successfully
 #>   Parameter estimate: 0.6636 
 #>   Parameter SD: 0.2359 
 #>   Convergence diagnostics for target parameter:
@@ -561,7 +561,7 @@ effect_size_result <- power_grid_analysis(
 #> Testing data simulation function...
 #> OK: Data simulation function works correctly
 #>   Generated data dimensions: 60 3 
-#>   Column names: outcome, baseline, group 
+#>   Column names: outcome, baseline,arm
 #> Testing design model with true parameters...
 #>   Using algorithm: fixed_param
 #>   Running brms::brm() with sample_prior = 'only'...
@@ -569,7 +569,7 @@ effect_size_result <- power_grid_analysis(
 #>   True parameter values:
 #>  Family: gaussian 
 #>   Links: mu = identity; sigma = identity 
-#> Formula: outcome ~ baseline + group 
+#> Formula: outcome ~ baseline +arm
 #>    Data: mock_data (Number of observations: 60) 
 #>   Draws: 1 chains, each with iter = 2; warmup = 1; thin = 1;
 #>          total post-warmup draws = 1
@@ -578,7 +578,7 @@ effect_size_result <- power_grid_analysis(
 #>            Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
 #> Intercept      0.00        NA     0.00     0.00   NA       NA       NA
 #> baseline       0.30        NA     0.30     0.30   NA       NA       NA
-#> grouptreat     0.60        NA     0.60     0.60   NA       NA       NA
+#> grouparm     0.60        NA     0.60     0.60   NA       NA       NA
 #> 
 #> Further Distributional Parameters:
 #>       Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
@@ -662,7 +662,7 @@ effect_size_result <- power_grid_analysis(
 #> Chain 2: 
 #>  Family: gaussian 
 #>   Links: mu = identity; sigma = identity 
-#> Formula: outcome ~ baseline + group 
+#> Formula: outcome ~ baseline +arm
 #>    Data: data_sim (Number of observations: 60) 
 #>   Draws: 2 chains, each with iter = 1500; warmup = 500; thin = 1;
 #>          total post-warmup draws = 2000
@@ -671,7 +671,7 @@ effect_size_result <- power_grid_analysis(
 #>            Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
 #> Intercept      0.07      0.19    -0.30     0.46 1.00     1908     1440
 #> baseline       0.34      0.12     0.11     0.57 1.00     2065     1439
-#> grouptreat     0.38      0.28    -0.17     0.93 1.00     1810     1223
+#> grouparm     0.38      0.28    -0.17     0.93 1.00     1810     1223
 #> 
 #> Further Distributional Parameters:
 #>       Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
@@ -682,7 +682,7 @@ effect_size_result <- power_grid_analysis(
 #> scale reduction factor on split chains (at convergence, Rhat = 1).
 #> 
 #> OK: Single simulation run completed successfully
-#> OK: Target parameter b_grouptreat extracted successfully
+#> OK: Target parameter b_armtreat extracted successfully
 #>   Parameter estimate: 0.3772 
 #>   Parameter SD: 0.2797 
 #>   Convergence diagnostics for target parameter:
@@ -728,7 +728,7 @@ effect_size_result <- power_grid_analysis(
 #> Testing data simulation function...
 #> OK: Data simulation function works correctly
 #>   Generated data dimensions: 60 3 
-#>   Column names: outcome, baseline, group 
+#>   Column names: outcome, baseline,arm
 #> Testing design model with true parameters...
 #>   Using algorithm: fixed_param
 #>   Running brms::brm() with sample_prior = 'only'...
@@ -736,7 +736,7 @@ effect_size_result <- power_grid_analysis(
 #>   True parameter values:
 #>  Family: gaussian 
 #>   Links: mu = identity; sigma = identity 
-#> Formula: outcome ~ baseline + group 
+#> Formula: outcome ~ baseline +arm
 #>    Data: mock_data (Number of observations: 60) 
 #>   Draws: 1 chains, each with iter = 2; warmup = 1; thin = 1;
 #>          total post-warmup draws = 1
@@ -745,7 +745,7 @@ effect_size_result <- power_grid_analysis(
 #>            Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
 #> Intercept      0.00        NA     0.00     0.00   NA       NA       NA
 #> baseline       0.30        NA     0.30     0.30   NA       NA       NA
-#> grouptreat     0.80        NA     0.80     0.80   NA       NA       NA
+#> grouparm     0.80        NA     0.80     0.80   NA       NA       NA
 #> 
 #> Further Distributional Parameters:
 #>       Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
@@ -829,7 +829,7 @@ effect_size_result <- power_grid_analysis(
 #> Chain 2: 
 #>  Family: gaussian 
 #>   Links: mu = identity; sigma = identity 
-#> Formula: outcome ~ baseline + group 
+#> Formula: outcome ~ baseline +arm
 #>    Data: data_sim (Number of observations: 60) 
 #>   Draws: 2 chains, each with iter = 1500; warmup = 500; thin = 1;
 #>          total post-warmup draws = 2000
@@ -838,7 +838,7 @@ effect_size_result <- power_grid_analysis(
 #>            Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
 #> Intercept     -0.05      0.20    -0.45     0.36 1.00     2343     1525
 #> baseline       0.31      0.15     0.01     0.62 1.00     2132     1026
-#> grouptreat     0.93      0.27     0.40     1.45 1.00     2117     1486
+#> grouparm     0.93      0.27     0.40     1.45 1.00     2117     1486
 #> 
 #> Further Distributional Parameters:
 #>       Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
@@ -849,7 +849,7 @@ effect_size_result <- power_grid_analysis(
 #> scale reduction factor on split chains (at convergence, Rhat = 1).
 #> 
 #> OK: Single simulation run completed successfully
-#> OK: Target parameter b_grouptreat extracted successfully
+#> OK: Target parameter b_armtreat extracted successfully
 #>   Parameter estimate: 0.9296 
 #>   Parameter SD: 0.2682 
 #>   Convergence diagnostics for target parameter:
@@ -988,7 +988,7 @@ grid_result <- power_grid_analysis(
 #> Testing data simulation function...
 #> OK: Data simulation function works correctly
 #>   Generated data dimensions: 50 3 
-#>   Column names: outcome, baseline, group 
+#>   Column names: outcome, baseline,arm
 #> Testing design model with true parameters...
 #>   Using algorithm: fixed_param
 #>   Running brms::brm() with sample_prior = 'only'...
@@ -996,7 +996,7 @@ grid_result <- power_grid_analysis(
 #>   True parameter values:
 #>  Family: gaussian 
 #>   Links: mu = identity; sigma = identity 
-#> Formula: outcome ~ baseline + group 
+#> Formula: outcome ~ baseline +arm
 #>    Data: mock_data (Number of observations: 50) 
 #>   Draws: 1 chains, each with iter = 2; warmup = 1; thin = 1;
 #>          total post-warmup draws = 1
@@ -1005,7 +1005,7 @@ grid_result <- power_grid_analysis(
 #>            Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
 #> Intercept      0.00        NA     0.00     0.00   NA       NA       NA
 #> baseline       0.30        NA     0.30     0.30   NA       NA       NA
-#> grouptreat     0.60        NA     0.60     0.60   NA       NA       NA
+#> grouparm     0.60        NA     0.60     0.60   NA       NA       NA
 #> 
 #> Further Distributional Parameters:
 #>       Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
@@ -1089,7 +1089,7 @@ grid_result <- power_grid_analysis(
 #> Chain 2: 
 #>  Family: gaussian 
 #>   Links: mu = identity; sigma = identity 
-#> Formula: outcome ~ baseline + group 
+#> Formula: outcome ~ baseline +arm
 #>    Data: data_sim (Number of observations: 50) 
 #>   Draws: 2 chains, each with iter = 1500; warmup = 500; thin = 1;
 #>          total post-warmup draws = 2000
@@ -1098,7 +1098,7 @@ grid_result <- power_grid_analysis(
 #>            Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
 #> Intercept     -0.07      0.22    -0.51     0.34 1.00     2262     1447
 #> baseline       0.09      0.16    -0.22     0.40 1.00     2578     1453
-#> grouptreat     0.87      0.30     0.28     1.47 1.00     2170     1256
+#> grouparm     0.87      0.30     0.28     1.47 1.00     2170     1256
 #> 
 #> Further Distributional Parameters:
 #>       Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
@@ -1109,7 +1109,7 @@ grid_result <- power_grid_analysis(
 #> scale reduction factor on split chains (at convergence, Rhat = 1).
 #> 
 #> OK: Single simulation run completed successfully
-#> OK: Target parameter b_grouptreat extracted successfully
+#> OK: Target parameter b_armtreat extracted successfully
 #>   Parameter estimate: 0.8736 
 #>   Parameter SD: 0.3039 
 #>   Convergence diagnostics for target parameter:
@@ -1180,7 +1180,7 @@ grid_result <- power_grid_analysis(
 #> Testing data simulation function...
 #> OK: Data simulation function works correctly
 #>   Generated data dimensions: 50 3 
-#>   Column names: outcome, baseline, group 
+#>   Column names: outcome, baseline,arm
 #> Testing design model with true parameters...
 #>   Using algorithm: fixed_param
 #>   Running brms::brm() with sample_prior = 'only'...
@@ -1188,7 +1188,7 @@ grid_result <- power_grid_analysis(
 #>   True parameter values:
 #>  Family: gaussian 
 #>   Links: mu = identity; sigma = identity 
-#> Formula: outcome ~ baseline + group 
+#> Formula: outcome ~ baseline +arm
 #>    Data: mock_data (Number of observations: 50) 
 #>   Draws: 1 chains, each with iter = 2; warmup = 1; thin = 1;
 #>          total post-warmup draws = 1
@@ -1197,7 +1197,7 @@ grid_result <- power_grid_analysis(
 #>            Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
 #> Intercept      0.00        NA     0.00     0.00   NA       NA       NA
 #> baseline       0.30        NA     0.30     0.30   NA       NA       NA
-#> grouptreat     0.80        NA     0.80     0.80   NA       NA       NA
+#> grouparm     0.80        NA     0.80     0.80   NA       NA       NA
 #> 
 #> Further Distributional Parameters:
 #>       Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
@@ -1281,7 +1281,7 @@ grid_result <- power_grid_analysis(
 #> Chain 2: 
 #>  Family: gaussian 
 #>   Links: mu = identity; sigma = identity 
-#> Formula: outcome ~ baseline + group 
+#> Formula: outcome ~ baseline +arm
 #>    Data: data_sim (Number of observations: 50) 
 #>   Draws: 2 chains, each with iter = 1500; warmup = 500; thin = 1;
 #>          total post-warmup draws = 2000
@@ -1290,7 +1290,7 @@ grid_result <- power_grid_analysis(
 #>            Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
 #> Intercept     -0.06      0.19    -0.43     0.32 1.00     2217     1214
 #> baseline       0.31      0.13     0.05     0.57 1.00     2150     1272
-#> grouptreat     0.91      0.27     0.37     1.43 1.00     2186     1351
+#> grouparm     0.91      0.27     0.37     1.43 1.00     2186     1351
 #> 
 #> Further Distributional Parameters:
 #>       Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
@@ -1301,7 +1301,7 @@ grid_result <- power_grid_analysis(
 #> scale reduction factor on split chains (at convergence, Rhat = 1).
 #> 
 #> OK: Single simulation run completed successfully
-#> OK: Target parameter b_grouptreat extracted successfully
+#> OK: Target parameter b_armtreat extracted successfully
 #>   Parameter estimate: 0.9066 
 #>   Parameter SD: 0.2686 
 #>   Convergence diagnostics for target parameter:
@@ -1442,7 +1442,7 @@ simulate_custom_data <- function(n_control, n_treatment) {
     outcome = rnorm(n_control + n_treatment),
     baseline = rnorm(n_control + n_treatment),
     age = rnorm(n_control + n_treatment, mean = 50, sd = 15),
-    group = factor(
+   arm= factor(
       rep(c(0, 1), times = c(n_control, n_treatment)),
       levels = c(0, 1),
       labels = c("ctrl", "treat")
@@ -1454,8 +1454,8 @@ simulate_custom_data <- function(n_control, n_treatment) {
 mock_data <- simulate_custom_data(25, 25)
 
 # Define model formulas
-model_formula_true_params <- bf(outcome ~ baseline + age + group, center = FALSE)
-model_formula_estimation <- bf(outcome ~ baseline + age + group)
+model_formula_true_params <- bf(outcome ~ baseline + age + arm, center = FALSE)
+model_formula_estimation <- bf(outcome ~ baseline + age + arm)
 
 # Define distributional family
 family <- gaussian()
@@ -1464,7 +1464,7 @@ family <- gaussian()
 priors_true_params <- c(
   set_prior("constant(0.2)", class = "b", coef = "baseline"),
   set_prior("constant(0.01)", class = "b", coef = "age"),
-  set_prior("constant(0.5)", class = "b", coef = "grouptreat"),
+  set_prior("constant(0.5)", class = "b", coef = "grouparm"),
   set_prior("constant(0)", class = "b", coef = "Intercept"),
   set_prior("constant(1)", class = "sigma")
 )
@@ -1488,7 +1488,7 @@ validation <- validate_power_design(
   family = family,
   priors_true_params = priors_true_params,
   priors_estimation = priors_estimation,
-  target_param = "grouptreat",
+  target_param = "grouparm",
   simulate_data_fn = simulate_custom_data,
   brms_args = list(
     algorithm = "meanfield",
@@ -1504,7 +1504,7 @@ validation <- validate_power_design(
 #> Testing data simulation function...
 #> OK: Data simulation function works correctly
 #>   Generated data dimensions: 100 4 
-#>   Column names: outcome, baseline, age, group 
+#>   Column names: outcome, baseline, age,arm
 #> Testing design model with true parameters...
 #>   Using algorithm: fixed_param
 #>   Running brms::brm() with sample_prior = 'only'...
@@ -1512,7 +1512,7 @@ validation <- validate_power_design(
 #>   True parameter values:
 #>  Family: gaussian 
 #>   Links: mu = identity; sigma = identity 
-#> Formula: outcome ~ baseline + age + group 
+#> Formula: outcome ~ baseline + age +arm
 #>    Data: mock_data (Number of observations: 100) 
 #>   Draws: 1 chains, each with iter = 2; warmup = 1; thin = 1;
 #>          total post-warmup draws = 1
@@ -1522,7 +1522,7 @@ validation <- validate_power_design(
 #> Intercept      0.00        NA     0.00     0.00   NA       NA       NA
 #> baseline       0.20        NA     0.20     0.20   NA       NA       NA
 #> age            0.01        NA     0.01     0.01   NA       NA       NA
-#> grouptreat     0.50        NA     0.50     0.50   NA       NA       NA
+#> grouparm     0.50        NA     0.50     0.50   NA       NA       NA
 #> 
 #> Further Distributional Parameters:
 #>       Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
@@ -1589,7 +1589,7 @@ validation <- validate_power_design(
 #> Chain 1: COMPLETED.
 #>  Family: gaussian 
 #>   Links: mu = identity; sigma = identity 
-#> Formula: outcome ~ baseline + age + group 
+#> Formula: outcome ~ baseline + age +arm
 #>    Data: data_sim (Number of observations: 100) 
 #>   Draws: 1 chains, each with iter = 1000; warmup = 0; thin = 1;
 #>          total post-warmup draws = 1000
@@ -1599,7 +1599,7 @@ validation <- validate_power_design(
 #> Intercept     -0.29      0.41    -1.22     0.40 1.01      346      190
 #> baseline       0.32      0.11     0.14     0.54 1.00      394      204
 #> age            0.02      0.01     0.00     0.03 1.01      357      207
-#> grouptreat     0.35      0.20    -0.03     0.74 1.00      383      325
+#> grouparm     0.35      0.20    -0.03     0.74 1.00      383      325
 #> 
 #> Further Distributional Parameters:
 #>       Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
@@ -1608,7 +1608,7 @@ validation <- validate_power_design(
 #> Draws were sampled using variational(meanfield). 
 #> 
 #> OK: Single simulation run completed successfully
-#> OK: Target parameter b_grouptreat extracted successfully
+#> OK: Target parameter b_armtreat extracted successfully
 #>   Parameter estimate: 0.3492 
 #>   Parameter SD: 0.1955 
 #>   Convergence diagnostics for target parameter:
@@ -1640,7 +1640,7 @@ custom_power <- power_analysis(
   n_treatment = 50,
   brms_design_true_params = validation$brms_design_true_params,
   brms_design_estimation = validation$brms_design_estimation,
-  target_param = "grouptreat",
+  target_param = "grouparm",
   simulate_data_fn = simulate_custom_data,
   threshold_success = 0.3,
   threshold_futility = 0.1,
@@ -1691,9 +1691,9 @@ summary(custom_power)
 #> === Bayesian Power Analysis Summary ===
 #> 
 #> Study Design:
-#>   Control group size: 50 
+#>   Control arm size: 50 
 #>   Treatment group size: 50 
-#>   Target parameter: grouptreat 
+#>   Target parameter: grouparm 
 #>   Success threshold: 0.3 
 #>   Futility threshold: 0.1 
 #>   Success probability threshold: 0.95 
@@ -1702,8 +1702,8 @@ summary(custom_power)
 #> 
 #> Model Information:
 #>   Family: gaussian(identity) 
-#>   Estimation formula: baseline + age + group 
-#>   Design formula: baseline + age + group 
+#>   Estimation formula: baseline + age +arm
+#>   Design formula: baseline + age +arm
 #> 
 #> Simulation Overview:
 #>   Total simulations: 105 

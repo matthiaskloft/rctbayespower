@@ -91,54 +91,6 @@ has the required parameter structure and that the brms model is properly fitted.
 \dontrun{
 # Method 1: Use predefined model (recommended)
 ancova_model <- build_model(pre_defined_model = "ancova_cont")
-
-# Method 2: Create custom model
-# Define a simple data simulation function
-simulate_ancova_data <- 
-  function(n_total, 
-           p_alloc,
-           intercept, 
-           b_grouptreat, 
-           b_baseline, 
-           sigma)) {
-  data.frame(
-    baseline = rnorm(n_total),
-    group = factor(
-      sample(c(0, 1), size = n_total, prob = p_alloc, replace = TRUE),
-      levels = c(0, 1), labels = c("ctrl", "treat")
-    )
-  )
-}
-
-
-# Create mock data and fit template model
-mock_data <- simulate_ancova_data(
-  100, c(0.5, 0.5),
-  list(
-    intercept = 0, b_grouptreat = 0.5,
-    b_baseline = 0.2, sigma = 1
-  )
-)
-mock_data$outcome <- rnorm(100) # Add outcome for model fitting
-
-template_model <- brms::brm(
-  outcome ~ baseline + group,
-  data = mock_data,
-  family = gaussian(),
-  chains = 0, # Compile only
-  silent = 2
-)
-
-# Create build_model object
-my_model <- build_model(
-  data_simulation_fn = simulate_ancova_data,
-  brms_model = template_model,
-  n_endpoints = 1,
-  endpoint_types = "continuous",
-  n_treatment_arms = 2,
-  n_repeated_measures = 0,
-  model_name = "ANCOVA Model"
-)
 }
 }
 \seealso{

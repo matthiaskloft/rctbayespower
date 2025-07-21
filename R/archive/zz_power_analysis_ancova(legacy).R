@@ -5,7 +5,7 @@
 #' #' a baseline covariate following the exact template workflow. Supports continuous,
 #' #' binary, and count outcomes.
 #' #'
-#' #' @param n_control Number of participants in control group
+#' #' @param n_control Number of participants in control arm
 #' #' @param n_treatment Number of participants in treatment group
 #' #' @param outcome_type Type of outcome ("continuous", "binary", "count")
 #' #' @param effect_size True treatment effect (raw scale: continuous = raw difference, binary = log odds ratio, count = log rate ratio)
@@ -138,7 +138,7 @@
 #'       outcome = rnorm(n_control + n_treatment),
 #'       # placeholder, will be overwritten
 #'       baseline = rnorm(n_control + n_treatment),
-#'       group = factor(
+#'      arm= factor(
 #'         rep(c(0, 1), times = c(n_control, n_treatment)),
 #'         levels = c(0, 1),
 #'         labels = c("ctrl", "treat")
@@ -147,8 +147,8 @@
 #'   }
 #'
 #'   # Define model formulas (exactly as in template)
-#'   model_formula_true_params <- brms::bf(outcome ~ baseline + group, center = FALSE)
-#'   model_formula_estimation <- brms::bf(outcome ~ baseline + group)
+#'   model_formula_true_params <- brms::bf(outcome ~ baseline + arm, center = FALSE)
+#'   model_formula_estimation <- brms::bf(outcome ~ baseline + arm)
 #'
 #'   # Define distributional family
 #'   family <- switch(
@@ -168,7 +168,7 @@
 #'     brms::set_prior(
 #'       paste0("constant(", effect_size, ")"),
 #'       class = "b",
-#'       coef = "grouptreat"
+#'       coef = "grouparm"
 #'     ),
 #'     brms::set_prior(
 #'       paste0("constant(", intercept_value, ")"),
@@ -197,7 +197,7 @@
 #'   }
 #'
 #'   # Define target parameter (exactly as in template)
-#'   target_param <- "grouptreat"
+#'   target_param <- "grouparm"
 #'
 #'   # Call the main power analysis function
 #'   results <- power_analysis(

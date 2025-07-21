@@ -8,7 +8,7 @@
 #'   [build_model()] or predefined model functions
 #' @param target_params Character vector specifying which model parameters to
 #'   analyze for power. Must be valid parameter names from the brms model
-#'   (e.g., "b_grouptreat" for treatment effect)
+#'   (e.g., "b_armtreat" for treatment effect)
 #' @param n_interim_analyses Number of interim analyses planned during the study.
 #'   Use 0 for studies with only final analysis. Must be non-negative integer.
 #' @param thresholds_success Numeric vector of success thresholds for each target
@@ -71,7 +71,7 @@
 #' # Create a design for analyzing treatment effect
 #' my_design <- build_design(
 #'   model = ancova_model,
-#'   target_params = "b_grouptreat",
+#'   target_params = "b_armtreat",
 #'   n_interim_analyses = 0,
 #'   thresholds_success = 0.2,
 #'   thresholds_futility = 0,

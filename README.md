@@ -45,10 +45,11 @@ package allows researchers to:
 ### Advanced Features
 
 - Custom prior specifications
+- Design prior integration
 - Power curves and sample size curves
 - Comprehensive plotting functions
 
-## Ressources
+<!--  ## Ressources
 
 The best way to get started is to visit the package website and the
 introductory vignette:
@@ -57,7 +58,7 @@ introductory vignette:
 
 - Vignettes:
 
-  - [Introduction](https://matthiaskloft.github.io/rctbayespower/articles/01-introduction.html):
+ - [Introduction](https://matthiaskloft.github.io/rctbayespower/articles/01-introduction.html):
     Basic usage and concepts
   - [Case
     Studies](https://matthiaskloft.github.io/rctbayespower/articles/02-case-studies.html):
@@ -70,6 +71,6 @@ introductory vignette:
     Complex designs
   - [Algorithm
     Performance](https://matthiaskloft.github.io/rctbayespower/articles/05-algorithm-performance.html):
-    Performance optimization
+    Performance optimization -->
 
 - [Open an Issue](https://github.com/matthiaskloft/rctbayespower/issues)

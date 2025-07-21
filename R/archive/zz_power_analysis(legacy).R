@@ -4,7 +4,7 @@
 #' models and data generation functions. This function uses a design-based approach with
 #' separate models for true parameter specification and estimation.
 #'
-#' @param n_control Number of participants in control group
+#' @param n_control Number of participants in control arm
 #' @param n_treatment Number of participants in treatment group
 #' @param simulate_data_fn User-defined function that takes (n_control, n_treatment) and returns a data frame
 #' @param model_formula_true_params brms formula object for design model with true parameters
@@ -767,7 +767,7 @@
 #'   study_parameters = list(
 #'     n_control = 100,
 #'     n_treatment = 100,
-#'     target_param = "grouptreat",
+#'     target_param = "grouparm",
 #'     threshold_success = 0.2,
 #'     threshold_futility = 0,
 #'     p_sig_success = 0.975,
@@ -812,7 +812,7 @@
 #'   # Study design parameters
 #'   cat("Study Design:\n")
 #'   cat(
-#'     "  Control group size:",
+#'     "  Control arm size:",
 #'     object$study_parameters$n_control,
 #'     "\n"
 #'   )
@@ -1009,7 +1009,7 @@
 #'   study_parameters = list(
 #'     n_control = 100,
 #'     n_treatment = 100,
-#'     target_param = "grouptreat",
+#'     target_param = "grouparm",
 #'     threshold_success = 0.2,
 #'     threshold_futility = 0,
 #'     p_sig_success = 0.975,
@@ -1198,7 +1198,7 @@
 #' # Helper function to validate the design components before running a full power analysis.
 #' # Performs a single simulation run and checks for convergence and parameter extraction.
 #'
-#' @param n_control Number of participants in control group
+#' @param n_control Number of participants in control arm
 #' @param n_treatment Number of participants in treatment group
 #' @param simulate_data_fn User-defined function that takes (n_control, n_treatment) and returns a data frame
 #' @param model_formula_true_params brms formula object for design model with true parameters
@@ -1226,7 +1226,7 @@
 #'   family = gaussian(),
 #'   priors_true_params = priors_true,
 #'   priors_estimation = priors_est,
-#'   target_param = "grouptreat"
+#'   target_param = "grouparm"
 #' )
 #' }
 #' validate_power_design <- function(n_control,

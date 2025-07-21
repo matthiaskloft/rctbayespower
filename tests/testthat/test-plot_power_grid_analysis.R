@@ -25,7 +25,7 @@
 #     study_parameters = list(
 #       n_control = 50,
 #       n_treatment = 50,
-#       target_param = "grouptreat",
+#       target_param = "grouparm",
 #       threshold_success = 0.3,
 #       threshold_futility = 0.1,
 #       p_sig_success = 0.95,
@@ -40,7 +40,7 @@
 #           Est.Error = 0.1,
 #           Q2.5 = effect_estimates[i] - 0.2,
 #           Q97.5 = effect_estimates[i] + 0.2,
-#           row.names = "grouptreat"
+#           row.names = "grouparm"
 #         ),
 #         posterior_draws = rnorm(1000, mean = effect_estimates[i], sd = 0.1)
 #       )

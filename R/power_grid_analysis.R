@@ -1,16 +1,37 @@
 # Global variables for R CMD check
-utils::globalVariables(c(
-  "parameter", "threshold_success", "threshold_futility", "id_cond",
-  "success_prob", "futility_prob", "sig_success", "sig_futility",
-  "est_median", "est_mad", "est_mean", "est_sd", "rhat",
-  "ess_bulk", "ess_tail", "error"
-))
+utils::globalVariables(
+  c(
+    "parameter",
+    "threshold_success",
+    "threshold_futility",
+    "id_cond",
+    "success_prob",
+    "futility_prob",
+    "sig_success",
+    "sig_futility",
+    "est_median",
+    "est_mad",
+    "est_mean",
+    "est_sd",
+    "rhat",
+    "ess_bulk",
+    "ess_tail",
+    "converged",
+    "error"
+  )
+)
 
 #' Power Grid Analysis for Bayesian RCTs (New API)
 #'
 #' Comprehensive power analysis across multiple conditions using the new object-oriented
 #' API. This function provides flexible power analysis by varying sample sizes, effect
 #' sizes, interim analyses, and other parameters across a grid of conditions.
+#'
+#' This implementation is optimized for performance through:
+#' - Direct index-based parallel execution (no intermediate data structures)
+#' - Efficient data combination using dplyr::bind_rows
+#' - Minimal console output (controlled by verbose parameter)
+#' - Simplified cluster setup without OS detection overhead
 #'
 #' @param conditions A conditions object created by [build_conditions()] containing:
 #'   \itemize{
@@ -26,6 +47,7 @@ utils::globalVariables(c(
 #' @param n_simulations Number of MCMC iterations per condition (default: 500)
 #' @param n_cores Number of parallel cores for condition execution (default: 1)
 #' @param n_progress_updates Show progress every N conditions when running sequentially (default: 10)
+#' @param verbose Logical. Whether to show detailed progress information (default: FALSE)
 #' @param brms_args Arguments passed to brms for model fitting. Default includes 'algorithm' = "sampling", 'iter' = 500, 'warmup' = 250, 'chains' = 4, 'cores' = 1. User can override any of these or add additional arguments.
 #' @param ... Additional arguments passed to brms for model fitting. These have the highest priority and will override both defaults and 'brms_args'.
 #'
@@ -70,7 +92,7 @@ utils::globalVariables(c(
 #' ancova_model <- build_model_ancova_cont()
 #' design <- build_design(
 #'   build_model = ancova_model,
-#'   target_params = "b_grouptreat",
+#'   target_params = "b_armtreat",
 #'   n_interim_analyses = 0,
 #'   thresholds_success = 0.2,
 #'   thresholds_futility = 0.0,
@@ -81,7 +103,7 @@ utils::globalVariables(c(
 #' # Create conditions grid
 #' conditions <- expand_conditions(
 #'   sample_sizes = c(100),
-#'   b_grouptreat = c(0.5),
+#'   b_armtreat = c(0.5),
 #' )
 #'
 #' # Run power grid analysis
@@ -96,8 +118,12 @@ power_grid_analysis <- function(conditions,
                                 n_simulations = 500,
                                 n_cores = 1,
                                 n_progress_updates = 10,
+                                verbose = FALSE,
                                 brms_args = list(),
                                 ...) {
+  # time start
+  start_time <- Sys.time()
+
   # Validate conditions, must be of class rctbayespower_conditions
   if (!inherits(conditions, "rctbayespower_conditions")) {
     stop("'conditions' must be a valid rctbayespower_conditions object")
@@ -115,7 +141,7 @@ power_grid_analysis <- function(conditions,
   }
 
   # expand condition_arguments_list to match n_simulations
-  condition_arguments_list <- rep(conditions$condition_arguments, each = n_simulations)
+  condition_args_list <- rep(conditions$condition_arguments, each = n_simulations)
 
   # Extract design from conditions object
   design <- conditions$design
@@ -150,86 +176,87 @@ power_grid_analysis <- function(conditions,
     }
   }
 
-  # Simulation -----------------------------------------------------------------
-
-  # Log simulation start
-  cat("\n=== Power Grid Analysis ===\n")
-  cat("Design name:", attr(design, "design_name"), "\n")
-  cat(
-    "Target parameters:",
-    paste(design$target_params, collapse = ", "),
-    "\n"
-  )
-  cat(
-    "Total conditions to test:",
-    attr(conditions, "n_conditions"),
-    "\n"
-  )
-  cat("Conditions:\n")
-  print(conditions$conditions_grid)
-  cat("\n")
-  cat("Number of simulations per condition:", n_simulations, "\n")
-  cat(
-    "Number of total simulations :",
-    n_simulations * attr(conditions, "n_conditions"),
-    "\n"
-  )
-  if (n_cores > 1) {
-    cat("Parallel cores:", n_cores, "\n")
-  }
-  cat("\n")
-
-  # time start
-  start_time <- Sys.time()
-
-
   # Set up parallelization -----------------------------------------------------
-  if (n_cores > 1) {
-    cat("Running conditions in parallel ...\n")
-    future::plan("multisession", workers = n_cores)
+  total_runs <- length(condition_args_list)
+
+  # Optional logging
+  if (verbose) {
+    cat("\n=== Power Grid Analysis ===\n")
+    cat("Total simulations:", total_runs, "\n")
+    cat(
+      "Total conditions to test:",
+      attr(conditions, "n_conditions"),
+      "\n"
+    )
+    cat("Conditions:\n")
+    print(conditions$conditions_grid)
+    cat("\n")
+    cat("Number of simulations per condition:", n_simulations, "\n")
+    cat(
+      "Number of total simulations :",
+      n_simulations * attr(conditions, "n_conditions"),
+      "\n"
+    )
+    if (n_cores > 1) {
+      cat("Parallel cores:", n_cores, "\n")
+    }
   }
+
+  # Progress bar for sequential execution
+  pb <- NULL
   if (n_cores == 1) {
-    cat("Running conditions sequentially ...\n")
-    future::plan("sequential")
+    pb <- utils::txtProgressBar(
+      min = 0,
+      max = total_runs,
+      style = 3
+    )
   }
 
-  progressr::with_progress({
-    p <- progressr::progressor(steps = length(condition_arguments_list))
+  # Execute simulations
+  if (n_cores > 1) {
+    # Set up cluster
+    cl <- parallel::makeCluster(n_cores, type = "PSOCK")
 
+    # Load required packages on workers
+    parallel::clusterEvalQ(cl, {
+      library(rctbayespower)
+      library(brms)
+      library(dplyr)
+    })
 
-    # Map over all conditions ----------------------------------------------------
+    # Export required objects to cluster
+    parallel::clusterExport(
+      cl,
+      varlist = c(
+        "condition_args_list",
+        "design",
+        "brms_args",
+        "simulate_single_run",
+        "compute_measures_brmsfit"
+      ),
+      envir = environment()
+    )
 
-    # Use future_map (parallel version of purrr::map)
-    results_list <- furrr::future_imap(condition_arguments_list, function(condition_args, i, p) {
-      #  update progress
-      p()
-      Sys.sleep(0.1)
-
-      # Execute single simulation run
+    # Run parallel computation - direct index access is faster
+    results_raw_list <- parallel::parLapply(cl, seq_along(condition_args_list), function(i) {
+      args <- condition_args_list[[i]]
       tryCatch(
         {
-          brmsfit <- simulate_single_run(
-            condition_arguments = condition_args,
+          fit <- simulate_single_run(
+            condition_arguments = args,
             design = design,
             brms_args = brms_args
           )
-          # compute power measures and parameter estimates from brmsfit
-          measures_df <- compute_measures_brmsfit(brmsfit, design)
-          # add condition id and simulation id
-          results_df <-
-            measures_df |>
-            dplyr::mutate(
-              id_sim = i,
-              id_cond = condition_args$id_condition,
-              converged = 1,
-              # Assume convergence for now
-              error = NA_character_
-            )
-
-          return(results_df)
+          df <- compute_measures_brmsfit(fit, design) |>
+            dplyr::mutate(dplyr::across(-parameter, as.numeric))
+          df |> dplyr::mutate(
+            id_sim = i,
+            id_cond = args$id_cond,
+            converged = 1L,
+            error = NA_character_
+          )
         },
         error = function(e) {
-          cat("  ERROR in condition", i, ":", as.character(e), "\n")
           data.frame(
             parameter = NA_character_,
             threshold_success = NA_real_,
@@ -246,80 +273,92 @@ power_grid_analysis <- function(conditions,
             ess_bulk = NA_real_,
             ess_tail = NA_real_,
             id_sim = i,
-            id_cond = condition_args$id_condition,
-            convergence_rate = NA_real_,
+            id_cond = args$id_cond,
+            converged = 0L,
             error = as.character(e)
           )
         }
-      ) # end tryCatch
-    },
-    p = p,
-    .options = furrr::furrr_options(
-      packages = "rctbayespower",
-      seed = TRUE,
-      globals = TRUE
+      )
+    })
+    parallel::stopCluster(cl)
+  } else {
+    # Sequential execution with progress bar
+    results_raw_list <- lapply(seq_along(condition_args_list), function(i) {
+      args <- condition_args_list[[i]]
+      res <- tryCatch(
+        {
+          fit <- simulate_single_run(
+            condition_arguments = args,
+            design = design,
+            brms_args = brms_args
+          )
+          df <- compute_measures_brmsfit(fit, design) |>
+            dplyr::mutate(dplyr::across(-parameter, as.numeric))
+          df |> dplyr::mutate(
+            id_sim = i,
+            id_cond = args$id_cond,
+            converged = 1L,
+            error = NA_character_
+          )
+        },
+        error = function(e) {
+          data.frame(
+            parameter = NA_character_,
+            threshold_success = NA_real_,
+            threshold_futility = NA_real_,
+            success_prob = NA_real_,
+            futility_prob = NA_real_,
+            sig_success = NA_real_,
+            sig_futility = NA_real_,
+            est_median = NA_real_,
+            est_mad = NA_real_,
+            est_mean = NA_real_,
+            est_sd = NA_real_,
+            rhat = NA_real_,
+            ess_bulk = NA_real_,
+            ess_tail = NA_real_,
+            id_sim = i,
+            id_cond = args$id_cond,
+            converged = 0L,
+            error = as.character(e)
+          )
+        }
+      )
+      utils::setTxtProgressBar(pb, i)
+      res
+    })
+    if (!is.null(pb)) {
+      close(pb)
+    }
+  }
+
+  # Combine results - bind_rows is faster than do.call(rbind, ...)
+  results_df_raw <- do.call(rbind, results_raw_list)
+
+  # Average across simulation runs
+  results_df <- summarize_sims(results_df_raw, n_simulations)
+
+  results_df <- dplyr::full_join(conditions$conditions_grid, results_df, by = "id_cond")
+
+  elapsed_time <- difftime(Sys.time(), start_time, units = "mins")
+
+  if (verbose) {
+    cat(
+      "\nTotal analysis time:",
+      round(as.numeric(elapsed_time), 2),
+      "minutes\n"
     )
-    ) # end function and future_imap
-  }) # end progressr::with_progress
-
-  future::plan("sequential")
-
-  # Combine results into a single data frame
-  results_df_raw <- purrr::list_rbind(results_list)
-  # Average across simulation runs
-  results_df_rvar <- results_df |>
-    dplyr::group_by(parameter, threshold_success, threshold_futility, id_cond) |>
-    dplyr::summarise(
-      success_prob = posterior::rvar(success_prob, na.rm = TRUE),
-      futility_prob = posterior::rvar(futility_prob, na.rm = TRUE),
-      sig_success = sum(sig_success, na.rm = TRUE),
-      sig_futility = sum(sig_futility, na.rm = TRUE),
-      est_median = posterior::rvar(est_median, na.rm = TRUE),
-      est_mad = posterior::rvar(est_mad, na.rm = TRUE),
-      est_mean = posterior::rvar(est_mean, na.rm = TRUE),
-      est_sd = posterior::rvar(est_sd, na.rm = TRUE),
-      rhat = posterior::rvar(rhat, na.rm = TRUE),
-      ess_bulk = posterior::rvar(ess_bulk, na.rm = TRUE),
-      ess_tail = posterior::rvar(ess_tail, na.rm = TRUE)
-    ) |>
-    dplyr::ungroup()
-
-  # Average across simulation runs
-  results_df <- results_df |>
-    dplyr::group_by(parameter, threshold_success, threshold_futility, id_cond) |>
-    dplyr::summarise(
-      success_prob = mean(success_prob, na.rm = TRUE),
-      futility_prob = mean(futility_prob, na.rm = TRUE),
-      sig_success = mean(sig_success, na.rm = TRUE),
-      sig_futility = mean(sig_futility, na.rm = TRUE),
-      est_median = mean(est_median, na.rm = TRUE),
-      est_mad = mean(est_mad, na.rm = TRUE),
-      est_mean = mean(est_mean, na.rm = TRUE),
-      est_sd = mean(est_sd, na.rm = TRUE),
-      rhat = mean(rhat, na.rm = TRUE),
-      ess_bulk = mean(ess_bulk, na.rm = TRUE),
-      ess_tail = mean(ess_tail, na.rm = TRUE),
-      convergence_rate = sum(!is.na(success_prob)) / n_simulations,
-      error = paste(unique(error), collapse = "; ")
-    ) |>
-    dplyr::ungroup()
+  }
 
   return_list <- list(
     results_df = results_df,
-    results_df_rvar = results_df_rvar,
     results_df_raw = results_df_raw,
     design = design,
-    conditions = conditions
+    conditions = conditions,
+    elapsed_time = elapsed_time
   )
 
   class(return_list) <- "rctbayespower_sim_result"
 
-  elapsed_time <- difftime(Sys.time(), start_time, units = "mins")
-  cat(
-    "\n\nTotal analysis time:",
-    round(as.numeric(elapsed_time), 2),
-    "minutes\n\n"
-  )
-
-  return(return_list)
+  invisible(return_list)
 }

@@ -37,17 +37,17 @@ sensible defaults.
 \details{
 This function creates a complete ANCOVA model with the following structure:
 
-\strong{Model Formula:} outcome ~ baseline + group
+\strong{Model Formula:} outcome ~ baseline + arm
 
 \strong{Data Structure:} The generated data includes:
 \itemize{
 \item baseline: Standardized normal baseline covariate
-\item group: Factor with levels "ctrl" and "treat"
+\item arm: Factor with levels "ctrl" and "treat"
 \item outcome: Continuous outcome generated from the linear model
 }
 
 \strong{Parameters:} The model includes parameters for intercept, baseline effect,
-treatment effect (b_grouptreat), and residual standard deviation (sigma).
+treatment effect (b_armtreat), and residual standard deviation (sigma).
 
 \strong{Model Compilation:} The function compiles the brms model during creation,
 which may take some time but enables efficient power analysis later.
@@ -59,7 +59,7 @@ ancova_model <- build_model_ancova_cont()
 
 # Create ANCOVA model with custom priors
 custom_model <- build_model_ancova_cont(
-  prior_treatment = brms::set_prior("normal(0.5, 0.2)", class = "b", coef = "grouptreat"),
+  prior_treatment = brms::set_prior("normal(0.5, 0.2)", class = "b", coef = "armtreat"),
   prior_baseline = brms::set_prior("normal(0.3, 0.1)", class = "b", coef = "baseline")
 )
 }

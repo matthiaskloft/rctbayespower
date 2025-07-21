@@ -39,7 +39,7 @@ model_compiled <- power_analysis_ancova(
 #> Testing data simulation function...
 #> OK: Data simulation function works correctly
 #>   Generated data dimensions: 200 3 
-#>   Column names: outcome, baseline, group 
+#>   Column names: outcome, baseline,arm
 #> Testing design model with true parameters...
 #>   Using algorithm: fixed_param
 #>   Running brms::brm() with sample_prior = 'only'...
@@ -47,7 +47,7 @@ model_compiled <- power_analysis_ancova(
 #>   True parameter values:
 #>  Family: gaussian 
 #>   Links: mu = identity; sigma = identity 
-#> Formula: outcome ~ baseline + group 
+#> Formula: outcome ~ baseline +arm
 #>    Data: mock_data (Number of observations: 200) 
 #>   Draws: 1 chains, each with iter = 2; warmup = 1; thin = 1;
 #>          total post-warmup draws = 1
@@ -56,7 +56,7 @@ model_compiled <- power_analysis_ancova(
 #>            Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
 #> Intercept      0.00        NA     0.00     0.00   NA       NA       NA
 #> baseline       0.30        NA     0.30     0.30   NA       NA       NA
-#> grouptreat     0.60        NA     0.60     0.60   NA       NA       NA
+#> grouparm     0.60        NA     0.60     0.60   NA       NA       NA
 #> 
 #> Further Distributional Parameters:
 #>       Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
@@ -140,7 +140,7 @@ model_compiled <- power_analysis_ancova(
 #> Chain 2: 
 #>  Family: gaussian 
 #>   Links: mu = identity; sigma = identity 
-#> Formula: outcome ~ baseline + group 
+#> Formula: outcome ~ baseline +arm
 #>    Data: data_sim (Number of observations: 200) 
 #>   Draws: 2 chains, each with iter = 1500; warmup = 500; thin = 1;
 #>          total post-warmup draws = 2000
@@ -149,7 +149,7 @@ model_compiled <- power_analysis_ancova(
 #>            Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
 #> Intercept      0.08      0.10    -0.12     0.28 1.00     2369     1717
 #> baseline       0.31      0.07     0.17     0.45 1.00     1897     1090
-#> grouptreat     0.51      0.15     0.21     0.81 1.00     2297     1419
+#> grouparm     0.51      0.15     0.21     0.81 1.00     2297     1419
 #> 
 #> Further Distributional Parameters:
 #>       Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
@@ -160,7 +160,7 @@ model_compiled <- power_analysis_ancova(
 #> scale reduction factor on split chains (at convergence, Rhat = 1).
 #> 
 #> OK: Single simulation run completed successfully
-#> OK: Target parameter b_grouptreat extracted successfully
+#> OK: Target parameter b_armtreat extracted successfully
 #>   Parameter estimate: 0.511 
 #>   Parameter SD: 0.1522 
 #>   Convergence diagnostics for target parameter:

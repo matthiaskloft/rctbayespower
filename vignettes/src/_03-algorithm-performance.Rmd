@@ -51,113 +51,126 @@ The `rctbayespower` package supports multiple algorithms with different speed-ac
 
 # Performance Comparison
 
-```{r basic_performance}
-model_compiled <- power_analysis_ancova(
-  n_control = 100,
-  n_treatment = 100,
-  effect_size = 0.6,
-  baseline_effect = 0.3,
-  outcome_type = "continuous",
-  compile_models_only = TRUE
-)
+## Setup
+### Model
 
-# Compare core algorithms on standard problem
-performance_results <- data.frame(
-  Algorithm = character(),
-  Time_Seconds = numeric(),
-  Power_Success = numeric(),
-  Probability_Success = numeric(),
-  Power_Futility = numeric(),
-  Probability_Futility = numeric(),
-  Convergence = numeric(),
-  stringsAsFactors = FALSE
-)
-
-algorithms <- c("meanfield", "fullrank", "sampling")
-
-for (alg in algorithms) {
-  cat("Testing algorithm:", alg, "\n")
-
-  start_time <- Sys.time()
-
-  # Use power_analysis_ancova for meanfield and fullrank
-  if (alg %in% c("meanfield", "fullrank")) {
-    power_result <- power_analysis(
-      brms_design_estimation = model_compiled$brms_design_estimation,
-      brms_design_true_params = model_compiled$brms_design_true_params,
-      simulate_data_fn = model_compiled$simulate_data,
-      target_param = model_compiled$target_param,
-      threshold_success = .5,
-      threshold_futility = .1,
-      p_sig_success = .975,
-      p_sig_futility = .5,
-      n_simulations = n_sims,
-      n_cores = n_cores,
-      brms_args = list(
-        algorithm = alg,
-        importance_resampling = TRUE,
-        iter = 1e4,
-        output_samples = 1e3
-      )
-    )
-  }
-  # Use power_analysis for sampling
-  if (alg == "sampling") {
-    power_result <- power_analysis(
-      brms_design_estimation = model_compiled$brms_design_estimation,
-      brms_design_true_params = model_compiled$brms_design_true_params,
-      simulate_data_fn = model_compiled$simulate_data,
-      target_param = model_compiled$target_param,
-      threshold_success = .5,
-      threshold_futility = .1,
-      p_sig_success = .975,
-      p_sig_futility = .5,
-      n_simulations = n_sims,
-      n_cores = n_cores,
-      brms_args = list(
-        chains = 4,
-        iter = 800,
-        warmup = 300
-      )
-    )
-  }
-
-  elapsed_time <- as.numeric(difftime(Sys.time(), start_time, units = "secs"))
-  # time in hours:minutes:seconds
-  elapsed_time_formatted <- sprintf(
-    "%02d:%02d:%02d",
-    as.integer(elapsed_time / 3600),
-    as.integer((elapsed_time %% 3600) / 60),
-    as.integer(elapsed_time %% 60)
-  )
-
-  performance_results <- rbind(
-    performance_results,
-    data.frame(
-      Algorithm = alg,
-      N_simulations = n_sims,
-      Time = elapsed_time_formatted,
-      Power_Success = power_result$power_success,
-      Probability_Success = power_result$mean_prob_success,
-      Power_Futility = power_result$power_futility,
-      Probability_Futility = power_result$mean_prob_futility,
-      Convergence = power_result$convergence
-    )
-  )
+```{r}
+model_file <- here::here("test_model_ancova.rds")
+if (file.exists(model_file)) {
+  # load the model from a file
+  model_ancova <- readRDS(model_file)
+} else{
+  # create the model
+  model_ancova <- build_model_ancova_cont()
+  # save the model to a file
+  saveRDS(model_ancova, file = model_file)
 }
+print(model_ancova)
+```
 
-print(performance_results) |>
-  kableExtra::kable(digits = 2)
+### Design
+
+```{r}
+design <- build_design(
+  model = model_ancova,
+  target_params = "b_armtreat",
+  thresholds_success = 0.1,
+  thresholds_futility = 0,
+  p_sig_success = 0.975,
+  p_sig_futility = 0.5
+)
+# check the required parameters for the design
+required_parameters(design)
+
 ```
 
 
-# Conclusion
+### Conditions
 
-- **Start fast**: Use `meanfield` for exploration
-- **Refine carefully**: Use `fullrank` for detailed analysis  
-- **Confirm precisely**: Use `sampling` for final results
-- **Plan resources**: Estimate time and memory needs
-- **Monitor quality**: Check convergence and validate results
+```{r}
+conditions <- build_conditions(
+  design = design,
+  condition_values = list(
+    # two sample sizes
+    n_total = 300,
+        # two effect sizes
+    b_armtreat = c(0,0.3)
+  ),
+  static_values = list(
+    # equal allocation
+    p_alloc =
+      list(c(0.5, 0.5)),
+          # baseline effect
+    b_baseline = 0
+  )
+)
+print(conditions, n = 100)
+```
+
+
+## Run Simulations for Comparison
+
+```{r basic_performance}
+n_cores <- parallel::detectCores() - 2
+n_sims <- n_cores * 40
+
+# Meanfield
+suppressWarnings(
+  power_result_meanfield <-
+    power_grid_analysis(
+      conditions = conditions,
+      n_cores = n_cores,
+      n_simulations = n_sims,
+      verbose = FALSE,
+      brms_args = list(
+        algorithm = "meanfield",
+        importance_resampling = TRUE,
+        iter = 1e4,
+        output_samples = 2e3
+      )
+    )
+)
+
+# Meanfield
+suppressWarnings(
+  power_result_fullrank <-
+    power_grid_analysis(
+      conditions = conditions,
+      n_cores = n_cores,
+      n_simulations = n_sims,
+      verbose = FALSE,
+      brms_args = list(
+        algorithm = "fullrank",
+        importance_resampling = TRUE,
+        iter = 1e4,
+        output_samples = 2e3
+      )
+    )
+)
+
+# Sampling
+power_result_sampling <- power_grid_analysis(
+  conditions = conditions,
+  n_cores = n_cores,
+  n_simulations = n_sims,
+  verbose = FALSE,
+  brms_args = list(
+    chains = 4,
+    iter = 700,
+    warmup = 200
+  )
+)
+
+results_summary<- rbind(
+  power_result_meanfield$results_df,
+  power_result_fullrank$results_df,
+  power_result_sampling$results_df
+)
+
+# Print results table
+print(kableExtra::kable(results_summary, digits = 2))
+print(results_summary, digits = 2)
+```
 
 
 

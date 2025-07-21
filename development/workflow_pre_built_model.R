@@ -24,14 +24,15 @@ if (file.exists(model_file)) {
   saveRDS(model_ancova, file = model_file)
 }
 
+print(model_ancova)
 
 #-------------------------------------------------------------------------------
 # 2. Create design
 
 design <- build_design(
   model = model_ancova,
-  target_params = "b_grouptreat",
-  thresholds_success = 0.2,
+  target_params = "b_armtreat",
+  thresholds_success = 0.0,
   thresholds_futility = 0.0,
   p_sig_success = 0.975,
   p_sig_futility = 0.5
@@ -47,35 +48,34 @@ conditions <- build_conditions(
   design = design,
   condition_values = list(
     # two sample sizes
-    n_total = 100,
+    n_total = 400,
+    # baseline effect
+    b_baseline = c(0, .5),
     # two effect sizes
-    b_grouptreat = c(0.3)
+    b_armtreat = c(0, .5)
   ),
   static_values = list(
     # equal allocation
     p_alloc =
-      list(c(0.5, 0.5)),
-    # baseline effect
-    b_baseline = 0.2
+      list(c(0.5, 0.5))
   )
 )
-print(conditions)
+print(conditions, n = 100)
 
 #-------------------------------------------------------------------------------
 # 4. Run analysis
-future::plan("sequential")
-n_cores <- 14
+#future::plan("sequential")
+n_cores <- 15
 result <- power_grid_analysis(
   conditions = conditions,
   n_cores = n_cores,
-  n_simulations = n_cores * 20
+  n_simulations = n_cores * 40,
+  verbose = TRUE
 )
 
-result
 
-
-# design$target_params <- c("b_grouptreat", "b_Intercept")
+# design$target_params <- c("b_armtreat", "b_Intercept")
 # design$thresholds_success <- c(0.2, 0.0)
 # design$thresholds_futility <- c(0.0, 0.0)
-# 
+#
 # brmsfit <- simulate_single_run(conditions$condition_arguments[[1]], design)

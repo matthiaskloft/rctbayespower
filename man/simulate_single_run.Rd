@@ -28,7 +28,7 @@ This function is the core simulation engine used by power analysis functions.
 ancova_model <- build_model_ancova_cont()
 design <- build_design(
   model = ancova_model,
-  target_params = "b_grouptreat",
+  target_params = "b_armtreat",
   n_interim_analyses = 0,
   thresholds_success = 0.2,
   thresholds_futility = 0,
@@ -44,7 +44,7 @@ conditions <- build_conditions(
     true_parameter_values = list(
       intercept = 0,
       sigma = 1,
-      b_grouptreat = 0.5,
+      b_armtreat = 0.5,
       b_baseline = 0.2
     )
   )

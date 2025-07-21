@@ -17,7 +17,7 @@
 #' ancova_model <- build_model_ancova_cont()
 #' design <- build_design(
 #'   model = ancova_model,
-#'   target_params = "b_grouptreat",
+#'   target_params = "b_armtreat",
 #'   n_interim_analyses = 0,
 #'   thresholds_success = 0.2,
 #'   thresholds_futility = 0,
@@ -33,7 +33,7 @@
 #'     true_parameter_values = list(
 #'       intercept = 0,
 #'       sigma = 1,
-#'       b_grouptreat = 0.5,
+#'       b_armtreat = 0.5,
 #'       b_baseline = 0.2
 #'     )
 #'   )
@@ -82,7 +82,7 @@ simulate_single_run <- function(condition_arguments,
   # default brms arguments
   brms_args_default <- list(
     algorithm = "sampling",
-    iter = 500,
+    iter = 750,
     warmup = 250,
     chains = 4,
     cores = 1,

@@ -1,7 +1,7 @@
 Package: rctbayespower
 Title: Bayesian Power Analysis for Randomized Controlled Trials
 Version: 0.1.0
-Description: Provides tools for conducting Bayesian power analysis for randomized controlled trials (RCTs) using 'brms' and Stan. The package enables simulation-based power analysis with flexible threshold-based decision criteria, estimation of power curves, and determination of optimal sample sizes. Supports continuous, binary, and count outcomes with custom model formulas, prior specifications, and parallel processing capabilities.
+Description: Provides tools for conducting Bayesian power analysis for randomized controlled trials (RCTs) using 'brms' and 'Stan'.
 Author: Matthias Kloft [aut, cre, cph] (<https://orcid.org/0000-0003-1845-6957>)
 Maintainer: Matthias Kloft <kloft.dev+rctbayespower@gmail.com>
 Authors@R: c(person("Matthias", "Kloft",
@@ -25,10 +25,7 @@ Imports:
     scales,
     rlang,
     stringr,
-    purrr,
-    furrr,
-    future,
-    progressr
+    purrr
 Suggests: 
     testthat (>= 3.0.0),
     knitr,

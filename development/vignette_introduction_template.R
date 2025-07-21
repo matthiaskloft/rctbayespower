@@ -4,7 +4,7 @@ library(rctbayespower)
 
 ### How to Build a Custom Model ------------------------------------------------
 
-n_control <- 50  # number of participants in the control group
+n_control <- 50  # number of participants in the control arm
 n_treatment <- 50  # number of participants in the treatment group
 
 
@@ -15,7 +15,7 @@ simulate_data <- function(n_control, n_treatment) {
   data.frame(
     outcome = rnorm(n_control + n_treatment),
     baseline = rnorm(n_control + n_treatment),
-    group = factor(
+   arm= factor(
       rep(c(0, 1), times = c(n_control, n_treatment)),
       levels = c(0, 1),
       labels = c("ctrl", "treat")
@@ -29,9 +29,9 @@ mock_data <- simulate_data(n_control, n_treatment)
 ### 2) Model Formulas
 
 # define the model formula for the design brms model
-model_formula_true_params <- bf(outcome ~ baseline + group, center = FALSE)
+model_formula_true_params <- bf(outcome ~ baseline + arm, center = FALSE)
 # define the model formula for the estimation in the power simulation
-model_formula_estimation <- bf(outcome ~ baseline + group)
+model_formula_estimation <- bf(outcome ~ baseline + arm)
 
 
 ### 3) True Parameters via Priors
@@ -44,7 +44,7 @@ default_prior(model_formula_true_params, mock_data, family = family)
 # set the priors for the design brms model to constants of the true parameters
 priors_true_params <- c(
   set_prior("constant(.2)", class = "b", coef = "baseline"),
-  set_prior("constant(.5)", class = "b", coef = "grouptreat"),
+  set_prior("constant(.5)", class = "b", coef = "grouparm"),
   set_prior("constant(0)", class = "b", coef = "Intercept"),
   set_prior("constant(1)", class = "sigma")
 )
@@ -64,7 +64,7 @@ priors_estimation <- c(
 ### 5) Validate Power Design ---------------------------------------------------
 
 # define the target parameter in the brms model for the power simulation
-target_param <- "grouptreat"
+target_param <- "grouparm"
 
 algorithm <- "sampling"
 
@@ -81,7 +81,7 @@ val <- validate_power_design(
   family = family,
   priors_true_params = priors_true_params,
   priors_estimation = priors_estimation,
-  target_param = "grouptreat",
+  target_param = "grouparm",
   simulate_data_fn = simulate_data,
   brms_args = list(
     algorithm = "meanfield",
