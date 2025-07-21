@@ -1,7 +1,7 @@
 # Test script to verify that parallelization works correctly with ANCOVA caching
 
 # Load the package functions
-source("R/power_grid_analysis.R")
+source("R/power_analysis.R")
 source("R/power_analysis.R")
 source("R/power_analysis_ancova.R")
 
@@ -10,11 +10,11 @@ cat("=== Testing Parallelization with ANCOVA Caching ===\n")
 
 test_parallelization <- function() {
   tryCatch({
-    cat("Testing power_grid_analysis with parallelization enabled...\n")
+    cat("Testing power_analysis with parallelization enabled...\n")
     
     # Test with multiple cores and progress updates
     start_time <- Sys.time()
-    result <- power_grid_analysis(
+    result <- power_analysis(
       target_power_success = 0.8,
       sample_sizes = c(20, 40, 60),  # 3 different sample sizes
       effect_sizes = c(0.5),         # 1 effect size (should enable caching)

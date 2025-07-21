@@ -92,7 +92,7 @@ print(cardio_power)
 
 ```{r cardio_sample_size}
 # Find optimal sample size for regulatory submission
-cardio_sample_size <- power_grid_analysis(
+cardio_sample_size <- power_analysis(
   sample_sizes = c(80, 120, 160, 200),
   effect_sizes = 0.375, # Fixed effect size
   target_power_success = 0.85, # Higher power for regulatory submission
@@ -125,7 +125,7 @@ plot(cardio_sample_size, type = "power_curve")
 
 ```{r cardio_prior}
 # Meta-analysis of similar drugs with design prior
-cardio_informed <- power_grid_analysis(
+cardio_informed <- power_analysis(
   sample_sizes = 120,
   effect_sizes = seq(0.2, 0.6, by = 0.05),
   design_prior = "normal(0.375, 0.1)", # Informed by meta-analysis
@@ -232,7 +232,7 @@ cat("Power with weak baseline effect:", round(depression_power_weak$power_succes
 
 ```{r mental_health_sensitivity}
 # Test sensitivity to different effect sizes
-depression_curve <- power_grid_analysis(
+depression_curve <- power_analysis(
   sample_sizes = 60,
   effect_sizes = seq(0.2, 0.7, by = 0.1),
   design_prior = "normal(0.42, 0.1)", # Prior based on pilot study
@@ -319,7 +319,7 @@ print(rare_disease_power)
 
 ```{r rare_disease_alternatives}
 # Explore different allocation strategies
-rare_disease_sample_sizes <- power_grid_analysis(
+rare_disease_sample_sizes <- power_analysis(
   sample_sizes = c(15, 20, 25, 30),
   effect_sizes = log_odds_ratio,
   power_analysis_fn = "power_analysis_ancova",

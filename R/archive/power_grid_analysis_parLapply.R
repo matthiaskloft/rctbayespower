@@ -40,7 +40,7 @@
 #' #' @importFrom parallel detectCores makeCluster stopCluster parLapply clusterEvalQ clusterExport
 #' #' @importFrom utils modifyList
 #' #' @export
-#' power_grid_analysis <- function(
+#' power_analysis <- function(
 #'     conditions,
 #'     design_prior = NULL,
 #'     n_simulations = 500,

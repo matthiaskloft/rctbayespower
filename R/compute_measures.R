@@ -55,7 +55,7 @@
 #' measures <- compute_measures_brmsfit(fitted_model, design)
 #' }
 #'
-#' @seealso [power_grid_analysis()], [simulate_single_run()]
+#' @seealso [power_analysis()], [simulate_single_run()]
 #' @importFrom stats median
 #' @keywords internal
 compute_measures_brmsfit <- function(brmsfit, design) {
@@ -245,7 +245,7 @@ compute_measures_brmsfit <- function(brmsfit, design) {
 #'   \item Concatenated error messages for debugging purposes
 #' }
 #'
-#' @seealso [compute_measures_brmsfit()], [power_grid_analysis()]
+#' @seealso [compute_measures_brmsfit()], [power_analysis()]
 #' @keywords internal
 summarize_sims <- function(results_df_raw, n_simulations) {
   # Validate input

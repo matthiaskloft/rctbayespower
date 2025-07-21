@@ -1,6 +1,6 @@
-#' Build Condition Grid for Power Analysis
+#' Build Conditions for Power Analysis
 #'
-#' Creates a structured condition grid and argument lists for power analysis
+#' Creates a structured set of conditions and argument lists for power analysis
 #' simulations. This function takes varying condition parameters and static
 #' parameters, validates them against the design requirements, and creates
 #' all necessary argument combinations for simulation runs.
@@ -27,7 +27,7 @@
 #'
 #' @examples
 #' \dontrun{
-#' # Create condition grid for sample size and effect size analysis
+#' # Create conditions for sample size and effect size analysis
 #' conditions <- build_conditions(
 #'   design = my_design,
 #'   condition_values = list(

@@ -14,13 +14,13 @@ equivalence (ROPE) for decision making.
 \section{Main Functions}{
 
 \describe{
-\item{\code{\link[=power_grid_analysis]{power_grid_analysis()}}}{Comprehensive grid analysis varying sample sizes and effect sizes}
+\item{\code{\link[=power_analysis]{power_analysis()}}}{Comprehensive power analysis varying sample sizes and effect sizes}
 \item{\code{\link[=build_model]{build_model()}}}{Create model specifications for power analysis}
 \item{\code{\link[=build_design]{build_design()}}}{Create experimental design configurations}
 \item{\code{\link[=build_conditions]{build_conditions()}}}{Generate analysis conditions from design parameters}
 \item{\code{\link[=simulate_single_run]{simulate_single_run()}}}{Execute single simulation run for power analysis}
 \item{\code{\link[=validate_weighting_function]{validate_weighting_function()}}}{Testing weighting function implementations}
-\item{\code{\link[=plot.rctbayespower_grid]{plot.rctbayespower_grid()}}}{Visualization of power grid analysis results}
+\item{\code{\link[=plot.rctbayespower_sim_result]{plot.rctbayespower_sim_result()}}}{Visualization of power analysis results}
 }
 }
 

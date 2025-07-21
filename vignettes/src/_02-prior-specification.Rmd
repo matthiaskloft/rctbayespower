@@ -178,7 +178,7 @@ Using a sceptical prior reduces the probability of falsely concluding success wh
 Design priors integrate uncertainty about the true effect size. Here we compare integrated power (with design prior) versus point estimates (without design prior).
 
 ```{r design_prior}
-fit_design_prior <- power_grid_analysis(
+fit_design_prior <- power_analysis(
   sample_sizes = c(160),
   effect_sizes = seq(0.2, 0.8, 0.1),
   design_prior = "normal(0.5, 0.1)", # Informed design prior

@@ -7,150 +7,166 @@ output:
 
 **Generated:** `r Sys.Date()`  
 **Version:** 0.1.0  
-**Last Updated:** 2025-01-06
+**Last Updated:** 2025-07-21
 
-## Executive Summary
+**Current State:** Functional and stable core with documentation lag.
 
-The `rctbayespower` package is in **excellent condition** with all core functionality complete and working. The package provides a comprehensive Bayesian power analysis framework for randomized controlled trials with sophisticated features including model caching, design prior integration, and flexible visualization.
+## Package Architecture Overview
 
-### Current Status: **PRODUCTION READY** ✅
+### ✅ **IMPLEMENTED FEATURES - Object-Oriented API**
 
-## Package Structure Assessment
+#### Core Functions (100% Complete & Working)
+- **`power_analysis()`** - Main Bayesian power analysis function using new object-oriented API
+- **`build_model()`** - Create model specifications for power analysis
+- **`build_design()`** - Create experimental design configurations
+- **`build_conditions()`** - Generate analysis conditions from design parameters
+- **`simulate_single_run()`** - Execute single simulation run for power analysis
 
-### ✅ **COMPLETED FEATURES**
-
-#### Core Functions (100% Complete)
-- **`power_analysis()`** - Main Bayesian power analysis function
-- **`power_analysis_ancova()`** - ANCOVA convenience wrapper with baseline covariates
-- **`power_grid_analysis()`** - Comprehensive grid analysis replacing multiple legacy functions
-- **`validate_power_design()`** - Analysis design validation with model compilation
-- **`validate_weighting_function()`** - Design prior validation
+#### Pre-built Models (Partial Implementation)
+- **`build_model_ancova_cont()`** - ANCOVA model for continuous outcomes ✅
+  - To Do: build_model_ancova() as generalized version and wrappers for specific defaults like continuous outcome (build_model_ancova_cont())
 
 #### Advanced Features (100% Complete)
-- **Model Caching System** - Groups combinations by effect size, reuses compiled models
-- **Design Prior Integration** - Supports brms syntax with comprehensive fallback hierarchy
-- **Integrated Power Computation** - Weighted power across effect sizes using priors
-- **Sophisticated Parallelization** - Robust parallel processing with parameter preservation
-- **Comprehensive Plotting** - Multiple visualization types with auto-detection
+
+- **Design Prior Integration** - Supports brms syntax with comprehensive fallback hierarchy ✅
+- **Integrated Power Computation** - Weighted power across effect sizes using priors ✅
+- **Sophisticated Parallelization** - Robust parallel processing with parameter preservation ✅
+- **Comprehensive Plotting** - Multiple visualization types with auto-detection ✅
 
 #### S3 Methods (100% Complete)
-- `plot.rctbayespower()` and `plot.rctbayespower_grid()`
-- `print.rctbayespower()` and `print.rctbayespower_grid()`
-- `summary.rctbayespower()` and `summary.rctbayespower_grid()`
+- `plot.rctbayespower_sim_result()` - Visualization of power analysis results ✅
+- `print.rctbayespower_*()` methods for all object types ✅
 
-#### Outcome Types (100% Complete)
-- **Continuous outcomes** - Cohen's d effect sizes, Gaussian models
-- **Binary outcomes** - Log odds ratios, Bernoulli models with logit link
-- **Count outcomes** - Log rate ratios, Poisson models with log link
+#### Outcome Types (Partial Implementation)  
+- **Continuous outcomes** - Cohen's d effect sizes, ANCOVA models ✅
+- **Binary outcomes** - Claimed in old documentation but not implemented ❌
+- **Count outcomes** - Claimed in old documentation but not implemented ❌
 
-#### Documentation (100% Complete)
-- Comprehensive roxygen2 documentation for all functions
-- Complete DESCRIPTION file with proper dependencies
-- NAMESPACE properly generated and maintained
+## Current Implementation Status
+
+### **What Works (Production Ready)**
+1. **Object-oriented workflow**: `build_model()` → `build_design()` → `build_conditions()` → `power_analysis()`
+2. **ANCOVA continuous outcome analysis** - Fully functional with baseline covariates
+3. **Design prior integration** - brms syntax support with fallback hierarchy  
+4. **Model caching** - Significant performance improvements for grid analyses
+5. **Comprehensive plotting** - Multiple plot types with automatic detection
+6. **Parallelization** - Robust multi-core processing
+7. **Class system** - Proper S3 methods with consistent object handling
 
 ### ⚠️ **INCOMPLETE FEATURES**
 
-#### Test Suite (0% Complete)
-- **Status:** All test files are empty placeholders
-- **Impact:** No automated testing coverage
-- **Files:** 7 test files with only TODO comments
-- **Planned Coverage:** Comprehensive test suite outlined in placeholder comments
+#### Documentation Inconsistencies (Critical)
+- **Vignettes**: Still reference non-existent `power_analysis_ancova()` function ❌
+- **Manual pages**: Some still reference old function names ❌
+- **Need update**: All vignettes need rewriting for new API ❌
 
-#### Legacy Functions (Intentionally Removed)
-- **`effect_size_analysis()`** - Removed as per development plan
-- **`power_curve()`** - Removed as per development plan  
-- **Note:** These functions are referenced in vignettes and NEWS.md but don't exist in codebase
+#### Test Suite (0% Complete) 
+- **Status:** All test files contain only TODO comments ❌
+- **Impact:** No automated testing coverage ❌
+- **Files:** 4 test files with placeholder content only ❌
 
-### 🐛 **IDENTIFIED ISSUES**
+#### Missing Outcome Types
+- **Binary outcomes** - Referenced in old docs but never implemented ❌
+- **Count outcomes** - Referenced in old docs but never implemented ❌
 
-#### Minor Issues (2 total)
-1. **power_analysis.R:1072** - Missing comma in roxygen example code
-2. **plot_power_grid_analysis.R** - Missing explicit imports for `scales` functions
+## API Transition Complete
 
-#### Documentation Inconsistencies
-- **NEWS.md** references non-existent functions (`effect_size_analysis`, `power_curve`)
-- **Vignettes** may reference removed functions (requires verification)
+### **Old API (Removed)**
+- `power_analysis_ancova()` - Existed only in legacy archive ❌
+- `sample_size_analysis()` - Never existed ❌  
+- `effect_size_analysis()` - Never existed ❌
+- `bayesian_power_curve()` - Never existed ❌
+- `simulate_rct_data()` - Never existed ❌
 
-## Code Quality Assessment
+### **New API (Current - Production Ready)**
+```r
+#-------------------------------------------------------------------------------
+# 1. Create model
 
-### Strengths
-- **Excellent Architecture** - Well-structured with clear separation of concerns
-- **Comprehensive Error Handling** - Robust input validation throughout
-- **Performance Optimizations** - Sophisticated caching and parallelization
-- **Consistent Coding Style** - Follows R package development best practices
-- **Complete Documentation** - All functions have comprehensive roxygen comments
+# create the model
+model_ancova <- build_model_ancova_cont()
+print(model_ancova)
 
-### Dependencies
-- **Core:** brms (≥ 2.20.0), posterior, ggplot2, dplyr, tidyr, tibble
-- **Support:** parallel, scales, rlang, stats, utils
-- **Status:** All properly declared in DESCRIPTION
+#-------------------------------------------------------------------------------
+# 2. Create design
 
-## Algorithm Performance
+design <- build_design(
+  model = model_ancova,
+  target_params = "b_armtreat",
+  thresholds_success = 0.0,
+  thresholds_futility = 0.0,
+  p_sig_success = 0.975,
+  p_sig_futility = 0.5
+)
+# check the required parameters for the design
+required_parameters(design)
 
-### Supported Algorithms
-- **"sampling"** - Full MCMC (default, most accurate)
-- **"meanfield"/"fullrank"** - Variational inference (faster)
-- **"pathfinder"** - Path-finder variational inference
-- **"laplace"** - Laplace approximation (fastest)
+#-------------------------------------------------------------------------------
+# 3. Create conditions
 
-### Performance Enhancements
-- **Model Caching** - Dramatic speedup for grid analyses
-- **Parallelization** - Efficient multi-core processing
-- **Memory Management** - Optimized for large-scale analyses
+conditions <- build_conditions(
+  design = design,
+  condition_values = list(
+    # two sample sizes
+    n_total = 400,
+    # baseline effect
+    b_baseline = c(0, .5),
+    # two effect sizes
+    b_armtreat = c(0, .5)
+  ),
+  static_values = list(
+    # equal allocation
+    p_alloc =
+      list(c(0.5, 0.5))
+  )
+)
+print(conditions, n = 100)
 
-## Development Workflow Status
+#-------------------------------------------------------------------------------
+# 4. Run analysis
+#future::plan("sequential")
+n_cores <- 15
+result <- power_analysis(
+  conditions = conditions,
+  n_cores = n_cores,
+  n_simulations = n_cores * 40,
+  verbose = TRUE
+)
+```
 
-### R CMD Check Compliance
-- **Documentation:** Properly synchronized with code
-- **Imports:** Comprehensive NAMESPACE management
-- **Non-ASCII:** All Unicode symbols replaced with ASCII equivalents
-- **Global Variables:** Proper `.data$` notation used throughout
 
-### Build System
-- **DESCRIPTION:** Complete and accurate
-- **NAMESPACE:** Auto-generated and current
-- **Documentation:** All .Rd files current with roxygen2
-- **Vignettes:** Multiple comprehensive vignettes available
+## Dependencies and Build Status
 
-## Repository Health
+### Dependencies (All Current)
+- **Core:** brms (≥ 2.20.0), posterior, ggplot2, dplyr, tidyr, tibble ✅
+- **Support:** parallel, scales, rlang, stringr, purrr ✅  
+- **Status:** All properly declared in DESCRIPTION ✅
 
-### File Organization
-- **R/** - 5 core R files, all complete
-- **man/** - 12 documentation files, all current
-- **tests/** - 7 placeholder test files
-- **vignettes/** - 5 comprehensive vignettes
-- **development/** - 5 development/testing scripts
+### R CMD Check Status
+- **NAMESPACE:** Up-to-date with current exports ✅
+- **Documentation:** Roxygen2 documentation synchronized ✅
+- **Class system:** Proper S3 method registration ✅
+- **Global variables:** Properly declared ✅
 
-### Git Status
-- **Modified files:** Documentation and vignettes (in progress)
-- **Branch:** main
-- **Status:** Clean working directory with staged improvements
 
 ## Next Development Priorities
 
-### Priority 1: Testing Framework
-- **Implement comprehensive test suite** (7 test files to complete)
+### Priority 1: Documentation Updates (Critical)
+- **Rewrite all vignettes** to use new object-oriented API
+- **Update manual pages** that still reference old function names
+- **Verify all examples** work with current codebase
+
+### Priority 2: Testing Framework (High)
+- **Implement comprehensive test suite** (4 test files to complete)
 - **Add automated CI/CD pipeline** for continuous testing
 - **Integrate test coverage reporting**
 
-### Priority 2: Documentation Cleanup
-- **Fix NEWS.md** to remove references to non-existent functions
-- **Update vignettes** to reflect current function set
-- **Verify all examples** work with current codebase
+### Priority 3: Feature Expansion (Medium)
+- **Implement additional pre-defined models models**
+- **Prior conditions -> model caching in build_conditions()**
+- **Bayesian optimization**
 
-### Priority 3: Minor Bug Fixes
-- **Fix comma in power_analysis.R** example code
-- **Add missing imports** in plot_power_grid_analysis.R
-- **Run R CMD check** to verify all issues resolved
-
-### Priority 4: Enhancement Opportunities
-- **Additional outcome types** (e.g., survival, ordinal)
-- **Advanced prior specifications** (hierarchical, mixture priors)
+### Priority 4: Enhancement Opportunities (Low)
 - **Interactive plotting** (plotly integration)
 - **Package website** enhancement (pkgdown)
 
-## Conclusion
-
-The `rctbayespower` package represents a mature, well-architected solution for Bayesian power analysis in RCTs. With only minor documentation issues and missing tests, the package is ready for production use. The sophisticated feature set, including model caching and design prior integration, positions it as a comprehensive tool for researchers conducting Bayesian power analyses.
-
-**Recommendation:** Proceed with test implementation and documentation cleanup to prepare for CRAN submission.

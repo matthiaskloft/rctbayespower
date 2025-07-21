@@ -17,7 +17,7 @@ reference:
   contents:
   - power_analysis
   - power_analysis_ancova
-  - power_grid_analysis
+  - power_analysis
 
 - title: "Visualization Functions"
   desc: "Functions for plotting and visualizing power analysis results"

@@ -266,7 +266,7 @@ n_simulations <- n_cores * 30
 
 # vary sample sizes
 sample_size_ancova <-
-  power_grid_analysis(
+  power_analysis(
     sample_sizes = c(200, 260, 320),
     effect_sizes = .7,
     percent_group_treat = 0.5,
@@ -289,7 +289,7 @@ plot(sample_size_ancova)
 
 # vary effect sizes
 effect_size_ancova <-
-  power_grid_analysis(
+  power_analysis(
     sample_sizes = c(300),
     effect_sizes = seq(0.5, .9, 0.1),
     design_prior = "normal(0.7,0.05)",
@@ -312,7 +312,7 @@ plot(effect_size_ancova, type="power_curve",show_integrated = T)
 
 
 # vary sample sizes and effect sizes
-power_grid_ancova <- power_grid_analysis(
+power_ancova <- power_analysis(
   sample_sizes = c(200, 280),
   effect_sizes = seq(0.5, .9, 0.1),
   design_prior = "normal(0.7,0.05)",
@@ -329,9 +329,9 @@ power_grid_ancova <- power_grid_analysis(
   n_simulations = n_simulations,
   n_cores = n_cores
 )
-print(power_grid_ancova)
-summary(power_grid_ancova)
-plot(power_grid_ancova, type = "heatmap")
+print(power_ancova)
+summary(power_ancova)
+plot(power_ancova, type = "heatmap")
 
 
 

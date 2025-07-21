@@ -235,12 +235,12 @@ relative to clinically meaningful thresholds.
 ## Sample Size Analysis
 
 One of the most common questions in study planning is: “How many
-participants do I need?” The `power_grid_analysis()` function helps
+participants do I need?” The `power_analysis()` function helps
 answer this question by testing multiple sample sizes.
 
 ``` r
 # Find sample size needed for 80% power
-sample_size_result <- power_grid_analysis(
+sample_size_result <- power_analysis(
   sample_sizes = c(80, 100),
   effect_sizes = 0.5, # Fixed effect size
   target_power_success = 0.8,
@@ -520,7 +520,7 @@ sensitivity:
 
 ``` r
 # Generate power curve across different effect sizes
-effect_size_result <- power_grid_analysis(
+effect_size_result <- power_analysis(
   sample_sizes = 60, # Fixed sample size
   effect_sizes = c(0.6, 0.8),
   design_prior = "normal(0.5, 0.1)", # Prior knowledge about effect size
@@ -947,7 +947,7 @@ For comprehensive planning, analyze both sample sizes and effect sizes:
 
 ``` r
 # Full grid analysis
-grid_result <- power_grid_analysis(
+grid_result <- power_analysis(
   sample_sizes = c(50, 70),
   effect_sizes = c(0.6, 0.8),
   design_prior = "normal(0.5, 0.1)",
@@ -966,7 +966,7 @@ grid_result <- power_grid_analysis(
 #>   Density function: stats::dnorm(0.5, 0.1) (using stats package)
 #>   Quantile function: stats::qnorm(0.5, 0.1) (using stats package)
 #> 
-#> === Power Grid Analysis ===
+#> === Power Analysis ===
 #> Sample sizes to test: 50, 70 
 #> Effect sizes to test: 0.6, 0.8 
 #> Threshold - Success: 0.3 
@@ -1365,7 +1365,7 @@ grid_result <- power_grid_analysis(
 #> 
 #> Computing integrated power using design prior...
 #> 
-#> === Power Grid Complete ===
+#> === Power Analysis Complete ===
 #> Target success power not achieved with tested combinations
 #> Target futility power not achieved with tested combinations
 #> 
@@ -1378,7 +1378,7 @@ Summary:
 
 ``` r
 summary(grid_result)
-#> Bayesian RCT Power Grid - Detailed Summary
+#> Bayesian RCT Power Analysis - Detailed Summary
 #> =================================================
 #> 
 #> Analysis Parameters:
@@ -1394,7 +1394,7 @@ summary(grid_result)
 #>   Design prior type: brms 
 #>   Analysis time: 20.26 minutes
 #> 
-#> Power Grid Results:
+#> Power Analysis Results:
 #> ==================
 #>  N_Total Effect_Size Convergence Power_Success Prob_Success Power_Futility
 #>       50         0.6        100%         26.7%        76.2%           2.9%

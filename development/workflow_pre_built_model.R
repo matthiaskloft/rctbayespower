@@ -66,7 +66,7 @@ print(conditions, n = 100)
 # 4. Run analysis
 #future::plan("sequential")
 n_cores <- 15
-result <- power_grid_analysis(
+result <- power_analysis(
   conditions = conditions,
   n_cores = n_cores,
   n_simulations = n_cores * 40,

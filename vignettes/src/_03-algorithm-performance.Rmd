@@ -117,7 +117,7 @@ n_sims <- n_cores * 40
 # Meanfield
 suppressWarnings(
   power_result_meanfield <-
-    power_grid_analysis(
+    power_analysis(
       conditions = conditions,
       n_cores = n_cores,
       n_simulations = n_sims,
@@ -134,7 +134,7 @@ suppressWarnings(
 # Meanfield
 suppressWarnings(
   power_result_fullrank <-
-    power_grid_analysis(
+    power_analysis(
       conditions = conditions,
       n_cores = n_cores,
       n_simulations = n_sims,
@@ -149,7 +149,7 @@ suppressWarnings(
 )
 
 # Sampling
-power_result_sampling <- power_grid_analysis(
+power_result_sampling <- power_analysis(
   conditions = conditions,
   n_cores = n_cores,
   n_simulations = n_sims,

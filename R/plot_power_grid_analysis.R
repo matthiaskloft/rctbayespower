@@ -1,9 +1,9 @@
-#' Plot Power Grid Analysis Results
+#' Plot Power Analysis Results
 #'
-#' Create comprehensive visualizations for power grid analysis results from power_grid_analysis().
+#' Create comprehensive visualizations for power analysis results from power_analysis().
 #' Supports different plot types based on analysis type (sample_only, effect_only, or both varying).
 #'
-#' @param x An object of class 'rctbayespower_grid' returned by power_grid_analysis()
+#' @param x An object of class 'rctbayespower_sim_result' returned by power_analysis()
 #' @param type Type of plot to create:
 #'   \itemize{
 #'     \item "auto" - Automatically detect best plot type based on analysis (default)
@@ -38,7 +38,7 @@
 #'     \item NULL for no runtime integration (default)
 #'   }
 #'   If provided, integrated power will be computed using this design prior instead of
-#'   any design prior specified in the original power_grid_analysis() call.
+#'   any design prior specified in the original power_analysis() call.
 #'   Only valid when effect sizes vary (length > 1).
 #' @param ... Additional arguments passed to ggplot2 functions
 #'
@@ -71,7 +71,7 @@
 #'   optimal_combinations = data.frame(),
 #'   detailed_results = list()
 #' )
-#' class(grid_result) <- "rctbayespower_grid"
+#' class(grid_result) <- "rctbayespower_sim_result"
 #' plot(grid_result) # Auto-detects power curve
 #'
 #' # Effect size analysis plot
@@ -96,10 +96,10 @@
 #'   optimal_combinations = data.frame(),
 #'   detailed_results = list()
 #' )
-#' class(grid_result) <- "rctbayespower_grid"
+#' class(grid_result) <- "rctbayespower_sim_result"
 #' plot(grid_result) # Shows both success and futility, both power and probabilities
 #'
-#' # Full grid heatmap
+#' # Full heatmap
 #' grid_result <- list(
 #'   target_power_success = 0.9,
 #'   target_power_futility = 0.95,
@@ -121,7 +121,7 @@
 #'   optimal_combinations = data.frame(),
 #'   detailed_results = list()
 #' )
-#' class(grid_result) <- "rctbayespower_grid"
+#' class(grid_result) <- "rctbayespower_sim_result"
 #' plot(grid_result, type = "heatmap")
 #'
 #' # Power curves faceted by effect size (when both vary)
@@ -130,7 +130,7 @@
 #' # Power curves faceted by sample size (when both vary)
 #' plot(grid_result, type = "power_curve", facet_by = "sample_size")
 #' }
-plot.rctbayespower_grid <- function(x,
+plot.rctbayespower_sim_result <- function(x,
                                     type = "auto",
                                     metric = "both",
                                     values = "both",
@@ -149,7 +149,7 @@ plot.rctbayespower_grid <- function(x,
 
   # Check for valid data
   if (is.null(x$power_surface) || nrow(x$power_surface) == 0) {
-    stop("No power analysis results to plot. Check that power_grid_analysis() completed successfully.")
+    stop("No power analysis results to plot. Check that power_analysis() completed successfully.")
   }
 
   # Check for missing essential columns
@@ -585,7 +585,7 @@ create_heatmap_plot <- function(x, metric, values, show_target, ...) {
 #' @noRd
 create_integrated_plot <- function(x, metric, values, show_target, ...) {
   if (is.null(x$integrated_power)) {
-    stop("Integrated power plot requires design prior to be specified in power_grid_analysis()")
+    stop("Integrated power plot requires design prior to be specified in power_analysis()")
   }
 
   plot_data <- x$integrated_power

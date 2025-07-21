@@ -1,4 +1,4 @@
-# # Test file for plot_power_grid_analysis.R
+# # Test file for plot_power_analysis.R
 # # Tests for plotting functions using mock objects
 #
 # library(testthat)

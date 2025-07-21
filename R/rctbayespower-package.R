@@ -8,13 +8,13 @@
 #'
 #' @section Main Functions:
 #' \describe{
-#'   \item{[power_grid_analysis()]}{Comprehensive grid analysis varying sample sizes and effect sizes}
+#'   \item{[power_analysis()]}{Comprehensive power analysis varying sample sizes and effect sizes}
 #'   \item{[build_model()]}{Create model specifications for power analysis}
 #'   \item{[build_design()]}{Create experimental design configurations}
 #'   \item{[build_conditions()]}{Generate analysis conditions from design parameters}
 #'   \item{[simulate_single_run()]}{Execute single simulation run for power analysis}
 #'   \item{[validate_weighting_function()]}{Testing weighting function implementations}
-#'   \item{[plot.rctbayespower_grid()]}{Visualization of power grid analysis results}
+#'   \item{[plot.rctbayespower_sim_result()]}{Visualization of power analysis results}
 #' }
 #'
 #' @section Key Features:
@@ -32,6 +32,33 @@
 "_PACKAGE"
 
 ## Suppress R CMD check warnings for undefined global variables
-if(getRversion() >= "2.15.1") {
-  utils::globalVariables(c("arm", "baseline", "convergence_rate"))
+if (getRversion() >= "2.15.1") {
+  # Global variables for R CMD check
+  utils::globalVariables(
+    c(
+      "parameter",
+      "threshold_success",
+      "threshold_futility",
+      "id_cond",
+      "success_prob",
+      "futility_prob",
+      "sig_success",
+      "sig_futility",
+      "est_median",
+      "est_mad",
+      "est_mean",
+      "est_sd",
+      "rhat",
+      "ess_bulk",
+      "ess_tail",
+      "converged",
+      "error",
+      "arm",
+      "baseline",
+      "convergence_rate",
+      "measures",
+      "res",
+      "i"
+    )
+  )
 }

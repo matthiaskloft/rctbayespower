@@ -1,7 +1,7 @@
-# Test script to verify model caching performance improvement in power_grid_analysis()
+# Test script to verify model caching performance improvement in power_analysis()
 
 # Load the package functions
-source("R/power_grid_analysis.R")
+source("R/power_analysis.R")
 source("R/power_analysis.R")
 source("R/power_analysis_ancova.R")
 
@@ -38,12 +38,12 @@ test_ancova_compile_only <- function() {
   })
 }
 
-# Test 2: power_analysis_ancova with caching in power_grid_analysis
+# Test 2: power_analysis_ancova with caching in power_analysis
 cat("\n=== Testing power_analysis_ancova with multiple sample sizes, same effect size ===\n")
 
 test_ancova_caching <- function() {
   tryCatch({
-    result <- power_grid_analysis(
+    result <- power_analysis(
       target_power_success = 0.8,
       sample_sizes = c(20, 40, 60),  # 3 different sample sizes
       effect_sizes = c(0.5),         # 1 effect size (should enable caching)
@@ -67,7 +67,7 @@ cat("\n=== Testing effect size grouping ===\n")
 
 test_grouping <- function() {
   tryCatch({
-    result <- power_grid_analysis(
+    result <- power_analysis(
       target_power_success = 0.8,
       sample_sizes = c(20, 40),      # 2 sample sizes
       effect_sizes = c(0.3, 0.6),    # 2 effect sizes

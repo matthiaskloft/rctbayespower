@@ -98,14 +98,14 @@
 #' #'   b_armtreat = c(0.5),
 #' #' )
 #' #'
-#' #' # Run power grid analysis
-#' #' result <- power_grid_analysis(
+#' #' # Run power analysis
+#' #' result <- power_analysis(
 #' #'   conditions = conditions,
 #' #'   n_simulations = 10, # Low for example
 #' #'   n_cores = 1
 #' #' )
 #' #' }
-#' power_grid_analysis <- function(conditions,
+#' power_analysis <- function(conditions,
 #'                                 design_prior = NULL,
 #'                                 n_simulations = 500,
 #'                                 n_cores = 1,

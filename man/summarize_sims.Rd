@@ -58,6 +58,6 @@ The function groups results by condition ID, parameter, and thresholds, then com
 }
 }
 \seealso{
-\code{\link[=compute_measures_brmsfit]{compute_measures_brmsfit()}}, \code{\link[=power_grid_analysis]{power_grid_analysis()}}
+\code{\link[=compute_measures_brmsfit]{compute_measures_brmsfit()}}, \code{\link[=power_analysis]{power_analysis()}}
 }
 \keyword{internal}

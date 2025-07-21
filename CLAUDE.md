@@ -6,22 +6,58 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 `rctbayespower` is an R package for conducting Bayesian power analysis for randomized controlled trials (RCTs) using `brms` and Stan. The package provides tools for estimating power curves, determining optimal sample sizes, and incorporating prior knowledge about treatment effects using region of practical equivalence (ROPE) for decision making.
 
-## Current Status (Updated)
+## Current Status (Updated - 2025-07-21)
 
-**Recent Major Improvements Completed:**
-- ✅ **Model Caching**: Implemented sophisticated model caching in `power_grid_analysis()` that groups combinations by effect size and reuses compiled brms models for significant performance gains
-- ✅ **Design Prior Parsing**: Enhanced design prior parsing with comprehensive fallback hierarchy (stats package → brms package → error) and support for all standard distributions
-- ✅ **Integrated Power Output**: Fixed missing output when target power levels aren't achieved with tested sample sizes
-- ✅ **Plotting Function Fixes**: Resolved aesthetic inheritance warnings in `plot_power_grid_analysis()` and improved data validation
-- ✅ **Parallelization Fixes**: Corrected parameter preservation issues for ANCOVA functions when using cached models
-- ✅ **Grid Analysis Functions**: New comprehensive `power_grid_analysis()` function that replaces and extends previous sample size and effect size analysis functions
+**Core Package State: Functional and stable core with documentation lag**
 
-**Current Package State:**
-- Core functions (`power_analysis`, `power_analysis_ancova`, `power_grid_analysis`) working with enhanced performance
-- Model caching provides significant speedup for grid analyses
-- Comprehensive plotting system with multiple visualization options
-- Robust parallelization with proper parameter handling
-- Package structure and dependencies stable and optimized
+**✅ IMPLEMENTED FEATURES - Object-Oriented API:**
+
+**Core Functions (100% Complete & Working):**
+- **`power_analysis()`** - Main Bayesian power analysis function using new object-oriented API
+- **`build_model()`** - Create model specifications for power analysis
+- **`build_design()`** - Create experimental design configurations
+- **`build_conditions()`** - Generate analysis conditions from design parameters
+- **`simulate_single_run()`** - Execute single simulation run for power analysis
+
+**Pre-built Models:**
+- **`build_model_ancova_cont()`** - ANCOVA model for continuous outcomes ✅
+  - **To Do**: `build_model_ancova()` as generalized version with wrappers for specific defaults
+
+**Advanced Features (100% Complete):**
+- **Design Prior Integration** - Supports brms syntax with comprehensive fallback hierarchy
+- **Integrated Power Computation** - Weighted power across effect sizes using priors
+- **Sophisticated Parallelization** - Robust parallel processing with parameter preservation
+- **Comprehensive Plotting** - Multiple visualization types with auto-detection
+- **Model Caching** - Significant performance improvements for grid analyses
+
+**S3 Methods (100% Complete):**
+- `plot.rctbayespower_sim_result()` - Visualization of power analysis results
+- `print.rctbayespower_*()` methods for all object types
+
+**⚠️ INCOMPLETE FEATURES:**
+
+**Documentation Inconsistencies (Critical):**
+- **Vignettes**: Still reference non-existent `power_analysis_ancova()` function - need complete rewriting
+- **Manual pages**: Some still reference old function names
+- **All vignettes need updating** for new API
+
+**Test Suite (0% Complete):**
+- **Status**: All test files contain only TODO comments
+- **Impact**: No automated testing coverage
+- **Files**: 4 test files with placeholder content only
+
+**Missing Outcome Types:**
+- **Binary outcomes** - Referenced in old docs but never implemented
+- **Count outcomes** - Referenced in old docs but never implemented
+
+**Current Production-Ready Workflow:**
+```r
+# 1. Create model → 2. Create design → 3. Create conditions → 4. Run analysis
+model_ancova <- build_model_ancova_cont()
+design <- build_design(model, target_params, thresholds, p_sig)
+conditions <- build_conditions(design, condition_values, static_values)
+result <- power_analysis(conditions, n_cores, n_simulations)
+```
 
 ## Development Practices and R CMD Check Guidelines
 
@@ -54,7 +90,7 @@ my_function <- function(p_sig_success = 0.975) { ... }
 my_function <- function(p_sig_success = 0.975) { ... }
 ```
 
-**Recent fixes applied**: Updated documentation for `p_sig_success` in `power_analysis.R` and `power_analysis_ancova.R`, and `target_power_futility` in `power_grid_analysis.R`.
+**Recent fixes applied**: Updated documentation for `p_sig_success` in `power_analysis.R`, and class system fixes throughout package.
 
 ### Documentation Conventions
 - Don't use \code{\link{function_name}} in roxygen docs. Use [functionname()] instead.

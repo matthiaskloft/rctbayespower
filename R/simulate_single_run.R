@@ -59,21 +59,16 @@ simulate_single_run <- function(condition_arguments,
   # no validations since this is the lowest level function
 
   # Simulate data with error handling
-  simulated_data <- tryCatch(
-    {
-      do.call(design$data_simulation_fn, args = condition_arguments$sim_args)
-    },
-    error = function(e) {
-      n_total <- condition_arguments$sim_args$n_total %||% "unknown"
-      warning(
-        "Data simulation failed for 'n_total'=",
-        n_total,
-        ": ",
-        e$message
-      )
-      return(NULL)
-    }
-  )
+  simulated_data <- tryCatch({
+    do.call(design$data_simulation_fn, args = condition_arguments$sim_args)
+  }, error = function(e) {
+    n_total <- condition_arguments$sim_args$n_total %||% "unknown"
+    warning("Data simulation failed for 'n_total'=",
+            n_total,
+            ": ",
+            e$message)
+    return(NULL)
+  })
 
   if (is.null(simulated_data)) {
     return(NULL)
@@ -100,23 +95,52 @@ simulate_single_run <- function(condition_arguments,
   }
 
   # Fit the model to the simulated data with error handling
-  fitted_model <- tryCatch(
-    {
-      do.call(function(...) {
-        stats::update(object = design$brms_model, newdata = simulated_data, ...)
-      }, brms_args_final)
-    },
-    error = function(e) {
-      n_total <- condition_arguments$sim_args$n_total %||% "unknown"
-      warning(
-        "Model fitting failed for 'n_total'=",
-        n_total,
-        ": ",
-        e$message
-      )
-      return(NULL)
-    }
-  )
+  fitted_model <- tryCatch({
+    do.call(function(...) {
+      stats::update(object = design$brms_model, newdata = simulated_data, ...)
+    }, brms_args_final)
+  }, error = function(e) {
+    n_total <- condition_arguments$sim_args$n_total %||% "unknown"
+    warning("Model fitting failed for 'n_total'=",
+            n_total,
+            ": ",
+            e$message)
+    return(NULL)
+  })
 
-  return(fitted_model) # Either brmsfit object or NULL
+  # compute measures
+  tryCatch({
+    df <- compute_measures_brmsfit(fitted_model, design) |>
+      dplyr::mutate(dplyr::across(-parameter, as.numeric))
+    df |> dplyr::mutate(
+      id_sim = i,
+      id_cond = args$id_cond,
+      converged = 1L,
+      error = NA_character_
+    )
+    # error handling for compute_measures_brmsfit
+  }, error = function(e) {
+    data.frame(
+      parameter = NA_character_,
+      threshold_success = NA_real_,
+      threshold_futility = NA_real_,
+      success_prob = NA_real_,
+      futility_prob = NA_real_,
+      sig_success = NA_real_,
+      sig_futility = NA_real_,
+      est_median = NA_real_,
+      est_mad = NA_real_,
+      est_mean = NA_real_,
+      est_sd = NA_real_,
+      rhat = NA_real_,
+      ess_bulk = NA_real_,
+      ess_tail = NA_real_,
+      id_sim = i,
+      id_cond = args$id_cond,
+      converged = 0L,
+      error = as.character(e)
+    )
+  })
+
+return(df) # Either brmsfit object or NULL
 }

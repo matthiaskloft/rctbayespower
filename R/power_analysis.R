@@ -1,27 +1,4 @@
-# Global variables for R CMD check
-utils::globalVariables(
-  c(
-    "parameter",
-    "threshold_success",
-    "threshold_futility",
-    "id_cond",
-    "success_prob",
-    "futility_prob",
-    "sig_success",
-    "sig_futility",
-    "est_median",
-    "est_mad",
-    "est_mean",
-    "est_sd",
-    "rhat",
-    "ess_bulk",
-    "ess_tail",
-    "converged",
-    "error"
-  )
-)
-
-#' Power Grid Analysis for Bayesian RCTs (New API)
+#' Power Analysis for Bayesian RCTs (New API)
 #'
 #' Comprehensive power analysis across multiple conditions using the new object-oriented
 #' API. This function provides flexible power analysis by varying sample sizes, effect
@@ -71,7 +48,7 @@ utils::globalVariables(
 #'
 #' @importFrom parallel detectCores makeCluster stopCluster parLapply clusterEvalQ clusterExport
 #' @importFrom utils modifyList
-#' @return A list of class "rctbayespower_grid" containing:
+#' @return A list of class "rctbayespower_sim_result" containing:
 #' \itemize{
 #'   \item design: The design object used for analysis
 #'   \item conditions: The condition specifications used
@@ -106,21 +83,21 @@ utils::globalVariables(
 #'   b_armtreat = c(0.5),
 #' )
 #'
-#' # Run power grid analysis
-#' result <- power_grid_analysis(
+#' # Run power analysis
+#' result <- power_analysis(
 #'   conditions = conditions,
 #'   n_simulations = 10, # Low for example
 #'   n_cores = 1
 #' )
 #' }
-power_grid_analysis <- function(conditions,
-                                design_prior = NULL,
-                                n_simulations = 500,
-                                n_cores = 1,
-                                n_progress_updates = 10,
-                                verbose = FALSE,
-                                brms_args = list(),
-                                ...) {
+power_analysis <- function(conditions,
+                           design_prior = NULL,
+                           n_simulations = 500,
+                           n_cores = 1,
+                           n_progress_updates = 10,
+                           verbose = FALSE,
+                           brms_args = list(),
+                           ...) {
   # time start
   start_time <- Sys.time()
 
@@ -181,13 +158,11 @@ power_grid_analysis <- function(conditions,
 
   # Optional logging
   if (verbose) {
-    cat("\n=== Power Grid Analysis ===\n")
+    cat("\n=== Power Analysis ===\n")
     cat("Total simulations:", total_runs, "\n")
-    cat(
-      "Total conditions to test:",
-      attr(conditions, "n_conditions"),
-      "\n"
-    )
+    cat("Total conditions to test:",
+        attr(conditions, "n_conditions"),
+        "\n")
     cat("Conditions:\n")
     print(conditions$conditions_grid)
     cat("\n")
@@ -205,11 +180,9 @@ power_grid_analysis <- function(conditions,
   # Progress bar for sequential execution
   pb <- NULL
   if (n_cores == 1) {
-    pb <- utils::txtProgressBar(
-      min = 0,
-      max = total_runs,
-      style = 3
-    )
+    pb <- utils::txtProgressBar(min = 0,
+                                max = total_runs,
+                                style = 3)
   }
 
   # Execute simulations
@@ -240,90 +213,27 @@ power_grid_analysis <- function(conditions,
     # Run parallel computation - direct index access is faster
     results_raw_list <- parallel::parLapply(cl, seq_along(condition_args_list), function(i) {
       args <- condition_args_list[[i]]
-      tryCatch(
-        {
-          fit <- simulate_single_run(
-            condition_arguments = args,
-            design = design,
-            brms_args = brms_args
-          )
-          df <- compute_measures_brmsfit(fit, design) |>
-            dplyr::mutate(dplyr::across(-parameter, as.numeric))
-          df |> dplyr::mutate(
-            id_sim = i,
-            id_cond = args$id_cond,
-            converged = 1L,
-            error = NA_character_
-          )
-        },
-        error = function(e) {
-          data.frame(
-            parameter = NA_character_,
-            threshold_success = NA_real_,
-            threshold_futility = NA_real_,
-            success_prob = NA_real_,
-            futility_prob = NA_real_,
-            sig_success = NA_real_,
-            sig_futility = NA_real_,
-            est_median = NA_real_,
-            est_mad = NA_real_,
-            est_mean = NA_real_,
-            est_sd = NA_real_,
-            rhat = NA_real_,
-            ess_bulk = NA_real_,
-            ess_tail = NA_real_,
-            id_sim = i,
-            id_cond = args$id_cond,
-            converged = 0L,
-            error = as.character(e)
-          )
-        }
+      # Simulate single run and compute measures
+      df_measures <- simulate_single_run(
+        condition_arguments = args,
+        design = design,
+        brms_args = brms_args
       )
+      return(measures)
     })
+
     parallel::stopCluster(cl)
   } else {
     # Sequential execution with progress bar
     results_raw_list <- lapply(seq_along(condition_args_list), function(i) {
       args <- condition_args_list[[i]]
-      res <- tryCatch(
-        {
-          fit <- simulate_single_run(
-            condition_arguments = args,
-            design = design,
-            brms_args = brms_args
-          )
-          df <- compute_measures_brmsfit(fit, design) |>
-            dplyr::mutate(dplyr::across(-parameter, as.numeric))
-          df |> dplyr::mutate(
-            id_sim = i,
-            id_cond = args$id_cond,
-            converged = 1L,
-            error = NA_character_
-          )
-        },
-        error = function(e) {
-          data.frame(
-            parameter = NA_character_,
-            threshold_success = NA_real_,
-            threshold_futility = NA_real_,
-            success_prob = NA_real_,
-            futility_prob = NA_real_,
-            sig_success = NA_real_,
-            sig_futility = NA_real_,
-            est_median = NA_real_,
-            est_mad = NA_real_,
-            est_mean = NA_real_,
-            est_sd = NA_real_,
-            rhat = NA_real_,
-            ess_bulk = NA_real_,
-            ess_tail = NA_real_,
-            id_sim = i,
-            id_cond = args$id_cond,
-            converged = 0L,
-            error = as.character(e)
-          )
-        }
+      # Simulate single run and compute measures
+      df_measures <- simulate_single_run(
+        condition_arguments = args,
+        design = design,
+        brms_args = brms_args
       )
+      return(measures)
       utils::setTxtProgressBar(pb, i)
       res
     })
@@ -337,19 +247,18 @@ power_grid_analysis <- function(conditions,
 
   # Average across simulation runs
   results_df <- summarize_sims(results_df_raw, n_simulations)
-
+  # Add condition IDs and arguments to results
   results_df <- dplyr::full_join(conditions$conditions_grid, results_df, by = "id_cond")
-
+  # End time
   elapsed_time <- difftime(Sys.time(), start_time, units = "mins")
-
+  # print elapsed time
   if (verbose) {
-    cat(
-      "\nTotal analysis time:",
-      round(as.numeric(elapsed_time), 2),
-      "minutes\n"
-    )
+    cat("\nTotal analysis time:",
+        round(as.numeric(elapsed_time), 2),
+        "minutes\n")
   }
 
+  # prepare return list
   return_list <- list(
     results_df = results_df,
     results_df_raw = results_df_raw,
@@ -357,8 +266,9 @@ power_grid_analysis <- function(conditions,
     conditions = conditions,
     elapsed_time = elapsed_time
   )
-
+  # add class for S3 methods
   class(return_list) <- "rctbayespower_sim_result"
 
+  # return the result
   invisible(return_list)
 }
