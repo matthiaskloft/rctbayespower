@@ -65,7 +65,7 @@ if (file.exists(model_file)) {
   # save the model to a file
   saveRDS(model_ancova, file = model_file)
 }
-print(model_ancova)
+model_ancova$parameter_names_brms
 ```
 
 ### Design
@@ -73,14 +73,14 @@ print(model_ancova)
 ```{r}
 design <- build_design(
   model = model_ancova,
-  target_params = "b_armtreat",
+  target_params = "b_arm2",
   thresholds_success = 0.1,
   thresholds_futility = 0,
   p_sig_success = 0.975,
   p_sig_futility = 0.5
 )
 # check the required parameters for the design
-required_parameters(design)
+required_fn_args(design)
 
 ```
 
@@ -92,16 +92,15 @@ conditions <- build_conditions(
   design = design,
   condition_values = list(
     # two sample sizes
-    n_total = 300,
-        # two effect sizes
-    b_armtreat = c(0,0.3)
+    n_total = 400,
+      # two effect sizes
+    b_arms_treat = c(0,0.3)
   ),
   static_values = list(
     # equal allocation
-    p_alloc =
-      list(c(0.5, 0.5)),
+    p_alloc = c(0.5, 0.5),
           # baseline effect
-    b_baseline = 0
+    b_covariate = 0
   )
 )
 print(conditions, n = 100)
@@ -112,7 +111,7 @@ print(conditions, n = 100)
 
 ```{r basic_performance}
 n_cores <- parallel::detectCores() - 2
-n_sims <- n_cores * 40
+n_sims <- 1000
 
 # Meanfield
 suppressWarnings(
@@ -130,8 +129,7 @@ suppressWarnings(
       )
     )
 )
-
-# Meanfield
+# Fullrank
 suppressWarnings(
   power_result_fullrank <-
     power_analysis(
@@ -147,7 +145,6 @@ suppressWarnings(
       )
     )
 )
-
 # Sampling
 power_result_sampling <- power_analysis(
   conditions = conditions,
@@ -162,16 +159,65 @@ power_result_sampling <- power_analysis(
 )
 
 results_summary<- rbind(
-  power_result_meanfield$results_df,
-  power_result_fullrank$results_df,
-  power_result_sampling$results_df
+  power_result_meanfield$results_df |> 
+    mutate(Algorithm = "Meanfield"),
+  power_result_fullrank$results_df |> 
+    mutate(Algorithm = "Fullrank"),
+  power_result_sampling$results_df |> 
+    mutate(Algorithm = "Sampling")
 )
-
-# Print results table
-print(kableExtra::kable(results_summary, digits = 2))
-print(results_summary, digits = 2)
 ```
 
+
+Power
+```{r}
+results_summary |> 
+  select(
+    Algorithm,
+    n_total,
+    b_arms_treat,
+    success_prob,
+    success_power,
+    futility_prob,
+    futility_power
+  ) |>
+  kableExtra::kable(digits = 2)
+```
+
+
+Convergence:
+```{r}
+results_summary |> 
+  select(
+    Algorithm,
+    n_total,
+    b_arms_treat,
+    rhat,
+    ess_bulk,
+    ess_tail,
+    convergence_rate
+  ) |>
+  kableExtra::kable(digits = 3)
+```
+
+
+Compare run times for each algorithm:
+```{r}
+# extract elapsed time
+data.frame(
+  Alorithm = c(
+    "Meanfield",
+    "Fullrank",
+    "Sampling"
+  ),
+    "Elapsed Time" = c(
+      power_result_meanfield$elapsed_time,
+      power_result_fullrank$elapsed_time,
+      power_result_sampling$elapsed_time
+    )
+  ) |> 
+  kableExtra::kable(digits = 2)
+```
 
 
 ***

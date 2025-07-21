@@ -20,7 +20,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **`simulate_single_run()`** - Execute single simulation run for power analysis
 
 **Pre-built Models:**
-- **`build_model_ancova_cont()`** - ANCOVA model for continuous outcomes ✅
+- **`build_model("ancova_cont_2arms")()`** - ANCOVA model for continuous outcomes ✅
   - **To Do**: `build_model_ancova()` as generalized version with wrappers for specific defaults
 
 **Advanced Features (100% Complete):**
@@ -53,7 +53,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 **Current Production-Ready Workflow:**
 ```r
 # 1. Create model → 2. Create design → 3. Create conditions → 4. Run analysis
-model_ancova <- build_model_ancova_cont()
+model_ancova <- build_model("ancova_cont_2arms")()
 design <- build_design(model, target_params, thresholds, p_sig)
 conditions <- build_conditions(design, condition_values, static_values)
 result <- power_analysis(conditions, n_cores, n_simulations)

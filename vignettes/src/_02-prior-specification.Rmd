@@ -32,41 +32,91 @@ Estimation priors affect how treatment effects are estimated during Bayesian mod
 ## Power Analysis with Different Priors
 
 ```{r}
-uninformative_analysis <- power_analysis_ancova(
-  n_control = 60,
-  n_treatment = 60,
-  effect_size = 0.4,
-  baseline_effect = 0.3,
-  outcome_type = "continuous",
-  threshold_success = 0.3,
-  threshold_futility = 0.1,
-  n_simulation = n_sims,
-  n_cores = n_cores,
-  priors_treatment = "normal(0, 100)",
-  priors_baseline = "normal(0, 100)",
-  priors_intercept = "normal(0, 100)",
-  priors_sigma = "normal(0, 100)"
+# Create ANCOVA model with uninformative priors
+uninformative_model <- build_model_ancova_cont_2arms(
+  b_arm_treat = 0.5,
+  b_covariate = 0.3,
+  prior_treatment = brms::set_prior("normal(0, 100)", class = "b"),
+  prior_covariate = brms::set_prior("normal(0, 100)", class = "b", coef = "covariate"),
+  prior_intercept = brms::set_prior("normal(0, 100)", class = "Intercept"),
+  prior_sigma = brms::set_prior("normal(0, 100)", class = "sigma")
+)
+
+# Create design
+uninformative_design <- build_design(
+  model = uninformative_model,
+  target_params = "b_arm2",
+  n_interim_analyses = 0,
+  thresholds_success = 0.3,
+  thresholds_futility = 0.1,
+  p_sig_success = 0.975,
+  p_sig_futility = 0.5
+)
+
+# Create conditions
+uninformative_conditions <- build_conditions(
+  design = uninformative_design,
+  condition_values = list(
+    n_total = 120
+  ),
+  static_values = list(
+    p_alloc = list(c(0.5, 0.5))
+  )
+)
+
+# Run power analysis
+uninformative_analysis <- power_analysis(
+  conditions = uninformative_conditions,
+  n_simulations = n_sims,
+  n_cores = n_cores
 )
 
 summary(uninformative_analysis)
 ```
+
+
 Analysis with informative, sceptical prior:
+
 ```{r}
-informative_analysis <- power_analysis_ancova(
-  n_control = 60,
-  n_treatment = 60,
-  effect_size = 0.4,
-  baseline_effect = 0.3,
-  outcome_type = "continuous",
-  threshold_success = 0.3,
-  threshold_futility = 0.1,
-  n_simulation = n_sims,
-  n_cores = n_cores,
-  priors_treatment = "student_t(3, 0, 1)",
-  priors_baseline = "student_t(3, 0, .5)",
-  priors_intercept = "student_t(3, 0, 1)",
-  priors_sigma = "student_t(3, 0, 2)"
+# Create ANCOVA model with informative/sceptical priors
+informative_model <- build_model_ancova_cont_2arms(
+  b_arm_treat = 0.5,
+  b_covariate = 0.3,
+  prior_treatment = brms::set_prior("student_t(3, 0, 1)", class = "b"),
+  prior_covariate = brms::set_prior("student_t(3, 0, 0.5)", class = "b", coef = "covariate"),
+  prior_intercept = brms::set_prior("student_t(3, 0, 1)", class = "Intercept"),
+  prior_sigma = brms::set_prior("student_t(3, 0, 2)", class = "sigma")
 )
+
+# Create design (same as uninformative)
+informative_design <- build_design(
+  model = informative_model,
+  target_params = "b_arm2",
+  n_interim_analyses = 0,
+  thresholds_success = 0.3,
+  thresholds_futility = 0.1,
+  p_sig_success = 0.975,
+  p_sig_futility = 0.5
+)
+
+# Create conditions
+informative_conditions <- build_conditions(
+  design = informative_design,
+  condition_values = list(
+    n_total = 120
+  ),
+  static_values = list(
+    p_alloc = list(c(0.5, 0.5))
+  )
+)
+
+# Run power analysis
+informative_analysis <- power_analysis(
+  conditions = informative_conditions,
+  n_simulations = n_sims,
+  n_cores = n_cores
+)
+
 summary(informative_analysis)
 ```
 
@@ -75,20 +125,20 @@ Comparing the results of the two analyses:
 estimation_comparison <- data.frame(
   Prior_Type = c("Uninformative", "Sceptical"),
   Power_Success = c(
-    uninformative_analysis$power_success,
-    informative_analysis$power_success
+    uninformative_analysis$results_df$power_success,
+    informative_analysis$results_df$power_success
   ),
   Power_Futility = c(
-    uninformative_analysis$power_futility,
-    informative_analysis$power_futility
+    uninformative_analysis$results_df$power_futility,
+    informative_analysis$results_df$power_futility
   ),
   Mean_Effect = c(
-    uninformative_analysis$mean_effect_estimate,
-    informative_analysis$mean_effect_estimate
+    uninformative_analysis$results_df$mean_effect_estimate,
+    informative_analysis$results_df$mean_effect_estimate
   ),
   SD_Effect = c(
-    uninformative_analysis$sd_mean_effect_estimate,
-    informative_analysis$sd_mean_effect_estimate
+    uninformative_analysis$results_df$sd_effect_estimate,
+    informative_analysis$results_df$sd_effect_estimate
   )
 ) |>
   # round the numeric columns for better readability
@@ -106,20 +156,39 @@ To evaluate the alpha error rate (false positive rate) for both prior configurat
 
 ```{r alpha_error_uninformative}
 # Alpha error rate with uninformative priors
-alpha_uninformative <- power_analysis_ancova(
-  n_control = 60,
-  n_treatment = 60,
-  effect_size = 0, # Null hypothesis: no effect
-  baseline_effect = 0.3,
-  outcome_type = "continuous",
-  threshold_success = 0.3,
-  threshold_futility = 0.1,
-  n_simulation = n_sims,
-  n_cores = n_cores,
-  priors_treatment = "normal(0, 100)",
-  priors_baseline = "normal(0, 100)",
-  priors_intercept = "normal(0, 100)",
-  priors_sigma = "normal(0, 100)"
+alpha_uninformative_model <- build_model_ancova_cont_2arms(
+  b_arm_treat = 0, # Null hypothesis: no effect
+  b_covariate = 0.3,
+  prior_treatment = brms::set_prior("normal(0, 100)", class = "b"),
+  prior_covariate = brms::set_prior("normal(0, 100)", class = "b", coef = "covariate"),
+  prior_intercept = brms::set_prior("normal(0, 100)", class = "Intercept"),
+  prior_sigma = brms::set_prior("normal(0, 100)", class = "sigma")
+)
+
+alpha_uninformative_design <- build_design(
+  model = alpha_uninformative_model,
+  target_params = "b_arm2",
+  n_interim_analyses = 0,
+  thresholds_success = 0.3,
+  thresholds_futility = 0.1,
+  p_sig_success = 0.975,
+  p_sig_futility = 0.5
+)
+
+alpha_uninformative_conditions <- build_conditions(
+  design = alpha_uninformative_design,
+  condition_values = list(
+    n_total = 120
+  ),
+  static_values = list(
+    p_alloc = list(c(0.5, 0.5))
+  )
+)
+
+alpha_uninformative <- power_analysis(
+  conditions = alpha_uninformative_conditions,
+  n_simulations = n_sims,
+  n_cores = n_cores
 )
 
 summary(alpha_uninformative)
@@ -127,20 +196,39 @@ summary(alpha_uninformative)
 
 ```{r alpha_error_informative}
 # Alpha error rate with informative, sceptical priors
-alpha_informative <- power_analysis_ancova(
-  n_control = 60,
-  n_treatment = 60,
-  effect_size = 0, # Null hypothesis: no effect
-  baseline_effect = 0.3,
-  outcome_type = "continuous",
-  threshold_success = 0.3,
-  threshold_futility = 0.1,
-  n_simulation = n_sims,
-  n_cores = n_cores,
-  priors_treatment = "student_t(3, 0, 1)",
-  priors_baseline = "student_t(3, 0, .5)",
-  priors_intercept = "student_t(3, 0, 1)",
-  priors_sigma = "student_t(3, 0, 2)"
+alpha_informative_model <- build_model_ancova_cont_2arms(
+  b_arm_treat = 0, # Null hypothesis: no effect
+  b_covariate = 0.3,
+  prior_treatment = brms::set_prior("student_t(3, 0, 1)", class = "b"),
+  prior_covariate = brms::set_prior("student_t(3, 0, 0.5)", class = "b", coef = "covariate"),
+  prior_intercept = brms::set_prior("student_t(3, 0, 1)", class = "Intercept"),
+  prior_sigma = brms::set_prior("student_t(3, 0, 2)", class = "sigma")
+)
+
+alpha_informative_design <- build_design(
+  model = alpha_informative_model,
+  target_params = "b_armtreat_1",
+  n_interim_analyses = 0,
+  thresholds_success = 0.3,
+  thresholds_futility = 0.1,
+  p_sig_success = 0.975,
+  p_sig_futility = 0.5
+)
+
+alpha_informative_conditions <- build_conditions(
+  design = alpha_informative_design,
+  condition_values = list(
+    n_total = 120
+  ),
+  static_values = list(
+    p_alloc = list(c(0.5, 0.5))
+  )
+)
+
+alpha_informative <- power_analysis(
+  conditions = alpha_informative_conditions,
+  n_simulations = n_sims,
+  n_cores = n_cores
 )
 
 summary(alpha_informative)
@@ -152,16 +240,16 @@ Comparing the alpha error rates:
 alpha_comparison <- data.frame(
   Prior_Type = c("Uninformative", "Sceptical"),
   Alpha_Error_Rate = c(
-    alpha_uninformative$power_success,
-    alpha_informative$power_success
+    alpha_uninformative$results_df$power_success,
+    alpha_informative$results_df$power_success
   ),
-  Probabilty_False_Positive = c(
-    alpha_uninformative$mean_prob_success,
-    alpha_informative$mean_prob_success
+  Probability_False_Positive = c(
+    alpha_uninformative$results_df$mean_prob_success,
+    alpha_informative$results_df$mean_prob_success
   )
 ) |>
   dplyr::mutate(
-    across(c(Alpha_Error_Rate, Probabilty_False_Positive), ~ round(.x, 3))
+    across(c(Alpha_Error_Rate, Probability_False_Positive), ~ round(.x, 3))
   )
 
 print(alpha_comparison)
@@ -178,15 +266,40 @@ Using a sceptical prior reduces the probability of falsely concluding success wh
 Design priors integrate uncertainty about the true effect size. Here we compare integrated power (with design prior) versus point estimates (without design prior).
 
 ```{r design_prior}
+# Create ANCOVA model for design prior analysis
+design_prior_model <- build_model_ancova_cont_2arms(
+  b_arm_treat = 0.5, # Will be varied in conditions
+  b_covariate = 0.3
+)
+
+# Create design
+design_prior_design <- build_design(
+  model = design_prior_model,
+  target_params = "b_armtreat_1",
+  n_interim_analyses = 0,
+  thresholds_success = 0.3,
+  thresholds_futility = 0.1,
+  p_sig_success = 0.975,
+  p_sig_futility = 0.5
+)
+
+# Create conditions with varying effect sizes
+design_prior_conditions <- build_conditions(
+  design = design_prior_design,
+  condition_values = list(
+    n_total = 160,
+    b_arm_treat = seq(0.2, 0.8, 0.1)
+  ),
+  static_values = list(
+    p_alloc = list(c(0.5, 0.5)),
+    b_covariate = 0.3
+  )
+)
+
+# Run power analysis with design prior
 fit_design_prior <- power_analysis(
-  sample_sizes = c(160),
-  effect_sizes = seq(0.2, 0.8, 0.1),
+  conditions = design_prior_conditions,
   design_prior = "normal(0.5, 0.1)", # Informed design prior
-  power_analysis_fn = "power_analysis_ancova",
-  outcome_type = "continuous",
-  baseline_effect = 0.3,
-  threshold_success = 0.3,
-  threshold_futility = 0.1,
   n_simulations = n_sims,
   n_cores = n_cores
 )
@@ -194,52 +307,39 @@ fit_design_prior <- power_analysis(
 summary(fit_design_prior)
 ```
 
-Now let's demonstrate the flexibility of specifying different design priors in the summary method:
+You can also compare different design priors by running separate analyses:
 
-```{r design_prior_flexibility, include=FALSE}
-summ_used <-
-  summary(fit_design_prior)
+```{r design_prior_comparison}
+# Run analysis with different design priors
+fit_conservative <- power_analysis(
+  conditions = design_prior_conditions,
+  design_prior = "normal(0.4, 0.1)",
+  n_simulations = n_sims,
+  n_cores = n_cores
+)
 
-summ_optimistic <-
-  summary(fit_design_prior, design_prior = "normal(0.7, 0.1)")
+fit_optimistic <- power_analysis(
+  conditions = design_prior_conditions,
+  design_prior = "normal(0.7, 0.1)",
+  n_simulations = n_sims,
+  n_cores = n_cores
+)
 
-summ_conservative <- summary(fit_design_prior, design_prior = "normal(0.4, 0.1)")
+# Compare the results by looking at the power analysis results
+cat("Original design prior results (normal(0.5, 0.1)):\n")
+print(fit_design_prior$results_df[c("b_arm_treat", "pow_success")])
 
-summ_wide <-
-  summary(fit_design_prior, design_prior = "student_t(3, 0.5, 0.1)")
+cat("\nConservative design prior results (normal(0.4, 0.1)):\n") 
+print(fit_conservative$results_df[c("b_arm_treat", "pow_success")])
+
+cat("\nOptimistic design prior results (normal(0.7, 0.1)):\n")
+print(fit_optimistic$results_df[c("b_arm_treat", "pow_success")])
 ```
 
-Summary with design prior specified in fit:
-```{r}
-summ_used$integrated_power |>
-  dplyr::mutate(across(where(~ is.numeric(.)), ~ round(.x, 3)))
-```
-
-Summary with optimistic design prior:
-```{r}
-summ_optimistic$integrated_power |>
-  dplyr::mutate(across(where(~ is.numeric(.)), ~ round(.x, 3)))
-```
-
-Summary with conservative design prior:
-```{r}
-summ_conservative$integrated_power |>
-  dplyr::mutate(across(where(~ is.numeric(.)), ~ round(.x, 3)))
-```
-
-Summary with wide design prior:
-```{r}
-summ_wide$integrated_power |>
-  dplyr::mutate(across(where(~ is.numeric(.)), ~ round(.x, 3)))
-```
-
-
-
-
-This demonstrates the enhanced flexibility where you can:
-1. Run the analysis once to get raw results
-2. Try different design priors at summary time
-3. Compare how different assumptions about effect size uncertainty affect integrated power
+This demonstrates how different design priors affect the power analysis:
+1. Conservative priors weight smaller effect sizes more heavily
+2. Optimistic priors weight larger effect sizes more heavily  
+3. The choice of design prior affects the integrated power calculations
 
 ***
 

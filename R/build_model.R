@@ -12,7 +12,7 @@
 #' @param n_endpoints Number of endpoints in the study (must be positive integer)
 #' @param endpoint_types Character vector specifying the type of each endpoint.
 #'   Valid types are "continuous", "binary", "count". Length must match n_endpoints.
-#' @param n_treatment_arms Number of treatment arms in the study (must be positive integer)
+#' @param n_arms Number of arms in the study including control arm (must be positive integer)
 #' @param n_repeated_measures Number of repeated measures per participant.
 #'   Use NULL or 0 for single time point studies.
 #' @param model_name Optional character string providing a descriptive name for the model
@@ -59,7 +59,7 @@
 #'   \item{model_name}{Descriptive name for the model}
 #'   \item{n_endpoints}{Number of study endpoints}
 #'   \item{endpoint_types}{Types of endpoints}
-#'   \item{n_treatment_arms}{Number of treatment arms}
+#'   \item{n_arms}{Number of arms including control arm}
 #'   \item{n_repeated_measures}{Number of repeated measures}
 #'   \item{parameter_names_sim_fn}{Parameter names extracted from simulation function}
 #'   \item{parameter_names_brms}{Parameter names from brms model}
@@ -67,23 +67,23 @@
 #'
 #' @export
 #' @importFrom stringr str_subset
-#' @seealso [build_design()], [build_model_ancova_cont()]
+#' @seealso [build_design()], [build_model_ancova()]
 #'
 #' @examples
 #' \dontrun{
 #' # Method 1: Use predefined model (recommended)
 #' ancova_model <- build_model(pre_defined_model = "ancova_cont")
 #' }
-build_model <- function(data_simulation_fn,
+build_model <- function(pre_defined_model = NULL,
+                        data_simulation_fn,
                         brms_model,
                         n_endpoints = NULL,
                         endpoint_types = NULL,
-                        n_treatment_arms = NULL,
+                        n_arms = NULL,
                         n_repeated_measures = NULL,
-                        model_name = NULL,
-                        pre_defined_model = NULL) {
+                        model_name = NULL) {
   # pre-defined model ----------------------------------------------------------
-  
+
   # validate pre_defined_model
   if (!is.null(pre_defined_model)) {
     if (!is.character(pre_defined_model)) {
@@ -106,9 +106,9 @@ build_model <- function(data_simulation_fn,
       )
     }
   }
-  
+
   # custom model ---------------------------------------------------------------
-  
+
   # validate model
   if (!inherits(brms_model, "brmsfit")) {
     stop("'brms_model' must be a valid brmsfit object.")
@@ -116,13 +116,13 @@ build_model <- function(data_simulation_fn,
   if (!is.function(data_simulation_fn)) {
     stop("'data_simulation_fn' must be a valid function.")
   }
-  
+
   # validate n_endpoints
   if (is.null(n_endpoints) ||
       !is.numeric(n_endpoints) || n_endpoints <= 0) {
     stop("'n_endpoints' must be a positive numeric value.")
   }
-  
+
   # validate endpoint_types, must have length n_endpoints and be valid types
   if (is.null(endpoint_types) || !is.character(endpoint_types) ||
       length(endpoint_types) != n_endpoints ||
@@ -131,61 +131,59 @@ build_model <- function(data_simulation_fn,
       "'endpoint_types' must be a character vector of length 'n_endpoints' with valid types."
     )
   }
-  
-  # validate n_treatment_arms
-  if (is.null(n_treatment_arms) ||
-      !is.numeric(n_treatment_arms) || n_treatment_arms <= 0) {
-    stop("'n_treatment_arms' must be a positive numeric value.")
+
+  # validate n_arms
+  if (is.null(n_arms) ||
+      !is.numeric(n_arms) || n_arms <= 0) {
+    stop("'n_arms' must be a positive numeric value.")
   }
-  
+
   # validate n_repeated_measures
   if (!is.null(n_repeated_measures) &&
       (!is.numeric(n_repeated_measures) ||
        n_repeated_measures < 0)) {
     stop("'n_repeated_measures' must be a non-negative numeric value.")
   }
-  
+
   # validate model_name
   if (!is.null(model_name) && !is.character(model_name)) {
     stop("'model_name' must be a character string or NULL.")
   }
-  
+
   # retrieve the argument names data_simulation_fn
   parameter_names_sim_fn <- names(formals(data_simulation_fn))
-  
+
   # check that the data_simulation_fn has the required parameters n_total and
   # p_alloc
   if (!("n_total" %in% parameter_names_sim_fn) ||
       !("p_alloc" %in% parameter_names_sim_fn)) {
     stop("'data_simulation_fn' must have parameters 'n_total' and 'p_alloc'.")
   }
-  
+
   # retriev parameter names from brms model
   parameter_names_brms <- stringr::str_subset(brms::variables(brms_model), pattern = "^b_")
-  
+
   # strip brms model from posterior draws
   brms_model <- suppressMessages(stats::update(brms_model, chains = 0, silent = 2))
-  
+
   # create the output list with the data simulation function and the brms model
-  output_list <- list(data_simulation_fn = data_simulation_fn, brms_model = brms_model)
-  
+  output_list <- list(
+    data_simulation_fn = data_simulation_fn,
+    brms_model = brms_model,
+    model_name = model_name,
+    n_endpoints = n_endpoints,
+    endpoint_types = endpoint_types,
+    n_arms = n_arms,
+    n_repeated_measures = n_repeated_measures,
+    parameter_names_sim_fn = parameter_names_sim_fn,
+    parameter_names_brms = parameter_names_brms
+  )
+
   # assign class to the output list
   class(output_list) <- "rctbayespower_model"
-  
-  # add attributes to the output list
-  attr(output_list, "model_name") <- model_name
-  attr(output_list, "n_endpoints") <- n_endpoints
-  attr(output_list, "endpoint_types") <- endpoint_types
-  attr(output_list, "n_treatment_arms") <- n_treatment_arms
-  attr(output_list, "n_repeated_measures") <- n_repeated_measures
-  attr(output_list, "parameter_names_sim_fn") <- parameter_names_sim_fn
-  attr(output_list, "parameter_names_brms") <- parameter_names_brms
-  
+
   return(output_list)
 }
-
-
-
 
 
 #' Print Method for build_model Objects
@@ -198,200 +196,23 @@ build_model <- function(data_simulation_fn,
 #'
 #' @return Invisibly returns the input object. Used for side effects (printing).
 #' @export
-#' @method print build_model
-print.build_model <- function(x, ...) {
+#' @method print rctbayespower_model
+print.rctbayespower_model <- function(x, ...) {
   cat("\nObject of class: 'rctbayespower_model'\n")
   cat("--------------------------------------------------\n\n")
-  
+
   cat("Model name:", attr(x, "model_name"), "\n")
   cat("Number of endpoints:", attr(x, "n_endpoints"), "\n")
   cat("Endpoint types:", paste(attr(x, "endpoint_types"), collapse = ", "), "\n")
-  cat("Number of treatment arms:", attr(x, "n_treatment_arms"), "\n")
-  cat("Number of repeated measures:",
-      attr(x, "n_repeated_measures"),
-      "\n")
+  cat("Number of arms:", attr(x, "n_arms"), "\n")
+  cat("Number of repeated measures:", x$n_repeated_measures, "\n")
   cat("Parameter names - simulation function:",
-      paste(attr(x, "parameter_names_sim_fn"), collapse = ", "),
+      x$parameter_names_sim_fn,
       "\n")
-  cat("Parameter names - brms model:",
-      paste(attr(x, "parameter_names_brms"), collapse = ", "),
-      "\n")
-  cat("Data simulation function:\n")
-  print(x$data_simulation_fn)
+  cat("Parameter names - brms model:", x$parameter_names_brms, "\n")
+
+  cat("Arguments to specify for simulation function:\n")
+  print(required_fn_args_model(x, print = FALSE))
   cat("\nBrms model:\n")
   print(x$brms_model)
-}
-
-
-
-### Predefined Models --------------------------------------------------------->
-
-#' Create Predefined ANCOVA Model for Continuous Outcomes
-#'
-#' Creates a ready-to-use build_model object for ANCOVA (Analysis of
-#' Covariance) with a continuous outcome, baseline covariate, and treatment effect.
-#' This is a convenience function that sets up the complete model structure with
-#' sensible defaults.
-#'
-#' @param prior_intercept Prior for the intercept parameter. If NULL (default),
-#'   uses normal(0, 10). Must be a brmsprior object created with brms::set_prior().
-#' @param prior_sigma Prior for the residual standard deviation. If NULL (default),
-#'   uses normal(0, 10). Must be a brmsprior object created with brms::set_prior().
-#' @param prior_baseline Prior for the baseline covariate effect. If NULL (default),
-#'   uses student_t(3, 0, 1). Must be a brmsprior object created with brms::set_prior().
-#' @param prior_treatment Prior for the treatment effect. If NULL (default),
-#'   uses student_t(3, 0, 1). Must be a brmsprior object created with brms::set_prior().
-#'
-#' @details
-#' This function creates a complete ANCOVA model with the following structure:
-#'
-#'
-#' \strong{Model Formula:} outcome ~ baseline + arm
-#'
-#'
-#' \strong{Data Structure:} The generated data includes:
-#' \itemize{
-#'   \item baseline: Standardized normal baseline covariate
-#'   \item arm: Factor with levels "ctrl" and "treat"
-#'   \item outcome: Continuous outcome generated from the linear model
-#' }
-#'
-#'
-#' \strong{Parameters:} The model includes parameters for intercept, baseline effect,
-#' treatment effect (b_armtreat), and residual standard deviation (sigma).
-#'
-#'
-#' \strong{Model Compilation:} The function compiles the brms model during creation,
-#' which may take some time but enables efficient power analysis later.
-#'
-#' @return An object of class "build_model" ready for use with
-#'   [build_design()] and power analysis functions.
-#'
-#' @export
-#' @importFrom brms set_prior brm
-#' @importFrom stats gaussian
-#' @seealso [build_model()], [build_design()]
-#'
-#' @examples
-#' \dontrun{
-#' # Create ANCOVA model with default priors
-#' ancova_model <- build_model_ancova_cont()
-#'
-#' # Create ANCOVA model with custom priors
-#' custom_model <- build_model_ancova_cont(
-#'   prior_treatment = brms::set_prior("normal(0.5, 0.2)", class = "b", coef = "armtreat"),
-#'   prior_baseline = brms::set_prior("normal(0.3, 0.1)", class = "b", coef = "baseline")
-#' )
-#' }
-build_model_ancova_cont <- function(prior_intercept = NULL,
-                                    prior_sigma = NULL,
-                                    prior_baseline = NULL,
-                                    prior_treatment = NULL) {
-  # create the data simulation function
-  simulate_data_ancova <- function(n_total,
-                                   p_alloc = c(0.5, 0.5),
-                                   intercept = 0,
-                                   b_armtreat,
-                                   b_baseline,
-                                   sigma = 1) {
-    # predictors
-    df <- data.frame(
-      baseline = stats::rnorm(n_total),
-      arm = factor(
-        sample(
-          x = c(0, 1),
-          size = n_total,
-          prob = p_alloc,
-          replace = TRUE
-        ),
-        levels = c(0, 1),
-        labels = c("ctrl", "treat")
-      )
-    ) |>
-      dplyr::mutate(
-        # outcome
-        outcome = stats::rnorm(
-          n_total,
-          mean = intercept +
-            b_armtreat * as.numeric(arm) +
-            b_baseline * baseline,
-          sd = sigma
-        )
-      )
-    return(df)
-  }
-  # simulate some data
-  mock_data_ancova <- simulate_data_ancova(
-    n_total = 100,
-    p_alloc = c(0.5, 0.5),
-    intercept = 0,
-    sigma = 1,
-    b_armtreat = 0.5,
-    b_baseline = 0.2
-  )
-  
-  # priors
-  # use user-specified priors if !is.null(prior_intercept) else use default priors
-  # check that the priors are specified with brms::set_prior()
-  
-  if (is.null(prior_intercept)) {
-    prior_intercept <- brms::set_prior("normal(0, 10)", class = "Intercept")
-  } else if (!inherits(prior_intercept, "brmsprior")) {
-    stop("'prior_intercept' must be a valid brmsprior object.")
-  }
-  if (is.null(prior_sigma)) {
-    prior_sigma <- brms::set_prior("normal(0, 10)", class = "sigma")
-  } else if (!inherits(prior_sigma, "brmsprior")) {
-    stop("'prior_sigma' must be a valid brmsprior object.")
-  }
-  if (is.null(prior_baseline)) {
-    prior_baseline <- brms::set_prior("student_t(3, 0, 1)", class = "b", coef = "baseline")
-  } else if (!inherits(prior_baseline, "brmsprior")) {
-    stop("'prior_baseline' must be a valid brmsprior object.")
-  }
-  if (is.null(prior_treatment)) {
-    prior_treatment <- brms::set_prior("student_t(3, 0, 1)", class = "b", coef = "armtreat")
-  } else if (!inherits(prior_treatment, "brmsprior")) {
-    stop("'prior_treatment' must be a valid brmsprior object.")
-  }
-  
-  # combine the priors into a single vector
-  priors <- c(prior_baseline,
-              prior_treatment,
-              prior_intercept,
-              prior_sigma)
-  
-  
-  # fit the brms model
-  cat("Compiling the brms model ...\n")
-  
-  # model for retrieving parameter names
-  brms_model_ancova <-
-    suppressMessages(suppressWarnings(
-      brms::brm(
-        formula = outcome ~ baseline + arm,
-        data = mock_data_ancova,
-        family = gaussian(),
-        prior = priors,
-        chains = 1,
-        iter = 500,
-        refresh = 0,
-        silent = 2
-      )
-    ))
-  cat("Model compilation done!\n")
-  
-  # build model
-  build_model <-
-    build_model(
-      data_simulation_fn = simulate_data_ancova,
-      brms_model = brms_model_ancova,
-      n_endpoints = 1,
-      endpoint_types = "continuous",
-      n_treatment_arms = 2,
-      n_repeated_measures = 0,
-      model_name = "ancova"
-    )
-  
-  return(build_model)
 }

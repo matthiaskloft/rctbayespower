@@ -58,7 +58,9 @@ if (getRversion() >= "2.15.1") {
       "convergence_rate",
       "measures",
       "res",
-      "i"
+      "i",
+      "required_parameters",
+      "covariate"
     )
   )
 }

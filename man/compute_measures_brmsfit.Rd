@@ -56,7 +56,7 @@ threshold value is recycled for additional parameters.
 \dontrun{
 # Assume you have a fitted brms model and design specification
 design <- list(
-  target_params = c("b_armtreat", "b_Intercept"),
+  target_params = c("b_arms_treat", "b_Intercept"),
   thresholds_success = c(0.2, 0.0),
   thresholds_futility = c(0.0, 0.0),
   p_sig_success = 0.975,

@@ -14,10 +14,10 @@
 #' @examples
 #' \dontrun{
 #' # Create model, design, and conditions
-#' ancova_model <- build_model_ancova_cont()
+#' ancova_model <- build_model("ancova_cont_2arms")()
 #' design <- build_design(
 #'   model = ancova_model,
-#'   target_params = "b_armtreat",
+#'   target_params = "b_arms_treat",
 #'   n_interim_analyses = 0,
 #'   thresholds_success = 0.2,
 #'   thresholds_futility = 0,
@@ -33,8 +33,8 @@
 #'     true_parameter_values = list(
 #'       intercept = 0,
 #'       sigma = 1,
-#'       b_armtreat = 0.5,
-#'       b_baseline = 0.2
+#'       b_arms_treat = 0.5,
+#'       b_covariate = 0.2
 #'     )
 #'   )
 #' )
@@ -54,15 +54,18 @@
 #' }
 #' @export
 simulate_single_run <- function(condition_arguments,
+                                id_sim,
                                 design,
                                 brms_args = list()) {
   # no validations since this is the lowest level function
 
+
+  sim_args <- condition_arguments$sim_args
   # Simulate data with error handling
   simulated_data <- tryCatch({
-    do.call(design$data_simulation_fn, args = condition_arguments$sim_args)
+    do.call(design$data_simulation_fn, args = sim_args)
   }, error = function(e) {
-    n_total <- condition_arguments$sim_args$n_total %||% "unknown"
+    n_total <- sim_args$n_total %||% "unknown"
     warning("Data simulation failed for 'n_total'=",
             n_total,
             ": ",
@@ -100,7 +103,7 @@ simulate_single_run <- function(condition_arguments,
       stats::update(object = design$brms_model, newdata = simulated_data, ...)
     }, brms_args_final)
   }, error = function(e) {
-    n_total <- condition_arguments$sim_args$n_total %||% "unknown"
+    n_total <- sim_args$n_total %||% "unknown"
     warning("Model fitting failed for 'n_total'=",
             n_total,
             ": ",
@@ -108,13 +111,37 @@ simulate_single_run <- function(condition_arguments,
     return(NULL)
   })
 
+  # Check if model fitting was successful
+  if (is.null(fitted_model)) {
+    return(data.frame(
+      parameter = NA_character_,
+      threshold_success = NA_real_,
+      threshold_futility = NA_real_,
+      success_prob = NA_real_,
+      futility_prob = NA_real_,
+      sig_success = NA_real_,
+      sig_futility = NA_real_,
+      est_median = NA_real_,
+      est_mad = NA_real_,
+      est_mean = NA_real_,
+      est_sd = NA_real_,
+      rhat = NA_real_,
+      ess_bulk = NA_real_,
+      ess_tail = NA_real_,
+      id_sim = id_sim,
+      id_cond = condition_arguments$id_cond,
+      converged = 0L,
+      error = "Model fitting failed"
+    ))
+  }
+
   # compute measures
-  tryCatch({
+  result <- tryCatch({
     df <- compute_measures_brmsfit(fitted_model, design) |>
       dplyr::mutate(dplyr::across(-parameter, as.numeric))
     df |> dplyr::mutate(
-      id_sim = i,
-      id_cond = args$id_cond,
+      id_sim = id_sim,
+      id_cond = condition_arguments$id_cond,
       converged = 1L,
       error = NA_character_
     )
@@ -135,12 +162,12 @@ simulate_single_run <- function(condition_arguments,
       rhat = NA_real_,
       ess_bulk = NA_real_,
       ess_tail = NA_real_,
-      id_sim = i,
-      id_cond = args$id_cond,
+      id_sim = id_sim,
+      id_cond = condition_arguments$id_cond,
       converged = 0L,
       error = as.character(e)
     )
   })
 
-return(df) # Either brmsfit object or NULL
+  return(result)
 }

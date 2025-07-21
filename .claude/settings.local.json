@@ -20,7 +20,8 @@
       "Bash(tar:*)",
       "Bash(export PATH=$PWD/pandoc-3.1.8/bin:$PATH)",
       "Bash(timeout:*)",
-      "Bash(sed:*)"
+      "Bash(sed:*)",
+      "Bash(_R_CHECK_FORCE_SUGGESTS_=false R CMD check --no-manual --no-vignettes --no-tests .)"
     ],
     "deny": []
   }

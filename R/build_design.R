@@ -8,7 +8,7 @@
 #'   [build_model()] or predefined model functions
 #' @param target_params Character vector specifying which model parameters to
 #'   analyze for power. Must be valid parameter names from the brms model
-#'   (e.g., "b_armtreat" for treatment effect)
+#'   (e.g., "b_arms_treat" for treatment effect)
 #' @param n_interim_analyses Number of interim analyses planned during the study.
 #'   Use 0 for studies with only final analysis. Must be non-negative integer.
 #' @param thresholds_success Numeric vector of success thresholds for each target
@@ -71,7 +71,7 @@
 #' # Create a design for analyzing treatment effect
 #' my_design <- build_design(
 #'   model = ancova_model,
-#'   target_params = "b_armtreat",
+#'   target_params = "b_arms_treat",
 #'   n_interim_analyses = 0,
 #'   thresholds_success = 0.2,
 #'   thresholds_futility = 0,
@@ -95,12 +95,12 @@ build_design <- function(model = NULL,
   }
 
   # retrieve attributes from the model
-  n_endpoints <- attr(model, "n_endpoints")
-  endpoint_types <- attr(model, "endpoint_types")
-  n_treatment_arms <- attr(model, "n_treatment_arms")
-  n_repeated_measures <- attr(model, "n_repeated_measures")
-  parameter_names_sim_fn <- attr(model, "parameter_names_sim_fn")
-  parameter_names_brms <- attr(model, "parameter_names_brms")
+  n_endpoints <- model$n_endpoints
+  endpoint_types <- model$endpoint_types
+  n_arms <- model$n_arms
+  n_repeated_measures <- model$n_repeated_measures
+  parameter_names_sim_fn <- model$parameter_names_sim_fn
+  parameter_names_brms <- model$parameter_names_brms
 
 
   # validate n_interim_analyses
@@ -128,7 +128,8 @@ build_design <- function(model = NULL,
 
   # check that target_params is a subset of the parameter names in the model
   if (!all(target_params %in% parameter_names_brms)) {
-    stop("'target_params' must be a subset of the parameter names in the model.")
+    stop("'target_params' must be a subset of the parameter names in the model: ",
+         paste(parameter_names_brms, collapse = ", "))
   }
 
   # check that thresholds_success and thresholds_futility have the same length as target_params
@@ -191,7 +192,7 @@ build_design <- function(model = NULL,
     interim_function = interim_function,
     n_endpoints = n_endpoints,
     endpoint_types = endpoint_types,
-    n_treatment_arms = n_treatment_arms,
+    n_arms = n_arms,
     n_repeated_measures = n_repeated_measures,
     parameter_names_sim_fn = parameter_names_sim_fn,
     parameter_names_brms = parameter_names_brms,
@@ -221,7 +222,7 @@ build_design <- function(model = NULL,
   # attributes from the model
   attr(output_list, "n_endpoints") <- n_endpoints
   attr(output_list, "endpoint_types") <- endpoint_types
-  attr(output_list, "n_treatment_arms") <- n_treatment_arms
+  attr(output_list, "n_arms") <- n_arms
   attr(output_list, "n_repeated_measures") <- n_repeated_measures
   attr(output_list, "model_name") <- attr(model, "model_name")
   attr(output_list, "parameter_names_sim_fn") <- attr(model, "parameter_names_sim_fn")
@@ -256,7 +257,7 @@ print.rctbayespower_design <- function(x, ...) {
     paste(x$endpoint_types, collapse = ", "),
     "\n"
   )
-  cat("Number of treatment arms:", x$n_treatment_arms, "\n")
+  cat("Number of arms:", x$n_arms, "\n")
   cat("Number of repeated measures:", x$n_repeated_measures, "\n")
   cat(
     "Parameter names - simulation function:",
@@ -298,8 +299,8 @@ print.rctbayespower_design <- function(x, ...) {
     paste(x$parameter_names_interim_fn, collapse = ", "),
     "\n"
   )
-  cat("\n\n=== Data Simulation Function ===\n\n")
-  print(x$data_simulation_fn)
+  #cat("\n\n=== Data Simulation Function ===\n\n")
+  #print(x$data_simulation_fn)
   cat("\n\n=== Brms Model ===\n\n")
   print(x$brms_model)
   cat("\n\n === Allocation Function ===\n\n")

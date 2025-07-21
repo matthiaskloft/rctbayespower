@@ -22,7 +22,7 @@ build_design(
 
 \item{target_params}{Character vector specifying which model parameters to
 analyze for power. Must be valid parameter names from the brms model
-(e.g., "b_armtreat" for treatment effect)}
+(e.g., "b_arms_treat" for treatment effect)}
 
 \item{n_interim_analyses}{Number of interim analyses planned during the study.
 Use 0 for studies with only final analysis. Must be non-negative integer.}
@@ -94,7 +94,7 @@ ancova_model <- build_model_ancova_cont()
 # Create a design for analyzing treatment effect
 my_design <- build_design(
   model = ancova_model,
-  target_params = "b_armtreat",
+  target_params = "b_arms_treat",
   n_interim_analyses = 0,
   thresholds_success = 0.2,
   thresholds_futility = 0,

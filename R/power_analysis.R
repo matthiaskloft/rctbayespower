@@ -66,10 +66,10 @@
 #' @examples
 #' \dontrun{
 #' # Create an ANCOVA model and design
-#' ancova_model <- build_model_ancova_cont()
+#' ancova_model <- build_model("ancova_cont_2arms")()
 #' design <- build_design(
 #'   build_model = ancova_model,
-#'   target_params = "b_armtreat",
+#'   target_params = "b_arms_treat",
 #'   n_interim_analyses = 0,
 #'   thresholds_success = 0.2,
 #'   thresholds_futility = 0.0,
@@ -80,7 +80,7 @@
 #' # Create conditions grid
 #' conditions <- expand_conditions(
 #'   sample_sizes = c(100),
-#'   b_armtreat = c(0.5),
+#'   b_arms_treat = c(0.5),
 #' )
 #'
 #' # Run power analysis
@@ -212,14 +212,17 @@ power_analysis <- function(conditions,
 
     # Run parallel computation - direct index access is faster
     results_raw_list <- parallel::parLapply(cl, seq_along(condition_args_list), function(i) {
-      args <- condition_args_list[[i]]
+
+      print(condition_args_list[[i]])
+
       # Simulate single run and compute measures
       df_measures <- simulate_single_run(
-        condition_arguments = args,
+        condition_arguments = condition_args_list[[i]],
+        id_sim = i,
         design = design,
         brms_args = brms_args
       )
-      return(measures)
+      return(df_measures)
     })
 
     parallel::stopCluster(cl)
@@ -230,12 +233,14 @@ power_analysis <- function(conditions,
       # Simulate single run and compute measures
       df_measures <- simulate_single_run(
         condition_arguments = args,
+        id_sim = i,
         design = design,
         brms_args = brms_args
       )
-      return(measures)
-      utils::setTxtProgressBar(pb, i)
-      res
+      if (!is.null(pb)) {
+        utils::setTxtProgressBar(pb, i)
+      }
+      return(df_measures)
     })
     if (!is.null(pb)) {
       close(pb)
@@ -264,6 +269,7 @@ power_analysis <- function(conditions,
     results_df_raw = results_df_raw,
     design = design,
     conditions = conditions,
+    n_simulations = n_simulations,
     elapsed_time = elapsed_time
   )
   # add class for S3 methods

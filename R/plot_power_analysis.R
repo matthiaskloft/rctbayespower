@@ -47,89 +47,6 @@
 #' @importFrom stats as.formula
 #' @importFrom rlang .data
 #'
-#' @examples
-#' \donttest{
-#' # Sample size analysis plot
-#' grid_result <- list(
-#'   target_power_success = 0.9,
-#'   target_power_futility = 0.95,
-#'   threshold_success = 0.2,
-#'   threshold_futility = 0,
-#'   sample_sizes = c(100, 200),
-#'   effect_sizes = 0.5,
-#'   design_prior = NULL,
-#'   analysis_type = "sample_only",
-#'   power_surface = data.frame(
-#'     n_total = c(100, 200),
-#'     effect_size = c(0.5, 0.5),
-#'     power_success = c(0.65, 0.85),
-#'     power_futility = c(0.20, 0.15),
-#'     mean_prob_success = c(0.72, 0.88),
-#'     mean_prob_futility = c(0.25, 0.18)
-#'   ),
-#'   integrated_power = NULL,
-#'   optimal_combinations = data.frame(),
-#'   detailed_results = list()
-#' )
-#' class(grid_result) <- "rctbayespower_sim_result"
-#' plot(grid_result) # Auto-detects power curve
-#'
-#' # Effect size analysis plot
-#' grid_result <- list(
-#'   target_power_success = 0.9,
-#'   target_power_futility = 0.95,
-#'   threshold_success = 0.2,
-#'   threshold_futility = 0,
-#'   sample_sizes = 200,
-#'   effect_sizes = c(0.4, 0.8),
-#'   design_prior = NULL,
-#'   analysis_type = "effect_only",
-#'   power_surface = data.frame(
-#'     n_total = c(200, 200),
-#'     effect_size = c(0.4, 0.8),
-#'     power_success = c(0.75, 0.92),
-#'     power_futility = c(0.30, 0.08),
-#'     mean_prob_success = c(0.78, 0.94),
-#'     mean_prob_futility = c(0.32, 0.10)
-#'   ),
-#'   integrated_power = NULL,
-#'   optimal_combinations = data.frame(),
-#'   detailed_results = list()
-#' )
-#' class(grid_result) <- "rctbayespower_sim_result"
-#' plot(grid_result) # Shows both success and futility, both power and probabilities
-#'
-#' # Full heatmap
-#' grid_result <- list(
-#'   target_power_success = 0.9,
-#'   target_power_futility = 0.95,
-#'   threshold_success = 0.2,
-#'   threshold_futility = 0,
-#'   sample_sizes = c(100, 200),
-#'   effect_sizes = c(0.4, 0.8),
-#'   design_prior = NULL,
-#'   analysis_type = "both",
-#'   power_surface = data.frame(
-#'     n_total = c(100, 200, 100, 200),
-#'     effect_size = c(0.4, 0.4, 0.8, 0.8),
-#'     power_success = c(0.60, 0.75, 0.80, 0.92),
-#'     power_futility = c(0.35, 0.30, 0.15, 0.08),
-#'     mean_prob_success = c(0.65, 0.78, 0.82, 0.94),
-#'     mean_prob_futility = c(0.38, 0.32, 0.18, 0.10)
-#'   ),
-#'   integrated_power = NULL,
-#'   optimal_combinations = data.frame(),
-#'   detailed_results = list()
-#' )
-#' class(grid_result) <- "rctbayespower_sim_result"
-#' plot(grid_result, type = "heatmap")
-#'
-#' # Power curves faceted by effect size (when both vary)
-#' plot(grid_result, type = "power_curve", facet_by = "effect_size")
-#'
-#' # Power curves faceted by sample size (when both vary)
-#' plot(grid_result, type = "power_curve", facet_by = "sample_size")
-#' }
 plot.rctbayespower_sim_result <- function(x,
                                     type = "auto",
                                     metric = "both",
@@ -147,19 +64,38 @@ plot.rctbayespower_sim_result <- function(x,
     stop("Package 'scales' is required for plotting.")
   }
 
-  # Check for valid data
-  if (is.null(x$power_surface) || nrow(x$power_surface) == 0) {
+  # Check for valid data - adapt to new API
+  if (is.null(x$results_df) || nrow(x$results_df) == 0) {
     stop("No power analysis results to plot. Check that power_analysis() completed successfully.")
   }
 
-  # Check for missing essential columns
+  # Map new API to old structure for plotting
+  power_surface <- x$results_df
+  design <- x$design
+  conditions <- x$conditions
+
+  # Check for missing essential columns - adapt to new API
   required_cols <- c(
-    "n_total", "effect_size", "power_success", "power_futility",
-    "mean_prob_success", "mean_prob_futility"
+    "pow_success", "pow_futility",
+    "success_prob", "futility_prob"
   )
-  missing_cols <- setdiff(required_cols, names(x$power_surface))
+  missing_cols <- setdiff(required_cols, names(power_surface))
   if (length(missing_cols) > 0) {
-    stop("Missing required columns in power_surface: ", paste(missing_cols, collapse = ", "))
+    stop("Missing required columns in results_df: ", paste(missing_cols, collapse = ", "))
+  }
+
+  # Map column names from new API to plotting expectations
+  if ("pow_success" %in% names(power_surface)) {
+    power_surface$power_success <- power_surface$pow_success
+  }
+  if ("pow_futility" %in% names(power_surface)) {
+    power_surface$power_futility <- power_surface$pow_futility
+  }
+  if ("success_prob" %in% names(power_surface)) {
+    power_surface$mean_prob_success <- power_surface$success_prob
+  }
+  if ("futility_prob" %in% names(power_surface)) {
+    power_surface$mean_prob_futility <- power_surface$futility_prob
   }
 
   # Validate and compute design prior integration for plotting
@@ -209,18 +145,45 @@ plot.rctbayespower_sim_result <- function(x,
     }
   }
 
+  # Extract unique values to determine analysis type
+  unique_n_total <- if ("n_total" %in% names(power_surface)) length(unique(power_surface$n_total)) else 1
+  target_param_cols <- intersect(names(power_surface), c("b_arms_treat", "effect_size"))
+  unique_effects <- if (length(target_param_cols) > 0) length(unique(power_surface[[target_param_cols[1]]])) else 1
+
+  # Determine analysis type from data
+  if (unique_n_total > 1 && unique_effects > 1) {
+    analysis_type <- "both"
+  } else if (unique_n_total > 1 && unique_effects == 1) {
+    analysis_type <- "sample_only"
+  } else if (unique_n_total == 1 && unique_effects > 1) {
+    analysis_type <- "effect_only"
+  } else {
+    analysis_type <- "single"
+  }
+
   # Auto-detect plot type based on analysis type
   if (type == "auto") {
-    if (x$analysis_type == "sample_only") {
+    if (analysis_type == "sample_only") {
       type <- "power_curve"
-    } else if (x$analysis_type == "effect_only") {
+    } else if (analysis_type == "effect_only") {
       type <- "power_curve"
-    } else if (x$analysis_type == "both") {
-      type <- "heatmap" # Default to heatmap, but power_curve is now also available
+    } else if (analysis_type == "both") {
+      type <- "heatmap"
     } else {
-      stop("Cannot auto-detect plot type for analysis type: ", x$analysis_type)
+      stop("Cannot auto-detect plot type for analysis type: ", analysis_type)
     }
   }
+
+  # Create a compatible object structure for existing plot functions
+  plot_obj <- list(
+    power_surface = power_surface,
+    analysis_type = analysis_type,
+    target_power_success = design$p_sig_success,
+    target_power_futility = design$p_sig_futility,
+    sample_sizes = if ("n_total" %in% names(power_surface)) unique(power_surface$n_total) else NULL,
+    effect_sizes = if (length(target_param_cols) > 0) unique(power_surface[[target_param_cols[1]]]) else NULL,
+    integrated_power = NULL
+  )
 
   # Validate parameters
   if (!metric %in% c("success", "futility", "both")) {
@@ -235,15 +198,15 @@ plot.rctbayespower_sim_result <- function(x,
     stop("'facet_by' must be 'effect_size' or 'sample_size'")
   }
 
-  # Create plot based on type
+  # Create plot based on type using compatible object
   if (type == "power_curve") {
-    create_power_curve_plot(x, metric, values, show_target, show_integrated, facet_by, ...)
+    create_power_curve_plot(plot_obj, metric, values, show_target, show_integrated, facet_by, ...)
   } else if (type == "heatmap") {
-    create_heatmap_plot(x, metric, values, show_target, ...)
+    create_heatmap_plot(plot_obj, metric, values, show_target, ...)
   } else if (type == "integrated") {
-    create_integrated_plot(x, metric, values, show_target, ...)
+    create_integrated_plot(plot_obj, metric, values, show_target, ...)
   } else if (type == "comparison") {
-    create_comparison_plot(x, metric, values, ...)
+    create_comparison_plot(plot_obj, metric, values, ...)
   } else {
     stop("Unknown plot type: ", type, ". Use 'power_curve', 'heatmap', 'integrated', or 'comparison'.")
   }
@@ -261,7 +224,9 @@ create_power_curve_plot <- function(x, metric, values, show_target, show_integra
     subtitle <- paste("Fixed effect size:", x$effect_size)
     facet_var <- NULL
   } else if (x$analysis_type == "effect_only") {
-    x_var <- "effect_size"
+    # Use the actual target parameter name from the data
+    target_param_cols <- intersect(names(plot_data), c("b_arms_treat", "effect_size"))
+    x_var <- if (length(target_param_cols) > 0) target_param_cols[1] else "effect_size"
     x_label <- "Effect Size"
     title_base <- "Effect Size Analysis"
     subtitle <- paste("Fixed sample size:", x$sample_sizes[1])
@@ -271,12 +236,16 @@ create_power_curve_plot <- function(x, metric, values, show_target, show_integra
     if (facet_by == "effect_size") {
       x_var <- "n_total"
       x_label <- "Total Sample Size"
-      facet_var <- "effect_size"
+      # Use the actual target parameter name from the data
+      target_param_cols <- intersect(names(plot_data), c("b_arms_treat", "effect_size"))
+      facet_var <- if (length(target_param_cols) > 0) target_param_cols[1] else "effect_size"
       facet_label <- "Effect Size"
       title_base <- "Power Curves by Effect Size"
       subtitle <- paste("Sample sizes:", paste(range(x$sample_sizes), collapse = "-"))
     } else {
-      x_var <- "effect_size"
+      # Use the actual target parameter name from the data
+      target_param_cols <- intersect(names(plot_data), c("b_arms_treat", "effect_size"))
+      x_var <- if (length(target_param_cols) > 0) target_param_cols[1] else "effect_size"
       x_label <- "Effect Size"
       facet_var <- "n_total"
       facet_label <- "Sample Size"
@@ -421,8 +390,11 @@ create_power_curve_plot <- function(x, metric, values, show_target, show_integra
   # Set x-axis to use discrete values from study design
   if (x_var == "n_total") {
     p <- p + ggplot2::scale_x_continuous(breaks = x$sample_sizes, labels = x$sample_sizes)
-  } else if (x_var == "effect_size") {
-    p <- p + ggplot2::scale_x_continuous(breaks = x$effect_sizes, labels = x$effect_sizes)
+  } else if (x_var != "n_total") {
+    # Handle effect size axis - use the actual effect size values from plot object
+    if (!is.null(x$effect_sizes)) {
+      p <- p + ggplot2::scale_x_continuous(breaks = x$effect_sizes, labels = x$effect_sizes)
+    }
   }
 
   p <- p +
@@ -491,7 +463,10 @@ create_heatmap_plot <- function(x, metric, values, show_target, ...) {
   }
 
   if (metric == "success") {
-    p <- ggplot2::ggplot(plot_data, ggplot2::aes_string(x = "effect_size", y = "n_total", fill = fill_var_success)) +
+    # Use the actual target parameter name from the data
+    target_param_cols <- intersect(names(x$power_surface), c("b_arms_treat", "effect_size"))
+    x_var <- if (length(target_param_cols) > 0) target_param_cols[1] else "effect_size"
+    p <- ggplot2::ggplot(plot_data, ggplot2::aes_string(x = x_var, y = "n_total", fill = fill_var_success)) +
       ggplot2::geom_tile() +
       ggplot2::scale_fill_viridis_c(name = fill_name, labels = scales::percent_format()) +
       ggplot2::labs(
@@ -501,7 +476,10 @@ create_heatmap_plot <- function(x, metric, values, show_target, ...) {
         y = "Total Sample Size"
       )
   } else if (metric == "futility") {
-    p <- ggplot2::ggplot(plot_data, ggplot2::aes_string(x = "effect_size", y = "n_total", fill = fill_var_futility)) +
+    # Use the actual target parameter name from the data
+    target_param_cols <- intersect(names(x$power_surface), c("b_arms_treat", "effect_size"))
+    x_var <- if (length(target_param_cols) > 0) target_param_cols[1] else "effect_size"
+    p <- ggplot2::ggplot(plot_data, ggplot2::aes_string(x = x_var, y = "n_total", fill = fill_var_futility)) +
       ggplot2::geom_tile() +
       ggplot2::scale_fill_viridis_c(name = fill_name, labels = scales::percent_format()) +
       ggplot2::labs(
@@ -512,39 +490,47 @@ create_heatmap_plot <- function(x, metric, values, show_target, ...) {
       )
   } else {
     # Both - create faceted plot
+    # Use the actual target parameter name from the data
+    target_param_cols <- intersect(names(x$power_surface), c("b_arms_treat", "effect_size"))
+    x_var <- if (length(target_param_cols) > 0) target_param_cols[1] else "effect_size"
+
     if (values == "both") {
       # Create 4-panel plot: success power, success prob, futility power, futility prob
       plot_data_long <- rbind(
-        data.frame(plot_data[, c("n_total", "effect_size")],
+        data.frame(plot_data[, c("n_total", x_var)],
           value = plot_data$power_success,
           type = "Success Power"
         ),
-        data.frame(plot_data[, c("n_total", "effect_size")],
+        data.frame(plot_data[, c("n_total", x_var)],
           value = plot_data$mean_prob_success,
           type = "Success Probability"
         ),
-        data.frame(plot_data[, c("n_total", "effect_size")],
+        data.frame(plot_data[, c("n_total", x_var)],
           value = plot_data$power_futility,
           type = "Futility Power"
         ),
-        data.frame(plot_data[, c("n_total", "effect_size")],
+        data.frame(plot_data[, c("n_total", x_var)],
           value = plot_data$mean_prob_futility,
           type = "Futility Probability"
         )
       )
+      # Rename the effect size column to a standard name for plotting
+      names(plot_data_long)[names(plot_data_long) == x_var] <- "effect_size"
       fill_name <- "Value"
     } else {
       # Standard 2-panel plot
       plot_data_long <- rbind(
-        data.frame(plot_data[, c("n_total", "effect_size")],
+        data.frame(plot_data[, c("n_total", x_var)],
           value = plot_data[[fill_var_success]],
           type = paste("Success", plot_suffix)
         ),
-        data.frame(plot_data[, c("n_total", "effect_size")],
+        data.frame(plot_data[, c("n_total", x_var)],
           value = plot_data[[fill_var_futility]],
           type = paste("Futility", plot_suffix)
         )
       )
+      # Rename the effect size column to a standard name for plotting
+      names(plot_data_long)[names(plot_data_long) == x_var] <- "effect_size"
     }
 
     p <- ggplot2::ggplot(plot_data_long, ggplot2::aes(x = .data$effect_size, y = .data$n_total, fill = .data$value)) +
@@ -662,7 +648,9 @@ create_comparison_plot <- function(x, metric, values, ...) {
     x_label <- "Total Sample Size"
     title_base <- "Power vs Posterior Probability (Sample Size Analysis)"
   } else if (x$analysis_type == "effect_only") {
-    x_var <- "effect_size"
+    # Use the actual target parameter name from the data
+    target_param_cols <- intersect(names(x$power_surface), c("b_arms_treat", "effect_size"))
+    x_var <- if (length(target_param_cols) > 0) target_param_cols[1] else "effect_size"
     x_label <- "Effect Size"
     title_base <- "Power vs Posterior Probability (Effect Size Analysis)"
   } else {
@@ -711,8 +699,11 @@ create_comparison_plot <- function(x, metric, values, ...) {
   # Set x-axis to use discrete values from study design
   if (x_var == "n_total") {
     p <- p + ggplot2::scale_x_continuous(breaks = x$sample_sizes, labels = x$sample_sizes)
-  } else if (x_var == "effect_size") {
-    p <- p + ggplot2::scale_x_continuous(breaks = x$effect_sizes, labels = x$effect_sizes)
+  } else if (x_var != "n_total") {
+    # Handle effect size axis - use the actual effect size values from plot object
+    if (!is.null(x$effect_sizes)) {
+      p <- p + ggplot2::scale_x_continuous(breaks = x$effect_sizes, labels = x$effect_sizes)
+    }
   }
 
   p <- p +

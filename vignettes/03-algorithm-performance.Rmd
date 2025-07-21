@@ -1,6 +1,6 @@
 ---
 title: "Getting Started with rctbayespower: Bayesian Power Analysis for RCTs"
-date: "2025-07-08"
+date: "2025-07-22"
 always_allow_html: true
 ---
 
@@ -22,338 +22,216 @@ for more accuracy, however might not converge 3. **Confirmation**:
 
 # Performance Comparison
 
+## Setup
+
+### Model
+
 ``` r
-model_compiled <- power_analysis_ancova(
-  n_control = 100,
-  n_treatment = 100,
-  effect_size = 0.6,
-  baseline_effect = 0.3,
-  outcome_type = "continuous",
-  compile_models_only = TRUE
-)
-#> Compiling ANCOVA models without running simulations...
-#> Validating power analysis design...
-#> Checking required arguments...
-#> OK: All required arguments provided
-#> OK: All argument types valid
-#> Testing data simulation function...
-#> OK: Data simulation function works correctly
-#>   Generated data dimensions: 200 3 
-#>   Column names: outcome, baseline,arm
-#> Testing design model with true parameters...
-#>   Using algorithm: fixed_param
-#>   Running brms::brm() with sample_prior = 'only'...
-#> OK: Design model with true parameters fitted successfully
-#>   True parameter values:
-#>  Family: gaussian 
-#>   Links: mu = identity; sigma = identity 
-#> Formula: outcome ~ baseline +arm
-#>    Data: mock_data (Number of observations: 200) 
-#>   Draws: 1 chains, each with iter = 2; warmup = 1; thin = 1;
-#>          total post-warmup draws = 1
-#> 
-#> Regression Coefficients:
-#>            Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-#> Intercept      0.00        NA     0.00     0.00   NA       NA       NA
-#> baseline       0.30        NA     0.30     0.30   NA       NA       NA
-#> grouparm     0.60        NA     0.60     0.60   NA       NA       NA
-#> 
-#> Further Distributional Parameters:
-#>       Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-#> sigma     1.00        NA     1.00     1.00   NA       NA       NA
-#> 
-#> Draws were sampled using sampling(Fixed_param). 
-#> Testing design model with estimation priors...
-#>   Using algorithm: sampling
-#>   Running brms::brm() with sample_prior = 'only'...
-#> OK: Design model with estimation priors fitted successfully
-#> 
-#>  Testing single simulation run...
-#>   Generating new simulation data...
-#>   OK: New data generated with dimensions: 200 3 
-#>   Simulating outcome from design model with true parameters...
-#>   OK: Outcome simulated
-#>   Fitting estimation model with brms arguments:
-#>     Algorithm: sampling 
-#>     Iterations: 1500 (warmup: 500 )
-#>     Chains: 2 , Cores: 1 
-#>     Additional user args: algorithm = sampling, iter = 1500, warmup = 500, chains = 2, cores = 1, init = 0.1, control = list(adapt_delta = 0.9)
-#> 
-#> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 1).
-#> Chain 1: 
-#> Chain 1: Gradient evaluation took 8e-06 seconds
-#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.08 seconds.
-#> Chain 1: Adjust your expectations accordingly!
-#> Chain 1: 
-#> Chain 1: 
-#> Chain 1: Iteration:    1 / 1500 [  0%]  (Warmup)
-#> Chain 1: Iteration:  100 / 1500 [  6%]  (Warmup)
-#> Chain 1: Iteration:  200 / 1500 [ 13%]  (Warmup)
-#> Chain 1: Iteration:  300 / 1500 [ 20%]  (Warmup)
-#> Chain 1: Iteration:  400 / 1500 [ 26%]  (Warmup)
-#> Chain 1: Iteration:  500 / 1500 [ 33%]  (Warmup)
-#> Chain 1: Iteration:  501 / 1500 [ 33%]  (Sampling)
-#> Chain 1: Iteration:  600 / 1500 [ 40%]  (Sampling)
-#> Chain 1: Iteration:  700 / 1500 [ 46%]  (Sampling)
-#> Chain 1: Iteration:  800 / 1500 [ 53%]  (Sampling)
-#> Chain 1: Iteration:  900 / 1500 [ 60%]  (Sampling)
-#> Chain 1: Iteration: 1000 / 1500 [ 66%]  (Sampling)
-#> Chain 1: Iteration: 1100 / 1500 [ 73%]  (Sampling)
-#> Chain 1: Iteration: 1200 / 1500 [ 80%]  (Sampling)
-#> Chain 1: Iteration: 1300 / 1500 [ 86%]  (Sampling)
-#> Chain 1: Iteration: 1400 / 1500 [ 93%]  (Sampling)
-#> Chain 1: Iteration: 1500 / 1500 [100%]  (Sampling)
-#> Chain 1: 
-#> Chain 1:  Elapsed Time: 0.015 seconds (Warm-up)
-#> Chain 1:                0.023 seconds (Sampling)
-#> Chain 1:                0.038 seconds (Total)
-#> Chain 1: 
-#> 
-#> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 2).
-#> Chain 2: 
-#> Chain 2: Gradient evaluation took 9e-06 seconds
-#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.09 seconds.
-#> Chain 2: Adjust your expectations accordingly!
-#> Chain 2: 
-#> Chain 2: 
-#> Chain 2: Iteration:    1 / 1500 [  0%]  (Warmup)
-#> Chain 2: Iteration:  100 / 1500 [  6%]  (Warmup)
-#> Chain 2: Iteration:  200 / 1500 [ 13%]  (Warmup)
-#> Chain 2: Iteration:  300 / 1500 [ 20%]  (Warmup)
-#> Chain 2: Iteration:  400 / 1500 [ 26%]  (Warmup)
-#> Chain 2: Iteration:  500 / 1500 [ 33%]  (Warmup)
-#> Chain 2: Iteration:  501 / 1500 [ 33%]  (Sampling)
-#> Chain 2: Iteration:  600 / 1500 [ 40%]  (Sampling)
-#> Chain 2: Iteration:  700 / 1500 [ 46%]  (Sampling)
-#> Chain 2: Iteration:  800 / 1500 [ 53%]  (Sampling)
-#> Chain 2: Iteration:  900 / 1500 [ 60%]  (Sampling)
-#> Chain 2: Iteration: 1000 / 1500 [ 66%]  (Sampling)
-#> Chain 2: Iteration: 1100 / 1500 [ 73%]  (Sampling)
-#> Chain 2: Iteration: 1200 / 1500 [ 80%]  (Sampling)
-#> Chain 2: Iteration: 1300 / 1500 [ 86%]  (Sampling)
-#> Chain 2: Iteration: 1400 / 1500 [ 93%]  (Sampling)
-#> Chain 2: Iteration: 1500 / 1500 [100%]  (Sampling)
-#> Chain 2: 
-#> Chain 2:  Elapsed Time: 0.016 seconds (Warm-up)
-#> Chain 2:                0.022 seconds (Sampling)
-#> Chain 2:                0.038 seconds (Total)
-#> Chain 2: 
-#>  Family: gaussian 
-#>   Links: mu = identity; sigma = identity 
-#> Formula: outcome ~ baseline +arm
-#>    Data: data_sim (Number of observations: 200) 
-#>   Draws: 2 chains, each with iter = 1500; warmup = 500; thin = 1;
-#>          total post-warmup draws = 2000
-#> 
-#> Regression Coefficients:
-#>            Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-#> Intercept      0.08      0.10    -0.12     0.28 1.00     2369     1717
-#> baseline       0.31      0.07     0.17     0.45 1.00     1897     1090
-#> grouparm     0.51      0.15     0.21     0.81 1.00     2297     1419
-#> 
-#> Further Distributional Parameters:
-#>       Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-#> sigma     1.06      0.05     0.96     1.17 1.00     2197     1545
-#> 
-#> Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
-#> and Tail_ESS are effective sample size measures, and Rhat is the potential
-#> scale reduction factor on split chains (at convergence, Rhat = 1).
-#> 
-#> OK: Single simulation run completed successfully
-#> OK: Target parameter b_armtreat extracted successfully
-#>   Parameter estimate: 0.511 
-#>   Parameter SD: 0.1522 
-#>   Convergence diagnostics for target parameter:
-#>     R-hat: 1 OK 
-#>     ESS ratio: 0.709 OK 
-#> 
-#> OK: All validation checks passed! Design is ready for power analysis.
-
-# Compare core algorithms on standard problem
-performance_results <- data.frame(
-  Algorithm = character(),
-  Time_Seconds = numeric(),
-  Power_Success = numeric(),
-  Probability_Success = numeric(),
-  Power_Futility = numeric(),
-  Probability_Futility = numeric(),
-  Convergence = numeric(),
-  stringsAsFactors = FALSE
-)
-
-algorithms <- c("meanfield", "fullrank", "sampling")
-
-for (alg in algorithms) {
-  cat("Testing algorithm:", alg, "\n")
-  
-  start_time <- Sys.time()
-  
-  # Use power_analysis_ancova for meanfield and fullrank
-  if (alg %in% c("meanfield", "fullrank")) {
-    power_result <- power_analysis(
-      brms_design_estimation = model_compiled$brms_design_estimation,
-      brms_design_true_params = model_compiled$brms_design_true_params,
-      simulate_data_fn = model_compiled$simulate_data,
-      target_param = model_compiled$target_param,
-      threshold_success = .5,
-      threshold_futility = .1,
-      p_sig_success = .975,
-      p_sig_futility = .5, 
-      n_simulations = n_sims,
-      n_cores = n_cores,
-      brms_args = list(
-        algorithm = alg,
-        importance_resampling = TRUE,
-        iter = 1e4,
-        output_samples = 1e3
-      )
-    )
-  }
-  # Use power_analysis for sampling
-  if (alg == "sampling") {
-    power_result <- power_analysis(
-      brms_design_estimation = model_compiled$brms_design_estimation,
-      brms_design_true_params = model_compiled$brms_design_true_params,
-      simulate_data_fn = model_compiled$simulate_data,
-      target_param = model_compiled$target_param,
-      threshold_success = .5,
-      threshold_futility = .1,
-      p_sig_success = .975,
-      p_sig_futility = .5, 
-      n_simulations = n_sims,
-      n_cores = n_cores,
-      brms_args = list(
-        chains = 4,
-        iter = 800,
-        warmup = 300
-      )
-    )
-  }
-  
-  elapsed_time <- as.numeric(difftime(Sys.time(), start_time, units = "secs"))
-  # time in hours:minutes:seconds
-  elapsed_time_formatted <- sprintf(
-    "%02d:%02d:%02d",
-    as.integer(elapsed_time / 3600),
-    as.integer((elapsed_time %% 3600) / 60),
-    as.integer(elapsed_time %% 60)
-  )
-  
-  performance_results <- rbind(
-    performance_results,
-    data.frame(
-      Algorithm = alg,
-      N_simulations = n_sims,
-      Time = elapsed_time_formatted,
-      Power_Success = power_result$power_success,
-      Probability_Success = power_result$mean_prob_success,
-      Power_Futility = power_result$power_futility,
-      Probability_Futility = power_result$mean_prob_futility,
-      Convergence = power_result$convergence
-    )
-  )
+model_file <- here::here("test_model_ancova.rds")
+if (file.exists(model_file)) {
+  # load the model from a file
+  model_ancova <- readRDS(model_file)
+} else{
+  # create the model
+  model_ancova <- build_model_ancova_cont()
+  # save the model to a file
+  saveRDS(model_ancova, file = model_file)
 }
-#> Testing algorithm: meanfield 
-#> Using pre-fitted design models...
-#> Running 1000 power simulations in parallel using 15 cores...
-#> Progress: 100/1000 (10.0%) - Elapsed: 0.1 min - ETC: 1.3 min
-#> Progress: 200/1000 (20.0%) - Elapsed: 0.3 min - ETC: 1.2 min
-#> Progress: 300/1000 (30.0%) - Elapsed: 0.4 min - ETC: 1.0 min
-#> Progress: 400/1000 (40.0%) - Elapsed: 0.6 min - ETC: 0.9 min
-#> Progress: 500/1000 (50.0%) - Elapsed: 0.7 min - ETC: 0.7 min
-#> Progress: 600/1000 (60.0%) - Elapsed: 0.9 min - ETC: 0.6 min
-#> Progress: 700/1000 (70.0%) - Elapsed: 1.0 min - ETC: 0.4 min
-#> Progress: 800/1000 (80.0%) - Elapsed: 1.1 min - ETC: 0.3 min
-#> Progress: 900/1000 (90.0%) - Elapsed: 1.3 min - ETC: 0.1 min
-#> Completed: 1000/1000 (100%) - Total time: 1.4 min
-#> 
-#> Power Analysis Complete!
-#> Successful fits: 896 out of 1000 
-#> Failed simulations by type:
-#>    brms model fitting failures : 21 
-#>    brms fitting warnings (convergence/other issues) : 83 
-#> Mean effect estimate (median): 0.59 
-#> SD of effect estimate (median): 0.143 
-#> Power - Success: 0.107 
-#> Power - Futility: 0.001 
-#> Mean probability of success: 0.677 
-#> Mean probability of futility: 0.006 
-#> 
-#> Testing algorithm: fullrank 
-#> Using pre-fitted design models...
-#> Running 1000 power simulations in parallel using 15 cores...
-#> Progress: 100/1000 (10.0%) - Elapsed: 0.1 min - ETC: 1.2 min
-#> Progress: 200/1000 (20.0%) - Elapsed: 0.3 min - ETC: 1.0 min
-#> Progress: 300/1000 (30.0%) - Elapsed: 0.4 min - ETC: 0.9 min
-#> Progress: 400/1000 (40.0%) - Elapsed: 0.5 min - ETC: 0.8 min
-#> Progress: 500/1000 (50.0%) - Elapsed: 0.6 min - ETC: 0.6 min
-#> Progress: 600/1000 (60.0%) - Elapsed: 0.8 min - ETC: 0.5 min
-#> Progress: 700/1000 (70.0%) - Elapsed: 0.9 min - ETC: 0.4 min
-#> Progress: 800/1000 (80.0%) - Elapsed: 1.0 min - ETC: 0.3 min
-#> Progress: 900/1000 (90.0%) - Elapsed: 1.2 min - ETC: 0.1 min
-#> Completed: 1000/1000 (100%) - Total time: 1.3 min
-#> 
-#> Power Analysis Complete!
-#> Successful fits: 886 out of 1000 
-#> Failed simulations by type:
-#>    brms model fitting failures : 6 
-#>    brms fitting warnings (convergence/other issues) : 108 
-#> Mean effect estimate (median): 0.594 
-#> SD of effect estimate (median): 0.142 
-#> Power - Success: 0.102 
-#> Power - Futility: 0 
-#> Mean probability of success: 0.682 
-#> Mean probability of futility: 0.008 
-#> 
-#> Testing algorithm: sampling 
-#> Using pre-fitted design models...
-#> Running 1000 power simulations in parallel using 15 cores...
-#> Progress: 100/1000 (10.0%) - Elapsed: 0.2 min - ETC: 1.4 min
-#> Progress: 200/1000 (20.0%) - Elapsed: 0.3 min - ETC: 1.2 min
-#> Progress: 300/1000 (30.0%) - Elapsed: 0.5 min - ETC: 1.1 min
-#> Progress: 400/1000 (40.0%) - Elapsed: 0.6 min - ETC: 0.9 min
-#> Progress: 500/1000 (50.0%) - Elapsed: 0.7 min - ETC: 0.7 min
-#> Progress: 600/1000 (60.0%) - Elapsed: 0.9 min - ETC: 0.6 min
-#> Progress: 700/1000 (70.0%) - Elapsed: 1.0 min - ETC: 0.4 min
-#> Progress: 800/1000 (80.0%) - Elapsed: 1.2 min - ETC: 0.3 min
-#> Progress: 900/1000 (90.0%) - Elapsed: 1.3 min - ETC: 0.1 min
-#> Completed: 1000/1000 (100%) - Total time: 1.4 min
-#> 
-#> Power Analysis Complete!
-#> Successful fits: 1000 out of 1000 
-#> Mean effect estimate (median): 0.603 
-#> SD of effect estimate (median): 0.139 
-#> Power - Success: 0.081 
-#> Power - Futility: 0.001 
-#> Mean probability of success: 0.684 
-#> Mean probability of futility: 0.007
-
-print(performance_results) |> 
-  kableExtra::kable(digits = 2
-  ) 
-#>   Algorithm N_simulations     Time Power_Success Probability_Success Power_Futility
-#> 1 meanfield          1000 00:02:41     0.1071429           0.6767734    0.001116071
-#> 2  fullrank          1000 00:02:41     0.1015801           0.6817912    0.000000000
-#> 3  sampling          1000 00:02:48     0.0810000           0.6835970    0.001000000
-#>   Probability_Futility Convergence
-#> 1          0.006473214       0.896
-#> 2          0.007706546       0.886
-#> 3          0.007018000       1.000
+model_ancova$parameter_names_brms
+#> [1] "b_Intercept" "b_covariate" "b_arm2"
 ```
 
-| Algorithm | N_simulations | Time | Power_Success | Probability_Success | Power_Futility | Probability_Futility | Convergence |
-|:---|---:|:---|---:|---:|---:|---:|---:|
-| meanfield | 1000 | 00:02:41 | 0.11 | 0.68 | 0 | 0.01 | 0.90 |
-| fullrank | 1000 | 00:02:41 | 0.10 | 0.68 | 0 | 0.01 | 0.89 |
-| sampling | 1000 | 00:02:48 | 0.08 | 0.68 | 0 | 0.01 | 1.00 |
+### Design
 
-# Conclusion
+``` r
+design <- build_design(
+  model = model_ancova,
+  target_params = "b_arm2",
+  thresholds_success = 0.1,
+  thresholds_futility = 0,
+  p_sig_success = 0.975,
+  p_sig_futility = 0.5
+)
+# check the required parameters for the design
+required_fn_args(design)
+#> 
+#> Arguments that need user specification.
+#> 
+#> Simulation function:
+#> n_total, b_arms_treat, b_covariate 
+#> 
+#> Interim function:
+#> 
+```
 
-- **Start fast**: Use `meanfield` for exploration
-- **Refine carefully**: Use `fullrank` for detailed analysis  
-- **Confirm precisely**: Use `sampling` for final results
-- **Plan resources**: Estimate time and memory needs
-- **Monitor quality**: Check convergence and validate results
+### Conditions
+
+``` r
+conditions <- build_conditions(
+  design = design,
+  condition_values = list(
+    # two sample sizes
+    n_total = 400,
+      # two effect sizes
+    b_arms_treat = c(0,0.3)
+  ),
+  static_values = list(
+    # equal allocation
+    p_alloc = c(0.5, 0.5),
+          # baseline effect
+    b_covariate = 0
+  )
+)
+print(conditions, n = 100)
+#> 
+#> Object of class: 'rctbayespower_conditions'
+#> --------------------------------------------------
+#> 
+#> Number of conditions: 2 
+#> Number of varying parameters: 3 
+#> 
+#> Condition Grid:
+#> # A tibble: 2 × 3
+#>   id_cond n_total b_arms_treat
+#>     <int>   <dbl>        <dbl>
+#> 1       1     400          0  
+#> 2       2     400          0.3
+```
+
+## Run Simulations for Comparison
+
+``` r
+n_cores <- parallel::detectCores() - 2
+n_sims <- 1000
+
+# Meanfield
+suppressWarnings(
+  power_result_meanfield <-
+    power_analysis(
+      conditions = conditions,
+      n_cores = n_cores,
+      n_simulations = n_sims,
+      verbose = FALSE,
+      brms_args = list(
+        algorithm = "meanfield",
+        importance_resampling = TRUE,
+        iter = 1e4,
+        output_samples = 2e3
+      )
+    )
+)
+# Fullrank
+suppressWarnings(
+  power_result_fullrank <-
+    power_analysis(
+      conditions = conditions,
+      n_cores = n_cores,
+      n_simulations = n_sims,
+      verbose = FALSE,
+      brms_args = list(
+        algorithm = "fullrank",
+        importance_resampling = TRUE,
+        iter = 1e4,
+        output_samples = 2e3
+      )
+    )
+)
+# Sampling
+power_result_sampling <- power_analysis(
+  conditions = conditions,
+  n_cores = n_cores,
+  n_simulations = n_sims,
+  verbose = FALSE,
+  brms_args = list(
+    chains = 4,
+    iter = 700,
+    warmup = 200
+  )
+)
+
+results_summary<- rbind(
+  power_result_meanfield$results_df |> 
+    mutate(Algorithm = "Meanfield"),
+  power_result_fullrank$results_df |> 
+    mutate(Algorithm = "Fullrank"),
+  power_result_sampling$results_df |> 
+    mutate(Algorithm = "Sampling")
+)
+```
+
+Power
+
+``` r
+results_summary |> 
+  select(
+    Algorithm,
+    n_total,
+    b_arms_treat,
+    success_prob,
+    success_power,
+    futility_prob,
+    futility_power
+  ) |>
+  kableExtra::kable(digits = 2)
+```
+
+| Algorithm | n_total | b_arms_treat | success_prob | success_power | futility_prob | futility_power |
+|:---|---:|---:|---:|---:|---:|---:|
+| Meanfield | 400 | 0.0 | 0.24 | 0.00 | 0.51 | 0.51 |
+| Meanfield | 400 | 0.3 | 0.92 | 0.52 | 0.02 | 0.00 |
+| Fullrank | 400 | 0.0 | 0.24 | 0.00 | 0.49 | 0.48 |
+| Fullrank | 400 | 0.3 | 0.92 | 0.52 | 0.02 | 0.00 |
+| Sampling | 400 | 0.0 | 0.23 | 0.00 | 0.50 | 0.50 |
+| Sampling | 400 | 0.3 | 0.92 | 0.52 | 0.02 | 0.00 |
+
+Convergence
+
+``` r
+results_summary |> 
+  select(
+    Algorithm,
+    n_total,
+    b_arms_treat,
+    rhat,
+    ess_bulk,
+    ess_tail
+  ) |>
+  kableExtra::kable(digits = 3)
+```
+
+| Algorithm | n_total | b_arms_treat |  rhat | ess_bulk | ess_tail |
+|:----------|--------:|-------------:|------:|---------:|---------:|
+| Meanfield |     400 |          0.0 | 1.027 |  495.521 |  428.192 |
+| Meanfield |     400 |          0.3 | 1.013 |  494.958 |  436.324 |
+| Fullrank  |     400 |          0.0 | 1.010 |  725.346 |  643.813 |
+| Fullrank  |     400 |          0.3 | 1.009 |  714.380 |  640.886 |
+| Sampling  |     400 |          0.0 | 1.002 | 2036.894 | 1471.060 |
+| Sampling  |     400 |          0.3 | 1.002 | 2036.175 | 1471.069 |
+
+Compare run times for each algorithm:
+
+``` r
+# extract elapsed time
+data.frame(
+  Alorithm = c(
+    "Meanfield",
+    "Fullrank",
+    "Sampling"
+  ),
+    "Elapsed Time" = c(
+      power_result_meanfield$elapsed_time,
+      power_result_fullrank$elapsed_time,
+      power_result_sampling$elapsed_time
+    )
+  ) |> 
+  kableExtra::kable(digits = 2)
+```
+
+| Alorithm  | Elapsed.Time |
+|:----------|:-------------|
+| Meanfield | 2.24 mins    |
+| Fullrank  | 2.21 mins    |
+| Sampling  | 2.21 mins    |
 
 ------------------------------------------------------------------------
 
@@ -380,45 +258,41 @@ sessionInfo()
 #> [1] stats     graphics  grDevices utils     datasets  methods   base     
 #> 
 #> other attached packages:
-#>  [1] rctbayespower_0.1.0 testthat_3.2.3      here_1.0.1          rmarkdown_2.29     
-#>  [5] lubridate_1.9.4     forcats_1.0.0       stringr_1.5.1       dplyr_1.1.4        
-#>  [9] purrr_1.0.4         readr_2.1.5         tidyr_1.3.1         tibble_3.3.0       
-#> [13] ggplot2_3.5.2       tidyverse_2.0.0     devtools_2.4.5      usethis_3.1.0      
+#>  [1] rctbayespower_0.1.0 testthat_3.2.3      devtools_2.4.5     
+#>  [4] usethis_3.1.0       lubridate_1.9.4     forcats_1.0.0      
+#>  [7] stringr_1.5.1       dplyr_1.1.4         purrr_1.0.4        
+#> [10] readr_2.1.5         tidyr_1.3.1         tibble_3.3.0       
+#> [13] ggplot2_3.5.2       tidyverse_2.0.0     here_1.0.1         
+#> [16] rmarkdown_2.29     
 #> 
 #> loaded via a namespace (and not attached):
-#>   [1] gridExtra_2.3        httr2_1.1.2          remotes_2.5.0       
-#>   [4] inline_0.3.21        rlang_1.1.6          magrittr_2.0.3      
-#>   [7] matrixStats_1.5.0    compiler_4.5.0       loo_2.8.0           
-#>  [10] systemfonts_1.2.3    reshape2_1.4.4       callr_3.7.6         
-#>  [13] vctrs_0.6.5          profvis_0.4.0        pkgconfig_2.0.3     
-#>  [16] fastmap_1.2.0        backports_1.5.0      ellipsis_0.3.2      
-#>  [19] promises_1.3.3       sessioninfo_1.2.3    tzdb_0.5.0          
-#>  [22] ps_1.9.1             xfun_0.52            gert_2.1.5          
-#>  [25] cachem_1.1.0         jsonlite_2.0.0       later_1.4.2         
-#>  [28] parallel_4.5.0       R6_2.6.1             stringi_1.8.7       
-#>  [31] RColorBrewer_1.1-3   StanHeaders_2.32.10  pkgload_1.4.0       
-#>  [34] brio_1.1.5           Rcpp_1.0.14          rstan_2.32.7        
-#>  [37] knitr_1.50           bayesplot_1.13.0     gitcreds_0.1.2      
-#>  [40] httpuv_1.6.16        Matrix_1.7-3         timechange_0.3.0    
-#>  [43] tidyselect_1.2.1     rstudioapi_0.17.1    abind_1.4-8         
-#>  [46] yaml_2.3.10          codetools_0.2-20     miniUI_0.1.2        
-#>  [49] processx_3.8.6       curl_6.4.0           pkgbuild_1.4.8      
-#>  [52] plyr_1.8.9           lattice_0.22-7       pandoc_0.2.0        
-#>  [55] shiny_1.11.0         withr_3.0.2          bridgesampling_1.1-2
-#>  [58] askpass_1.2.1        posterior_1.6.1      coda_0.19-4.1       
-#>  [61] evaluate_1.0.4       desc_1.4.3           RcppParallel_5.1.10 
-#>  [64] urlchecker_1.0.1     xml2_1.3.8           pillar_1.10.2       
-#>  [67] tensorA_0.36.2.1     checkmate_2.3.2      stats4_4.5.0        
-#>  [70] distributional_0.5.0 generics_0.1.4       rprojroot_2.0.4     
-#>  [73] credentials_2.0.2    hms_1.1.3            rstantools_2.4.0    
-#>  [76] scales_1.4.0         xtable_1.8-4         glue_1.8.0          
-#>  [79] tools_4.5.0          sys_3.4.3            fs_1.6.6            
-#>  [82] mvtnorm_1.3-3        grid_4.5.0           QuickJSR_1.8.0      
-#>  [85] gh_1.5.0             nlme_3.1-168         cli_3.6.5           
-#>  [88] rappdirs_0.3.3       textshaping_1.0.1    kableExtra_1.4.0    
-#>  [91] viridisLite_0.4.2    svglite_2.2.1        Brobdingnag_1.2-9   
-#>  [94] gtable_0.3.6         digest_0.6.37        brms_2.22.0         
-#>  [97] htmlwidgets_1.6.4    farver_2.1.2         memoise_2.0.1       
-#> [100] htmltools_0.5.8.1    lifecycle_1.0.4      mime_0.13           
-#> [103] openssl_2.3.3
+#>  [1] gridExtra_2.3        remotes_2.5.0        inline_0.3.21       
+#>  [4] rlang_1.1.6          magrittr_2.0.3       matrixStats_1.5.0   
+#>  [7] compiler_4.5.0       loo_2.8.0            systemfonts_1.2.3   
+#> [10] vctrs_0.6.5          profvis_0.4.0        pkgconfig_2.0.3     
+#> [13] fastmap_1.2.0        backports_1.5.0      ellipsis_0.3.2      
+#> [16] promises_1.3.3       sessioninfo_1.2.3    tzdb_0.5.0          
+#> [19] xfun_0.52            cachem_1.1.0         later_1.4.2         
+#> [22] parallel_4.5.0       R6_2.6.1             stringi_1.8.7       
+#> [25] RColorBrewer_1.1-3   StanHeaders_2.32.10  pkgload_1.4.0       
+#> [28] brio_1.1.5           Rcpp_1.0.14          rstan_2.32.7        
+#> [31] knitr_1.50           bayesplot_1.13.0     httpuv_1.6.16       
+#> [34] Matrix_1.7-3         timechange_0.3.0     tidyselect_1.2.1    
+#> [37] rstudioapi_0.17.1    abind_1.4-8          yaml_2.3.10         
+#> [40] codetools_0.2-20     miniUI_0.1.2         pkgbuild_1.4.8      
+#> [43] lattice_0.22-7       shiny_1.11.0         withr_3.0.2         
+#> [46] bridgesampling_1.1-2 posterior_1.6.1      coda_0.19-4.1       
+#> [49] evaluate_1.0.4       desc_1.4.3           RcppParallel_5.1.10 
+#> [52] urlchecker_1.0.1     xml2_1.3.8           pillar_1.11.0       
+#> [55] tensorA_0.36.2.1     checkmate_2.3.2      stats4_4.5.0        
+#> [58] distributional_0.5.0 generics_0.1.4       rprojroot_2.0.4     
+#> [61] hms_1.1.3            rstantools_2.4.0     scales_1.4.0        
+#> [64] xtable_1.8-4         glue_1.8.0           tools_4.5.0         
+#> [67] fs_1.6.6             mvtnorm_1.3-3        grid_4.5.0          
+#> [70] QuickJSR_1.8.0       colorspace_2.1-1     nlme_3.1-168        
+#> [73] cli_3.6.5            kableExtra_1.4.0     textshaping_1.0.1   
+#> [76] viridisLite_0.4.2    svglite_2.2.1        Brobdingnag_1.2-9   
+#> [79] gtable_0.3.6         digest_0.6.37        brms_2.22.0         
+#> [82] htmlwidgets_1.6.4    farver_2.1.2         memoise_2.0.1       
+#> [85] htmltools_0.5.8.1    lifecycle_1.0.4      mime_0.13
 ```

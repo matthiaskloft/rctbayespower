@@ -4,7 +4,7 @@
 \alias{simulate_single_run}
 \title{Single Run Simulation for RCT Bayesian Power Analysis}
 \usage{
-simulate_single_run(condition_arguments, design, brms_args = list())
+simulate_single_run(condition_arguments, id_sim, design, brms_args = list())
 }
 \arguments{
 \item{condition_arguments}{A single entry from the condition_arguments list
@@ -25,10 +25,10 @@ This function is the core simulation engine used by power analysis functions.
 \examples{
 \dontrun{
 # Create model, design, and conditions
-ancova_model <- build_model_ancova_cont()
+ancova_model <- build_model("ancova_cont_2arms")()
 design <- build_design(
   model = ancova_model,
-  target_params = "b_armtreat",
+  target_params = "b_arms_treat",
   n_interim_analyses = 0,
   thresholds_success = 0.2,
   thresholds_futility = 0,
@@ -44,8 +44,8 @@ conditions <- build_conditions(
     true_parameter_values = list(
       intercept = 0,
       sigma = 1,
-      b_armtreat = 0.5,
-      b_baseline = 0.2
+      b_arms_treat = 0.5,
+      b_covariate = 0.2
     )
   )
 )

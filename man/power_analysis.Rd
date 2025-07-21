@@ -90,10 +90,10 @@ without changing the function signature.
 \examples{
 \dontrun{
 # Create an ANCOVA model and design
-ancova_model <- build_model_ancova_cont()
+ancova_model <- build_model("ancova_cont_2arms")()
 design <- build_design(
   build_model = ancova_model,
-  target_params = "b_armtreat",
+  target_params = "b_arms_treat",
   n_interim_analyses = 0,
   thresholds_success = 0.2,
   thresholds_futility = 0.0,
@@ -104,7 +104,7 @@ design <- build_design(
 # Create conditions grid
 conditions <- expand_conditions(
   sample_sizes = c(100),
-  b_armtreat = c(0.5),
+  b_arms_treat = c(0.5),
 )
 
 # Run power analysis

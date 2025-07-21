@@ -46,7 +46,7 @@
 #' \dontrun{
 #' # Assume you have a fitted brms model and design specification
 #' design <- list(
-#'   target_params = c("b_armtreat", "b_Intercept"),
+#'   target_params = c("b_arms_treat", "b_Intercept"),
 #'   thresholds_success = c(0.2, 0.0),
 #'   thresholds_futility = c(0.0, 0.0),
 #'   p_sig_success = 0.975,
@@ -63,14 +63,14 @@ compute_measures_brmsfit <- function(brmsfit, design) {
   if (!inherits(brmsfit, "brmsfit")) {
     stop("brmsfit must be a fitted brms model object")
   }
-  
+
   target_params <- design$target_params
-  
+
   # Compute measures
   measures_list <- purrr::map(target_params, function(param) {
     # extract posterior samples and compute power metrics
     posterior_samples <- brms::as_draws_rvars(brmsfit, variable = param)
-    
+
     # extract thresholds
     if (length(target_params) > 1) {
       threshold_success <- design$thresholds_success[which(target_params == param)]
@@ -102,7 +102,7 @@ compute_measures_brmsfit <- function(brmsfit, design) {
     rhat <- posterior::rhat(posterior_samples[[param]])
     ess_bulk <- posterior::ess_bulk(posterior_samples[[param]])
     ess_tail <- posterior::ess_tail(posterior_samples[[param]])
-    
+
     # combine results into a list
     out_list <- list(
       parameter = param,
@@ -120,10 +120,10 @@ compute_measures_brmsfit <- function(brmsfit, design) {
       ess_bulk = ess_bulk,
       ess_tail = ess_tail
     )
-    
+
     return(out_list)
   })
-  
+
   # compute combined probabilities and powers
   if (length(target_params) > 1) {
     # extract posterior samples and compute power metrics
@@ -139,7 +139,7 @@ compute_measures_brmsfit <- function(brmsfit, design) {
     } else {
       thresholds_futility <- design$thresholds_futility
     }
-    
+
     # calculate combined probabilities
     combined_success_prob <- mean(apply(ifelse(
       posterior_samples > thresholds_success, 1, 0
@@ -149,11 +149,11 @@ compute_measures_brmsfit <- function(brmsfit, design) {
       1,
       min
     ))
-    
+
     # calculate combined significance
     combined_sig_success <- as.numeric(combined_success_prob >= design$p_sig_success, na.rm = TRUE)
     combined_sig_futility <- as.numeric(combined_futility_prob >= design$p_sig_futility, na.rm = TRUE)
-    
+
     # combine results into a list
     measures_list_combined <- list(
       parameter = "union",
@@ -172,17 +172,17 @@ compute_measures_brmsfit <- function(brmsfit, design) {
       ess_tail = NA
     )
   }
-  
+
   # remove success_samples and futility_samples from the list
   measures_list <- purrr::map(measures_list, function(x) {
     x$success_samples <- NULL
     x$futility_samples <- NULL
     return(x)
   })
-  
+
   # make data.frames and rbind()
   measures_df <- do.call(rbind, measures_list)
-  
+
   if (length(target_params) > 1) {
     # create a data frame for combined measures
     measures_df_combined <- do.call(cbind, measures_list_combined)
@@ -191,7 +191,7 @@ compute_measures_brmsfit <- function(brmsfit, design) {
   } else {
     measures_df <- as.data.frame(measures_df)
   }
-  
+
   return(measures_df)
 }
 
@@ -255,8 +255,8 @@ summarize_sims <- function(results_df_raw, n_simulations) {
   # remove rows with NA in id_cond or parameter
   results_df_raw <- results_df_raw |>
     dplyr::filter(!is.na(id_cond) & !is.na(parameter))
-  
-  
+
+
   results_summarized <- results_df_raw |>
     dplyr::group_by(id_cond, parameter, threshold_success, threshold_futility) |>
     dplyr::summarise(
@@ -264,10 +264,10 @@ summarize_sims <- function(results_df_raw, n_simulations) {
       success_prob_mcse = calculate_mcse_mean(success_prob, n_simulations),
       futility_prob = mean(futility_prob, na.rm = TRUE),
       futility_prob_mcse = calculate_mcse_mean(futility_prob, n_simulations),
-      pow_success = mean(sig_success, na.rm = TRUE),
-      pow_success_mcse = calculate_mcse_power(sig_success, n_simulations),
-      pow_futility = mean(sig_futility, na.rm = TRUE),
-      pow_futility_mcse = calculate_mcse_power(sig_futility, n_simulations),
+      success_power = mean(sig_success, na.rm = TRUE),
+      success_power_mcse = calculate_mcse_power(sig_success, n_simulations),
+      futility_power = mean(sig_futility, na.rm = TRUE),
+      futility_power_mcse = calculate_mcse_power(sig_futility, n_simulations),
       est_median = mean(est_median, na.rm = TRUE),
       est_median_mcse = calculate_mcse_mean(est_median, n_simulations),
       est_mad = mean(est_mad, na.rm = TRUE),
@@ -286,6 +286,6 @@ summarize_sims <- function(results_df_raw, n_simulations) {
       convergence_rate_mcse = calculate_mcse_power(convergence_rate, n_simulations),
       .groups = "drop"
     )
-  
+
   return(results_summarized)
 }

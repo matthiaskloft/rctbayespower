@@ -12,7 +12,7 @@
   - `simulate_single_run()`: Execute single simulation run for power analysis
 
 * **Pre-built Models**:
-  - `build_model_ancova_cont()`: ANCOVA model for continuous outcomes with baseline covariates
+  - `build_model("ancova_cont_2arms")()`: ANCOVA model for continuous outcomes with baseline covariates
 
 * **Outcome Types**:
   - Continuous outcomes with Cohen's d effect sizes (via ANCOVA models)

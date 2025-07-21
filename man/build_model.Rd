@@ -5,17 +5,24 @@
 \title{Create an build_model Object}
 \usage{
 build_model(
+  pre_defined_model = NULL,
   data_simulation_fn,
   brms_model,
   n_endpoints = NULL,
   endpoint_types = NULL,
-  n_treatment_arms = NULL,
+  n_arms = NULL,
   n_repeated_measures = NULL,
-  model_name = NULL,
-  pre_defined_model = NULL
+  model_name = NULL
 )
 }
 \arguments{
+\item{pre_defined_model}{Optional character string specifying a predefined model
+to use instead of creating a custom model. Currently supported values:
+\itemize{
+\item "ancova_cont" - ANCOVA model for continuous outcomes with baseline covariate
+}
+When specified, other parameters are ignored and the predefined model is returned.}
+
 \item{data_simulation_fn}{A function that simulates data for the RCT. Must take
 parameters n_total, p_alloc, and further parameters needed for
 data simulation.}
@@ -28,19 +35,12 @@ This should be compiled without posterior draws (chains = 0) for efficiency.}
 \item{endpoint_types}{Character vector specifying the type of each endpoint.
 Valid types are "continuous", "binary", "count". Length must match n_endpoints.}
 
-\item{n_treatment_arms}{Number of treatment arms in the study (must be positive integer)}
+\item{n_arms}{Number of arms in the study including control arm (must be positive integer)}
 
 \item{n_repeated_measures}{Number of repeated measures per participant.
 Use NULL or 0 for single time point studies.}
 
 \item{model_name}{Optional character string providing a descriptive name for the model}
-
-\item{pre_defined_model}{Optional character string specifying a predefined model
-to use instead of creating a custom model. Currently supported values:
-\itemize{
-\item "ancova_cont" - ANCOVA model for continuous outcomes with baseline covariate
-}
-When specified, other parameters are ignored and the predefined model is returned.}
 }
 \value{
 An object of class "build_model" containing:
@@ -53,7 +53,7 @@ The object has the following attributes:
 \item{model_name}{Descriptive name for the model}
 \item{n_endpoints}{Number of study endpoints}
 \item{endpoint_types}{Types of endpoints}
-\item{n_treatment_arms}{Number of treatment arms}
+\item{n_arms}{Number of arms including control arm}
 \item{n_repeated_measures}{Number of repeated measures}
 \item{parameter_names_sim_fn}{Parameter names extracted from simulation function}
 \item{parameter_names_brms}{Parameter names from brms model}
@@ -94,5 +94,5 @@ ancova_model <- build_model(pre_defined_model = "ancova_cont")
 }
 }
 \seealso{
-\code{\link[=build_design]{build_design()}}, \code{\link[=build_model_ancova_cont]{build_model_ancova_cont()}}
+\code{\link[=build_design]{build_design()}}, \code{\link[=build_model_ancova]{build_model_ancova()}}
 }

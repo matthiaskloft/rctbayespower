@@ -23,8 +23,8 @@ output:
 - **`simulate_single_run()`** - Execute single simulation run for power analysis
 
 #### Pre-built Models (Partial Implementation)
-- **`build_model_ancova_cont()`** - ANCOVA model for continuous outcomes ✅
-  - To Do: build_model_ancova() as generalized version and wrappers for specific defaults like continuous outcome (build_model_ancova_cont())
+- **`build_model("ancova_cont_2arms")()`** - ANCOVA model for continuous outcomes ✅
+  - To Do: build_model_ancova() as generalized version and wrappers for specific defaults like continuous outcome (build_model("ancova_cont_2arms")())
 
 #### Advanced Features (100% Complete)
 
@@ -84,7 +84,7 @@ output:
 # 1. Create model
 
 # create the model
-model_ancova <- build_model_ancova_cont()
+model_ancova <- build_model("ancova_cont_2arms")()
 print(model_ancova)
 
 #-------------------------------------------------------------------------------
@@ -92,14 +92,14 @@ print(model_ancova)
 
 design <- build_design(
   model = model_ancova,
-  target_params = "b_armtreat",
+  target_params = "b_arms_treat",
   thresholds_success = 0.0,
   thresholds_futility = 0.0,
   p_sig_success = 0.975,
   p_sig_futility = 0.5
 )
 # check the required parameters for the design
-required_parameters(design)
+required_fn_args(design)
 
 #-------------------------------------------------------------------------------
 # 3. Create conditions
@@ -110,9 +110,9 @@ conditions <- build_conditions(
     # two sample sizes
     n_total = 400,
     # baseline effect
-    b_baseline = c(0, .5),
+    b_covariate = c(0, .5),
     # two effect sizes
-    b_armtreat = c(0, .5)
+    b_arms_treat = c(0, .5)
   ),
   static_values = list(
     # equal allocation

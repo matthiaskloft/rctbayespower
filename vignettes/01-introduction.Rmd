@@ -1,6 +1,6 @@
 ---
 title: "Getting Started with rctbayespower: Bayesian Power Analysis for RCTs"
-date: "2025-07-06"
+date: "2025-07-22"
 always_allow_html: true
 ---
 
@@ -19,1760 +19,335 @@ Bayesian power analysis allows researchers to:
 This vignette demonstrates the main functions of the package with
 practical examples using real model fitting.
 
-## Installation and Setup
-
-``` r
-# Install from GitHub (once package is published)
-# devtools::install_github("matthiaskloft/rctbayespower")
-
-# Check and install required packages
-required_packages <- c("brms", "ggplot2", "dplyr", "devtools")
-lapply(required_packages, function(pkg) {
-  if (!requireNamespace(pkg, quietly = TRUE)) {
-    install.packages(pkg, repos = "https://cloud.r-project.org")
-  }
-  library(pkg, character.only = TRUE)
-})
-#> [[1]]
-#>  [1] "rctbayespower" "testthat"      "dplyr"         "ggplot2"       "brms"         
-#>  [6] "Rcpp"          "here"          "knitr"         "rmarkdown"     "stats"        
-#> [11] "graphics"      "grDevices"     "utils"         "datasets"      "devtools"     
-#> [16] "usethis"       "methods"       "base"         
-#> 
-#> [[2]]
-#>  [1] "rctbayespower" "testthat"      "dplyr"         "ggplot2"       "brms"         
-#>  [6] "Rcpp"          "here"          "knitr"         "rmarkdown"     "stats"        
-#> [11] "graphics"      "grDevices"     "utils"         "datasets"      "devtools"     
-#> [16] "usethis"       "methods"       "base"         
-#> 
-#> [[3]]
-#>  [1] "rctbayespower" "testthat"      "dplyr"         "ggplot2"       "brms"         
-#>  [6] "Rcpp"          "here"          "knitr"         "rmarkdown"     "stats"        
-#> [11] "graphics"      "grDevices"     "utils"         "datasets"      "devtools"     
-#> [16] "usethis"       "methods"       "base"         
-#> 
-#> [[4]]
-#>  [1] "rctbayespower" "testthat"      "dplyr"         "ggplot2"       "brms"         
-#>  [6] "Rcpp"          "here"          "knitr"         "rmarkdown"     "stats"        
-#> [11] "graphics"      "grDevices"     "utils"         "datasets"      "devtools"     
-#> [16] "usethis"       "methods"       "base"
-
-# load the package
-devtools::load_all(".")
-```
-
 # Basic Power Analysis Using ANCOVA Design
 
-## Continuous Outcomes
-
-Let’s start with a basic power analysis for a continuous outcome (e.g.,
-change in blood pressure) using the convenient ANCOVA wrapper function.
+### Model
 
 ``` r
-# Basic power analysis for continuous outcome with baseline covariate
-power_result <- power_analysis_ancova(
-  n_control = 50,
-  n_treatment = 50,
-  effect_size = 0.5, # Cohen's d
-  baseline_effect = 0.3, # Baseline covariate effect
-  outcome_type = "continuous",
-  threshold_success = 0.3, # Clinically meaningful effect
-  threshold_futility = 0.1, # Futility threshold
-  p_sig_success = 0.95, # Probability threshold for success
-  p_sig_futility = 0.5, # Probability threshold for futility
-  n_simulations = n_sims,
-  n_cores = n_cores,
-  brms_args = list(
-    algorithm = "meanfield", # Fast algorithm for demo
-    importance_resampling = TRUE,
-    iter = 1e4,
-    output_samples = 1e3
-  )
-)
-#> Running 105 power simulations in parallel using 15 cores...
-#> Setting up design model with true parameters...
-#> Setting up design model with estimation priors...
-#> Running 105 simulations in parallel using 15 cores...
-#> Progress: 10/105 (9.5%) - Elapsed: 0.2 min - ETC: 1.5 min
-#> Progress: 20/105 (19.0%) - Elapsed: 0.3 min - ETC: 1.4 min
-#> Progress: 30/105 (28.6%) - Elapsed: 0.5 min - ETC: 1.4 min
-#> Progress: 40/105 (38.1%) - Elapsed: 0.7 min - ETC: 1.2 min
-#> Progress: 50/105 (47.6%) - Elapsed: 0.9 min - ETC: 1.0 min
-#> Progress: 60/105 (57.1%) - Elapsed: 1.1 min - ETC: 0.8 min
-#> Progress: 70/105 (66.7%) - Elapsed: 1.2 min - ETC: 0.6 min
-#> Progress: 80/105 (76.2%) - Elapsed: 1.4 min - ETC: 0.4 min
-#> Progress: 90/105 (85.7%) - Elapsed: 1.6 min - ETC: 0.3 min
-#> Progress: 100/105 (95.2%) - Elapsed: 1.7 min - ETC: 0.1 min
-#> Completed: 105/105 (100%) - Total time: 1.9 min
-#> 
-#> Power Analysis Complete!
-#> Successful fits: 101 out of 105 
-#> Failed simulations by type:
-#>    brms model fitting failures : 2 
-#>    brms fitting warnings (convergence/other issues) : 2 
-#> Mean effect estimate (median): 0.485 
-#> SD of effect estimate (median): 0.19 
-#> Power - Success: 0.218 
-#> Power - Futility: 0.03 
-#> Mean probability of success: 0.751 
-#> Mean probability of futility: 0.08
-
-summary(power_result)
-#> 
-#> === Bayesian Power Analysis Summary ===
-#> 
-#> Study Design:
-#>   Control arm size: 50 
-#>   Treatment group size: 50 
-#>   Target parameter: grouparm 
-#>   Success threshold: 0.3 
-#>   Futility threshold: 0.1 
-#>   Success probability threshold: 0.95 
-#> 
-#>   Futility probability threshold: 0.5 
-#> 
-#> Model Information:
-#>   Family: gaussian(identity) 
-#>   Estimation formula: baseline +arm
-#>   Design formula: baseline +arm
-#> 
-#> Simulation Overview:
-#>   Total simulations: 105 
-#>   Successful fits: 101 
-#>   Convergence rate: 96.2 %
-#> 
-#> Failed Simulations: 4 
-#>   (See detailed error output from power_analysis() for failure breakdown)
-#> 
-#> Treatment Effect Estimates:
-#>   Mean effect estimate (median): 0.485 
-#>   SD of effect estimates (median): 0.19 
-#> 
-#> Power Analysis Results:
-#>   Power - Success: 0.218 
-#>   Power - Futility: 0.03 
-#> 
-#> Decision Probabilities:
-#>   Mean probability of success: 0.751 
-#>   Mean probability of futility: 0.08 
-#> 
-#> === End Summary ===
-```
-
-The output shows: - **Power Success**: Probability that the effect
-exceeds the success threshold - **Power Futility**: Probability that the
-effect falls below the futility threshold - **Mean Effect Estimate**:
-Average estimated effect size across simulations - **Convergence**:
-Proportion of models that converged successfully
-
-# Frequentist Alpha Error (Type I Error) Calculation
-
-While this package focuses on Bayesian power analysis, it’s useful to
-compare with traditional frequentist concepts. We can estimate the Type
-I error rate (alpha) by running a power analysis under the null
-hypothesis (effect size = 0).
-
-``` r
-# Calculate frequentist alpha error under null hypothesis
-alpha_result <- power_analysis_ancova(
-  n_control = 50,
-  n_treatment = 50,
-  effect_size = 0, # NULL hypothesis: no treatment effect
-  baseline_effect = 0.3,
-  outcome_type = "continuous",
-  threshold_success = 0.0, # Any positive effect counts as "significant"
-  threshold_futility = -0.3, # Negative threshold for futility
-  p_sig_success = 0.95, # Traditional 95% credible interval
-  p_sig_futility = 0.5,
-  n_simulations = n_sims,
-  n_cores = n_cores,
-  brms_args = list(
-    algorithm = "meanfield",
-    importance_resampling = TRUE,
-    iter = 1e4,
-    output_samples = 1e3
-  )
-)
-#> Running 105 power simulations in parallel using 15 cores...
-#> Setting up design model with true parameters...
-#> Setting up design model with estimation priors...
-#> Running 105 simulations in parallel using 15 cores...
-#> Progress: 10/105 (9.5%) - Elapsed: 0.2 min - ETC: 1.9 min
-#> Progress: 20/105 (19.0%) - Elapsed: 0.4 min - ETC: 1.6 min
-#> Progress: 30/105 (28.6%) - Elapsed: 0.6 min - ETC: 1.6 min
-#> Progress: 40/105 (38.1%) - Elapsed: 0.8 min - ETC: 1.3 min
-#> Progress: 50/105 (47.6%) - Elapsed: 1.0 min - ETC: 1.1 min
-#> Progress: 60/105 (57.1%) - Elapsed: 1.2 min - ETC: 0.9 min
-#> Progress: 70/105 (66.7%) - Elapsed: 1.4 min - ETC: 0.7 min
-#> Progress: 80/105 (76.2%) - Elapsed: 1.6 min - ETC: 0.5 min
-#> Progress: 90/105 (85.7%) - Elapsed: 1.8 min - ETC: 0.3 min
-#> Progress: 100/105 (95.2%) - Elapsed: 2.0 min - ETC: 0.1 min
-#> Completed: 105/105 (100%) - Total time: 2.2 min
-#> 
-#> Power Analysis Complete!
-#> Successful fits: 102 out of 105 
-#> Failed simulations by type:
-#>    brms fitting warnings (convergence/other issues) : 3 
-#> Mean effect estimate (median): -0.029 
-#> SD of effect estimate (median): 0.199 
-#> Power - Success: 0.039 
-#> Power - Futility: 0.059 
-#> Mean probability of success: 0.487 
-#> Mean probability of futility: 0.144
-
-# The power_success represents the Type I error rate (alpha)
-cat("Estimated Type I error rate (alpha):", round(alpha_result$power_success, 3), "\n")
-#> Estimated Type I error rate (alpha): 0.039
-```
-
-In frequentist statistics, alpha represents the probability of falsely
-rejecting the null hypothesis when it’s true. In contrast, Bayesian
-power analysis provides probabilistic statements about effect sizes
-relative to clinically meaningful thresholds.
-
-# Grid Analysis: Sample Size and Effect Size Exploration
-
-## Sample Size Analysis
-
-One of the most common questions in study planning is: “How many
-participants do I need?” The `power_analysis()` function helps
-answer this question by testing multiple sample sizes.
-
-``` r
-# Find sample size needed for 80% power
-sample_size_result <- power_analysis(
-  sample_sizes = c(80, 100),
-  effect_sizes = 0.5, # Fixed effect size
-  target_power_success = 0.8,
-  target_power_futility = 0.8,
-  power_analysis_fn = "power_analysis_ancova",
-  outcome_type = "continuous",
-  baseline_effect = 0.3,
-  threshold_success = 0.3,
-  threshold_futility = 0.1,
-  p_sig_success = 0.95,
-  p_sig_futility = 0.5,
-  n_simulations = n_sims,
-  n_cores = n_cores
-)
-#> 
-#> === Sample Size Analysis ===
-#> Fixed effect size: 0.5 
-#> Sample sizes to test: 80, 100 
-#> Threshold - Success: 0.3 
-#> Threshold - Futility: 0.1 
-#> Allocation (treatment %): 50 %
-#> Power analysis function: power_analysis_ancova 
-#> Total combinations: 2 
-#> 
-#> 
-#> --- Processing Effect Size 0.5 ( 1 of 1 ) ---
-#> Combinations for this effect size: 2 
-#> Compiling brms models for ANCOVA with effect size 0.5 ...
-#> Compiling ANCOVA models without running simulations...
-#> Validating power analysis design...
-#> Checking required arguments...
-#> OK: All required arguments provided
-#> OK: All argument types valid
-#> Testing data simulation function...
-#> OK: Data simulation function works correctly
-#>   Generated data dimensions: 80 3 
-#>   Column names: outcome, baseline,arm
-#> Testing design model with true parameters...
-#>   Using algorithm: fixed_param
-#>   Running brms::brm() with sample_prior = 'only'...
-#> OK: Design model with true parameters fitted successfully
-#>   True parameter values:
-#>  Family: gaussian 
-#>   Links: mu = identity; sigma = identity 
-#> Formula: outcome ~ baseline +arm
-#>    Data: mock_data (Number of observations: 80) 
-#>   Draws: 1 chains, each with iter = 2; warmup = 1; thin = 1;
-#>          total post-warmup draws = 1
-#> 
-#> Regression Coefficients:
-#>            Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-#> Intercept      0.00        NA     0.00     0.00   NA       NA       NA
-#> baseline       0.30        NA     0.30     0.30   NA       NA       NA
-#> grouparm     0.50        NA     0.50     0.50   NA       NA       NA
-#> 
-#> Further Distributional Parameters:
-#>       Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-#> sigma     1.00        NA     1.00     1.00   NA       NA       NA
-#> 
-#> Draws were sampled using sampling(Fixed_param). 
-#> Testing design model with estimation priors...
-#>   Using algorithm: sampling
-#>   Running brms::brm() with sample_prior = 'only'...
-#> OK: Design model with estimation priors fitted successfully
-#> 
-#>  Testing single simulation run...
-#>   Generating new simulation data...
-#>   OK: New data generated with dimensions: 80 3 
-#>   Simulating outcome from design model with true parameters...
-#>   OK: Outcome simulated
-#>   Fitting estimation model with brms arguments:
-#>     Algorithm: sampling 
-#>     Iterations: 1500 (warmup: 500 )
-#>     Chains: 2 , Cores: 1 
-#>     Additional user args: algorithm = sampling, iter = 1500, warmup = 500, chains = 2, cores = 1, init = 0.1, control = list(adapt_delta = 0.9)
-#> 
-#> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 1).
-#> Chain 1: 
-#> Chain 1: Gradient evaluation took 7e-06 seconds
-#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.07 seconds.
-#> Chain 1: Adjust your expectations accordingly!
-#> Chain 1: 
-#> Chain 1: 
-#> Chain 1: Iteration:    1 / 1500 [  0%]  (Warmup)
-#> Chain 1: Iteration:  100 / 1500 [  6%]  (Warmup)
-#> Chain 1: Iteration:  200 / 1500 [ 13%]  (Warmup)
-#> Chain 1: Iteration:  300 / 1500 [ 20%]  (Warmup)
-#> Chain 1: Iteration:  400 / 1500 [ 26%]  (Warmup)
-#> Chain 1: Iteration:  500 / 1500 [ 33%]  (Warmup)
-#> Chain 1: Iteration:  501 / 1500 [ 33%]  (Sampling)
-#> Chain 1: Iteration:  600 / 1500 [ 40%]  (Sampling)
-#> Chain 1: Iteration:  700 / 1500 [ 46%]  (Sampling)
-#> Chain 1: Iteration:  800 / 1500 [ 53%]  (Sampling)
-#> Chain 1: Iteration:  900 / 1500 [ 60%]  (Sampling)
-#> Chain 1: Iteration: 1000 / 1500 [ 66%]  (Sampling)
-#> Chain 1: Iteration: 1100 / 1500 [ 73%]  (Sampling)
-#> Chain 1: Iteration: 1200 / 1500 [ 80%]  (Sampling)
-#> Chain 1: Iteration: 1300 / 1500 [ 86%]  (Sampling)
-#> Chain 1: Iteration: 1400 / 1500 [ 93%]  (Sampling)
-#> Chain 1: Iteration: 1500 / 1500 [100%]  (Sampling)
-#> Chain 1: 
-#> Chain 1:  Elapsed Time: 0.016 seconds (Warm-up)
-#> Chain 1:                0.018 seconds (Sampling)
-#> Chain 1:                0.034 seconds (Total)
-#> Chain 1: 
-#> 
-#> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 2).
-#> Chain 2: 
-#> Chain 2: Gradient evaluation took 4e-06 seconds
-#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.04 seconds.
-#> Chain 2: Adjust your expectations accordingly!
-#> Chain 2: 
-#> Chain 2: 
-#> Chain 2: Iteration:    1 / 1500 [  0%]  (Warmup)
-#> Chain 2: Iteration:  100 / 1500 [  6%]  (Warmup)
-#> Chain 2: Iteration:  200 / 1500 [ 13%]  (Warmup)
-#> Chain 2: Iteration:  300 / 1500 [ 20%]  (Warmup)
-#> Chain 2: Iteration:  400 / 1500 [ 26%]  (Warmup)
-#> Chain 2: Iteration:  500 / 1500 [ 33%]  (Warmup)
-#> Chain 2: Iteration:  501 / 1500 [ 33%]  (Sampling)
-#> Chain 2: Iteration:  600 / 1500 [ 40%]  (Sampling)
-#> Chain 2: Iteration:  700 / 1500 [ 46%]  (Sampling)
-#> Chain 2: Iteration:  800 / 1500 [ 53%]  (Sampling)
-#> Chain 2: Iteration:  900 / 1500 [ 60%]  (Sampling)
-#> Chain 2: Iteration: 1000 / 1500 [ 66%]  (Sampling)
-#> Chain 2: Iteration: 1100 / 1500 [ 73%]  (Sampling)
-#> Chain 2: Iteration: 1200 / 1500 [ 80%]  (Sampling)
-#> Chain 2: Iteration: 1300 / 1500 [ 86%]  (Sampling)
-#> Chain 2: Iteration: 1400 / 1500 [ 93%]  (Sampling)
-#> Chain 2: Iteration: 1500 / 1500 [100%]  (Sampling)
-#> Chain 2: 
-#> Chain 2:  Elapsed Time: 0.011 seconds (Warm-up)
-#> Chain 2:                0.02 seconds (Sampling)
-#> Chain 2:                0.031 seconds (Total)
-#> Chain 2: 
-#>  Family: gaussian 
-#>   Links: mu = identity; sigma = identity 
-#> Formula: outcome ~ baseline +arm
-#>    Data: data_sim (Number of observations: 80) 
-#>   Draws: 2 chains, each with iter = 1500; warmup = 500; thin = 1;
-#>          total post-warmup draws = 2000
-#> 
-#> Regression Coefficients:
-#>            Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-#> Intercept      0.22      0.17    -0.11     0.55 1.00     1785     1114
-#> baseline       0.19      0.11    -0.03     0.40 1.00     1860     1155
-#> grouparm     0.66      0.24     0.21     1.12 1.00     1967     1242
-#> 
-#> Further Distributional Parameters:
-#>       Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-#> sigma     1.01      0.08     0.86     1.19 1.00     2028     1505
-#> 
-#> Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
-#> and Tail_ESS are effective sample size measures, and Rhat is the potential
-#> scale reduction factor on split chains (at convergence, Rhat = 1).
-#> 
-#> OK: Single simulation run completed successfully
-#> OK: Target parameter b_armtreat extracted successfully
-#>   Parameter estimate: 0.6636 
-#>   Parameter SD: 0.2359 
-#>   Convergence diagnostics for target parameter:
-#>     R-hat: 1.001 OK 
-#>     ESS ratio: 0.621 OK 
-#> 
-#> OK: All validation checks passed! Design is ready for power analysis.
-#> Successfully compiled and cached ANCOVA models for effect size 0.5 
-#> Testing combination 1 of 2 : N = 80 , Effect = 0.5 (using cached models)
-#> Using pre-fitted design models...
-#> Running 105 power simulations in parallel using 15 cores...
-#> Running 105 simulations in parallel using 15 cores...
-#> Progress: 10/105 (9.5%) - Elapsed: 0.2 min - ETC: 1.8 min
-#> Progress: 20/105 (19.0%) - Elapsed: 0.4 min - ETC: 1.7 min
-#> Progress: 30/105 (28.6%) - Elapsed: 0.6 min - ETC: 1.6 min
-#> Progress: 40/105 (38.1%) - Elapsed: 0.9 min - ETC: 1.4 min
-#> Progress: 50/105 (47.6%) - Elapsed: 1.0 min - ETC: 1.1 min
-#> Progress: 60/105 (57.1%) - Elapsed: 1.2 min - ETC: 0.9 min
-#> Progress: 70/105 (66.7%) - Elapsed: 1.4 min - ETC: 0.7 min
-#> Progress: 80/105 (76.2%) - Elapsed: 1.6 min - ETC: 0.5 min
-#> Progress: 90/105 (85.7%) - Elapsed: 1.8 min - ETC: 0.3 min
-#> Progress: 100/105 (95.2%) - Elapsed: 2.0 min - ETC: 0.1 min
-#> Completed: 105/105 (100%) - Total time: 2.2 min
-#> 
-#> Power Analysis Complete!
-#> Successful fits: 105 out of 105 
-#> Mean effect estimate (median): 0.451 
-#> SD of effect estimate (median): 0.222 
-#> Power - Success: 0.219 
-#> Power - Futility: 0.029 
-#> Mean probability of success: 0.715 
-#> Mean probability of futility: 0.114 
-#> 
-#> Testing combination 2 of 2 : N = 100 , Effect = 0.5 (using cached models)
-#> Using pre-fitted design models...
-#> Running 105 power simulations in parallel using 15 cores...
-#> Running 105 simulations in parallel using 15 cores...
-#> Progress: 10/105 (9.5%) - Elapsed: 0.1 min - ETC: 1.4 min
-#> Progress: 20/105 (19.0%) - Elapsed: 0.3 min - ETC: 1.2 min
-#> Progress: 30/105 (28.6%) - Elapsed: 0.5 min - ETC: 1.3 min
-#> Progress: 40/105 (38.1%) - Elapsed: 0.7 min - ETC: 1.1 min
-#> Progress: 50/105 (47.6%) - Elapsed: 0.8 min - ETC: 0.9 min
-#> Progress: 60/105 (57.1%) - Elapsed: 0.9 min - ETC: 0.7 min
-#> Progress: 70/105 (66.7%) - Elapsed: 1.1 min - ETC: 0.5 min
-#> Progress: 80/105 (76.2%) - Elapsed: 1.2 min - ETC: 0.4 min
-#> Progress: 90/105 (85.7%) - Elapsed: 1.3 min - ETC: 0.2 min
-#> Progress: 100/105 (95.2%) - Elapsed: 1.5 min - ETC: 0.1 min
-#> Completed: 105/105 (100%) - Total time: 1.7 min
-#> 
-#> Power Analysis Complete!
-#> Successful fits: 105 out of 105 
-#> Mean effect estimate (median): 0.495 
-#> SD of effect estimate (median): 0.198 
-#> Power - Success: 0.19 
-#> Power - Futility: 0.029 
-#> Mean probability of success: 0.74 
-#> Mean probability of futility: 0.093 
-#> 
-#> 
-#> Total analysis time: 8.95 minutes
-#> 
-#> === Sample Size Analysis Complete ===
-#> Target success power not achieved with tested sample sizes
-#> Target futility power not achieved with tested sample sizes
-#> 
-#> Power Overview Across Sample Sizes:
-#>  N Total Success Futility
-#>       80   21.9%     2.9%
-#>      100     19%     2.9%
-#> (N Total = total sample size)
-```
-
-Get a more comprehensive summary of the sample size analysis:
-
-``` r
-summary(sample_size_result)
-#> Bayesian RCT Sample Size Analysis - Detailed Summary
-#> ====================================================
-#> 
-#> Analysis Parameters:
-#>   Target power - Success: 0.8 
-#>   Target power - Futility: 0.8 
-#>   Threshold - Success: 0.3 
-#>   Threshold - Futility: 0.1 
-#>   Effect size: 0.5 
-#>   Sample sizes tested: 80, 100 
-#>   Allocation (treatment %): 50%
-#>   Power analysis function: power_analysis_ancova 
-#>   Analysis time: 8.95 minutes
-#> 
-#> Minimum Required Total Sample Sizes:
-#>   Success power: Target not achieved with tested sample sizes
-#>   Futility power: Target not achieved with tested sample sizes
-#> 
-#> Power Analysis Across Sample Sizes:
-#> ===================================
-#>  N_Total Convergence Power_Success Prob_Success Power_Futility Prob_Futility
-#>       80        100%         21.9%        71.5%           2.9%         11.4%
-#>      100        100%           19%          74%           2.9%          9.3%
-#> 
-#> Optimal Combinations:
-#> ====================
-#> No combinations achieved target success power.
-#> 
-#> No combinations achieved target futility power.
-```
-
-``` r
-# Visualize the sample size analysis
-plot(sample_size_result, type = "power_curve")
-```
-
-<img src="vignettes/man/figures/01-introduction-sample_size_plot-1.png" width="90%" />
-
-## Effect Size Sensitivity Analysis
-
-Understanding how power changes with effect size helps assess study
-sensitivity:
-
-``` r
-# Generate power curve across different effect sizes
-effect_size_result <- power_analysis(
-  sample_sizes = 60, # Fixed sample size
-  effect_sizes = c(0.6, 0.8),
-  design_prior = "normal(0.5, 0.1)", # Prior knowledge about effect size
-  power_analysis_fn = "power_analysis_ancova",
-  outcome_type = "continuous",
-  baseline_effect = 0.3,
-  threshold_success = 0.3,
-  threshold_futility = 0.1,
-  p_sig_success = 0.95,
-  p_sig_futility = 0.5,
-  n_simulations = n_sims,
-  n_cores = n_cores
-)
-#> Successfully parsed design prior: normal(0.5, 0.1) 
-#>   Distribution: normal 
-#>   Density function: stats::dnorm(0.5, 0.1) (using stats package)
-#>   Quantile function: stats::qnorm(0.5, 0.1) (using stats package)
-#> 
-#> === Effect Size Analysis ===
-#> Fixed sample size: 60 
-#> Effect sizes to test: 0.6, 0.8 
-#> Threshold - Success: 0.3 
-#> Threshold - Futility: 0.1 
-#> Allocation (treatment %): 50 %
-#> Power analysis function: power_analysis_ancova 
-#> Design prior: normal(0.5, 0.1) 
-#> Total combinations: 2 
-#> 
-#> 
-#> --- Processing Effect Size 0.6 ( 1 of 2 ) ---
-#> Combinations for this effect size: 1 
-#> Compiling brms models for ANCOVA with effect size 0.6 ...
-#> Compiling ANCOVA models without running simulations...
-#> Validating power analysis design...
-#> Checking required arguments...
-#> OK: All required arguments provided
-#> OK: All argument types valid
-#> Testing data simulation function...
-#> OK: Data simulation function works correctly
-#>   Generated data dimensions: 60 3 
-#>   Column names: outcome, baseline,arm
-#> Testing design model with true parameters...
-#>   Using algorithm: fixed_param
-#>   Running brms::brm() with sample_prior = 'only'...
-#> OK: Design model with true parameters fitted successfully
-#>   True parameter values:
-#>  Family: gaussian 
-#>   Links: mu = identity; sigma = identity 
-#> Formula: outcome ~ baseline +arm
-#>    Data: mock_data (Number of observations: 60) 
-#>   Draws: 1 chains, each with iter = 2; warmup = 1; thin = 1;
-#>          total post-warmup draws = 1
-#> 
-#> Regression Coefficients:
-#>            Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-#> Intercept      0.00        NA     0.00     0.00   NA       NA       NA
-#> baseline       0.30        NA     0.30     0.30   NA       NA       NA
-#> grouparm     0.60        NA     0.60     0.60   NA       NA       NA
-#> 
-#> Further Distributional Parameters:
-#>       Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-#> sigma     1.00        NA     1.00     1.00   NA       NA       NA
-#> 
-#> Draws were sampled using sampling(Fixed_param). 
-#> Testing design model with estimation priors...
-#>   Using algorithm: sampling
-#>   Running brms::brm() with sample_prior = 'only'...
-#> OK: Design model with estimation priors fitted successfully
-#> 
-#>  Testing single simulation run...
-#>   Generating new simulation data...
-#>   OK: New data generated with dimensions: 60 3 
-#>   Simulating outcome from design model with true parameters...
-#>   OK: Outcome simulated
-#>   Fitting estimation model with brms arguments:
-#>     Algorithm: sampling 
-#>     Iterations: 1500 (warmup: 500 )
-#>     Chains: 2 , Cores: 1 
-#>     Additional user args: algorithm = sampling, iter = 1500, warmup = 500, chains = 2, cores = 1, init = 0.1, control = list(adapt_delta = 0.9)
-#> 
-#> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 1).
-#> Chain 1: 
-#> Chain 1: Gradient evaluation took 7e-06 seconds
-#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.07 seconds.
-#> Chain 1: Adjust your expectations accordingly!
-#> Chain 1: 
-#> Chain 1: 
-#> Chain 1: Iteration:    1 / 1500 [  0%]  (Warmup)
-#> Chain 1: Iteration:  100 / 1500 [  6%]  (Warmup)
-#> Chain 1: Iteration:  200 / 1500 [ 13%]  (Warmup)
-#> Chain 1: Iteration:  300 / 1500 [ 20%]  (Warmup)
-#> Chain 1: Iteration:  400 / 1500 [ 26%]  (Warmup)
-#> Chain 1: Iteration:  500 / 1500 [ 33%]  (Warmup)
-#> Chain 1: Iteration:  501 / 1500 [ 33%]  (Sampling)
-#> Chain 1: Iteration:  600 / 1500 [ 40%]  (Sampling)
-#> Chain 1: Iteration:  700 / 1500 [ 46%]  (Sampling)
-#> Chain 1: Iteration:  800 / 1500 [ 53%]  (Sampling)
-#> Chain 1: Iteration:  900 / 1500 [ 60%]  (Sampling)
-#> Chain 1: Iteration: 1000 / 1500 [ 66%]  (Sampling)
-#> Chain 1: Iteration: 1100 / 1500 [ 73%]  (Sampling)
-#> Chain 1: Iteration: 1200 / 1500 [ 80%]  (Sampling)
-#> Chain 1: Iteration: 1300 / 1500 [ 86%]  (Sampling)
-#> Chain 1: Iteration: 1400 / 1500 [ 93%]  (Sampling)
-#> Chain 1: Iteration: 1500 / 1500 [100%]  (Sampling)
-#> Chain 1: 
-#> Chain 1:  Elapsed Time: 0.016 seconds (Warm-up)
-#> Chain 1:                0.021 seconds (Sampling)
-#> Chain 1:                0.037 seconds (Total)
-#> Chain 1: 
-#> 
-#> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 2).
-#> Chain 2: 
-#> Chain 2: Gradient evaluation took 7e-06 seconds
-#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.07 seconds.
-#> Chain 2: Adjust your expectations accordingly!
-#> Chain 2: 
-#> Chain 2: 
-#> Chain 2: Iteration:    1 / 1500 [  0%]  (Warmup)
-#> Chain 2: Iteration:  100 / 1500 [  6%]  (Warmup)
-#> Chain 2: Iteration:  200 / 1500 [ 13%]  (Warmup)
-#> Chain 2: Iteration:  300 / 1500 [ 20%]  (Warmup)
-#> Chain 2: Iteration:  400 / 1500 [ 26%]  (Warmup)
-#> Chain 2: Iteration:  500 / 1500 [ 33%]  (Warmup)
-#> Chain 2: Iteration:  501 / 1500 [ 33%]  (Sampling)
-#> Chain 2: Iteration:  600 / 1500 [ 40%]  (Sampling)
-#> Chain 2: Iteration:  700 / 1500 [ 46%]  (Sampling)
-#> Chain 2: Iteration:  800 / 1500 [ 53%]  (Sampling)
-#> Chain 2: Iteration:  900 / 1500 [ 60%]  (Sampling)
-#> Chain 2: Iteration: 1000 / 1500 [ 66%]  (Sampling)
-#> Chain 2: Iteration: 1100 / 1500 [ 73%]  (Sampling)
-#> Chain 2: Iteration: 1200 / 1500 [ 80%]  (Sampling)
-#> Chain 2: Iteration: 1300 / 1500 [ 86%]  (Sampling)
-#> Chain 2: Iteration: 1400 / 1500 [ 93%]  (Sampling)
-#> Chain 2: Iteration: 1500 / 1500 [100%]  (Sampling)
-#> Chain 2: 
-#> Chain 2:  Elapsed Time: 0.012 seconds (Warm-up)
-#> Chain 2:                0.019 seconds (Sampling)
-#> Chain 2:                0.031 seconds (Total)
-#> Chain 2: 
-#>  Family: gaussian 
-#>   Links: mu = identity; sigma = identity 
-#> Formula: outcome ~ baseline +arm
-#>    Data: data_sim (Number of observations: 60) 
-#>   Draws: 2 chains, each with iter = 1500; warmup = 500; thin = 1;
-#>          total post-warmup draws = 2000
-#> 
-#> Regression Coefficients:
-#>            Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-#> Intercept      0.07      0.19    -0.30     0.46 1.00     1908     1440
-#> baseline       0.34      0.12     0.11     0.57 1.00     2065     1439
-#> grouparm     0.38      0.28    -0.17     0.93 1.00     1810     1223
-#> 
-#> Further Distributional Parameters:
-#>       Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-#> sigma     1.12      0.11     0.93     1.35 1.00     2251     1766
-#> 
-#> Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
-#> and Tail_ESS are effective sample size measures, and Rhat is the potential
-#> scale reduction factor on split chains (at convergence, Rhat = 1).
-#> 
-#> OK: Single simulation run completed successfully
-#> OK: Target parameter b_armtreat extracted successfully
-#>   Parameter estimate: 0.3772 
-#>   Parameter SD: 0.2797 
-#>   Convergence diagnostics for target parameter:
-#>     R-hat: 1.002 OK 
-#>     ESS ratio: 0.611 OK 
-#> 
-#> OK: All validation checks passed! Design is ready for power analysis.
-#> Successfully compiled and cached ANCOVA models for effect size 0.6 
-#> Testing combination 1 of 2 : N = 60 , Effect = 0.6 (using cached models)
-#> Using pre-fitted design models...
-#> Running 105 power simulations in parallel using 15 cores...
-#> Running 105 simulations in parallel using 15 cores...
-#> Progress: 10/105 (9.5%) - Elapsed: 0.2 min - ETC: 2.1 min
-#> Progress: 20/105 (19.0%) - Elapsed: 0.5 min - ETC: 2.0 min
-#> Progress: 30/105 (28.6%) - Elapsed: 0.8 min - ETC: 1.9 min
-#> Progress: 40/105 (38.1%) - Elapsed: 1.0 min - ETC: 1.5 min
-#> Progress: 50/105 (47.6%) - Elapsed: 1.1 min - ETC: 1.2 min
-#> Progress: 60/105 (57.1%) - Elapsed: 1.4 min - ETC: 1.1 min
-#> Progress: 70/105 (66.7%) - Elapsed: 1.6 min - ETC: 0.8 min
-#> Progress: 80/105 (76.2%) - Elapsed: 1.9 min - ETC: 0.6 min
-#> Progress: 90/105 (85.7%) - Elapsed: 2.0 min - ETC: 0.3 min
-#> Progress: 100/105 (95.2%) - Elapsed: 2.2 min - ETC: 0.1 min
-#> Completed: 105/105 (100%) - Total time: 2.4 min
-#> 
-#> Power Analysis Complete!
-#> Successful fits: 105 out of 105 
-#> Mean effect estimate (median): 0.644 
-#> SD of effect estimate (median): 0.263 
-#> Power - Success: 0.276 
-#> Power - Futility: 0.01 
-#> Mean probability of success: 0.818 
-#> Mean probability of futility: 0.072 
-#> 
-#> 
-#> --- Processing Effect Size 0.8 ( 2 of 2 ) ---
-#> Combinations for this effect size: 1 
-#> Compiling brms models for ANCOVA with effect size 0.8 ...
-#> Compiling ANCOVA models without running simulations...
-#> Validating power analysis design...
-#> Checking required arguments...
-#> OK: All required arguments provided
-#> OK: All argument types valid
-#> Testing data simulation function...
-#> OK: Data simulation function works correctly
-#>   Generated data dimensions: 60 3 
-#>   Column names: outcome, baseline,arm
-#> Testing design model with true parameters...
-#>   Using algorithm: fixed_param
-#>   Running brms::brm() with sample_prior = 'only'...
-#> OK: Design model with true parameters fitted successfully
-#>   True parameter values:
-#>  Family: gaussian 
-#>   Links: mu = identity; sigma = identity 
-#> Formula: outcome ~ baseline +arm
-#>    Data: mock_data (Number of observations: 60) 
-#>   Draws: 1 chains, each with iter = 2; warmup = 1; thin = 1;
-#>          total post-warmup draws = 1
-#> 
-#> Regression Coefficients:
-#>            Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-#> Intercept      0.00        NA     0.00     0.00   NA       NA       NA
-#> baseline       0.30        NA     0.30     0.30   NA       NA       NA
-#> grouparm     0.80        NA     0.80     0.80   NA       NA       NA
-#> 
-#> Further Distributional Parameters:
-#>       Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-#> sigma     1.00        NA     1.00     1.00   NA       NA       NA
-#> 
-#> Draws were sampled using sampling(Fixed_param). 
-#> Testing design model with estimation priors...
-#>   Using algorithm: sampling
-#>   Running brms::brm() with sample_prior = 'only'...
-#> OK: Design model with estimation priors fitted successfully
-#> 
-#>  Testing single simulation run...
-#>   Generating new simulation data...
-#>   OK: New data generated with dimensions: 60 3 
-#>   Simulating outcome from design model with true parameters...
-#>   OK: Outcome simulated
-#>   Fitting estimation model with brms arguments:
-#>     Algorithm: sampling 
-#>     Iterations: 1500 (warmup: 500 )
-#>     Chains: 2 , Cores: 1 
-#>     Additional user args: algorithm = sampling, iter = 1500, warmup = 500, chains = 2, cores = 1, init = 0.1, control = list(adapt_delta = 0.9)
-#> 
-#> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 1).
-#> Chain 1: 
-#> Chain 1: Gradient evaluation took 7e-06 seconds
-#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.07 seconds.
-#> Chain 1: Adjust your expectations accordingly!
-#> Chain 1: 
-#> Chain 1: 
-#> Chain 1: Iteration:    1 / 1500 [  0%]  (Warmup)
-#> Chain 1: Iteration:  100 / 1500 [  6%]  (Warmup)
-#> Chain 1: Iteration:  200 / 1500 [ 13%]  (Warmup)
-#> Chain 1: Iteration:  300 / 1500 [ 20%]  (Warmup)
-#> Chain 1: Iteration:  400 / 1500 [ 26%]  (Warmup)
-#> Chain 1: Iteration:  500 / 1500 [ 33%]  (Warmup)
-#> Chain 1: Iteration:  501 / 1500 [ 33%]  (Sampling)
-#> Chain 1: Iteration:  600 / 1500 [ 40%]  (Sampling)
-#> Chain 1: Iteration:  700 / 1500 [ 46%]  (Sampling)
-#> Chain 1: Iteration:  800 / 1500 [ 53%]  (Sampling)
-#> Chain 1: Iteration:  900 / 1500 [ 60%]  (Sampling)
-#> Chain 1: Iteration: 1000 / 1500 [ 66%]  (Sampling)
-#> Chain 1: Iteration: 1100 / 1500 [ 73%]  (Sampling)
-#> Chain 1: Iteration: 1200 / 1500 [ 80%]  (Sampling)
-#> Chain 1: Iteration: 1300 / 1500 [ 86%]  (Sampling)
-#> Chain 1: Iteration: 1400 / 1500 [ 93%]  (Sampling)
-#> Chain 1: Iteration: 1500 / 1500 [100%]  (Sampling)
-#> Chain 1: 
-#> Chain 1:  Elapsed Time: 0.011 seconds (Warm-up)
-#> Chain 1:                0.021 seconds (Sampling)
-#> Chain 1:                0.032 seconds (Total)
-#> Chain 1: 
-#> 
-#> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 2).
-#> Chain 2: 
-#> Chain 2: Gradient evaluation took 5e-06 seconds
-#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.05 seconds.
-#> Chain 2: Adjust your expectations accordingly!
-#> Chain 2: 
-#> Chain 2: 
-#> Chain 2: Iteration:    1 / 1500 [  0%]  (Warmup)
-#> Chain 2: Iteration:  100 / 1500 [  6%]  (Warmup)
-#> Chain 2: Iteration:  200 / 1500 [ 13%]  (Warmup)
-#> Chain 2: Iteration:  300 / 1500 [ 20%]  (Warmup)
-#> Chain 2: Iteration:  400 / 1500 [ 26%]  (Warmup)
-#> Chain 2: Iteration:  500 / 1500 [ 33%]  (Warmup)
-#> Chain 2: Iteration:  501 / 1500 [ 33%]  (Sampling)
-#> Chain 2: Iteration:  600 / 1500 [ 40%]  (Sampling)
-#> Chain 2: Iteration:  700 / 1500 [ 46%]  (Sampling)
-#> Chain 2: Iteration:  800 / 1500 [ 53%]  (Sampling)
-#> Chain 2: Iteration:  900 / 1500 [ 60%]  (Sampling)
-#> Chain 2: Iteration: 1000 / 1500 [ 66%]  (Sampling)
-#> Chain 2: Iteration: 1100 / 1500 [ 73%]  (Sampling)
-#> Chain 2: Iteration: 1200 / 1500 [ 80%]  (Sampling)
-#> Chain 2: Iteration: 1300 / 1500 [ 86%]  (Sampling)
-#> Chain 2: Iteration: 1400 / 1500 [ 93%]  (Sampling)
-#> Chain 2: Iteration: 1500 / 1500 [100%]  (Sampling)
-#> Chain 2: 
-#> Chain 2:  Elapsed Time: 0.011 seconds (Warm-up)
-#> Chain 2:                0.019 seconds (Sampling)
-#> Chain 2:                0.03 seconds (Total)
-#> Chain 2: 
-#>  Family: gaussian 
-#>   Links: mu = identity; sigma = identity 
-#> Formula: outcome ~ baseline +arm
-#>    Data: data_sim (Number of observations: 60) 
-#>   Draws: 2 chains, each with iter = 1500; warmup = 500; thin = 1;
-#>          total post-warmup draws = 2000
-#> 
-#> Regression Coefficients:
-#>            Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-#> Intercept     -0.05      0.20    -0.45     0.36 1.00     2343     1525
-#> baseline       0.31      0.15     0.01     0.62 1.00     2132     1026
-#> grouparm     0.93      0.27     0.40     1.45 1.00     2117     1486
-#> 
-#> Further Distributional Parameters:
-#>       Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-#> sigma     1.06      0.10     0.90     1.28 1.00     2119     1474
-#> 
-#> Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
-#> and Tail_ESS are effective sample size measures, and Rhat is the potential
-#> scale reduction factor on split chains (at convergence, Rhat = 1).
-#> 
-#> OK: Single simulation run completed successfully
-#> OK: Target parameter b_armtreat extracted successfully
-#>   Parameter estimate: 0.9296 
-#>   Parameter SD: 0.2682 
-#>   Convergence diagnostics for target parameter:
-#>     R-hat: 1.002 OK 
-#>     ESS ratio: 0.743 OK 
-#> 
-#> OK: All validation checks passed! Design is ready for power analysis.
-#> Successfully compiled and cached ANCOVA models for effect size 0.8 
-#> Testing combination 2 of 2 : N = 60 , Effect = 0.8 (using cached models)
-#> Using pre-fitted design models...
-#> Running 105 power simulations in parallel using 15 cores...
-#> Running 105 simulations in parallel using 15 cores...
-#> Progress: 10/105 (9.5%) - Elapsed: 0.3 min - ETC: 3.0 min
-#> Progress: 20/105 (19.0%) - Elapsed: 0.6 min - ETC: 2.6 min
-#> Progress: 30/105 (28.6%) - Elapsed: 0.8 min - ETC: 1.9 min
-#> Progress: 40/105 (38.1%) - Elapsed: 0.9 min - ETC: 1.5 min
-#> Progress: 50/105 (47.6%) - Elapsed: 1.1 min - ETC: 1.2 min
-#> Progress: 60/105 (57.1%) - Elapsed: 1.3 min - ETC: 1.0 min
-#> Progress: 70/105 (66.7%) - Elapsed: 1.4 min - ETC: 0.7 min
-#> Progress: 80/105 (76.2%) - Elapsed: 1.6 min - ETC: 0.5 min
-#> Progress: 90/105 (85.7%) - Elapsed: 1.9 min - ETC: 0.3 min
-#> Progress: 100/105 (95.2%) - Elapsed: 2.1 min - ETC: 0.1 min
-#> Completed: 105/105 (100%) - Total time: 2.3 min
-#> 
-#> Power Analysis Complete!
-#> Successful fits: 105 out of 105 
-#> Mean effect estimate (median): 0.771 
-#> SD of effect estimate (median): 0.222 
-#> Power - Success: 0.571 
-#> Power - Futility: 0 
-#> Mean probability of success: 0.919 
-#> Mean probability of futility: 0.025 
-#> 
-#> 
-#> Total analysis time: 11.61 minutes
-#> 
-#> Computing integrated power using design prior...
-#> 
-#> === Effect Size Analysis Complete ===
-#> Target success power not achieved with tested effect sizes
-#> Target futility power not achieved with tested effect sizes
-#> 
-#> Integrated power results:
-#>   Target integrated success power >= 0.9 not achieved with tested sample sizes
-#>   Target integrated futility power >= 0.95 not achieved with tested sample sizes
-
-summary(effect_size_result)
-#> Bayesian RCT Effect Size Analysis - Detailed Summary
-#> ====================================================
-#> 
-#> Analysis Parameters:
-#>   Target power - Success: 0.9 
-#>   Target power - Futility: 0.95 
-#>   Threshold - Success: 0.3 
-#>   Threshold - Futility: 0.1 
-#>   Fixed sample size: 60 
-#>   Effect sizes tested: 0.6, 0.8 
-#>   Allocation (treatment %): 50%
-#>   Power analysis function: power_analysis_ancova 
-#>   Design prior: normal(0.5, 0.1) 
-#>   Design prior type: brms 
-#>   Analysis time: 11.61 minutes
-#> 
-#> Power Results Across Effect Sizes:
-#> ==================================
-#>  Effect_Size Convergence Power_Success Prob_Success Power_Futility Prob_Futility
-#>          0.6        100%         27.6%        81.8%             1%          7.2%
-#>          0.8        100%         57.1%        91.9%             0%          2.5%
-#> 
-#> Optimal Combinations:
-#> ====================
-#> No combinations achieved target success power.
-#> 
-#> No combinations achieved target futility power.
-#> 
-#> Integrated Power & Probability Results:
-#> ======================================
-#>  N_total Power_Success Prob_Success Power_Futility Prob_Futility
-#>       60         28.2%        81.9%           0.9%          7.1%
-#> 
-#> Integrated results represent weighted averages across effect sizes using the specified design prior.
-#> Power = probability of making correct decision, Mean Probability = mean posterior probability of exceeding threshold.
-```
-
-``` r
-# Plot the power curve with integrated power
-plot(effect_size_result, type = "power_curve", show_integrated = TRUE)
-```
-
-<img src="vignettes/man/figures/01-introduction-effect_size_plot-1.png" width="90%" />
-
-## Full Grid Analysis
-
-For comprehensive planning, analyze both sample sizes and effect sizes:
-
-``` r
-# Full grid analysis
-grid_result <- power_analysis(
-  sample_sizes = c(50, 70),
-  effect_sizes = c(0.6, 0.8),
-  design_prior = "normal(0.5, 0.1)",
-  power_analysis_fn = "power_analysis_ancova",
-  outcome_type = "continuous",
-  baseline_effect = 0.3,
-  threshold_success = 0.3,
-  threshold_futility = 0.1,
-  p_sig_success = 0.95,
-  p_sig_futility = 0.5,
-  n_simulations = n_sims,
-  n_cores = n_cores
-)
-#> Successfully parsed design prior: normal(0.5, 0.1) 
-#>   Distribution: normal 
-#>   Density function: stats::dnorm(0.5, 0.1) (using stats package)
-#>   Quantile function: stats::qnorm(0.5, 0.1) (using stats package)
-#> 
-#> === Power Analysis ===
-#> Sample sizes to test: 50, 70 
-#> Effect sizes to test: 0.6, 0.8 
-#> Threshold - Success: 0.3 
-#> Threshold - Futility: 0.1 
-#> Allocation (treatment %): 50 %
-#> Power analysis function: power_analysis_ancova 
-#> Design prior: normal(0.5, 0.1) 
-#> Total combinations: 4 
-#> 
-#> 
-#> --- Processing Effect Size 0.6 ( 1 of 2 ) ---
-#> Combinations for this effect size: 2 
-#> Compiling brms models for ANCOVA with effect size 0.6 ...
-#> Compiling ANCOVA models without running simulations...
-#> Validating power analysis design...
-#> Checking required arguments...
-#> OK: All required arguments provided
-#> OK: All argument types valid
-#> Testing data simulation function...
-#> OK: Data simulation function works correctly
-#>   Generated data dimensions: 50 3 
-#>   Column names: outcome, baseline,arm
-#> Testing design model with true parameters...
-#>   Using algorithm: fixed_param
-#>   Running brms::brm() with sample_prior = 'only'...
-#> OK: Design model with true parameters fitted successfully
-#>   True parameter values:
-#>  Family: gaussian 
-#>   Links: mu = identity; sigma = identity 
-#> Formula: outcome ~ baseline +arm
-#>    Data: mock_data (Number of observations: 50) 
-#>   Draws: 1 chains, each with iter = 2; warmup = 1; thin = 1;
-#>          total post-warmup draws = 1
-#> 
-#> Regression Coefficients:
-#>            Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-#> Intercept      0.00        NA     0.00     0.00   NA       NA       NA
-#> baseline       0.30        NA     0.30     0.30   NA       NA       NA
-#> grouparm     0.60        NA     0.60     0.60   NA       NA       NA
-#> 
-#> Further Distributional Parameters:
-#>       Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-#> sigma     1.00        NA     1.00     1.00   NA       NA       NA
-#> 
-#> Draws were sampled using sampling(Fixed_param). 
-#> Testing design model with estimation priors...
-#>   Using algorithm: sampling
-#>   Running brms::brm() with sample_prior = 'only'...
-#> OK: Design model with estimation priors fitted successfully
-#> 
-#>  Testing single simulation run...
-#>   Generating new simulation data...
-#>   OK: New data generated with dimensions: 50 3 
-#>   Simulating outcome from design model with true parameters...
-#>   OK: Outcome simulated
-#>   Fitting estimation model with brms arguments:
-#>     Algorithm: sampling 
-#>     Iterations: 1500 (warmup: 500 )
-#>     Chains: 2 , Cores: 1 
-#>     Additional user args: algorithm = sampling, iter = 1500, warmup = 500, chains = 2, cores = 1, init = 0.1, control = list(adapt_delta = 0.9)
-#> 
-#> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 1).
-#> Chain 1: 
-#> Chain 1: Gradient evaluation took 8e-06 seconds
-#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.08 seconds.
-#> Chain 1: Adjust your expectations accordingly!
-#> Chain 1: 
-#> Chain 1: 
-#> Chain 1: Iteration:    1 / 1500 [  0%]  (Warmup)
-#> Chain 1: Iteration:  100 / 1500 [  6%]  (Warmup)
-#> Chain 1: Iteration:  200 / 1500 [ 13%]  (Warmup)
-#> Chain 1: Iteration:  300 / 1500 [ 20%]  (Warmup)
-#> Chain 1: Iteration:  400 / 1500 [ 26%]  (Warmup)
-#> Chain 1: Iteration:  500 / 1500 [ 33%]  (Warmup)
-#> Chain 1: Iteration:  501 / 1500 [ 33%]  (Sampling)
-#> Chain 1: Iteration:  600 / 1500 [ 40%]  (Sampling)
-#> Chain 1: Iteration:  700 / 1500 [ 46%]  (Sampling)
-#> Chain 1: Iteration:  800 / 1500 [ 53%]  (Sampling)
-#> Chain 1: Iteration:  900 / 1500 [ 60%]  (Sampling)
-#> Chain 1: Iteration: 1000 / 1500 [ 66%]  (Sampling)
-#> Chain 1: Iteration: 1100 / 1500 [ 73%]  (Sampling)
-#> Chain 1: Iteration: 1200 / 1500 [ 80%]  (Sampling)
-#> Chain 1: Iteration: 1300 / 1500 [ 86%]  (Sampling)
-#> Chain 1: Iteration: 1400 / 1500 [ 93%]  (Sampling)
-#> Chain 1: Iteration: 1500 / 1500 [100%]  (Sampling)
-#> Chain 1: 
-#> Chain 1:  Elapsed Time: 0.016 seconds (Warm-up)
-#> Chain 1:                0.021 seconds (Sampling)
-#> Chain 1:                0.037 seconds (Total)
-#> Chain 1: 
-#> 
-#> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 2).
-#> Chain 2: 
-#> Chain 2: Gradient evaluation took 5e-06 seconds
-#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.05 seconds.
-#> Chain 2: Adjust your expectations accordingly!
-#> Chain 2: 
-#> Chain 2: 
-#> Chain 2: Iteration:    1 / 1500 [  0%]  (Warmup)
-#> Chain 2: Iteration:  100 / 1500 [  6%]  (Warmup)
-#> Chain 2: Iteration:  200 / 1500 [ 13%]  (Warmup)
-#> Chain 2: Iteration:  300 / 1500 [ 20%]  (Warmup)
-#> Chain 2: Iteration:  400 / 1500 [ 26%]  (Warmup)
-#> Chain 2: Iteration:  500 / 1500 [ 33%]  (Warmup)
-#> Chain 2: Iteration:  501 / 1500 [ 33%]  (Sampling)
-#> Chain 2: Iteration:  600 / 1500 [ 40%]  (Sampling)
-#> Chain 2: Iteration:  700 / 1500 [ 46%]  (Sampling)
-#> Chain 2: Iteration:  800 / 1500 [ 53%]  (Sampling)
-#> Chain 2: Iteration:  900 / 1500 [ 60%]  (Sampling)
-#> Chain 2: Iteration: 1000 / 1500 [ 66%]  (Sampling)
-#> Chain 2: Iteration: 1100 / 1500 [ 73%]  (Sampling)
-#> Chain 2: Iteration: 1200 / 1500 [ 80%]  (Sampling)
-#> Chain 2: Iteration: 1300 / 1500 [ 86%]  (Sampling)
-#> Chain 2: Iteration: 1400 / 1500 [ 93%]  (Sampling)
-#> Chain 2: Iteration: 1500 / 1500 [100%]  (Sampling)
-#> Chain 2: 
-#> Chain 2:  Elapsed Time: 0.013 seconds (Warm-up)
-#> Chain 2:                0.02 seconds (Sampling)
-#> Chain 2:                0.033 seconds (Total)
-#> Chain 2: 
-#>  Family: gaussian 
-#>   Links: mu = identity; sigma = identity 
-#> Formula: outcome ~ baseline +arm
-#>    Data: data_sim (Number of observations: 50) 
-#>   Draws: 2 chains, each with iter = 1500; warmup = 500; thin = 1;
-#>          total post-warmup draws = 2000
-#> 
-#> Regression Coefficients:
-#>            Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-#> Intercept     -0.07      0.22    -0.51     0.34 1.00     2262     1447
-#> baseline       0.09      0.16    -0.22     0.40 1.00     2578     1453
-#> grouparm     0.87      0.30     0.28     1.47 1.00     2170     1256
-#> 
-#> Further Distributional Parameters:
-#>       Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-#> sigma     1.06      0.11     0.87     1.27 1.01     2078     1327
-#> 
-#> Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
-#> and Tail_ESS are effective sample size measures, and Rhat is the potential
-#> scale reduction factor on split chains (at convergence, Rhat = 1).
-#> 
-#> OK: Single simulation run completed successfully
-#> OK: Target parameter b_armtreat extracted successfully
-#>   Parameter estimate: 0.8736 
-#>   Parameter SD: 0.3039 
-#>   Convergence diagnostics for target parameter:
-#>     R-hat: 1 OK 
-#>     ESS ratio: 0.628 OK 
-#> 
-#> OK: All validation checks passed! Design is ready for power analysis.
-#> Successfully compiled and cached ANCOVA models for effect size 0.6 
-#> Testing combination 1 of 4 : N = 50 , Effect = 0.6 (using cached models)
-#> Using pre-fitted design models...
-#> Running 105 power simulations in parallel using 15 cores...
-#> Running 105 simulations in parallel using 15 cores...
-#> Progress: 10/105 (9.5%) - Elapsed: 0.3 min - ETC: 3.1 min
-#> Progress: 20/105 (19.0%) - Elapsed: 0.5 min - ETC: 2.2 min
-#> Progress: 30/105 (28.6%) - Elapsed: 0.7 min - ETC: 1.7 min
-#> Progress: 40/105 (38.1%) - Elapsed: 0.8 min - ETC: 1.4 min
-#> Progress: 50/105 (47.6%) - Elapsed: 1.0 min - ETC: 1.1 min
-#> Progress: 60/105 (57.1%) - Elapsed: 1.3 min - ETC: 1.0 min
-#> Progress: 70/105 (66.7%) - Elapsed: 1.4 min - ETC: 0.7 min
-#> Progress: 80/105 (76.2%) - Elapsed: 1.7 min - ETC: 0.5 min
-#> Progress: 90/105 (85.7%) - Elapsed: 1.9 min - ETC: 0.3 min
-#> Progress: 100/105 (95.2%) - Elapsed: 2.1 min - ETC: 0.1 min
-#> Completed: 105/105 (100%) - Total time: 2.2 min
-#> 
-#> Power Analysis Complete!
-#> Successful fits: 105 out of 105 
-#> Mean effect estimate (median): 0.562 
-#> SD of effect estimate (median): 0.274 
-#> Power - Success: 0.267 
-#> Power - Futility: 0.029 
-#> Mean probability of success: 0.762 
-#> Mean probability of futility: 0.11 
-#> 
-#> Testing combination 2 of 4 : N = 70 , Effect = 0.6 (using cached models)
-#> Using pre-fitted design models...
-#> Running 105 power simulations in parallel using 15 cores...
-#> Running 105 simulations in parallel using 15 cores...
-#> Progress: 10/105 (9.5%) - Elapsed: 0.3 min - ETC: 3.2 min
-#> Progress: 20/105 (19.0%) - Elapsed: 0.5 min - ETC: 2.2 min
-#> Progress: 30/105 (28.6%) - Elapsed: 0.7 min - ETC: 1.7 min
-#> Progress: 40/105 (38.1%) - Elapsed: 0.9 min - ETC: 1.4 min
-#> Progress: 50/105 (47.6%) - Elapsed: 1.1 min - ETC: 1.2 min
-#> Progress: 60/105 (57.1%) - Elapsed: 1.4 min - ETC: 1.0 min
-#> Progress: 70/105 (66.7%) - Elapsed: 1.5 min - ETC: 0.8 min
-#> Progress: 80/105 (76.2%) - Elapsed: 1.7 min - ETC: 0.5 min
-#> Progress: 90/105 (85.7%) - Elapsed: 1.9 min - ETC: 0.3 min
-#> Progress: 100/105 (95.2%) - Elapsed: 2.1 min - ETC: 0.1 min
-#> Completed: 105/105 (100%) - Total time: 2.2 min
-#> 
-#> Power Analysis Complete!
-#> Successful fits: 105 out of 105 
-#> Mean effect estimate (median): 0.601 
-#> SD of effect estimate (median): 0.239 
-#> Power - Success: 0.362 
-#> Power - Futility: 0.01 
-#> Mean probability of success: 0.813 
-#> Mean probability of futility: 0.069 
-#> 
-#> 
-#> --- Processing Effect Size 0.8 ( 2 of 2 ) ---
-#> Combinations for this effect size: 2 
-#> Compiling brms models for ANCOVA with effect size 0.8 ...
-#> Compiling ANCOVA models without running simulations...
-#> Validating power analysis design...
-#> Checking required arguments...
-#> OK: All required arguments provided
-#> OK: All argument types valid
-#> Testing data simulation function...
-#> OK: Data simulation function works correctly
-#>   Generated data dimensions: 50 3 
-#>   Column names: outcome, baseline,arm
-#> Testing design model with true parameters...
-#>   Using algorithm: fixed_param
-#>   Running brms::brm() with sample_prior = 'only'...
-#> OK: Design model with true parameters fitted successfully
-#>   True parameter values:
-#>  Family: gaussian 
-#>   Links: mu = identity; sigma = identity 
-#> Formula: outcome ~ baseline +arm
-#>    Data: mock_data (Number of observations: 50) 
-#>   Draws: 1 chains, each with iter = 2; warmup = 1; thin = 1;
-#>          total post-warmup draws = 1
-#> 
-#> Regression Coefficients:
-#>            Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-#> Intercept      0.00        NA     0.00     0.00   NA       NA       NA
-#> baseline       0.30        NA     0.30     0.30   NA       NA       NA
-#> grouparm     0.80        NA     0.80     0.80   NA       NA       NA
-#> 
-#> Further Distributional Parameters:
-#>       Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-#> sigma     1.00        NA     1.00     1.00   NA       NA       NA
-#> 
-#> Draws were sampled using sampling(Fixed_param). 
-#> Testing design model with estimation priors...
-#>   Using algorithm: sampling
-#>   Running brms::brm() with sample_prior = 'only'...
-#> OK: Design model with estimation priors fitted successfully
-#> 
-#>  Testing single simulation run...
-#>   Generating new simulation data...
-#>   OK: New data generated with dimensions: 50 3 
-#>   Simulating outcome from design model with true parameters...
-#>   OK: Outcome simulated
-#>   Fitting estimation model with brms arguments:
-#>     Algorithm: sampling 
-#>     Iterations: 1500 (warmup: 500 )
-#>     Chains: 2 , Cores: 1 
-#>     Additional user args: algorithm = sampling, iter = 1500, warmup = 500, chains = 2, cores = 1, init = 0.1, control = list(adapt_delta = 0.9)
-#> 
-#> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 1).
-#> Chain 1: 
-#> Chain 1: Gradient evaluation took 8e-06 seconds
-#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.08 seconds.
-#> Chain 1: Adjust your expectations accordingly!
-#> Chain 1: 
-#> Chain 1: 
-#> Chain 1: Iteration:    1 / 1500 [  0%]  (Warmup)
-#> Chain 1: Iteration:  100 / 1500 [  6%]  (Warmup)
-#> Chain 1: Iteration:  200 / 1500 [ 13%]  (Warmup)
-#> Chain 1: Iteration:  300 / 1500 [ 20%]  (Warmup)
-#> Chain 1: Iteration:  400 / 1500 [ 26%]  (Warmup)
-#> Chain 1: Iteration:  500 / 1500 [ 33%]  (Warmup)
-#> Chain 1: Iteration:  501 / 1500 [ 33%]  (Sampling)
-#> Chain 1: Iteration:  600 / 1500 [ 40%]  (Sampling)
-#> Chain 1: Iteration:  700 / 1500 [ 46%]  (Sampling)
-#> Chain 1: Iteration:  800 / 1500 [ 53%]  (Sampling)
-#> Chain 1: Iteration:  900 / 1500 [ 60%]  (Sampling)
-#> Chain 1: Iteration: 1000 / 1500 [ 66%]  (Sampling)
-#> Chain 1: Iteration: 1100 / 1500 [ 73%]  (Sampling)
-#> Chain 1: Iteration: 1200 / 1500 [ 80%]  (Sampling)
-#> Chain 1: Iteration: 1300 / 1500 [ 86%]  (Sampling)
-#> Chain 1: Iteration: 1400 / 1500 [ 93%]  (Sampling)
-#> Chain 1: Iteration: 1500 / 1500 [100%]  (Sampling)
-#> Chain 1: 
-#> Chain 1:  Elapsed Time: 0.015 seconds (Warm-up)
-#> Chain 1:                0.022 seconds (Sampling)
-#> Chain 1:                0.037 seconds (Total)
-#> Chain 1: 
-#> 
-#> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 2).
-#> Chain 2: 
-#> Chain 2: Gradient evaluation took 5e-06 seconds
-#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.05 seconds.
-#> Chain 2: Adjust your expectations accordingly!
-#> Chain 2: 
-#> Chain 2: 
-#> Chain 2: Iteration:    1 / 1500 [  0%]  (Warmup)
-#> Chain 2: Iteration:  100 / 1500 [  6%]  (Warmup)
-#> Chain 2: Iteration:  200 / 1500 [ 13%]  (Warmup)
-#> Chain 2: Iteration:  300 / 1500 [ 20%]  (Warmup)
-#> Chain 2: Iteration:  400 / 1500 [ 26%]  (Warmup)
-#> Chain 2: Iteration:  500 / 1500 [ 33%]  (Warmup)
-#> Chain 2: Iteration:  501 / 1500 [ 33%]  (Sampling)
-#> Chain 2: Iteration:  600 / 1500 [ 40%]  (Sampling)
-#> Chain 2: Iteration:  700 / 1500 [ 46%]  (Sampling)
-#> Chain 2: Iteration:  800 / 1500 [ 53%]  (Sampling)
-#> Chain 2: Iteration:  900 / 1500 [ 60%]  (Sampling)
-#> Chain 2: Iteration: 1000 / 1500 [ 66%]  (Sampling)
-#> Chain 2: Iteration: 1100 / 1500 [ 73%]  (Sampling)
-#> Chain 2: Iteration: 1200 / 1500 [ 80%]  (Sampling)
-#> Chain 2: Iteration: 1300 / 1500 [ 86%]  (Sampling)
-#> Chain 2: Iteration: 1400 / 1500 [ 93%]  (Sampling)
-#> Chain 2: Iteration: 1500 / 1500 [100%]  (Sampling)
-#> Chain 2: 
-#> Chain 2:  Elapsed Time: 0.015 seconds (Warm-up)
-#> Chain 2:                0.021 seconds (Sampling)
-#> Chain 2:                0.036 seconds (Total)
-#> Chain 2: 
-#>  Family: gaussian 
-#>   Links: mu = identity; sigma = identity 
-#> Formula: outcome ~ baseline +arm
-#>    Data: data_sim (Number of observations: 50) 
-#>   Draws: 2 chains, each with iter = 1500; warmup = 500; thin = 1;
-#>          total post-warmup draws = 2000
-#> 
-#> Regression Coefficients:
-#>            Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-#> Intercept     -0.06      0.19    -0.43     0.32 1.00     2217     1214
-#> baseline       0.31      0.13     0.05     0.57 1.00     2150     1272
-#> grouparm     0.91      0.27     0.37     1.43 1.00     2186     1351
-#> 
-#> Further Distributional Parameters:
-#>       Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-#> sigma     0.94      0.10     0.76     1.16 1.00     2550     1505
-#> 
-#> Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
-#> and Tail_ESS are effective sample size measures, and Rhat is the potential
-#> scale reduction factor on split chains (at convergence, Rhat = 1).
-#> 
-#> OK: Single simulation run completed successfully
-#> OK: Target parameter b_armtreat extracted successfully
-#>   Parameter estimate: 0.9066 
-#>   Parameter SD: 0.2686 
-#>   Convergence diagnostics for target parameter:
-#>     R-hat: 1.002 OK 
-#>     ESS ratio: 0.676 OK 
-#> 
-#> OK: All validation checks passed! Design is ready for power analysis.
-#> Successfully compiled and cached ANCOVA models for effect size 0.8 
-#> Testing combination 3 of 4 : N = 50 , Effect = 0.8 (using cached models)
-#> Using pre-fitted design models...
-#> Running 105 power simulations in parallel using 15 cores...
-#> Running 105 simulations in parallel using 15 cores...
-#> Progress: 10/105 (9.5%) - Elapsed: 0.4 min - ETC: 3.3 min
-#> Progress: 20/105 (19.0%) - Elapsed: 0.7 min - ETC: 2.9 min
-#> Progress: 30/105 (28.6%) - Elapsed: 0.9 min - ETC: 2.1 min
-#> Progress: 40/105 (38.1%) - Elapsed: 1.0 min - ETC: 1.7 min
-#> Progress: 50/105 (47.6%) - Elapsed: 1.3 min - ETC: 1.5 min
-#> Progress: 60/105 (57.1%) - Elapsed: 1.6 min - ETC: 1.2 min
-#> Progress: 70/105 (66.7%) - Elapsed: 1.7 min - ETC: 0.9 min
-#> Progress: 80/105 (76.2%) - Elapsed: 1.9 min - ETC: 0.6 min
-#> Progress: 90/105 (85.7%) - Elapsed: 2.1 min - ETC: 0.4 min
-#> Progress: 100/105 (95.2%) - Elapsed: 2.3 min - ETC: 0.1 min
-#> Completed: 105/105 (100%) - Total time: 2.6 min
-#> 
-#> Power Analysis Complete!
-#> Successful fits: 105 out of 105 
-#> Mean effect estimate (median): 0.78 
-#> SD of effect estimate (median): 0.296 
-#> Power - Success: 0.467 
-#> Power - Futility: 0.01 
-#> Mean probability of success: 0.875 
-#> Mean probability of futility: 0.053 
-#> 
-#> Testing combination 4 of 4 : N = 70 , Effect = 0.8 (using cached models)
-#> Using pre-fitted design models...
-#> Running 105 power simulations in parallel using 15 cores...
-#> Running 105 simulations in parallel using 15 cores...
-#> Progress: 10/105 (9.5%) - Elapsed: 0.3 min - ETC: 3.1 min
-#> Progress: 20/105 (19.0%) - Elapsed: 0.6 min - ETC: 2.7 min
-#> Progress: 30/105 (28.6%) - Elapsed: 0.8 min - ETC: 2.1 min
-#> Progress: 40/105 (38.1%) - Elapsed: 1.0 min - ETC: 1.7 min
-#> Progress: 50/105 (47.6%) - Elapsed: 1.3 min - ETC: 1.4 min
-#> Progress: 60/105 (57.1%) - Elapsed: 1.5 min - ETC: 1.2 min
-#> Progress: 70/105 (66.7%) - Elapsed: 1.7 min - ETC: 0.9 min
-#> Progress: 80/105 (76.2%) - Elapsed: 1.9 min - ETC: 0.6 min
-#> Progress: 90/105 (85.7%) - Elapsed: 2.1 min - ETC: 0.4 min
-#> Progress: 100/105 (95.2%) - Elapsed: 2.3 min - ETC: 0.1 min
-#> Completed: 105/105 (100%) - Total time: 2.5 min
-#> 
-#> Power Analysis Complete!
-#> Successful fits: 105 out of 105 
-#> Mean effect estimate (median): 0.781 
-#> SD of effect estimate (median): 0.247 
-#> Power - Success: 0.59 
-#> Power - Futility: 0 
-#> Mean probability of success: 0.914 
-#> Mean probability of futility: 0.024 
-#> 
-#> 
-#> Total analysis time: 20.26 minutes
-#> 
-#> Computing integrated power using design prior...
-#> 
-#> === Power Analysis Complete ===
-#> Target success power not achieved with tested combinations
-#> Target futility power not achieved with tested combinations
-#> 
-#> Integrated power results:
-#>   Target integrated success power >= 0.9 not achieved with tested sample sizes
-#>   Target integrated futility power >= 0.95 not achieved with tested sample sizes
-```
-
-Summary:
-
-``` r
-summary(grid_result)
-#> Bayesian RCT Power Analysis - Detailed Summary
-#> =================================================
-#> 
-#> Analysis Parameters:
-#>   Target power - Success: 0.9 
-#>   Target power - Futility: 0.95 
-#>   Threshold - Success: 0.3 
-#>   Threshold - Futility: 0.1 
-#>   Sample sizes: 50, 70 
-#>   Effect sizes: 0.6, 0.8 
-#>   Allocation (treatment %): 50%
-#>   Power analysis function: power_analysis_ancova 
-#>   Design prior: normal(0.5, 0.1) 
-#>   Design prior type: brms 
-#>   Analysis time: 20.26 minutes
-#> 
-#> Power Analysis Results:
-#> ==================
-#>  N_Total Effect_Size Convergence Power_Success Prob_Success Power_Futility
-#>       50         0.6        100%         26.7%        76.2%           2.9%
-#>       70         0.6        100%         36.2%        81.3%             1%
-#>       50         0.8        100%         46.7%        87.5%             1%
-#>       70         0.8        100%           59%        91.4%             0%
-#>  Prob_Futility
-#>            11%
-#>           6.9%
-#>           5.3%
-#>           2.4%
-#> 
-#> Optimal Combinations:
-#> ====================
-#> No combinations achieved target success power.
-#> 
-#> No combinations achieved target futility power.
-#> 
-#> Integrated Power & Probability Results:
-#> ======================================
-#>  N_total Power_Success Prob_Success Power_Futility Prob_Futility
-#>       50           27%        76.4%           2.8%         10.9%
-#>       70         36.6%        81.5%           0.9%          6.8%
-#> 
-#> Integrated results represent weighted averages across effect sizes using the specified design prior.
-#> Power = probability of making correct decision, Mean Probability = mean posterior probability of exceeding threshold.
-```
-
-``` r
-# Visualize as heatmap
-plot(grid_result, type = "heatmap")
-```
-
-<img src="vignettes/man/figures/01-introduction-grid_plot-1.png" width="90%" />
-
-# Building a Custom Model
-
-For specialized designs, you can build custom models using the core
-`power_analysis()` function:
-
-``` r
-# Define custom data simulation function
-simulate_custom_data <- function(n_control, n_treatment) {
-  data.frame(
-    outcome = rnorm(n_control + n_treatment),
-    baseline = rnorm(n_control + n_treatment),
-    age = rnorm(n_control + n_treatment, mean = 50, sd = 15),
-   arm= factor(
-      rep(c(0, 1), times = c(n_control, n_treatment)),
-      levels = c(0, 1),
-      labels = c("ctrl", "treat")
-    )
-  )
+model_file <- here::here("test_model_ancova.rds")
+if (file.exists(model_file)) {
+  # load the model from a file
+  model_ancova <- readRDS(model_file)
+} else{
+  # create the model
+  model_ancova <- build_model(pre_defined_model = "ancova_cont_2arms")
+  # save the model to a file
+  saveRDS(model_ancova, file = model_file)
 }
-
-# Create mock data for model specification
-mock_data <- simulate_custom_data(25, 25)
-
-# Define model formulas
-model_formula_true_params <- bf(outcome ~ baseline + age + arm, center = FALSE)
-model_formula_estimation <- bf(outcome ~ baseline + age + arm)
-
-# Define distributional family
-family <- gaussian()
-
-# Set true parameters as priors (constants)
-priors_true_params <- c(
-  set_prior("constant(0.2)", class = "b", coef = "baseline"),
-  set_prior("constant(0.01)", class = "b", coef = "age"),
-  set_prior("constant(0.5)", class = "b", coef = "grouparm"),
-  set_prior("constant(0)", class = "b", coef = "Intercept"),
-  set_prior("constant(1)", class = "sigma")
-)
-
-# Set estimation priors
-priors_estimation <- c(
-  set_prior("student_t(3, 0, 1)", class = "b", coef = "baseline"),
-  set_prior("student_t(3, 0, 0.1)", class = "b", coef = "age"),
-  set_prior("student_t(3, 0, 2)", class = "Intercept"),
-  set_prior("student_t(3, 0, 1)", class = "sigma")
-)
+print(model_ancova)
+#> 
+#> Object of class: 'rctbayespower_model'
+#> --------------------------------------------------
+#> 
+#> Model name: 
+#> Number of endpoints: 
+#> Endpoint types:  
+#> Number of arms: 
+#> Number of repeated measures: 0 
+#> Parameter names - simulation function: n_total n_arms contrasts p_alloc intercept b_arms_treat b_covariate sigma 
+#> Parameter names - brms model: b_Intercept b_covariate b_arm2 
+#> Arguments to specify for simulation function:
+#> [1] "n_total"      "b_arms_treat" "b_covariate" 
+#> 
+#> Brms model:
+#>  Family: gaussian 
+#>   Links: mu = identity; sigma = identity 
+#> Formula: outcome ~ 1 + covariate + arm 
+#>    Data: mock_data_ancova (Number of observations: 20) 
+#> 
+#> The model does not contain posterior draws.
 ```
 
+### Design
+
+Find possible target parameters in the model.
+
 ``` r
-# Validate the power design
-validation <- validate_power_design(
-  n_control = 50,
-  n_treatment = 50,
-  model_formula_true_params = model_formula_true_params,
-  model_formula_estimation = model_formula_estimation,
-  family = family,
-  priors_true_params = priors_true_params,
-  priors_estimation = priors_estimation,
-  target_param = "grouparm",
-  simulate_data_fn = simulate_custom_data,
-  brms_args = list(
-    algorithm = "meanfield",
-    importance_resampling = TRUE,
-    iter = 1e4,
-    output_samples = 1e3
+attr(model_ancova, "parameter_names_brms")
+#> NULL
+```
+
+Specify the study design with target parameter, thresholds for success
+and futility, and significance levels for frequentist-like power.
+
+``` r
+design <- build_design(
+  model = model_ancova,
+  target_params = "b_arm2",
+  thresholds_success = 0.1,
+  thresholds_futility = 0,
+  p_sig_success = 0.975,
+  p_sig_futility = 0.5
+)
+print(design)
+#> 
+#> Object of class: 'rctbayespower_design'
+#> --------------------------------------------------
+#> 
+#> === Model Specifications ===
+#> 
+#> Number of endpoints: 1 
+#> Endpoint types: continuous 
+#> Number of arms: 2 
+#> Number of repeated measures: 0 
+#> Parameter names - simulation function: n_total, n_arms, contrasts, p_alloc, intercept, b_arms_treat, b_covariate, sigma 
+#> Parameter names - brms model: b_Intercept, b_covariate, b_arm2 
+#> 
+#> 
+#> === Design Specifications ===
+#> 
+#> Design name: 
+#> Target parameters: b_arm2 
+#> Number of interim analyses: 
+#> Thresholds for success: 0.1 
+#> Thresholds for futility: 0 
+#> Probability of success significance: 0.975 
+#> Probability of futility significance: 0.5 
+#> Parameter names - interim function:  
+#> 
+#> 
+#> === Data Simulation Function ===
+#> 
+#> function(n_total,
+#>              n_arms = default_n_arms,
+#>              contrasts = default_contrasts,
+#>              p_alloc = default_p_alloc,
+#>              intercept = default_intercept,
+#>              b_arms_treat = default_b_arms_treat,
+#>              b_covariate = default_b_covariate,
+#>              sigma = default_sigma) {
+#>       # validation of inputs -----------------------------------------------------
+#> 
+#>       # validate n_total, must be numeric and whole number
+#>       if (is.null(n_total) ||
+#>           !is.numeric(n_total) || length(n_total) != 1 ||
+#>           n_total <= 0 || n_total != round(n_total)) {
+#>         stop("'n_total' must be a positive integer value.")
+#>       }
+#>       # validate n_arms, must be integer > 2
+#>       if (is.null(n_arms) ||
+#>           !is.numeric(n_arms) || length(n_arms) != 1 ||
+#>           n_arms < 2 || n_arms != round(n_arms)) {
+#>         stop("'n_arms' must be a positive integer greater than or equal to 2.")
+#>       }
+#>       # validate contrasts, must be a string or matrix for creating contrasts
+#>       if (!is.null(contrasts) &
+#>           !is.character(contrasts) & !is.matrix(contrasts)) {
+#>         stop(
+#>           "'contrasts' must be a character string indicating a contrast method (e.g., \"contr.treatment\") or a matrix."
+#>         )
+#>       } else{
+#>         # create contrast matrix
+#>         if (!is.null(contrasts) & is.character(contrasts)) {
+#>           # validate string is one of the valid 'contr.' methods from 'stats'
+#>           valid_contrasts <- c(
+#>             "contr.treatment",
+#>             "contr.sum",
+#>             "contr.poly",
+#>             "contr.helmert",
+#>             "contr.SAS"
+#>           )
+#>           if (!(contrasts %in% valid_contrasts)) {
+#>             stop(
+#>               paste0(
+#>                 "'contrasts' must be one of the following valid contrast methods: ",
+#>                 paste(valid_contrasts, collapse = ", ")
+#>               )
+#>             )
+#>           }
+#>           # create contrast matrix
+#>           tryCatch({
+#>             contrasts_fn <- get(contrasts)
+#>             contrast_matrix <- contrasts_fn(n_arms)
+#>           }, error = function(e) {
+#>             stop("'contrasts' must be a valid contrast method (e.g., \"contr.treatment\").")
+#>           })
+#>         }
+#>       }
+#>       # validate matrix
+#>       if (!is.null(contrasts) & is.matrix(contrasts)) {
+#>         # validate dimensions of contrast matrix,
+#>         # nrow == n_arms, ncol == n_arms - 1
+#>         if (nrow(contrasts) != n_arms ||
+#>             ncol(contrasts) != n_arms - 1) {
+#>           stop("'contrasts' matrix must have dimensions n_arms x (n_arms - 1).")
+#>         }
+#>         tryCatch({
+#>           contrasts_fn <- get(contrasts)
+#>           contrast_matrix <- contrasts
+#>         }, error = function(e) {
+#>           stop(
+#>             "'contrasts' must be a valid contrast method (e.g., \"contr.treatment\") or matrix."
+#>           )
+#>         })
+#>       }
+#>       # validate p_alloc, must be of length n_arms
+#>       # must be a numeric vector of probabilities summing to 1
+#>       if (is.null(p_alloc) ||
+#>           !is.numeric(p_alloc) || length(p_alloc) != n_arms ||
+#>           sum(p_alloc) != 1) {
+#>         stop("'p_alloc' must be a numeric vector of probabilities summing to 1.")
+#>       }
+#>       # validate intercept, must be numeric
+#>       if (is.null(intercept) || !is.numeric(intercept)) {
+#>         stop("'intercept' must be a numeric value.")
+#>       }
+#>       # validate b_arms_treat, must be numeric
+#>       if (is.null(b_arms_treat) || !is.numeric(b_arms_treat)) {
+#>         stop("'b_arms_treat' must be a numeric value.")
+#>       }
+#>       # validate b_covariate, must be numeric
+#>       if (is.null(b_covariate) || !is.numeric(b_covariate)) {
+#>         stop("'b_covariate' must be a numeric value.")
+#>       }
+#>       # validate sigma, must be numeric and positive
+#>       if (is.null(sigma) || !is.numeric(sigma) || sigma <= 0) {
+#>         stop("'sigma' must be a positive numeric value.")
+#>       }
+#> 
+#>       # end of validation --------------------------------------------------------
+#> 
+#> 
+#>       # simulate data for ANCOVA -------------------------------------------------
+#> 
+#>       # predictors
+#>       df <- data.frame(
+#>         covariate = stats::rnorm(n_total),
+#>         arm = factor(
+#>           sample(
+#>             x = seq_len(n_arms) - 1,
+#>             size = n_total,
+#>             prob = p_alloc,
+#>             replace = TRUE
+#>           ),
+#>           levels = seq_len(n_arms) - 1,
+#>           labels = c("ctrl", paste0("treat_", seq_len(n_arms - 1)))
+#>         )
+#>       )
+#>       # set contrasts
+#>       contrasts(df$arm) <- contrast_matrix
+#> 
+#>       # simulate outcomes
+#>       df <- df |>
+#>         dplyr::mutate(
+#>           # outcome
+#>           outcome = stats::rnorm(
+#>             n_total,
+#>             mean = intercept +
+#>               model.matrix( ~ arm, data = df)[, -1, drop = FALSE] %*% b_arms_treat +
+#>               covariate * b_covariate,
+#>             sd = sigma
+#>           )
+#>         )
+#>       return(df)
+#>     }
+#> <environment: 0x000001bb41d92a88>
+#> 
+#> 
+#> === Brms Model ===
+#> 
+#>  Family: gaussian 
+#>   Links: mu = identity; sigma = identity 
+#> Formula: outcome ~ 1 + covariate + arm 
+#>    Data: mock_data_ancova (Number of observations: 20) 
+#> 
+#> The model does not contain posterior draws.
+#> 
+#> 
+#>  === Allocation Function ===
+#> 
+#> NULL
+```
+
+### Conditions
+
+Find parameters that need user specification for the design.
+
+``` r
+required_fn_args(design)
+#> 
+#> Arguments that need user specification.
+#> 
+#> Simulation function:
+#> n_total, b_arms_treat, b_covariate 
+#> 
+#> Interim function:
+#> 
+```
+
+Specify conditions.
+
+``` r
+conditions <- build_conditions(
+  design = design,
+  condition_values = list(
+    # two sample sizes
+    n_total = 300,
+        # two effect sizes
+    b_arms_treat = c(0,0.3)
+  ),
+  static_values = list(
+    # equal allocation
+    p_alloc =
+      list(c(0.5, 0.5)),
+          # baseline effect
+    b_covariate = 0
   )
 )
-#> Validating power analysis design...
-#> Checking required arguments...
-#> OK: All required arguments provided
-#> OK: All argument types valid
-#> Testing data simulation function...
-#> OK: Data simulation function works correctly
-#>   Generated data dimensions: 100 4 
-#>   Column names: outcome, baseline, age,arm
-#> Testing design model with true parameters...
-#>   Using algorithm: fixed_param
-#>   Running brms::brm() with sample_prior = 'only'...
-#> OK: Design model with true parameters fitted successfully
-#>   True parameter values:
-#>  Family: gaussian 
-#>   Links: mu = identity; sigma = identity 
-#> Formula: outcome ~ baseline + age +arm
-#>    Data: mock_data (Number of observations: 100) 
-#>   Draws: 1 chains, each with iter = 2; warmup = 1; thin = 1;
-#>          total post-warmup draws = 1
+print(conditions, n = 100)
 #> 
-#> Regression Coefficients:
-#>            Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-#> Intercept      0.00        NA     0.00     0.00   NA       NA       NA
-#> baseline       0.20        NA     0.20     0.20   NA       NA       NA
-#> age            0.01        NA     0.01     0.01   NA       NA       NA
-#> grouparm     0.50        NA     0.50     0.50   NA       NA       NA
+#> Object of class: 'rctbayespower_conditions'
+#> --------------------------------------------------
 #> 
-#> Further Distributional Parameters:
-#>       Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-#> sigma     1.00        NA     1.00     1.00   NA       NA       NA
+#> Number of conditions: 2 
+#> Number of varying parameters: 3 
 #> 
-#> Draws were sampled using sampling(Fixed_param). 
-#> Testing design model with estimation priors...
-#>   Using algorithm: sampling
-#>   Running brms::brm() with sample_prior = 'only'...
-#> OK: Design model with estimation priors fitted successfully
-#> 
-#>  Testing single simulation run...
-#>   Generating new simulation data...
-#>   OK: New data generated with dimensions: 100 4 
-#>   Simulating outcome from design model with true parameters...
-#>   OK: Outcome simulated
-#>   Fitting estimation model with brms arguments:
-#>     Algorithm: meanfield 
-#>     Iterations: 10000 (warmup: )
-#>     Chains: , Cores: 
-#>     Additional user args: algorithm = meanfield, importance_resampling = TRUE, iter = 10000, output_samples = 1000
-#> Chain 1: ------------------------------------------------------------
-#> Chain 1: EXPERIMENTAL ALGORITHM:
-#> Chain 1:   This procedure has not been thoroughly tested and may be unstable
-#> Chain 1:   or buggy. The interface is subject to change.
-#> Chain 1: ------------------------------------------------------------
-#> Chain 1: 
-#> Chain 1: 
-#> Chain 1: 
-#> Chain 1: Gradient evaluation took 8e-06 seconds
-#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.08 seconds.
-#> Chain 1: Adjust your expectations accordingly!
-#> Chain 1: 
-#> Chain 1: 
-#> Chain 1: Begin eta adaptation.
-#> Chain 1: Iteration:   1 / 250 [  0%]  (Adaptation)
-#> Chain 1: Iteration:  50 / 250 [ 20%]  (Adaptation)
-#> Chain 1: Iteration: 100 / 250 [ 40%]  (Adaptation)
-#> Chain 1: Iteration: 150 / 250 [ 60%]  (Adaptation)
-#> Chain 1: Iteration: 200 / 250 [ 80%]  (Adaptation)
-#> Chain 1: Success! Found best value [eta = 1] earlier than expected.
-#> Chain 1: 
-#> Chain 1: Begin stochastic gradient ascent.
-#> Chain 1:   iter             ELBO   delta_ELBO_mean   delta_ELBO_med   notes 
-#> Chain 1:    100         -542.980             1.000            1.000
-#> Chain 1:    200         -243.011             1.117            1.234
-#> Chain 1:    300         -157.291             0.926            1.000
-#> Chain 1:    400         -159.718             0.699            1.000
-#> Chain 1:    500         -170.902             0.572            0.545
-#> Chain 1:    600         -162.566             0.485            0.545
-#> Chain 1:    700         -149.192             0.429            0.090
-#> Chain 1:    800         -148.186             0.376            0.090
-#> Chain 1:    900         -154.263             0.339            0.065
-#> Chain 1:   1000         -160.938             0.309            0.065
-#> Chain 1:   1100         -154.836             0.213            0.051
-#> Chain 1:   1200         -147.942             0.094            0.047
-#> Chain 1:   1300         -148.577             0.040            0.041
-#> Chain 1:   1400         -148.382             0.039            0.041
-#> Chain 1:   1500         -149.755             0.033            0.039
-#> Chain 1:   1600         -149.204             0.028            0.039
-#> Chain 1:   1700         -148.322             0.020            0.009   MEDIAN ELBO CONVERGED
-#> Chain 1: 
-#> Chain 1: Drawing a sample of size 1000 from the approximate posterior... 
-#> Chain 1: COMPLETED.
-#>  Family: gaussian 
-#>   Links: mu = identity; sigma = identity 
-#> Formula: outcome ~ baseline + age +arm
-#>    Data: data_sim (Number of observations: 100) 
-#>   Draws: 1 chains, each with iter = 1000; warmup = 0; thin = 1;
-#>          total post-warmup draws = 1000
-#> 
-#> Regression Coefficients:
-#>            Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-#> Intercept     -0.29      0.41    -1.22     0.40 1.01      346      190
-#> baseline       0.32      0.11     0.14     0.54 1.00      394      204
-#> age            0.02      0.01     0.00     0.03 1.01      357      207
-#> grouparm     0.35      0.20    -0.03     0.74 1.00      383      325
-#> 
-#> Further Distributional Parameters:
-#>       Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-#> sigma     0.98      0.07     0.84     1.12 1.02      397      231
-#> 
-#> Draws were sampled using variational(meanfield). 
-#> 
-#> OK: Single simulation run completed successfully
-#> OK: Target parameter b_armtreat extracted successfully
-#>   Parameter estimate: 0.3492 
-#>   Parameter SD: 0.1955 
-#>   Convergence diagnostics for target parameter:
-#>     R-hat: 1.002 OK 
-#>     ESS ratio: 0.325 OK 
-#> 
-#> OK: All validation checks passed! Design is ready for power analysis.
+#> Condition Grid:
+#> # A tibble: 2 × 3
+#>   id_cond n_total b_arms_treat
+#>     <int>   <dbl>        <dbl>
+#> 1       1     300          0  
+#> 2       2     300          0.3
 ```
 
-Summary:
+## Run Power Analysis
+
+Set number of cores and simulations. The number of simulations is set to
+a lower value for faster vignette building, but you can increase it for
+more robust results.
 
 ``` r
-summary(validation)
-#>                         Length Class       Mode   
-#> validation_passed        1     -none-      logical
-#> mock_data                4     data.frame  list   
-#> true_parameters         16     -none-      numeric
-#> simulation_data          4     data.frame  list   
-#> fit_summary             17     brmssummary list   
-#> convergence              2     -none-      list   
-#> brms_design_true_params 23     brmsfit     list   
-#> brms_design_estimation  23     brmsfit     list
+n_cores <- parallel::detectCores() - 2
+n_sims <- n_cores * 30
 ```
 
 ``` r
-# Run power analysis with custom model
-custom_power <- power_analysis(
-  n_control = 50,
-  n_treatment = 50,
-  brms_design_true_params = validation$brms_design_true_params,
-  brms_design_estimation = validation$brms_design_estimation,
-  target_param = "grouparm",
-  simulate_data_fn = simulate_custom_data,
-  threshold_success = 0.3,
-  threshold_futility = 0.1,
-  p_sig_success = 0.95,
-  p_sig_futility = 0.5,
-  n_simulations = n_sims,
+power_results <- power_analysis(
+  conditions = conditions,
   n_cores = n_cores,
+  n_simulations = n_sims,
+  verbose = FALSE,
   brms_args = list(
-    algorithm = "meanfield",
-    importance_resampling = TRUE,
-    iter = 1e4,
-    output_samples = 1e3
+    chains = 4,
+    iter = 700,
+    warmup = 200
   )
 )
-#> Using pre-fitted design models...
-#> Running 105 power simulations in parallel using 15 cores...
-#> Running 105 simulations in parallel using 15 cores...
-#> Progress: 10/105 (9.5%) - Elapsed: 0.4 min - ETC: 3.8 min
-#> Progress: 20/105 (19.0%) - Elapsed: 0.8 min - ETC: 3.5 min
-#> Progress: 30/105 (28.6%) - Elapsed: 1.1 min - ETC: 2.7 min
-#> Progress: 40/105 (38.1%) - Elapsed: 1.4 min - ETC: 2.3 min
-#> Progress: 50/105 (47.6%) - Elapsed: 1.7 min - ETC: 1.9 min
-#> Progress: 60/105 (57.1%) - Elapsed: 1.9 min - ETC: 1.5 min
-#> Progress: 70/105 (66.7%) - Elapsed: 2.1 min - ETC: 1.1 min
-#> Progress: 80/105 (76.2%) - Elapsed: 2.4 min - ETC: 0.7 min
-#> Progress: 90/105 (85.7%) - Elapsed: 2.6 min - ETC: 0.4 min
-#> Progress: 100/105 (95.2%) - Elapsed: 2.9 min - ETC: 0.1 min
-#> Completed: 105/105 (100%) - Total time: 3.1 min
-#> 
-#> Power Analysis Complete!
-#> Successful fits: 75 out of 105 
-#> Failed simulations by type:
-#>    brms model fitting failures : 9 
-#>    brms fitting warnings (convergence/other issues) : 21 
-#> Mean effect estimate (median): 0.514 
-#> SD of effect estimate (median): 0.206 
-#> Power - Success: 0.307 
-#> Power - Futility: 0.027 
-#> Mean probability of success: 0.765 
-#> Mean probability of futility: 0.083
+
+power_results$results_df
+#> # A tibble: 2 × 30
+#>   id_cond n_total b_arms_treat parameter    threshold_success threshold_futility
+#>     <dbl>   <dbl>        <dbl> <named list>             <dbl>              <dbl>
+#> 1       1     300          0   <chr [1]>                  0.1                  0
+#> 2       2     300          0.3 <chr [1]>                  0.1                  0
+#> # ℹ 24 more variables: success_prob <dbl>, success_prob_mcse <dbl>,
+#> #   futility_prob <dbl>, futility_prob_mcse <dbl>, success_power <dbl>,
+#> #   success_power_mcse <dbl>, futility_power <dbl>, futility_power_mcse <dbl>,
+#> #   est_median <dbl>, est_median_mcse <dbl>, est_mad <dbl>, est_mad_mcse <dbl>,
+#> #   est_mean <dbl>, est_mean_mcse <dbl>, est_sd <dbl>, est_sd_mcse <dbl>,
+#> #   rhat <dbl>, rhat_mcse <dbl>, ess_bulk <dbl>, ess_bulk_mcse <dbl>,
+#> #   ess_tail <dbl>, ess_tail_mcse <dbl>, convergence_rate <dbl>, …
 ```
-
-Summary:
-
-``` r
-summary(custom_power)
-#> 
-#> === Bayesian Power Analysis Summary ===
-#> 
-#> Study Design:
-#>   Control arm size: 50 
-#>   Treatment group size: 50 
-#>   Target parameter: grouparm 
-#>   Success threshold: 0.3 
-#>   Futility threshold: 0.1 
-#>   Success probability threshold: 0.95 
-#> 
-#>   Futility probability threshold: 0.5 
-#> 
-#> Model Information:
-#>   Family: gaussian(identity) 
-#>   Estimation formula: baseline + age +arm
-#>   Design formula: baseline + age +arm
-#> 
-#> Simulation Overview:
-#>   Total simulations: 105 
-#>   Successful fits: 75 
-#>   Convergence rate: 71.4 %
-#> 
-#> Failed Simulations: 30 
-#>   (See detailed error output from power_analysis() for failure breakdown)
-#> 
-#> Treatment Effect Estimates:
-#>   Mean effect estimate (median): 0.514 
-#>   SD of effect estimates (median): 0.206 
-#> 
-#> Power Analysis Results:
-#>   Power - Success: 0.307 
-#>   Power - Futility: 0.027 
-#> 
-#> Decision Probabilities:
-#>   Mean probability of success: 0.765 
-#>   Mean probability of futility: 0.083 
-#> 
-#> === End Summary ===
-```
-
-# Interpreting Results
-
-## Power Metrics
-
-The package provides several types of power:
-
-1.  **Success Power**: Probability that the treatment effect exceeds the
-    success threshold. This is often the most relevant for clinical
-    decisions.
-
-2.  **Futility Power**: Probability that the treatment effect falls
-    below the futility threshold, useful for stopping rules.
-
-3.  **Mean Effect Estimate**: Average estimated effect size across
-    simulations, should be close to the true effect.
-
-## Convergence
-
-Always check the convergence rate. If it’s below 95%, consider: -
-Increasing the number of iterations - Simplifying the model - Using a
-different algorithm - Checking for model specification issues
-
-## Effect Size Interpretation
-
-For continuous outcomes (Cohen’s d): - 0.2 = small effect - 0.5 = medium
-effect  
-- 0.8 = large effect
-
-For binary outcomes, effect sizes represent log odds ratios. For count
-outcomes, effect sizes represent log rate ratios.
-
-# Conclusion
-
-The `rctbayespower` package provides a comprehensive framework for
-Bayesian power analysis in RCTs. By incorporating prior information and
-using probabilistic reasoning, it offers a more nuanced approach to
-study planning than traditional frequentist methods.
-
-Key advantages include: - Incorporation of prior knowledge through
-design priors - Probabilistic interpretation of results - Flexibility in
-defining success and futility thresholds - Rich visualization options -
-Support for multiple outcome types and study designs
-
-For more advanced usage and specialized designs, see the additional
-vignettes and function documentation.
 
 ------------------------------------------------------------------------
 
@@ -1799,33 +374,39 @@ sessionInfo()
 #> [1] stats     graphics  grDevices utils     datasets  methods   base     
 #> 
 #> other attached packages:
-#>  [1] rctbayespower_0.1.0 testthat_3.2.3      dplyr_1.1.4         ggplot2_3.5.2      
-#>  [5] brms_2.22.0         Rcpp_1.0.14         here_1.0.1          knitr_1.50         
-#>  [9] rmarkdown_2.29      devtools_2.4.5      usethis_3.1.0      
+#>  [1] rctbayespower_0.1.0 testthat_3.2.3      devtools_2.4.5     
+#>  [4] usethis_3.1.0       lubridate_1.9.4     forcats_1.0.0      
+#>  [7] stringr_1.5.1       dplyr_1.1.4         purrr_1.0.4        
+#> [10] readr_2.1.5         tidyr_1.3.1         tibble_3.3.0       
+#> [13] ggplot2_3.5.2       tidyverse_2.0.0     here_1.0.1         
+#> [16] rmarkdown_2.29     
 #> 
 #> loaded via a namespace (and not attached):
-#>  [1] gridExtra_2.3        remotes_2.5.0        inline_0.3.21        rlang_1.1.6         
-#>  [5] magrittr_2.0.3       matrixStats_1.5.0    compiler_4.5.0       loo_2.8.0           
-#>  [9] callr_3.7.6          vctrs_0.6.5          reshape2_1.4.4       stringr_1.5.1       
-#> [13] profvis_0.4.0        pkgconfig_2.0.3      fastmap_1.2.0        backports_1.5.0     
-#> [17] ellipsis_0.3.2       labeling_0.4.3       promises_1.3.3       sessioninfo_1.2.3   
-#> [21] ps_1.9.1             purrr_1.0.4          xfun_0.52            cachem_1.1.0        
-#> [25] jsonlite_2.0.0       later_1.4.2          parallel_4.5.0       R6_2.6.1            
-#> [29] bslib_0.9.0          stringi_1.8.7        RColorBrewer_1.1-3   StanHeaders_2.32.10 
-#> [33] pkgload_1.4.0        brio_1.1.5           jquerylib_0.1.4      rstan_2.32.7        
-#> [37] bayesplot_1.13.0     httpuv_1.6.16        Matrix_1.7-3         tidyselect_1.2.1    
-#> [41] rstudioapi_0.17.1    abind_1.4-8          yaml_2.3.10          codetools_0.2-20    
-#> [45] miniUI_0.1.2         processx_3.8.6       pkgbuild_1.4.8       lattice_0.22-7      
-#> [49] tibble_3.3.0         plyr_1.8.9           shiny_1.11.0         withr_3.0.2         
-#> [53] bridgesampling_1.1-2 posterior_1.6.1      coda_0.19-4.1        evaluate_1.0.4      
-#> [57] desc_1.4.3           RcppParallel_5.1.10  urlchecker_1.0.1     xml2_1.3.8          
-#> [61] pillar_1.10.2        tensorA_0.36.2.1     whisker_0.4.1        checkmate_2.3.2     
-#> [65] stats4_4.5.0         distributional_0.5.0 generics_0.1.4       rprojroot_2.0.4     
-#> [69] rstantools_2.4.0     scales_1.4.0         xtable_1.8-4         glue_1.8.0          
-#> [73] tools_4.5.0          fs_1.6.6             mvtnorm_1.3-3        grid_4.5.0          
-#> [77] tidyr_1.3.1          QuickJSR_1.8.0       nlme_3.1-168         cli_3.6.5           
-#> [81] fansi_1.0.6          viridisLite_0.4.2    Brobdingnag_1.2-9    downlit_0.4.4       
-#> [85] gtable_0.3.6         sass_0.4.10          digest_0.6.37        htmlwidgets_1.6.4   
-#> [89] farver_2.1.2         memoise_2.0.1        htmltools_0.5.8.1    pkgdown_2.1.3       
-#> [93] lifecycle_1.0.4      mime_0.13
+#>  [1] tidyselect_1.2.1     farver_2.1.2         loo_2.8.0           
+#>  [4] fastmap_1.2.0        tensorA_0.36.2.1     promises_1.3.3      
+#>  [7] digest_0.6.37        timechange_0.3.0     mime_0.13           
+#> [10] lifecycle_1.0.4      StanHeaders_2.32.10  ellipsis_0.3.2      
+#> [13] magrittr_2.0.3       posterior_1.6.1      compiler_4.5.0      
+#> [16] rlang_1.1.6          tools_4.5.0          yaml_2.3.10         
+#> [19] knitr_1.50           bridgesampling_1.1-2 htmlwidgets_1.6.4   
+#> [22] pkgbuild_1.4.8       RColorBrewer_1.1-3   pkgload_1.4.0       
+#> [25] abind_1.4-8          miniUI_0.1.2         withr_3.0.2         
+#> [28] desc_1.4.3           stats4_4.5.0         grid_4.5.0          
+#> [31] urlchecker_1.0.1     profvis_0.4.0        colorspace_2.1-1    
+#> [34] inline_0.3.21        xtable_1.8-4         scales_1.4.0        
+#> [37] cli_3.6.5            mvtnorm_1.3-3        generics_0.1.4      
+#> [40] remotes_2.5.0        RcppParallel_5.1.10  rstudioapi_0.17.1   
+#> [43] tzdb_0.5.0           sessioninfo_1.2.3    cachem_1.1.0        
+#> [46] rstan_2.32.7         bayesplot_1.13.0     parallel_4.5.0      
+#> [49] matrixStats_1.5.0    brms_2.22.0          vctrs_0.6.5         
+#> [52] Matrix_1.7-3         hms_1.1.3            glue_1.8.0          
+#> [55] codetools_0.2-20     distributional_0.5.0 stringi_1.8.7       
+#> [58] gtable_0.3.6         QuickJSR_1.8.0       later_1.4.2         
+#> [61] pillar_1.11.0        htmltools_0.5.8.1    Brobdingnag_1.2-9   
+#> [64] brio_1.1.5           R6_2.6.1             rprojroot_2.0.4     
+#> [67] evaluate_1.0.4       shiny_1.11.0         lattice_0.22-7      
+#> [70] backports_1.5.0      memoise_2.0.1        httpuv_1.6.16       
+#> [73] rstantools_2.4.0     Rcpp_1.0.14          gridExtra_2.3       
+#> [76] coda_0.19-4.1        nlme_3.1-168         checkmate_2.3.2     
+#> [79] xfun_0.52            fs_1.6.6             pkgconfig_2.0.3
 ```

@@ -12,7 +12,7 @@ devtools::load_all(.)
 simulate_data_ancova <- function(n_total,
                                  p_alloc,
                                  true_parameter_values =
-                                   list(intercept, sigma, b_armtreat, b_baseline))
+                                   list(intercept, sigma, b_arms_treat, b_covariate))
 {
   data.frame(
     baseline = stats::rnorm(n_total),
@@ -29,8 +29,8 @@ simulate_data_ancova <- function(n_total,
     outcome = stats::rnorm(
       n_total,
       mean = true_parameter_values$intercept +
-        true_parameter_values$b_armtreat +
-        true_parameter_values$b_baseline * stats::rnorm(n_total),
+        true_parameter_values$b_arms_treat +
+        true_parameter_values$b_covariate * stats::rnorm(n_total),
       sd = true_parameter_values$sigma
     )
   )
@@ -43,8 +43,8 @@ mock_data_ancova <- simulate_data_ancova(
   true_parameter_values = list(
     intercept = 0,
     sigma = 1,
-    b_armtreat = 0.5,
-    b_baseline = 0.2
+    b_arms_treat = 0.5,
+    b_covariate = 0.2
   )
 )
 
@@ -72,7 +72,7 @@ model_ancova_user <-
     brms_model = brms_model_ancova,
     n_endpoints = 1,
     endpoint_types = "continuous",
-    n_treatment_arms = 2,
+    n_arms = 2,
     n_repeated_measures = 0,
     model_name = "ancova"
   )
@@ -82,11 +82,11 @@ print(model_ancova_user)
 
 
 # or use the predefined model
-build_model_ancova_cont <- rctbayespower_build_model_ancova_cont()
+build_model("ancova_cont_2arms") <- rctbayespower_build_model("ancova_cont_2arms")()
 
-build_model_ancova_cont
+build_model("ancova_cont_2arms")
 
-class(build_model_ancova_cont)
+class(build_model("ancova_cont_2arms"))
 
 
 #------------------------------------------------------------------------------>
@@ -94,8 +94,8 @@ class(build_model_ancova_cont)
 #------------------------------------------------------------------------------>
 
 ancova_design <- rctbayespower_design(
-  rctbayespower_model = build_model_ancova_cont,
-  target_params = "b_armtreat",
+  rctbayespower_model = build_model("ancova_cont_2arms"),
+  target_params = "b_arms_treat",
   n_interim_analyses = 0,
   thresholds_success = c(0.2),
   thresholds_futility = c(0),
@@ -136,9 +136,9 @@ simulate_single_run <- function(n_total = NULL,
       any(p_alloc < 0) || sum(p_alloc) != 1) {
     stop("'p_alloc' must be a numeric vector of length 2 with non-negative values that sum to 1.")
   }
-  # check that p_alloc match the number of treatment arms in the design
-  if (length(p_alloc) != rctbayespower_design$n_treatment_arms) {
-    stop("'p_alloc' must match the number of treatment arms in the rctbayespower_design.")
+  # check that p_alloc match the number of arms in the design
+  if (length(p_alloc) != rctbayespower_design$n_arms) {
+    stop("'p_alloc' must match the number of arms in the rctbayespower_design.")
   }
   
   # validate true_parameter_values, must be a named list of real numbers
@@ -197,8 +197,8 @@ p_alloc <- c(0.5, 0.5)  # equal allocation
 true_parameter_values <- list(
   intercept = 0,
   sigma = 1,
-  b_armtreat = 0.5,
-  b_baseline = 0.2
+  b_arms_treat = 0.5,
+  b_covariate = 0.2
 )
 
 # simulate a single run, measure time
