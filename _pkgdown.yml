@@ -1,4 +1,49 @@
-url: ~
+url: https://matthiaskloft.github.io/rctbayespower/
 template:
+  light-switch: yes
   bootstrap: 5
+  bootswatch: litera
+  theme: arrow-light
+  theme-dark: arrow-dark
+  math-rendering: mathjax
 
+exclude: |
+  CLAUDE.md
+  
+reference:
+- title: "Core Power Analysis Functions"
+  desc: "Main functions for conducting Bayesian power analysis"
+  contents:
+  - power_analysis
+  - simulate_single_run
+
+- title: "Model Building"
+  desc: "Functions for creating and configuring study models"
+  contents:
+  - build_model
+  - build_model_ancova
+  - build_model_ancova_cont_2arms
+  - build_model_ancova_cont_3arms
+
+- title: "Design and Conditions"
+  desc: "Functions for setting up study designs and simulation conditions"
+  contents:
+  - build_design
+  - build_conditions
+
+- title: "Visualization"
+  desc: "Functions for plotting and visualizing power analysis results"
+  contents:
+  - plot.rctbayespower_sim_result
+
+- title: "Utilities"
+  desc: "Helper functions and utilities"
+  contents:
+  - required_fn_args
+
+- title: "S3 Methods"
+  desc: "Print methods for package objects"
+  contents:
+  - print.rctbayespower_design
+  - print.rctbayespower_conditions
+  - print.rctbayespower_model

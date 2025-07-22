@@ -21,7 +21,11 @@
       "Bash(export PATH=$PWD/pandoc-3.1.8/bin:$PATH)",
       "Bash(timeout:*)",
       "Bash(sed:*)",
-      "Bash(_R_CHECK_FORCE_SUGGESTS_=false R CMD check --no-manual --no-vignettes --no-tests .)"
+      "Bash(_R_CHECK_FORCE_SUGGESTS_=false R CMD check --no-manual --no-vignettes --no-tests .)",
+      "Bash(for:*)",
+      "Bash(do echo \"=== $file ===\")",
+      "Bash(awk:*)",
+      "Bash(done)"
     ],
     "deny": []
   }
