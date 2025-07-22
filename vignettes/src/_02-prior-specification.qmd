@@ -1,7 +1,24 @@
 ---
-title: "Prior Specifications in Bayesian Power Analysis"
-date: "`r Sys.Date()`"
+title: "Prior Specifications in 'rctbayespower'"
 always_allow_html: true
+author: 
+ - name: Matthias Kloft
+   orcid: 0000-0003-1845-6957
+date: "`r Sys.Date()`"
+format:
+  html:
+    toc: true
+    number-sections: true
+    theme: cosmo
+    code-fold: true
+    code-tools: true
+    code-summary: "Show the code"
+    fig-width: 7
+    fig-height: 4.5
+    embed-resources: true
+execute:
+  message: false
+  warning: false
 ---
 
 ```{r setup, include = FALSE}
@@ -18,7 +35,7 @@ devtools::load_all(".")
 
 # Fast settings for examples
 n_cores <- parallel::detectCores() - 1
-n_sims <- n_cores * 10
+n_sims <- 1e3
 ```
 
 
@@ -70,8 +87,6 @@ uninformative_analysis <- power_analysis(
   n_simulations = n_sims,
   n_cores = n_cores
 )
-
-summary(uninformative_analysis)
 ```
 
 
@@ -116,37 +131,42 @@ informative_analysis <- power_analysis(
   n_simulations = n_sims,
   n_cores = n_cores
 )
-
-summary(informative_analysis)
 ```
 
 Comparing the results of the two analyses:
 ```{r}
+
 estimation_comparison <- data.frame(
   Prior_Type = c("Uninformative", "Sceptical"),
-  Power_Success = c(
-    uninformative_analysis$results_df$power_success,
-    informative_analysis$results_df$power_success
+  "Success Power" = c(
+    uninformative_analysis$results_df$success_power,
+    informative_analysis$results_df$success_power
   ),
-  Power_Futility = c(
-    uninformative_analysis$results_df$power_futility,
-    informative_analysis$results_df$power_futility
+  "Futility Power" = c(
+    uninformative_analysis$results_df$futility_power,
+    informative_analysis$results_df$futility_power
   ),
-  Mean_Effect = c(
-    uninformative_analysis$results_df$mean_effect_estimate,
-    informative_analysis$results_df$mean_effect_estimate
+  "Success Probability" = c(
+    uninformative_analysis$results_df$success_prob,
+    informative_analysis$results_df$success_prob
   ),
-  SD_Effect = c(
-    uninformative_analysis$results_df$sd_effect_estimate,
-    informative_analysis$results_df$sd_effect_estimate
+  "Futility Probability" = c(
+    uninformative_analysis$results_df$futility_prob,
+    informative_analysis$results_df$futility_prob
+  ),
+  "Mean Post Median" = c(
+    uninformative_analysis$results_df$est_median,
+    informative_analysis$results_df$est_median
+  ),
+  "Mean Post SD" = c(
+    uninformative_analysis$results_df$est_sd,
+    informative_analysis$results_df$est_sd
   )
-) |>
-  # round the numeric columns for better readability
-  dplyr::mutate(
-    across(c(Power_Success, Power_Futility, Mean_Effect, SD_Effect), ~ round(.x, 3))
-  )
+) 
 
-print(estimation_comparison)
+estimation_comparison|>
+  # round the numeric columns for better readability
+  kableExtra::kable(digits = 2)
 ```
 
 
@@ -170,7 +190,7 @@ alpha_uninformative_design <- build_design(
   target_params = "b_arm2",
   n_interim_analyses = 0,
   thresholds_success = 0.3,
-  thresholds_futility = 0.1,
+  thresholds_futility = 0,
   p_sig_success = 0.975,
   p_sig_futility = 0.5
 )
@@ -190,8 +210,6 @@ alpha_uninformative <- power_analysis(
   n_simulations = n_sims,
   n_cores = n_cores
 )
-
-summary(alpha_uninformative)
 ```
 
 ```{r alpha_error_informative}
@@ -207,7 +225,7 @@ alpha_informative_model <- build_model_ancova_cont_2arms(
 
 alpha_informative_design <- build_design(
   model = alpha_informative_model,
-  target_params = "b_armtreat_1",
+  target_params = "b_arm2",
   n_interim_analyses = 0,
   thresholds_success = 0.3,
   thresholds_futility = 0.1,
@@ -230,8 +248,6 @@ alpha_informative <- power_analysis(
   n_simulations = n_sims,
   n_cores = n_cores
 )
-
-summary(alpha_informative)
 ```
 
 Comparing the alpha error rates:
@@ -240,106 +256,20 @@ Comparing the alpha error rates:
 alpha_comparison <- data.frame(
   Prior_Type = c("Uninformative", "Sceptical"),
   Alpha_Error_Rate = c(
-    alpha_uninformative$results_df$power_success,
-    alpha_informative$results_df$power_success
+    alpha_uninformative$results_df$success_power,
+    alpha_informative$results_df$success_power
   ),
   Probability_False_Positive = c(
-    alpha_uninformative$results_df$mean_prob_success,
-    alpha_informative$results_df$mean_prob_success
+    alpha_uninformative$results_df$success_prob,
+    alpha_informative$results_df$success_prob
   )
-) |>
-  dplyr::mutate(
-    across(c(Alpha_Error_Rate, Probability_False_Positive), ~ round(.x, 3))
-  )
-
-print(alpha_comparison)
+)
+alpha_comparison |>
+  kableExtra::kable(digits = 3)
 ```
 
 Using a sceptical prior reduces the probability of falsely concluding success when there is no true effect, thus controlling the alpha error rate more effectively than the uninformative priors.
 
-
-***
-
-
-# Example 2: Design Prior vs No Design Prior
-
-Design priors integrate uncertainty about the true effect size. Here we compare integrated power (with design prior) versus point estimates (without design prior).
-
-```{r design_prior}
-# Create ANCOVA model for design prior analysis
-design_prior_model <- build_model_ancova_cont_2arms(
-  b_arm_treat = 0.5, # Will be varied in conditions
-  b_covariate = 0.3
-)
-
-# Create design
-design_prior_design <- build_design(
-  model = design_prior_model,
-  target_params = "b_armtreat_1",
-  n_interim_analyses = 0,
-  thresholds_success = 0.3,
-  thresholds_futility = 0.1,
-  p_sig_success = 0.975,
-  p_sig_futility = 0.5
-)
-
-# Create conditions with varying effect sizes
-design_prior_conditions <- build_conditions(
-  design = design_prior_design,
-  condition_values = list(
-    n_total = 160,
-    b_arm_treat = seq(0.2, 0.8, 0.1)
-  ),
-  static_values = list(
-    p_alloc = list(c(0.5, 0.5)),
-    b_covariate = 0.3
-  )
-)
-
-# Run power analysis with design prior
-fit_design_prior <- power_analysis(
-  conditions = design_prior_conditions,
-  design_prior = "normal(0.5, 0.1)", # Informed design prior
-  n_simulations = n_sims,
-  n_cores = n_cores
-)
-
-summary(fit_design_prior)
-```
-
-You can also compare different design priors by running separate analyses:
-
-```{r design_prior_comparison}
-# Run analysis with different design priors
-fit_conservative <- power_analysis(
-  conditions = design_prior_conditions,
-  design_prior = "normal(0.4, 0.1)",
-  n_simulations = n_sims,
-  n_cores = n_cores
-)
-
-fit_optimistic <- power_analysis(
-  conditions = design_prior_conditions,
-  design_prior = "normal(0.7, 0.1)",
-  n_simulations = n_sims,
-  n_cores = n_cores
-)
-
-# Compare the results by looking at the power analysis results
-cat("Original design prior results (normal(0.5, 0.1)):\n")
-print(fit_design_prior$results_df[c("b_arm_treat", "pow_success")])
-
-cat("\nConservative design prior results (normal(0.4, 0.1)):\n") 
-print(fit_conservative$results_df[c("b_arm_treat", "pow_success")])
-
-cat("\nOptimistic design prior results (normal(0.7, 0.1)):\n")
-print(fit_optimistic$results_df[c("b_arm_treat", "pow_success")])
-```
-
-This demonstrates how different design priors affect the power analysis:
-1. Conservative priors weight smaller effect sizes more heavily
-2. Optimistic priors weight larger effect sizes more heavily  
-3. The choice of design prior affects the integrated power calculations
 
 ***
 

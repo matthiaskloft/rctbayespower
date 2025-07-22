@@ -43,8 +43,8 @@
 #'
 #' \strong{Convenience Functions:} For common use cases, consider the wrapper functions that can be called via the 'predefined_model' argument in [build_model()]:
 #' \itemize{
-#'   \item [build_model("ancova_cont_2arms")] - 2-arm continuous ANCOVA
-#'   \item [build_model("ancova_cont_2arms")] - 3-arm continuous ANCOVA
+#'   \item [build_model_ancova_cont_2arms()] - 2-arm continuous ANCOVA
+#'   \item [build_model_ancova_cont_3arms()] - 3-arm continuous ANCOVA
 #' }
 #'
 #' @return An object of class "build_model" ready for use with
@@ -347,7 +347,10 @@ build_model_ancova <- function(prior_intercept = NULL,
 #' @examples
 #' \dontrun{
 #' # Create 2-arm ANCOVA model (must specify effect sizes)
-#' model_2arm <- build_model("ancova_cont_2arms")
+#' model_2arm <- build_model_ancova_cont_2arms(
+#'   b_arm_treat = 0.5,
+#'   b_covariate = 0.3
+#' )
 #' }
 build_model_ancova_cont_2arms <- function(...) {
   # collect additional arguments
@@ -403,7 +406,7 @@ build_model_ancova_cont_2arms <- function(...) {
 #' @examples
 #' \dontrun{
 #' # Create 3-arm ANCOVA model (must specify effect sizes)
-#' model_3arm <- build_model("ancova_cont_2arms")_3arms(
+#' model_3arm <- build_model_ancova_cont_3arms(
 #'   b_arm_treat = c(0.5, 0.7),
 #'   b_covariate = 0.3
 #' )

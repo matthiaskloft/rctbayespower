@@ -116,7 +116,15 @@ build_model <- function(pre_defined_model = NULL,
   if (!is.function(data_simulation_fn)) {
     stop("'data_simulation_fn' must be a valid function.")
   }
+  # retrieve the argument names data_simulation_fn
+  parameter_names_sim_fn <- names(formals(data_simulation_fn))
 
+  # check that the data_simulation_fn has the required parameters n_total and
+  # p_alloc
+  if (!("n_total" %in% parameter_names_sim_fn) ||
+      !("p_alloc" %in% parameter_names_sim_fn)) {
+    stop("'data_simulation_fn' must have parameters 'n_total' and 'p_alloc'.")
+  }
   # validate n_endpoints
   if (is.null(n_endpoints) ||
       !is.numeric(n_endpoints) || n_endpoints <= 0) {
@@ -150,15 +158,7 @@ build_model <- function(pre_defined_model = NULL,
     stop("'model_name' must be a character string or NULL.")
   }
 
-  # retrieve the argument names data_simulation_fn
-  parameter_names_sim_fn <- names(formals(data_simulation_fn))
 
-  # check that the data_simulation_fn has the required parameters n_total and
-  # p_alloc
-  if (!("n_total" %in% parameter_names_sim_fn) ||
-      !("p_alloc" %in% parameter_names_sim_fn)) {
-    stop("'data_simulation_fn' must have parameters 'n_total' and 'p_alloc'.")
-  }
 
   # retriev parameter names from brms model
   parameter_names_brms <- stringr::str_subset(brms::variables(brms_model), pattern = "^b_")
@@ -210,9 +210,6 @@ print.rctbayespower_model <- function(x, ...) {
       x$parameter_names_sim_fn,
       "\n")
   cat("Parameter names - brms model:", x$parameter_names_brms, "\n")
-
-  cat("Arguments to specify for simulation function:\n")
-  print(required_fn_args_model(x, print = FALSE))
   cat("\nBrms model:\n")
   print(x$brms_model)
 }

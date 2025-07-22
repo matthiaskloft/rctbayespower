@@ -1,5 +1,6 @@
 #!/usr/bin/env Rscript
 library(rmarkdown)
+library(quarto)
 library(here)
 
 rmf <- function(f)
@@ -41,21 +42,38 @@ set_path_project <- function()
 }
 
 
-build_vignette <- function(f)
-{
-  f_Rmd <- basename(f)
-  of <- sub(f_Rmd, pattern = "^_", replacement = "")
+# build_vignette <- function(f)
+# {
+#   f_Rmd <- basename(f)
+#   of <- sub(f_Rmd, pattern = "^_", replacement = "")
+#   rmf(of)
+#
+#   fmt <- rmarkdown::md_document(variant = "gfm",
+#                                 preserve_yaml = TRUE,
+#                                 ext = ".Rmd")
+#
+#   rmarkdown::render(
+#     f,
+#     output_file = of,
+#     output_dir = getwd(),
+#     output_format = fmt
+#   )
+#
+#   invisible(TRUE)
+
+
+build_vignette <- function(f) {
+  # Remove leading underscore for output filename
+  f_qmd <- basename(f)
+  of <- sub("^_", "", f_qmd)
+
+  # Remove any existing output file
   rmf(of)
 
-  fmt <- rmarkdown::md_document(variant = "gfm",
-                                preserve_yaml = TRUE,
-                                ext = ".Rmd")
-
-  rmarkdown::render(
-    f,
-    output_file = of,
-    output_dir = getwd(),
-    output_format = fmt
+  # Render the file using Quarto
+  quarto::quarto_render(
+    input = f,
+    output_file = of
   )
 
   invisible(TRUE)
@@ -71,8 +89,8 @@ set_path_vignettes()
 #clean()
 
 
-build_vignette(file.path("src", "_01-introduction.Rmd"))
+build_vignette(file.path("src", "_01-introduction.Qmd"))
 #build_vignette(file.path("src", "_02-prior-specification.Rmd"))
-build_vignette(file.path("src", "_03-algorithm-performance.Rmd"))
+#build_vignette(file.path("src", "_03-algorithm-performance.Rmd"))
 
 set_path_project()

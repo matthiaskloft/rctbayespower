@@ -11,6 +11,8 @@ simulate_single_run(condition_arguments, id_sim, design, brms_args = list())
 created by \code{\link[=build_conditions]{build_conditions()}}. Contains 'sim_args' with 'n_total', 'p_alloc',
 and 'true_parameter_values', plus optional 'interim_args'.}
 
+\item{id_sim}{Simulation identifier for tracking individual simulation runs}
+
 \item{design}{A rctbayespower_design object containing the simulation and model specifications}
 
 \item{brms_args}{Arguments passed to brms for model fitting. Default includes 'algorithm' = "sampling", 'iter' = 500, 'warmup' = 250, 'chains' = 4, 'cores' = 1. User can override any of these or add additional arguments.}

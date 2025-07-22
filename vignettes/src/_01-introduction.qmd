@@ -1,0 +1,154 @@
+---
+title: "Getting Started with 'rctbayespower'"
+author: 
+ - name: Matthias Kloft
+   orcid: 0000-0003-1845-6957
+date: "`r Sys.Date()`"
+format:
+  html:
+    toc: true
+    number-sections: true
+    theme: cosmo
+    code-fold: true
+    code-tools: true
+    code-summary: "Show the code"
+    fig-width: 7
+    fig-height: 4.5
+    embed-resources: true
+execute:
+  message: false
+  warning: false
+---
+
+```{r include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.path = "/man/figures/01-introduction-",
+  out.width = "90%",
+  fig.width = 10,
+  fig.height = 7,
+  message = FALSE
+)
+
+# Set CRAN mirror
+options(repos = c(CRAN = "https://cloud.r-project.org/"))
+
+# Check and install required packages
+packages <- c("tidyverse", "devtools")
+install.packages(setdiff(packages, rownames(installed.packages())))
+invisible(lapply(packages, require, character.only = TRUE))
+
+# load the package
+devtools::load_all(".")
+```
+
+# Introduction
+
+The `rctbayespower` package provides tools for conducting Bayesian power analysis for randomized controlled trials (RCTs) using the `brms` package and Stan. 
+
+
+
+# Basic Power Analysis Using ANCOVA Design
+
+
+
+### Model
+
+```{r}
+model_file <- here::here("test_model_ancova.rds")
+if (file.exists(model_file)) {
+  # load the model from a file
+  model_ancova <- readRDS(model_file)
+} else{
+  # create the model
+  model_ancova <- build_model(pre_defined_model = "ancova_cont_2arms")
+  # save the model to a file
+  saveRDS(model_ancova, file = model_file)
+}
+print(model_ancova)
+```
+
+### Design
+
+Find possible target parameters in the model.
+```{r}
+attr(model_ancova, "parameter_names_brms")
+```
+
+Specify the study design with target parameter, thresholds for success and futility, and significance levels for frequentist-like power.
+```{r}
+design <- build_design(
+  model = model_ancova,
+  target_params = "b_arm2",
+  thresholds_success = 0.1,
+  thresholds_futility = 0,
+  p_sig_success = 0.975,
+  p_sig_futility = 0.5
+)
+print(design)
+```
+
+
+### Conditions
+
+Find parameters that need user specification for the design.
+```{r}
+required_fn_args(design)
+```
+
+Specify conditions.
+```{r}
+conditions <- build_conditions(
+  design = design,
+  condition_values = list(
+    # two sample sizes
+    n_total = 300,
+        # two effect sizes
+    b_arms_treat = c(0,0.3)
+  ),
+  static_values = list(
+    # equal allocation
+    p_alloc =
+      list(c(0.5, 0.5)),
+          # baseline effect
+    b_covariate = 0
+  )
+)
+print(conditions, n = 100)
+```
+
+
+## Run Power Analysis
+Set number of cores and simulations. The number of simulations is set to a lower value for faster vignette building, but you can increase it for more robust results.
+```{r}
+n_cores <- parallel::detectCores() - 2
+n_sims <- n_cores * 30
+```
+
+```{r basic_performance}
+power_results <- power_analysis(
+  conditions = conditions,
+  n_cores = n_cores,
+  n_simulations = n_sims,
+  verbose = TRUE,
+  brms_args = list(
+    chains = 4,
+    iter = 700,
+    warmup = 200
+  )
+)
+
+power_results$results_df
+```
+
+
+
+***
+
+
+# Session Information
+
+```{r session_info}
+sessionInfo()
+```

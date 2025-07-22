@@ -30,3 +30,6 @@
 ^\..*Rcheck$
 ^test_model_ancova.rds$
 ^R/archive/
+^vignettes/articles/\.quarto$
+^vignettes/articles/*_files$
+^vignettes/articles$

@@ -1,20 +1,34 @@
 ---
-title: "Getting Started with rctbayespower: Bayesian Power Analysis for RCTs"
+title: "Getting Started with 'rctbayespower'"
+author: 
+ - name: Matthias Kloft
+   orcid: 0000-0003-1845-6957
 date: "`r Sys.Date()`"
-always_allow_html: true
+knitr:
+  opts_chunk:
+    collapse: true
+    comment: '#>'
+    fig.path: "/man/figures/01-introduction-"
+    out.width: "90%"
+    fig.width: 10
+    fig.height: 7
+    message: FALSE
+format:
+  html:
+    toc: true
+    number-sections: true
+    theme: cosmo
+    code-fold: true
+    code-tools: true
+    code-summary: "Show the code"
+    fig-width: 7
+    fig-height: 4.5
+    embed-resources: true
+execute:
+  message: false
+  warning: false
 ---
-
 ```{r include = FALSE}
-knitr::opts_chunk$set(
-  collapse = TRUE,
-  comment = "#>",
-  fig.path = "/man/figures/01-introduction-",
-  out.width = "90%",
-  fig.width = 10,
-  fig.height = 7,
-  message = FALSE
-)
-
 # Set CRAN mirror
 options(repos = c(CRAN = "https://cloud.r-project.org/"))
 
@@ -24,19 +38,14 @@ install.packages(setdiff(packages, rownames(installed.packages())))
 invisible(lapply(packages, require, character.only = TRUE))
 
 # load the package
-devtools::load_all(".")
+devtools::load_all()
+library(rctbayespower)
 ```
 
 # Introduction
 
-The `rctbayespower` package provides tools for conducting Bayesian power analysis for randomized controlled trials (RCTs) using the `brms` package and Stan. Unlike traditional frequentist power analysis, Bayesian power analysis allows researchers to:
+The `rctbayespower` package provides tools for conducting Bayesian power analysis for randomized controlled trials (RCTs) using the `brms` package and Stan. 
 
-- Incorporate prior knowledge about treatment effects
-- Use probabilistic statements about effect sizes
-- Consider regions of practical equivalence (ROPE)
-- Account for uncertainty in parameter estimates
-
-This vignette demonstrates the main functions of the package with practical examples using real model fitting.
 
 
 # Basic Power Analysis Using ANCOVA Design
@@ -63,7 +72,7 @@ print(model_ancova)
 
 Find possible target parameters in the model.
 ```{r}
-attr(model_ancova, "parameter_names_brms")
+model_ancova$parameter_names_brms
 ```
 
 Specify the study design with target parameter, thresholds for success and futility, and significance levels for frequentist-like power.
@@ -121,7 +130,7 @@ power_results <- power_analysis(
   conditions = conditions,
   n_cores = n_cores,
   n_simulations = n_sims,
-  verbose = FALSE,
+  verbose = TRUE,
   brms_args = list(
     chains = 4,
     iter = 700,

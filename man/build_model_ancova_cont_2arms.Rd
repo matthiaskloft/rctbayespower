@@ -33,7 +33,10 @@ Default parameters:
 \examples{
 \dontrun{
 # Create 2-arm ANCOVA model (must specify effect sizes)
-model_2arm <- build_model("ancova_cont_2arms")
+model_2arm <- build_model_ancova_cont_2arms(
+  b_arm_treat = 0.5,
+  b_covariate = 0.3
+)
 }
 }
 \seealso{

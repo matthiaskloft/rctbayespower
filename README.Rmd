@@ -1,0 +1,54 @@
+---
+output: github_document
+---
+
+<!-- README.md is generated from README.Rmd. Please edit that file -->
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.path = "man/figures/README-",
+  out.width = "100%"
+)
+```
+
+# rctbayespower
+
+<!-- badges: start -->
+<!-- Note: Badges are placeholders for when the package is published -->
+<!-- badges: end -->
+
+## Disclaimer
+
+This is an experimental package that has not yet been fully tested. Therefore, I do not recommend using it for production code or critical analyses.
+
+## Installation
+
+You can install the development version of `rctbayespower` from GitHub:
+
+```r
+# install.packages("devtools")
+devtools::install_github("matthiaskloft/rctbayespower")
+```
+
+## Overview
+
+`rctbayespower` provides tools for conducting Bayesian power analysis for randomized controlled trials (RCTs) using `brms` and Stan.
+
+
+
+## Ressources
+
+The best way to get started is to visit the package website and the introductory vignette:
+
+- Website: <https://matthiaskloft.github.io/rctbayespower/>
+
+- Vignettes:
+
+  - [Introduction](https://matthiaskloft.github.io/rctbayespower/articles/01-introduction.html): Basic usage and concepts
+  - [Prior Specifications](https://matthiaskloft.github.io/rctbayespower/articles/03-prior-specifications.html): Working with priors
+  - [Advanced Modeling](https://matthiaskloft.github.io/rctbayespower/articles/04-advanced-modeling.html): Complex designs
+  - [Algorithm Performance](https://matthiaskloft.github.io/rctbayespower/articles/05-algorithm-performance.html): Performance optimization
+
+- [Open an Issue](https://github.com/matthiaskloft/rctbayespower/issues)

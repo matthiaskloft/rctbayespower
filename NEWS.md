@@ -1,6 +1,8 @@
-# rctbayespower 0.1.0
+# rctbayespower 0.1.0 (Development Version)
 
-## Initial Release
+## Development Status
+
+**⚠️ This package is currently in active development and not yet released.**
 
 ### New Features
 
@@ -56,9 +58,18 @@ This package uses an object-oriented approach requiring users to:
 3. Generate analysis conditions with `build_conditions()`
 4. Execute power analysis with `power_analysis()`
 
-### Notes
+### Development Status & Known Issues
 
-* This is the initial release of the package
-* Core functionality is stable and production-ready
-* Model caching provides significant performance improvements for grid analyses
-* Package follows standard R package development practices
+* **Core functionality**: Fully implemented and working ✅
+* **Documentation**: Significant gaps remain - vignettes need complete rewriting for new API ⚠️
+* **Testing**: Test suite incomplete - all test files contain only TODO comments ⚠️
+* **Missing features**: Binary and count outcomes referenced in docs but not implemented
+* **Model caching**: Provides significant performance improvements for grid analyses ✅
+* **Package structure**: Follows standard R package development practices ✅
+
+### Development Notes
+
+* This package was developed with LLM assistance and requires thorough testing before production use
+* All vignettes currently reference deprecated function names and need updating
+* Test coverage is currently 0% - comprehensive testing needed
+* Documentation inconsistencies exist between old and new API

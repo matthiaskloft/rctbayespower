@@ -170,7 +170,9 @@ build_conditions <- function(design, condition_values, static_values) {
   return_list <- list(
     conditions_grid = df_grid,
     condition_arguments = condition_arguments,
-    design = design
+    design = design,
+    condition_values = condition_values,
+    static_values = static_values
   )
 
   # assign class

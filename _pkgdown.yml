@@ -12,32 +12,34 @@ exclude: |
   NEWS.md
 
 reference:
-- title: "Core Power Analysis Functions"
-  desc: "Main functions for conducting Bayesian power analysis"
+- title: "Core Workflow Functions"
+  desc: "Main object-oriented API for Bayesian power analysis workflow"
   contents:
   - power_analysis
-  - power_analysis_ancova
-  - power_analysis
+  - build_model
+  - build_design
+  - build_conditions
+  - simulate_single_run
 
-- title: "Visualization Functions"
-  desc: "Functions for plotting and visualizing power analysis results"
+- title: "Pre-built Models"
+  desc: "Ready-to-use model specifications for common study designs"
   contents:
-  - plot.rctbayespower
-  - plot.rctbayespower_grid
+  - build_model_ancova
+  - build_model_ancova_cont_2arms
+  - build_model_ancova_cont_3arms
 
-- title: "Validation and Utilities"
-  desc: "Helper functions for validating designs and settings"
+- title: "Visualization and Output"
+  desc: "Methods for plotting and displaying power analysis results"
   contents:
-  - validate_power_design
-  - validate_weighting_function
+  - plot.rctbayespower_sim_result
+  - print.rctbayespower_model
+  - print.rctbayespower_design
+  - print.rctbayespower_conditions
 
-- title: "Output Methods"
-  desc: "Methods for printing and summarizing results"
+- title: "Utility Functions"
+  desc: "Helper functions for working with power analysis objects"
   contents:
-  - print.rctbayespower
-  - print.rctbayespower_grid
-  - summary.rctbayespower
-  - summary.rctbayespower_grid
+  - required_fn_args
 
 - title: "Package Documentation"
   desc: "General package information"

@@ -128,31 +128,6 @@ power_analysis <- function(conditions,
     stop("'design' must be a valid rctbayespower_design object")
   }
 
-  # Design Prior ---------------------------------------------------------------
-  # Set design prior parameters to NULL initially
-  design_prior_parsed <- NULL
-  weight_fn <- NULL
-  weight_type <- "none"
-
-  # If multiple target parameters: do not use design prior
-  if (length(design$target_params) > 1 && !is.null(design_prior)) {
-    warning(
-      "Design prior is not supported for multiple target parameters. Ignoring design prior."
-    )
-  } else {
-    # Parse and validate design prior for integrated power
-    design_prior_parsed <- NULL
-    weight_fn <- NULL
-    weight_type <- "none"
-    if (!is.null(design_prior)) {
-      # Extract all unique effect sizes for prior parsing
-      all_effects_for_prior <- unique(conditions$conditions_grid[, design$target_params])
-      design_prior_parsed <- parse_design_prior(design_prior, all_effects_for_prior, verbose = TRUE)
-      weight_fn <- design_prior_parsed$weight_fn
-      weight_type <- design_prior_parsed$weight_type
-    }
-  }
-
   # Set up parallelization -----------------------------------------------------
   total_runs <- length(condition_args_list)
 
@@ -278,3 +253,34 @@ power_analysis <- function(conditions,
   # return the result
   invisible(return_list)
 }
+
+
+
+
+#
+#
+# # Design Prior ---------------------------------------------------------------
+# # Set design prior parameters to NULL initially
+# design_prior_parsed <- NULL
+# weight_fn <- NULL
+# weight_type <- "none"
+#
+# # If multiple target parameters: do not use design prior
+# if (length(design$target_params) > 1 && !is.null(design_prior)) {
+#   warning(
+#     "Design prior is not supported for multiple target parameters. Ignoring design prior."
+#   )
+# } else {
+#   # Parse and validate design prior for integrated power
+#   design_prior_parsed <- NULL
+#   weight_fn <- NULL
+#   weight_type <- "none"
+#   if (!is.null(design_prior)) {
+#     effect_names <- conditions$condtio
+#     # Extract all unique effect sizes for prior parsing
+#     all_effects_for_prior <- unique(conditions$conditions_grid[, design$target_params])
+#     design_prior_parsed <- parse_design_prior(design_prior, all_effects_for_prior, verbose = TRUE)
+#     weight_fn <- design_prior_parsed$weight_fn
+#     weight_type <- design_prior_parsed$weight_type
+#   }
+#

@@ -30,6 +30,8 @@ Suggests:
     testthat (>= 3.0.0),
     knitr,
     rmarkdown,
-    covr
+    covr,
+    quarto
 Config/testthat/edition: 3
 URL: https://matthiaskloft.github.io/rctbayespower/
+Config/Needs/website: quarto
