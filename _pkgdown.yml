@@ -1,48 +1,4 @@
-url: https://matthiaskloft.github.io/rctbayespower/
+url: ~
 template:
-  light-switch: yes
   bootstrap: 5
-  bootswatch: litera
-  theme: arrow-light
-  theme-dark: arrow-dark
-  math-rendering: mathjax
-
-exclude: |
-  CLAUDE.md
-  NEWS.md
-
-reference:
-- title: "Core Workflow Functions"
-  desc: "Main object-oriented API for Bayesian power analysis workflow"
-  contents:
-  - power_analysis
-  - build_model
-  - build_design
-  - build_conditions
-  - simulate_single_run
-
-- title: "Pre-built Models"
-  desc: "Ready-to-use model specifications for common study designs"
-  contents:
-  - build_model_ancova
-  - build_model_ancova_cont_2arms
-  - build_model_ancova_cont_3arms
-
-- title: "Visualization and Output"
-  desc: "Methods for plotting and displaying power analysis results"
-  contents:
-  - plot.rctbayespower_sim_result
-  - print.rctbayespower_model
-  - print.rctbayespower_design
-  - print.rctbayespower_conditions
-
-- title: "Utility Functions"
-  desc: "Helper functions for working with power analysis objects"
-  contents:
-  - required_fn_args
-
-- title: "Package Documentation"
-  desc: "General package information"
-  contents:
-  - rctbayespower-package
 
