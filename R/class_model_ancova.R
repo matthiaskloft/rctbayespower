@@ -1,3 +1,36 @@
+# S7 Subclass for ANCOVA Models
+#' @importFrom S7 new_class
+rctbp_model_ancova <- S7::new_class("rctbp_model_ancova",
+                                            parent = rctbp_model,
+                                            properties = list(
+                                              # ANCOVA-specific properties
+                                              contrasts = S7::class_character | S7::class_any| NULL,  # Can be string or matrix
+                                              p_alloc = S7::class_numeric| NULL,
+                                              intercept = S7::class_numeric | NULL,
+                                              b_arm_treat = S7::class_numeric | NULL,
+                                              b_covariate = S7::class_numeric | NULL,
+                                              sigma = S7::class_numeric | NULL
+                                            ),
+                                            validator = function(self) {
+                                              # Validate ANCOVA-specific properties
+                                              if (!is.null(self@p_alloc) && length(self@p_alloc) != self@n_arms) {
+                                                return("'p_alloc' must have length equal to 'n_arms'.")
+                                              }
+                                              if (!is.null(self@p_alloc) && abs(sum(self@p_alloc) - 1) > 1e-6) {
+                                                return("'p_alloc' must sum to 1.")
+                                              }
+                                              if (!is.null(self@b_arm_treat) && length(self@b_arm_treat) != (self@n_arms - 1)) {
+                                                return("'b_arm_treat' must have length equal to 'n_arms - 1'.")
+                                              }
+                                              if (!is.null(self@sigma) && self@sigma <= 0) {
+                                                return("'sigma' must be positive.")
+                                              }
+                                              # Return NULL if all validations pass
+                                              NULL
+                                            }
+)
+
+
 #' Create General ANCOVA Model with Flexible Specifications
 #'
 #' Creates a build_model object for ANCOVA (Analysis of Covariance) with flexible
@@ -47,7 +80,7 @@
 #'   \item [build_model_ancova_cont_3arms()] - 3-arm continuous ANCOVA
 #' }
 #'
-#' @return An object of class "build_model" ready for use with
+#' @return An S7 object of class "rctbp_model_ancova" ready for use with
 #'   [build_design()] and power analysis functions.
 #'
 #' @export
@@ -301,18 +334,27 @@ build_model_ancova <- function(prior_intercept = NULL,
 
   # build model object ---------------------------------------------------------
 
-  build_model <-
-    build_model(
-      data_simulation_fn = simulate_data_ancova,
-      brms_model = brms_model_ancova,
-      n_endpoints = 1,
-      endpoint_types = "continuous",
-      n_arms = n_arms,
-      n_repeated_measures = 0,
-      model_name = "ANCOVA"
-    )
+  # Create S7 ANCOVA model object
+  ancova_model <- rctbp_model_ancova(
+    data_simulation_fn = simulate_data_ancova,
+    brms_model = brms_model_ancova,
+    model_name = "ANCOVA",
+    n_endpoints = 1L,
+    endpoint_types = "continuous",
+    n_arms = as.integer(n_arms),
+    n_repeated_measures = 0L,
+    parameter_names_sim_fn = names(formals(simulate_data_ancova)),
+    parameter_names_brms = stringr::str_subset(brms::variables(brms_model_ancova), pattern = "^b_"),
+    # ANCOVA-specific properties
+    contrasts = contrasts,
+    p_alloc = p_alloc,
+    intercept = intercept,
+    b_arm_treat = b_arm_treat,
+    b_covariate = b_covariate,
+    sigma = sigma
+  )
 
-  return(build_model)
+  return(ancova_model)
 }
 
 
@@ -338,7 +380,7 @@ build_model_ancova <- function(prior_intercept = NULL,
 #'   \item sigma = 1
 #' }
 #'
-#' @return An object of class "build_model" ready for use with
+#' @return An S7 object of class "rctbp_model_ancova" ready for use with
 #'   [build_design()] and power analysis functions.
 #'
 #' @export
@@ -397,7 +439,7 @@ build_model_ancova_cont_2arms <- function(...) {
 #'   \item sigma = 1
 #' }
 #'
-#' @return An object of class "build_model" ready for use with
+#' @return An S7 object of class "rctbp_model_ancova" ready for use with
 #'   [build_design()] and power analysis functions.
 #'
 #' @export

@@ -16,8 +16,10 @@ if (file.exists(model_file)) {
   saveRDS(model_ancova, file = model_file)
 }
 
-model_ancova$parameter_names_brms
+class(model_ancova)
 
+model_ancova@parameter_names_brms
+print(model_ancova)
 
 #-------------------------------------------------------------------------------
 # 2. Create design

@@ -38,6 +38,7 @@ equivalence (ROPE) for decision making.
 Useful links:
 \itemize{
   \item \url{https://matthiaskloft.github.io/rctbayespower/}
+  \item \url{https://github.com/matthiaskloft/rctbayespower}
 }
 
 }

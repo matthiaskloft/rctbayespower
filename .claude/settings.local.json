@@ -25,7 +25,8 @@
       "Bash(for:*)",
       "Bash(do echo \"=== $file ===\")",
       "Bash(awk:*)",
-      "Bash(done)"
+      "Bash(done)",
+      "WebFetch(domain:rconsortium.github.io)"
     ],
     "deny": []
   }

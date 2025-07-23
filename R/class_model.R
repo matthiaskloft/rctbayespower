@@ -1,6 +1,53 @@
-#' Create an build_model Object
+# S7 Class Definition for RCT Bayesian Power Model
+#' @importFrom S7 new_class class_character class_numeric class_integer class_function class_any new_union
+rctbp_model <- S7::new_class("rctbp_model",
+  properties = list(
+    data_simulation_fn = S7::class_function,
+    brms_model = S7::class_any,  # brmsfit objects don't have S7 class
+    model_name = S7::class_character,
+    n_endpoints = S7::class_numeric,
+    endpoint_types = S7::class_character,
+    n_arms = S7::class_numeric,
+    n_repeated_measures = S7::class_numeric| NULL,
+    parameter_names_sim_fn = S7::class_character,
+    parameter_names_brms = S7::class_character
+  ),
+  validator = function(self) {
+    # Validate n_endpoints
+    if (length(self@n_endpoints) != 1 || self@n_endpoints <= 0) {
+      return("'n_endpoints' must be a positive numeric value.")
+    }
+    # Validate endpoint_types
+    if (length(self@endpoint_types) != self@n_endpoints ||
+        any(!self@endpoint_types %in% c("continuous", "binary", "count"))) {
+      return("'endpoint_types' must be a character vector of length 'n_endpoints' with valid types.")
+    }
+    # Validate n_arms
+    if (length(self@n_arms) != 1 || self@n_arms <= 0) {
+      return("'n_arms' must be a positive numeric value.")
+    }
+    # Validate n_repeated_measures
+    if (!is.null(self@n_repeated_measures) &&
+        (length(self@n_repeated_measures) != 1 || self@n_repeated_measures < 0)) {
+      return("'n_repeated_measures' must be a non-negative numeric value.")
+    }
+    # Validate brms_model
+    if (!inherits(self@brms_model, "brmsfit")) {
+      return("'brms_model' must be a valid brmsfit object.")
+    }
+    # Validate data_simulation_fn parameters
+    required_params <- c("n_total", "p_alloc")
+    if (!all(required_params %in% self@parameter_names_sim_fn)) {
+      return("'data_simulation_fn' must have parameters 'n_total' and 'p_alloc'.")
+    }
+    # If all validations pass, return NULL
+    NULL
+  }
+)
+
+#' Create a Build Model Object
 #'
-#' Constructs an build_model object that encapsulates a data simulation
+#' Constructs a build_model object that encapsulates a data simulation
 #' function, a compiled brms model, and associated metadata for power analysis.
 #' This object serves as the foundation for Bayesian power analysis in RCTs.
 #'
@@ -49,21 +96,7 @@
 #' \strong{Validation:} The function validates that the data simulation function
 #' has the required parameter structure and that the brms model is properly fitted.
 #'
-#' @return An object of class "build_model" containing:
-#' \describe{
-#'   \item{data_simulation_fn}{The provided data simulation function}
-#'   \item{brms_model}{The compiled brms model template}
-#' }
-#' The object has the following attributes:
-#' \describe{
-#'   \item{model_name}{Descriptive name for the model}
-#'   \item{n_endpoints}{Number of study endpoints}
-#'   \item{endpoint_types}{Types of endpoints}
-#'   \item{n_arms}{Number of arms including control arm}
-#'   \item{n_repeated_measures}{Number of repeated measures}
-#'   \item{parameter_names_sim_fn}{Parameter names extracted from simulation function}
-#'   \item{parameter_names_brms}{Parameter names from brms model}
-#' }
+#' @return An S7 object of class "rctbp_model" containing the specified properties
 #'
 #' @export
 #' @importFrom stringr str_subset
@@ -109,65 +142,30 @@ build_model <- function(pre_defined_model = NULL,
 
   # custom model ---------------------------------------------------------------
 
-  # validate model
-  if (!inherits(brms_model, "brmsfit")) {
-    stop("'brms_model' must be a valid brmsfit object.")
-  }
+  # Early validation before S7 object creation
   if (!is.function(data_simulation_fn)) {
     stop("'data_simulation_fn' must be a valid function.")
   }
-  # retrieve the argument names data_simulation_fn
-  parameter_names_sim_fn <- names(formals(data_simulation_fn))
-
-  # check that the data_simulation_fn has the required parameters n_total and
-  # p_alloc
-  if (!("n_total" %in% parameter_names_sim_fn) ||
-      !("p_alloc" %in% parameter_names_sim_fn)) {
-    stop("'data_simulation_fn' must have parameters 'n_total' and 'p_alloc'.")
-  }
-  # validate n_endpoints
-  if (is.null(n_endpoints) ||
-      !is.numeric(n_endpoints) || n_endpoints <= 0) {
-    stop("'n_endpoints' must be a positive numeric value.")
-  }
-
-  # validate endpoint_types, must have length n_endpoints and be valid types
-  if (is.null(endpoint_types) || !is.character(endpoint_types) ||
-      length(endpoint_types) != n_endpoints ||
-      any(!endpoint_types %in% c("continuous", "binary", "count"))) {
-    stop(
-      "'endpoint_types' must be a character vector of length 'n_endpoints' with valid types."
-    )
-  }
-
-  # validate n_arms
-  if (is.null(n_arms) ||
-      !is.numeric(n_arms) || n_arms <= 0) {
-    stop("'n_arms' must be a positive numeric value.")
-  }
-
-  # validate n_repeated_measures
-  if (!is.null(n_repeated_measures) &&
-      (!is.numeric(n_repeated_measures) ||
-       n_repeated_measures < 0)) {
-    stop("'n_repeated_measures' must be a non-negative numeric value.")
-  }
-
-  # validate model_name
   if (!is.null(model_name) && !is.character(model_name)) {
     stop("'model_name' must be a character string or NULL.")
   }
 
+  # retrieve the argument names data_simulation_fn
+  parameter_names_sim_fn <- names(formals(data_simulation_fn))
 
-
-  # retriev parameter names from brms model
+  # retrieve parameter names from brms model
   parameter_names_brms <- stringr::str_subset(brms::variables(brms_model), pattern = "^b_")
 
   # strip brms model from posterior draws
   brms_model <- suppressMessages(stats::update(brms_model, chains = 0, silent = 2))
 
-  # create the output list with the data simulation function and the brms model
-  output_list <- list(
+  # Set default model_name if NULL
+  if (is.null(model_name)) {
+    model_name <- "Custom Model"
+  }
+
+  # Create S7 object - validation happens automatically
+  model_obj <- rctbp_model(
     data_simulation_fn = data_simulation_fn,
     brms_model = brms_model,
     model_name = model_name,
@@ -179,37 +177,40 @@ build_model <- function(pre_defined_model = NULL,
     parameter_names_brms = parameter_names_brms
   )
 
-  # assign class to the output list
-  class(output_list) <- "rctbayespower_model"
-
-  return(output_list)
+  return(model_obj)
 }
 
 
-#' Print Method for build_model Objects
+# S7 Method for Print (uses existing base print generic)
+#' @importFrom S7 method
+
+#' Print Method for rctbp_model Objects
 #'
-#' Displays a summary of an build_model object, including model specifications,
+#' Displays a summary of a rctbp_model object, including model specifications,
 #' parameter information, and function details.
 #'
-#' @param x An object of class "build_model"
+#' @param x An S7 object of class "rctbp_model"
 #' @param ... Additional arguments (currently unused)
 #'
 #' @return Invisibly returns the input object. Used for side effects (printing).
 #' @export
-#' @method print rctbayespower_model
-print.rctbayespower_model <- function(x, ...) {
-  cat("\nObject of class: 'rctbayespower_model'\n")
+S7::method(print, rctbp_model) <- function(x, ...) {
+  cat("\nS7 Object of class: 'rctbp_model'\n")
   cat("--------------------------------------------------\n\n")
 
-  cat("Model name:", attr(x, "model_name"), "\n")
-  cat("Number of endpoints:", attr(x, "n_endpoints"), "\n")
-  cat("Endpoint types:", paste(attr(x, "endpoint_types"), collapse = ", "), "\n")
-  cat("Number of arms:", attr(x, "n_arms"), "\n")
-  cat("Number of repeated measures:", x$n_repeated_measures, "\n")
+  cat("Model name:", x@model_name, "\n")
+  cat("Number of endpoints:", x@n_endpoints, "\n")
+  cat("Endpoint types:", paste(x@endpoint_types, collapse = ", "), "\n")
+  cat("Number of arms:", x@n_arms, "\n")
+  cat("Number of repeated measures:", 
+      if (is.null(x@n_repeated_measures)) "NULL" else x@n_repeated_measures, "\n")
   cat("Parameter names - simulation function:",
-      x$parameter_names_sim_fn,
+      paste(x@parameter_names_sim_fn, collapse = ", "),
       "\n")
-  cat("Parameter names - brms model:", x$parameter_names_brms, "\n")
+  cat("Parameter names - brms model:", paste(x@parameter_names_brms, collapse = ", "), "\n")
   cat("\nBrms model:\n")
-  print(x$brms_model)
+  print(x@brms_model)
+  
+  invisible(x)
 }
+

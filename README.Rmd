@@ -47,8 +47,10 @@ The best way to get started is to visit the package website and the introductory
 - Vignettes:
 
   - [Introduction](https://matthiaskloft.github.io/rctbayespower/articles/01-introduction.html): Basic usage and concepts
+  
   - [Prior Specifications](https://matthiaskloft.github.io/rctbayespower/articles/03-prior-specifications.html): Working with priors
-  - [Advanced Modeling](https://matthiaskloft.github.io/rctbayespower/articles/04-advanced-modeling.html): Complex designs
+  
   - [Algorithm Performance](https://matthiaskloft.github.io/rctbayespower/articles/05-algorithm-performance.html): Performance optimization
+
 
 - [Open an Issue](https://github.com/matthiaskloft/rctbayespower/issues)
