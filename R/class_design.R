@@ -5,7 +5,15 @@ rctbp_design <- S7::new_class(
   properties = list(
     model = S7::class_any,  # Inherits from rctbp_model
     interim_function = S7::class_function | NULL,
-    parameter_names_interim_fn = S7::class_character | NULL,
+    parameter_names_interim_fn =  S7::new_property(
+      getter = function(self) {
+        # Extract parameter names from the interim function if it exists
+        if (!is.null(self@interim_function)) {
+          names(formals(self@interim_function))
+        } else {
+          NULL
+        }
+      }),
     target_params = S7::class_character,
     n_interim_analyses = S7::class_numeric,
     thresholds_success = S7::class_numeric,
@@ -16,7 +24,7 @@ rctbp_design <- S7::new_class(
   ),
   validator = function(self) {
     # validate model
-    if (!inherits(self@model, "rctbp_model")) {
+    if (!inherits(self@model, "rctbayespower::rctbp_model")) {
       return("'model' must be a valid rctbp_model object.")
     }
     # Design-specific validations only (parent validation is automatic via inheritance)
@@ -44,10 +52,10 @@ rctbp_design <- S7::new_class(
     }
 
     # Check that target_params is a subset of the parameter names in the model
-    if (!all(self@target_params %in% self@parameter_names_brms)) {
+    if (!all(self@target_params %in% self@model@parameter_names_brms)) {
       return(paste(
         "'target_params' must be a subset of the parameter names in the model:",
-        paste(self@parameter_names_brms, collapse = ", ")
+        paste(self@model@parameter_names_brms, collapse = ", ")
       ))
     }
 
@@ -71,7 +79,7 @@ rctbp_design <- S7::new_class(
 
     # Check parameter name uniqueness across simulation and interim functions
     if (!is.null(self@parameter_names_interim_fn)) {
-      all_parameter_names <- c(self@parameter_names_sim_fn, self@parameter_names_interim_fn)
+      all_parameter_names <- c(self@model@parameter_names_sim_fn, self@parameter_names_interim_fn)
       if (length(unique(all_parameter_names)) != length(all_parameter_names)) {
         return("Parameter names must be unique across the simulation and interim functions.")
       }
@@ -174,32 +182,12 @@ build_design <- function(model,
                          interim_function = NULL,
                          design_name = NULL) {
 
-  # Validate model type
-  if (!inherits(model, "rctbp_model")) {
-    stop("'model' must be a valid rctbp_model object.")
-  }
 
-  # Extract interim function parameter names if provided
-  parameter_names_interim_fn <- if (!is.null(interim_function)) {
-    names(formals(interim_function))
-  } else {
-    NULL
-  }
 
   # Use S7 constructor directly - all validation happens in the class validator
   rctbp_design(
     model = model,
-    #data_simulation_fn = model@data_simulation_fn,
-    #brms_model = model@brms_model,
-    #model_name = model@model_name,
-   # n_endpoints = model@n_endpoints,
-    #endpoint_types = model@endpoint_types,
-    #n_arms = model@n_arms,
-    #n_repeated_measures = model@n_repeated_measures,
-   # parameter_names_sim_fn = model@parameter_names_sim_fn,
-    parameter_names_brms = model@parameter_names_brms,
     interim_function = interim_function,
-    #parameter_names_interim_fn = parameter_names_interim_fn,
     target_params = target_params,
     n_interim_analyses = n_interim_analyses,
     thresholds_success = thresholds_success,
@@ -231,22 +219,22 @@ S7::method(print, rctbp_design) <- function(x, ...) {
   cat("\n=== Model Specifications ===\n\n")
   cat("Number of endpoints:", x@n_endpoints, "\n")
   cat("Endpoint types:",
-      paste(x@endpoint_types, collapse = ", "),
+      paste(x@model@endpoint_types, collapse = ", "),
       "\n")
   cat("Number of arms:", x@n_arms, "\n")
   cat("Number of repeated measures:",
-      if (is.null(x@n_repeated_measures))
+      if (is.null(x@model@n_repeated_measures))
         "NULL"
       else
         x@n_repeated_measures,
       "\n")
   cat(
     "Parameter names - simulation function:",
-    paste(x@parameter_names_sim_fn, collapse = ", "),
+    paste(x@model@parameter_names_sim_fn, collapse = ", "),
     "\n"
   )
   cat("Parameter names - brms model:",
-      paste(x@parameter_names_brms, collapse = ", "),
+      paste(x@model@parameter_names_brms, collapse = ", "),
       "\n")
 
   # design

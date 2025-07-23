@@ -12,11 +12,12 @@ build_model(
   endpoint_types = NULL,
   n_arms = NULL,
   n_repeated_measures = NULL,
-  model_name = NULL
+  model_name = NULL,
+  ...
 )
 }
 \arguments{
-\item{pre_defined_model}{Optional character string specifying a predefined model
+\item{predefined_model}{Optional character string specifying a predefined model
 to use instead of creating a custom model. Currently supported values:
 \itemize{
 \item "ancova_cont" - ANCOVA model for continuous outcomes with baseline covariate
@@ -54,7 +55,7 @@ This object serves as the foundation for Bayesian power analysis in RCTs.
 The build_model class encapsulates all components needed for power
 analysis simulation:
 
-\strong{Predefined Models:} For convenience, users can specify pre_defined_model
+\strong{Predefined Models:} For convenience, users can specify predefined_model
 to use ready-made model configurations. This is the recommended approach for
 standard analyses. When using predefined models, other parameters are ignored.
 

@@ -6,10 +6,7 @@ rctbp_model <- S7::new_class(
     data_simulation_fn = S7::class_function,
     brms_model = S7::class_any,
     # brmsfit objects don't have S7 class
-    predefined_model = S7::new_union(
-      S7::class_character,
-      NULL
-    ),
+    predefined_model = S7::new_union(S7::class_character, NULL),
     model_name = S7::class_character,
     n_endpoints = S7::class_numeric,
     endpoint_types = S7::class_character,
@@ -140,22 +137,18 @@ build_model <- function(predefined_model = NULL,
     if (!is.character(predefined_model)) {
       stop("'predefined_model' must be a character string or NULL.")
     }
-    # create function name
-    fn_name <- paste0("build_model", "_", predefined_model)
-    if (exists(fn_name, mode = "function")) {
-      fn <- get(fn_name)
-      model <- fn(name_predefined_model = predefined_model, ...)
-      # return invisibly
-      return(model)
-    } else {
-      stop(
-        cat(
-          "Pre-defined model",
-          paste0("\"", predefined_model, "\""),
-          "was not found! The 'predefined_model' must be one of the predefined models (see documentation)."
-        )
+    # get model from internal environment
+    model <- get_predefined_model(predefined_model)
+    # return invisibly
+    return(model)
+  } else {
+    stop(
+      cat(
+        "Pre-defined model",
+        paste0("\"", predefined_model, "\""),
+        "was not found! The 'predefined_model' must be one of the predefined models (see documentation)."
       )
-    }
+    )
   }
 
   # custom model ---------------------------------------------------------------
@@ -211,7 +204,10 @@ S7::method(print, rctbp_model) <- function(x, ...) {
   cat("--------------------------------------------------\n\n")
 
   cat("Model name:", x@model_name, "\n")
-  cat("Predefined model:", if (is.null(x@predefined_model)) "None" else x@predefined_model, "\n")
+  cat("Predefined model:", if (is.null(x@predefined_model))
+    "None"
+    else
+      x@predefined_model, "\n")
   cat("Number of endpoints:", x@n_endpoints, "\n")
   cat("Endpoint types:",
       paste(x@endpoint_types, collapse = ", "),
@@ -235,4 +231,82 @@ S7::method(print, rctbp_model) <- function(x, ...) {
   print(x@brms_model)
 
   invisible(x)
+}
+
+
+
+#' List available predefined models
+#'
+#' This function inspects the package's internal environment and returns the names
+#' of all predefined model objects that inherit from the `rctbp_model` class.
+#' These models are prebuilt and stored internally in the package via `sysdata.rda`
+#' and are not exported to users directly. This function allows discovery of
+#' available predefined models programmatically.
+#'
+#' @param filter_string Optional character string for filtering model names.
+#'   If provided, only models whose names match this pattern (via [base::grepl()])
+#'   will be returned. Use this to find specific types of models (e.g., "ancova").
+#'
+#' @details
+#' The returned model names can be used directly with [build_model()] by passing
+#' them to the `predefined_model` parameter:
+#'
+#' \code{model <- build_model(predefined_model = "model_name")}
+#'
+#' This provides a convenient way to discover and use prebuilt models without
+#' needing to specify all model parameters manually.
+#'
+#' @return A character vector of object names corresponding to predefined models.
+#'   Returns an empty character vector if no models are found or if the filter
+#'   excludes all available models.
+#'
+#' @examples
+#' # List all available predefined models
+#' list_predefined_models()
+#'
+#' # Filter for ANCOVA models only
+#' list_predefined_models(filter_string = "ancova")
+#'
+#' # Use discovered model with build_model()
+#' available_models <- list_predefined_models()
+#' if (length(available_models) > 0) {
+#'   model <- build_model(predefined_model = available_models[1])
+#' }
+#'
+#' @export
+list_predefined_models <- function(filter_string = NULL) {
+  ns <- asNamespace("rctbayespower")
+
+  all_objs <- ls(envir = ns, all.names = TRUE)
+  matches <- vapply(all_objs, function(obj_name) {
+    obj <- get(obj_name, envir = ns)
+    inherits(obj, "rctbayespower::rctbp_model")
+  }, logical(1L))
+
+  # filter matching strings
+  if (!is.null(filter_string)) {
+    matches <- matches & grepl(filter_string, all_objs)
+  }
+
+  names(matches[matches])
+}
+
+
+#' Get a predefined model by name
+#'
+#' Access an internal predefined model by name.
+#'
+#' @param model_name Character scalar, name of the predefined model.
+#' @return The model object.
+#' @export
+get_predefined_model <- function(model_name) {
+  ns <- asNamespace("rctbayespower")
+  if (!model_name %in% ls(envir = ns)) {
+    stop("Model '", model_name, "' not found.", call. = FALSE)
+  }
+  model <- get(model_name, envir = ns)
+  if (!inherits(model, "rctbayespower::rctbp_model")) {
+    stop("Object '", model_name, "' is not an rctbp_model.", call. = FALSE)
+  }
+  model
 }

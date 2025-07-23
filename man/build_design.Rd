@@ -2,52 +2,52 @@
 % Please edit documentation in R/class_design.R
 \name{build_design}
 \alias{build_design}
-\title{Create a Build Design Object}
+\title{Constructor for rctbp_design Objects}
 \usage{
 build_design(
-  model = NULL,
-  target_params = NULL,
-  n_interim_analyses = NULL,
-  thresholds_success = NULL,
-  thresholds_futility = NULL,
-  p_sig_success = NULL,
-  p_sig_futility = NULL,
+  model,
+  target_params,
+  thresholds_success,
+  thresholds_futility,
+  p_sig_success,
+  p_sig_futility,
+  n_interim_analyses = 0,
   interim_function = NULL,
   design_name = NULL
 )
 }
 \arguments{
-\item{model}{An object of class "rctbp_model" created by
-\code{\link[=build_model]{build_model()}} or predefined model functions}
+\item{model}{An S7 object of class "rctbp_model" created by \code{\link[=build_model]{build_model()}}}
 
 \item{target_params}{Character vector specifying which model parameters to
 analyze for power. Must be valid parameter names from the brms model
-(e.g., "b_arms_treat" for treatment effect)}
-
-\item{n_interim_analyses}{Number of interim analyses planned during the study.
-Use 0 for studies with only final analysis. Must be non-negative integer.}
+(e.g., "b_arms_treat" for treatment effect). Required.}
 
 \item{thresholds_success}{Numeric vector of success thresholds for each target
 parameter. Length must match target_params. These represent the minimum
-clinically meaningful effect sizes.}
+clinically meaningful effect sizes. Required.}
 
 \item{thresholds_futility}{Numeric vector of futility thresholds for each target
 parameter. Length must match target_params. These represent effect sizes
-below which the treatment is considered ineffective.}
+below which the treatment is considered ineffective. Required.}
 
 \item{p_sig_success}{Probability threshold for declaring success. The posterior
 probability that the effect exceeds the success threshold must be greater
-than this value to declare success (typically 0.975 or 0.95).}
+than this value to declare success (typically 0.975 or 0.95). Required.}
 
 \item{p_sig_futility}{Probability threshold for declaring futility. The posterior
 probability that the effect is below the futility threshold must be greater
-than this value to declare futility (typically 0.5).}
+than this value to declare futility (typically 0.5). Required.}
+
+\item{n_interim_analyses}{Number of interim analyses planned during the study.
+Defaults to 0 for studies with only final analysis. Must be non-negative integer.}
 
 \item{interim_function}{Optional function for adaptive interim analyses. If provided,
 must accept an interim_parameters argument defined as a call to list().
-Currently not fully implemented.}
+Currently not fully implemented. Defaults to NULL.}
 
-\item{design_name}{Optional character string providing a descriptive name for the design}
+\item{design_name}{Optional character string providing a descriptive name for the
+design. Defaults to NULL.}
 }
 \value{
 An S7 object of class "rctbp_design" containing all elements from
@@ -63,9 +63,9 @@ the model plus the analysis configuration. Key components include:
 }
 }
 \description{
-Constructs a build_design object that combines a rctbp_model
-with analysis configuration parameters for Bayesian power analysis. This object
-encapsulates all information needed to conduct power simulations.
+Creates an S7 rctbp_design object that combines a rctbp_model with analysis
+configuration parameters for Bayesian power analysis. This constructor function
+provides a user-friendly interface to the S7 class constructor.
 }
 \details{
 The rctbp_design class combines model specifications with analysis

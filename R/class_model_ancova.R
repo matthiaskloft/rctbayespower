@@ -388,7 +388,7 @@ build_model_ancova <- function(prior_intercept = NULL,
 #'   b_covariate = 0.3
 #' )
 #' }
-build_model_ancova_cont_2arms <- function(name_predefined_model, ...) {
+build_model_ancova_cont_2arms <- function(...) {
   # collect additional arguments
   dots <- list(...)
   # set default arguments
@@ -411,7 +411,7 @@ build_model_ancova_cont_2arms <- function(name_predefined_model, ...) {
   model <- do.call(build_model_ancova, final_args)
 
   # add predefined model name
-  model@predefined_model <- name_predefined_model
+  model@predefined_model <- "ancova_cont_2arms"
   # return the model object
   invisible(model)
 }
@@ -450,7 +450,7 @@ build_model_ancova_cont_2arms <- function(name_predefined_model, ...) {
 #'   b_covariate = 0.3
 #' )
 #' }
-build_model_ancova_cont_3arms <- function(name_predefined_model, ...) {
+build_model_ancova_cont_3arms <- function(...) {
   # collect additional arguments
   dots <- list(...)
   # set default arguments
@@ -473,7 +473,7 @@ build_model_ancova_cont_3arms <- function(name_predefined_model, ...) {
   model <- do.call(build_model_ancova, final_args)
   # add predefined model name
 
-  model@predefined_model <- name_predefined_model
+  model@predefined_model <- "ancova_cont_3arms"
 
   # return the model object
   invisible(model)

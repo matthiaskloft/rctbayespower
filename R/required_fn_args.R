@@ -18,9 +18,9 @@
 #'
 #' @export
 required_fn_args <- function(object, print = TRUE) {
-  if (inherits(object, "rctbayespower_design")) {
+  if (inherits(object, "rctbayespower::rctbp_design")) {
     return(required_fn_args_design(object, print))
-  } else if (inherits(object, "rctbayespower_model")) {
+  } else if (inherits(object, "rctbayespower::rctbp_model")) {
     return(required_fn_args_model(object, print))
   } else {
     stop("'object' must be either an rctbayespower_design or rctbayespower_model object.")
@@ -96,17 +96,17 @@ get_arg_defaults <- function(fn) {
 #' @keywords internal
 required_fn_args_design <- function(design, print = TRUE) {
   # check that design is a valid rctbayespower_design object
-  if (!inherits(design, "rctbayespower_design")) {
+  if (!inherits(design, "rctbayespower::rctbp_design")) {
     stop("'design' must be a valid rctbayespower_design object.")
   }
 
   # get args without defaults for the data simulation function
-  params_sim <- get_args_without_defaults(design$data_simulation_fn)
+  params_sim <- get_args_without_defaults(design@model@data_simulation_fn)
 
   # if interim analysis function is not NULL, get args without defaults
-  if (!is.null(design$interim_analysis_fn)) {
+  if (!is.null(design@interim_function)) {
     params_interim <-
-      get_args_without_defaults(design$interim_analysis_fn)
+      get_args_without_defaults(design@interim_function)
     params <- c(params_sim, params_interim)
   } else {
     params_interim <- NULL
@@ -145,12 +145,12 @@ required_fn_args_design <- function(design, print = TRUE) {
 #' @keywords internal
 required_fn_args_model <- function(model, print = TRUE) {
   # check that model is a valid rctbayespower_model object
-  if (!inherits(model, "rctbayespower_model")) {
+  if (!inherits(model, "rctbayespower::rctbp_model")) {
     stop("'model' must be a valid rctbayespower_model object.")
   }
 
   # get args without defaults for the model
-  params <- get_args_without_defaults(model$data_simulation_fn)
+  params <- get_args_without_defaults(model@data_simulation_fn)
 
   # print the parameters if requested
   if (print) {

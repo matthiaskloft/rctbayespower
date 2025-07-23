@@ -4,19 +4,10 @@ devtools::load_all()
 #-------------------------------------------------------------------------------
 # 1. Create model
 
-model_file <- here::here("test_model_ancova.rds")
-# clean model cache
-#unlink(model_file, force = TRUE)
+# get the model
+list_predefined_models()
+model_ancova <- build_model(predefined_model = "ancova_cont_2arms")
 
-if (file.exists(model_file)) {
-  # load the model from a file
-  model_ancova <- readRDS(model_file)
-} else{
-  # create the model
-  model_ancova <- build_model(predefined_model = "ancova_cont_2arms")
-  # save the model to a file
-  saveRDS(model_ancova, file = model_file)
-}
 
 class(model_ancova)
 print(model_ancova)
@@ -71,10 +62,8 @@ result <- power_analysis(
 model_ancova$data_simulation_fn(conditions$condition_arguments[[1]]$sim_args)
 conditions$condition_arguments[[1]]$sim_args
 model_ancova$data_simulation_fn
-do.call(
-  model_ancova$data_simulation_fn,
-  conditions$condition_arguments[[1]]$sim_args
-)
+do.call(model_ancova$data_simulation_fn,
+        conditions$condition_arguments[[1]]$sim_args)
 get_arg_defaults(model_ancova$data_simulation_fn)
 
 # design$target_params <- c("b_arms_treat", "b_Intercept")
