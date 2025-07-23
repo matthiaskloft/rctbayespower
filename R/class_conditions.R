@@ -1,3 +1,31 @@
+# S7 Class Definition for RCT Bayesian Power Conditions
+#' @importFrom S7 new_class class_list class_any class_data.frame
+rctbp_conditions <- S7::new_class("rctbp_conditions",
+  properties = list(
+    conditions_grid = S7::class_data.frame,
+    condition_arguments = S7::class_list,
+    design = S7::class_any,  # rctbayespower_design objects
+    condition_values = S7::class_list,
+    static_values = S7::class_list
+  ),
+  validator = function(self) {
+    # Validate conditions_grid
+    if (nrow(self@conditions_grid) == 0) {
+      return("'conditions_grid' must have at least one row.")
+    }
+    # Validate condition_arguments length matches conditions_grid
+    if (length(self@condition_arguments) != nrow(self@conditions_grid)) {
+      return("'condition_arguments' length must match 'conditions_grid' rows.")
+    }
+    # Validate design object
+    if (!inherits(self@design, "rctbayespower_design")) {
+      return("'design' must be a valid rctbayespower_design object.")
+    }
+    # If all validations pass, return NULL
+    NULL
+  }
+)
+
 #' Build Conditions for Power Analysis
 #'
 #' Creates a structured set of conditions and argument lists for power analysis
@@ -11,11 +39,13 @@
 #' @param static_values A named list of parameter values that remain constant
 #'   across all conditions
 #'
-#' @return An rctbayespower_conditions object containing:
+#' @return An S7 object of class "rctbp_conditions" containing:
 #'   \item{conditions_grid}{A data.frame with all parameter combinations}
 #'   \item{condition_arguments}{A list of argument lists for each condition,
 #'     separated into simulation and interim analysis arguments}
 #'   \item{design}{The original rctbayespower_design object}
+#'   \item{condition_values}{The original condition_values list}
+#'   \item{static_values}{The original static_values list}
 #'
 #' @details The function performs several validation steps:
 #' \itemize{
@@ -166,8 +196,8 @@ build_conditions <- function(design, condition_values, static_values) {
   })
 
 
-  # list to return
-  return_list <- list(
+  # Create S7 object - validation happens automatically
+  conditions_obj <- rctbp_conditions(
     conditions_grid = df_grid,
     condition_arguments = condition_arguments,
     design = design,
@@ -175,27 +205,20 @@ build_conditions <- function(design, condition_values, static_values) {
     static_values = static_values
   )
 
-  # assign class
-  class(return_list) <- "rctbayespower_conditions"
-  # add attribute: number of conditions
-  attr(return_list, "n_conditions") <- nrow(df_grid)
-  # add attribute: number of varying parameters
-  attr(return_list, "n_params") <- length(condition_values)
-  # add attribute: number of static parameters
-  attr(return_list, "n_static_params") <- length(static_values)
-
-  # return
-  return_list
+  return(conditions_obj)
 }
 
 
-#' Print Method for rctbayespower_conditions Objects
+# S7 Method for Print (uses existing base print generic)
+#' @importFrom S7 method
+
+#' Print Method for rctbp_conditions Objects
 #'
 #' Prints a formatted summary of condition grids created by [build_conditions()].
 #' Shows the condition grid with all parameter combinations and provides
 #' summary information about the number of conditions and parameters.
 #'
-#' @param x An rctbayespower_conditions object created by [build_conditions()]
+#' @param x An S7 object of class "rctbp_conditions" created by [build_conditions()]
 #' @param ... Additional arguments passed to [print()]
 #'
 #' @return Invisibly returns the input object
@@ -207,20 +230,22 @@ build_conditions <- function(design, condition_values, static_values) {
 #' }
 #'
 #' @export
-print.rctbayespower_conditions <- function(x, ...) {
-  cat("\nObject of class: 'rctbayespower_conditions'\n")
+S7::method(print, rctbp_conditions) <- function(x, ...) {
+  cat("\nS7 Object of class: 'rctbp_conditions'\n")
   cat("--------------------------------------------------\n\n")
 
   # Print basic info
-  n_conditions <- nrow(x$conditions_grid)
-  n_params <- ncol(x$conditions_grid)
+  n_conditions <- nrow(x@conditions_grid)
+  n_params <- ncol(x@conditions_grid) - 1  # Subtract 1 for id_cond column
+  n_static_params <- length(x@static_values)
 
   cat("Number of conditions:", n_conditions, "\n")
-  cat("Number of varying parameters:", n_params, "\n\n")
+  cat("Number of varying parameters:", n_params, "\n")
+  cat("Number of static parameters:", n_static_params, "\n\n")
 
   # Print the conditions grid
   cat("Condition Grid:\n")
-  print(x$conditions_grid, ...)
+  print(x@conditions_grid, ...)
 
   invisible(x)
 }

@@ -10,7 +10,7 @@
 #' - Minimal console output (controlled by verbose parameter)
 #' - Simplified cluster setup without OS detection overhead
 #'
-#' @param conditions A conditions object created by [build_conditions()] containing:
+#' @param conditions An S7 conditions object created by [build_conditions()] containing:
 #'   \itemize{
 #'     \item design: An rctbayespower_design object with model specifications
 #'     \item condition_arguments: List of prepared condition arguments for simulation
@@ -101,9 +101,9 @@ power_analysis <- function(conditions,
   # time start
   start_time <- Sys.time()
 
-  # Validate conditions, must be of class rctbayespower_conditions
-  if (!inherits(conditions, "rctbayespower_conditions")) {
-    stop("'conditions' must be a valid rctbayespower_conditions object")
+  # Validate conditions, must be of class rctbp_conditions
+  if (!inherits(conditions, "rctbayespower::rctbp_conditions")) {
+    stop("'conditions' must be a valid rctbp_conditions object")
   }
 
   # Validate n_simulations, must be a positive integer
@@ -118,10 +118,10 @@ power_analysis <- function(conditions,
   }
 
   # expand condition_arguments_list to match n_simulations
-  condition_args_list <- rep(conditions$condition_arguments, each = n_simulations)
+  condition_args_list <- rep(conditions@condition_arguments, each = n_simulations)
 
   # Extract design from conditions object
-  design <- conditions$design
+  design <- conditions@design
 
   # Validate design object
   if (!inherits(design, "rctbayespower_design")) {
@@ -139,7 +139,7 @@ power_analysis <- function(conditions,
         attr(conditions, "n_conditions"),
         "\n")
     cat("Conditions:\n")
-    print(conditions$conditions_grid)
+    print(conditions@conditions_grid)
     cat("\n")
     cat("Number of simulations per condition:", n_simulations, "\n")
     cat(
@@ -228,7 +228,7 @@ power_analysis <- function(conditions,
   # Average across simulation runs
   results_df <- summarize_sims(results_df_raw, n_simulations)
   # Add condition IDs and arguments to results
-  results_df <- dplyr::full_join(conditions$conditions_grid, results_df, by = "id_cond")
+  results_df <- dplyr::full_join(conditions@conditions_grid, results_df, by = "id_cond")
   # End time
   elapsed_time <- difftime(Sys.time(), start_time, units = "mins")
   # print elapsed time
@@ -278,7 +278,7 @@ power_analysis <- function(conditions,
 #   if (!is.null(design_prior)) {
 #     effect_names <- conditions$condtio
 #     # Extract all unique effect sizes for prior parsing
-#     all_effects_for_prior <- unique(conditions$conditions_grid[, design$target_params])
+#     all_effects_for_prior <- unique(conditions@conditions_grid[, design$target_params])
 #     design_prior_parsed <- parse_design_prior(design_prior, all_effects_for_prior, verbose = TRUE)
 #     weight_fn <- design_prior_parsed$weight_fn
 #     weight_type <- design_prior_parsed$weight_type

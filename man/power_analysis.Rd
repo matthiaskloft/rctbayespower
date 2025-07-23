@@ -16,7 +16,7 @@ power_analysis(
 )
 }
 \arguments{
-\item{conditions}{A conditions object created by \code{\link[=build_conditions]{build_conditions()}} containing:
+\item{conditions}{An S7 conditions object created by \code{\link[=build_conditions]{build_conditions()}} containing:
 \itemize{
 \item design: An rctbayespower_design object with model specifications
 \item condition_arguments: List of prepared condition arguments for simulation
