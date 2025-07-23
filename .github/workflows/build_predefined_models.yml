@@ -1,0 +1,44 @@
+name: Build Models
+
+on:
+  push:
+    branches: [main]  # or "dev", "master", etc.
+
+jobs:
+  build-models:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up R
+        uses: r-lib/actions/setup-r@v2
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libcurl4-openssl-dev libssl-dev libxml2-dev
+
+      - name: Install R dependencies
+        uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          extra-packages: |
+            any::devtools
+            any::usethis
+            any::brms  # or whatever build_model() depends on
+
+      - name: Run model build script
+        run: |
+          Rscript -e 'devtools::load_all()'
+          Rscript data-raw/build_predefined_models.R
+
+      # Optional: commit and push new .rda files back to the repo
+      - name: Commit and push model data
+        if: github.ref == 'refs/heads/main'
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/*.rda R/sysdata.rda
+          git commit -m "Update precomputed models [CI skip]" || echo "No changes to commit"
+          git push

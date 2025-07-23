@@ -16,7 +16,7 @@
 #' #' @param n_repeated_measures Number of repeated measures per participant.
 #' #'   Use NULL or 0 for single time point studies.
 #' #' @param model_name Optional character string providing a descriptive name for the model
-#' #' @param pre_defined_model Optional character string specifying a predefined model
+#' #' @param predefined_model Optional character string specifying a predefined model
 #' #'   to use instead of creating a custom model. Currently supported values:
 #' #'   \itemize{
 #' #'     \item "ancova_cont" - ANCOVA model for continuous outcomes with baseline covariate
@@ -28,7 +28,7 @@
 #' #' analysis simulation:
 #' #'
 #' #'
-#' #' \strong{Predefined Models:} For convenience, users can specify pre_defined_model
+#' #' \strong{Predefined Models:} For convenience, users can specify predefined_model
 #' #' to use ready-made model configurations. This is the recommended approach for
 #' #' standard analyses. When using predefined models, other parameters are ignored.
 #' #'
@@ -72,9 +72,9 @@
 #' #' @examples
 #' #' \dontrun{
 #' #' # Method 1: Use predefined model (recommended)
-#' #' ancova_model <- build_model(pre_defined_model = "ancova_cont")
+#' #' ancova_model <- build_model(predefined_model = "ancova_cont")
 #' #' }
-#' build_model <- function(pre_defined_model = NULL,
+#' build_model <- function(predefined_model = NULL,
 #'                         data_simulation_fn,
 #'                         brms_model,
 #'                         n_endpoints = NULL,
@@ -84,13 +84,13 @@
 #'                         model_name = NULL) {
 #'   # pre-defined model ----------------------------------------------------------
 #'   
-#'   # validate pre_defined_model
-#'   if (!is.null(pre_defined_model)) {
-#'     if (!is.character(pre_defined_model)) {
-#'       stop("'pre_defined_model' must be a character string or NULL.")
+#'   # validate predefined_model
+#'   if (!is.null(predefined_model)) {
+#'     if (!is.character(predefined_model)) {
+#'       stop("'predefined_model' must be a character string or NULL.")
 #'     }
 #'     # create function name
-#'     fn_name <- paste0("build_model", "_", pre_defined_model)
+#'     fn_name <- paste0("build_model", "_", predefined_model)
 #'     if (exists(fn_name, mode = "function")) {
 #'       fn <- get(fn_name)
 #'       model <- fn()
@@ -100,8 +100,8 @@
 #'       stop(
 #'         cat(
 #'           "Pre-defined model",
-#'           paste0("\"", pre_defined_model, "\""),
-#'           "was not found! The 'pre_defined_model' must be one of the predefined models (see documentation)."
+#'           paste0("\"", predefined_model, "\""),
+#'           "was not found! The 'predefined_model' must be one of the predefined models (see documentation)."
 #'         )
 #'       )
 #'     }

@@ -49,7 +49,7 @@ Vector length must equal n_arms - 1. Required parameter.}
 \item{sigma}{Residual standard deviation for data generation (must be > 0). Required parameter.}
 }
 \value{
-An S7 object of class "rctbayespower_model_ancova" ready for use with
+An S7 object of class "rctbp_model_ancova" ready for use with
 \code{\link[=build_design]{build_design()}} and power analysis functions.
 }
 \description{

@@ -11,7 +11,7 @@ build_model_ancova_cont_3arms(...)
 any of the default parameters.}
 }
 \value{
-An S7 object of class "rctbayespower_model_ancova" ready for use with
+An S7 object of class "rctbp_model_ancova" ready for use with
 \code{\link[=build_design]{build_design()}} and power analysis functions.
 }
 \description{

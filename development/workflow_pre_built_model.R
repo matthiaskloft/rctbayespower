@@ -1,24 +1,24 @@
 # Load package - try devtools first, then pkgload, then library
 devtools::load_all()
 
-
 #-------------------------------------------------------------------------------
 # 1. Create model
 
 model_file <- here::here("test_model_ancova.rds")
+# clean model cache
+#unlink(model_file, force = TRUE)
+
 if (file.exists(model_file)) {
   # load the model from a file
   model_ancova <- readRDS(model_file)
 } else{
   # create the model
-  model_ancova <- build_model(pre_defined_model = "ancova_cont_2arms")
+  model_ancova <- build_model(predefined_model = "ancova_cont_2arms")
   # save the model to a file
   saveRDS(model_ancova, file = model_file)
 }
 
 class(model_ancova)
-
-model_ancova@parameter_names_brms
 print(model_ancova)
 
 #-------------------------------------------------------------------------------

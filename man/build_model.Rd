@@ -5,7 +5,7 @@
 \title{Create a Build Model Object}
 \usage{
 build_model(
-  pre_defined_model = NULL,
+  predefined_model = NULL,
   data_simulation_fn,
   brms_model,
   n_endpoints = NULL,
@@ -43,7 +43,7 @@ Use NULL or 0 for single time point studies.}
 \item{model_name}{Optional character string providing a descriptive name for the model}
 }
 \value{
-An S7 object of class "rctbayespower_model" containing the specified properties
+An S7 object of class "rctbp_model" containing the specified properties
 }
 \description{
 Constructs a build_model object that encapsulates a data simulation
@@ -76,7 +76,7 @@ has the required parameter structure and that the brms model is properly fitted.
 \examples{
 \dontrun{
 # Method 1: Use predefined model (recommended)
-ancova_model <- build_model(pre_defined_model = "ancova_cont")
+ancova_model <- build_model(predefined_model = "ancova_cont")
 }
 }
 \seealso{

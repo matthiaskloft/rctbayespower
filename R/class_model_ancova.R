@@ -1,36 +1,3 @@
-# S7 Subclass for ANCOVA Models
-#' @importFrom S7 new_class
-rctbp_model_ancova <- S7::new_class("rctbp_model_ancova",
-                                            parent = rctbp_model,
-                                            properties = list(
-                                              # ANCOVA-specific properties
-                                              contrasts = S7::class_character | S7::class_any| NULL,  # Can be string or matrix
-                                              p_alloc = S7::class_numeric| NULL,
-                                              intercept = S7::class_numeric | NULL,
-                                              b_arm_treat = S7::class_numeric | NULL,
-                                              b_covariate = S7::class_numeric | NULL,
-                                              sigma = S7::class_numeric | NULL
-                                            ),
-                                            validator = function(self) {
-                                              # Validate ANCOVA-specific properties
-                                              if (!is.null(self@p_alloc) && length(self@p_alloc) != self@n_arms) {
-                                                return("'p_alloc' must have length equal to 'n_arms'.")
-                                              }
-                                              if (!is.null(self@p_alloc) && abs(sum(self@p_alloc) - 1) > 1e-6) {
-                                                return("'p_alloc' must sum to 1.")
-                                              }
-                                              if (!is.null(self@b_arm_treat) && length(self@b_arm_treat) != (self@n_arms - 1)) {
-                                                return("'b_arm_treat' must have length equal to 'n_arms - 1'.")
-                                              }
-                                              if (!is.null(self@sigma) && self@sigma <= 0) {
-                                                return("'sigma' must be positive.")
-                                              }
-                                              # Return NULL if all validations pass
-                                              NULL
-                                            }
-)
-
-
 #' Create General ANCOVA Model with Flexible Specifications
 #'
 #' Creates a build_model object for ANCOVA (Analysis of Covariance) with flexible
@@ -113,6 +80,41 @@ build_model_ancova <- function(prior_intercept = NULL,
                                b_arm_treat = NULL,
                                b_covariate,
                                sigma = NULL) {
+  # Enhanced validation using model properties ---------------------------------
+
+  # Validate that parameter names from simulation function include required parameters
+  required_sim_params <- c("n_total",
+                           "n_arms",
+                           "p_alloc",
+                           "intercept",
+                           "b_arm_treat",
+                           "b_covariate",
+                           "sigma")
+
+  # Validation of ANCOVA-specific parameters ----------------------------------
+
+  # Validate p_alloc
+  if (!is.null(p_alloc) && !is.null(n_arms)) {
+    if (length(p_alloc) != n_arms) {
+      stop("'p_alloc' must have length equal to 'n_arms'.")
+    }
+    if (abs(sum(p_alloc) - 1) > 1e-6) {
+      stop("'p_alloc' must sum to 1.")
+    }
+  }
+
+  # Validate b_arm_treat
+  if (!is.null(b_arm_treat) && !is.null(n_arms)) {
+    if (length(b_arm_treat) != (n_arms - 1)) {
+      stop("'b_arm_treat' must have length equal to 'n_arms - 1'.")
+    }
+  }
+
+  # Validate sigma
+  if (!is.null(sigma) && sigma <= 0) {
+    stop("'sigma' must be positive.")
+  }
+
   # create the data simulation function
   simulate_data_ancova <- local({
     default_n_arms <- n_arms
@@ -335,24 +337,16 @@ build_model_ancova <- function(prior_intercept = NULL,
   # build model object ---------------------------------------------------------
 
   # Create S7 ANCOVA model object
-  ancova_model <- rctbp_model_ancova(
+  ancova_model <- rctbp_model(
     data_simulation_fn = simulate_data_ancova,
     brms_model = brms_model_ancova,
     model_name = "ANCOVA",
     n_endpoints = 1L,
     endpoint_types = "continuous",
     n_arms = as.integer(n_arms),
-    n_repeated_measures = 0L,
-    parameter_names_sim_fn = names(formals(simulate_data_ancova)),
-    parameter_names_brms = stringr::str_subset(brms::variables(brms_model_ancova), pattern = "^b_"),
-    # ANCOVA-specific properties
-    contrasts = contrasts,
-    p_alloc = p_alloc,
-    intercept = intercept,
-    b_arm_treat = b_arm_treat,
-    b_covariate = b_covariate,
-    sigma = sigma
+    n_repeated_measures = 0L
   )
+
 
   return(ancova_model)
 }
@@ -394,7 +388,7 @@ build_model_ancova <- function(prior_intercept = NULL,
 #'   b_covariate = 0.3
 #' )
 #' }
-build_model_ancova_cont_2arms <- function(...) {
+build_model_ancova_cont_2arms <- function(name_predefined_model, ...) {
   # collect additional arguments
   dots <- list(...)
   # set default arguments
@@ -415,6 +409,9 @@ build_model_ancova_cont_2arms <- function(...) {
   final_args <- modifyList(default_args, dots)
   # call the build_model_ancova function with the final arguments
   model <- do.call(build_model_ancova, final_args)
+
+  # add predefined model name
+  model@predefined_model <- name_predefined_model
   # return the model object
   invisible(model)
 }
@@ -453,7 +450,7 @@ build_model_ancova_cont_2arms <- function(...) {
 #'   b_covariate = 0.3
 #' )
 #' }
-build_model_ancova_cont_3arms <- function(...) {
+build_model_ancova_cont_3arms <- function(name_predefined_model, ...) {
   # collect additional arguments
   dots <- list(...)
   # set default arguments
@@ -474,6 +471,10 @@ build_model_ancova_cont_3arms <- function(...) {
   final_args <- modifyList(default_args, dots)
   # call the build_model_ancova function with the final arguments
   model <- do.call(build_model_ancova, final_args)
+  # add predefined model name
+
+  model@predefined_model <- name_predefined_model
+
   # return the model object
   invisible(model)
 }

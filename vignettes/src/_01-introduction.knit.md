@@ -44,7 +44,7 @@ if (file.exists(model_file)) {
   model_ancova <- readRDS(model_file)
 } else{
   # create the model
-  model_ancova <- build_model(pre_defined_model = "ancova_cont_2arms")
+  model_ancova <- build_model(predefined_model = "ancova_cont_2arms")
   # save the model to a file
   saveRDS(model_ancova, file = model_file)
 }

@@ -1,16 +1,30 @@
 # S7 Class Definition for RCT Bayesian Power Model
-#' @importFrom S7 new_class class_character class_numeric class_integer class_function class_any new_union
-rctbp_model <- S7::new_class("rctbp_model",
+#' @importFrom S7 new_class class_character class_numeric class_integer class_function class_any new_union new_property
+rctbp_model <- S7::new_class(
+  "rctbp_model",
   properties = list(
     data_simulation_fn = S7::class_function,
-    brms_model = S7::class_any,  # brmsfit objects don't have S7 class
+    brms_model = S7::class_any,
+    # brmsfit objects don't have S7 class
+    predefined_model = S7::new_union(
+      S7::class_character,
+      NULL
+    ),
     model_name = S7::class_character,
     n_endpoints = S7::class_numeric,
     endpoint_types = S7::class_character,
     n_arms = S7::class_numeric,
-    n_repeated_measures = S7::class_numeric| NULL,
-    parameter_names_sim_fn = S7::class_character,
-    parameter_names_brms = S7::class_character
+    n_repeated_measures = S7::class_numeric | NULL,
+    parameter_names_sim_fn = S7::new_property(
+      getter = function(self) {
+        names(formals(self@data_simulation_fn))
+      }
+    ),
+    parameter_names_brms = S7::new_property(
+      getter = function(self) {
+        stringr::str_subset(brms::variables(self@brms_model), pattern = "^b_")
+      }
+    )
   ),
   validator = function(self) {
     # Validate n_endpoints
@@ -20,7 +34,9 @@ rctbp_model <- S7::new_class("rctbp_model",
     # Validate endpoint_types
     if (length(self@endpoint_types) != self@n_endpoints ||
         any(!self@endpoint_types %in% c("continuous", "binary", "count"))) {
-      return("'endpoint_types' must be a character vector of length 'n_endpoints' with valid types.")
+      return(
+        "'endpoint_types' must be a character vector of length 'n_endpoints' with valid types."
+      )
     }
     # Validate n_arms
     if (length(self@n_arms) != 1 || self@n_arms <= 0) {
@@ -28,7 +44,8 @@ rctbp_model <- S7::new_class("rctbp_model",
     }
     # Validate n_repeated_measures
     if (!is.null(self@n_repeated_measures) &&
-        (length(self@n_repeated_measures) != 1 || self@n_repeated_measures < 0)) {
+        (length(self@n_repeated_measures) != 1 ||
+         self@n_repeated_measures < 0)) {
       return("'n_repeated_measures' must be a non-negative numeric value.")
     }
     # Validate brms_model
@@ -63,7 +80,7 @@ rctbp_model <- S7::new_class("rctbp_model",
 #' @param n_repeated_measures Number of repeated measures per participant.
 #'   Use NULL or 0 for single time point studies.
 #' @param model_name Optional character string providing a descriptive name for the model
-#' @param pre_defined_model Optional character string specifying a predefined model
+#' @param predefined_model Optional character string specifying a predefined model
 #'   to use instead of creating a custom model. Currently supported values:
 #'   \itemize{
 #'     \item "ancova_cont" - ANCOVA model for continuous outcomes with baseline covariate
@@ -75,7 +92,7 @@ rctbp_model <- S7::new_class("rctbp_model",
 #' analysis simulation:
 #'
 #'
-#' \strong{Predefined Models:} For convenience, users can specify pre_defined_model
+#' \strong{Predefined Models:} For convenience, users can specify predefined_model
 #' to use ready-made model configurations. This is the recommended approach for
 #' standard analyses. When using predefined models, other parameters are ignored.
 #'
@@ -105,36 +122,37 @@ rctbp_model <- S7::new_class("rctbp_model",
 #' @examples
 #' \dontrun{
 #' # Method 1: Use predefined model (recommended)
-#' ancova_model <- build_model(pre_defined_model = "ancova_cont")
+#' ancova_model <- build_model(predefined_model = "ancova_cont")
 #' }
-build_model <- function(pre_defined_model = NULL,
+build_model <- function(predefined_model = NULL,
                         data_simulation_fn,
                         brms_model,
                         n_endpoints = NULL,
                         endpoint_types = NULL,
                         n_arms = NULL,
                         n_repeated_measures = NULL,
-                        model_name = NULL) {
+                        model_name = NULL,
+                        ...) {
   # pre-defined model ----------------------------------------------------------
 
-  # validate pre_defined_model
-  if (!is.null(pre_defined_model)) {
-    if (!is.character(pre_defined_model)) {
-      stop("'pre_defined_model' must be a character string or NULL.")
+  # validate predefined_model
+  if (!is.null(predefined_model)) {
+    if (!is.character(predefined_model)) {
+      stop("'predefined_model' must be a character string or NULL.")
     }
     # create function name
-    fn_name <- paste0("build_model", "_", pre_defined_model)
+    fn_name <- paste0("build_model", "_", predefined_model)
     if (exists(fn_name, mode = "function")) {
       fn <- get(fn_name)
-      model <- fn()
+      model <- fn(name_predefined_model = predefined_model, ...)
       # return invisibly
       return(model)
     } else {
       stop(
         cat(
           "Pre-defined model",
-          paste0("\"", pre_defined_model, "\""),
-          "was not found! The 'pre_defined_model' must be one of the predefined models (see documentation)."
+          paste0("\"", predefined_model, "\""),
+          "was not found! The 'predefined_model' must be one of the predefined models (see documentation)."
         )
       )
     }
@@ -150,11 +168,6 @@ build_model <- function(pre_defined_model = NULL,
     stop("'model_name' must be a character string or NULL.")
   }
 
-  # retrieve the argument names data_simulation_fn
-  parameter_names_sim_fn <- names(formals(data_simulation_fn))
-
-  # retrieve parameter names from brms model
-  parameter_names_brms <- stringr::str_subset(brms::variables(brms_model), pattern = "^b_")
 
   # strip brms model from posterior draws
   brms_model <- suppressMessages(stats::update(brms_model, chains = 0, silent = 2))
@@ -166,15 +179,14 @@ build_model <- function(pre_defined_model = NULL,
 
   # Create S7 object - validation happens automatically
   model_obj <- rctbp_model(
+    predefined_model = predefined_model,
     data_simulation_fn = data_simulation_fn,
     brms_model = brms_model,
     model_name = model_name,
     n_endpoints = n_endpoints,
     endpoint_types = endpoint_types,
     n_arms = n_arms,
-    n_repeated_measures = n_repeated_measures,
-    parameter_names_sim_fn = parameter_names_sim_fn,
-    parameter_names_brms = parameter_names_brms
+    n_repeated_measures = n_repeated_measures
   )
 
   return(model_obj)
@@ -199,18 +211,28 @@ S7::method(print, rctbp_model) <- function(x, ...) {
   cat("--------------------------------------------------\n\n")
 
   cat("Model name:", x@model_name, "\n")
+  cat("Predefined model:", if (is.null(x@predefined_model)) "None" else x@predefined_model, "\n")
   cat("Number of endpoints:", x@n_endpoints, "\n")
-  cat("Endpoint types:", paste(x@endpoint_types, collapse = ", "), "\n")
-  cat("Number of arms:", x@n_arms, "\n")
-  cat("Number of repeated measures:", 
-      if (is.null(x@n_repeated_measures)) "NULL" else x@n_repeated_measures, "\n")
-  cat("Parameter names - simulation function:",
-      paste(x@parameter_names_sim_fn, collapse = ", "),
+  cat("Endpoint types:",
+      paste(x@endpoint_types, collapse = ", "),
       "\n")
-  cat("Parameter names - brms model:", paste(x@parameter_names_brms, collapse = ", "), "\n")
+  cat("Number of arms:", x@n_arms, "\n")
+  cat("Number of repeated measures:",
+      if (is.null(x@n_repeated_measures))
+        "NULL"
+      else
+        x@n_repeated_measures,
+      "\n")
+  cat(
+    "Parameter names - simulation function:",
+    paste(x@parameter_names_sim_fn, collapse = ", "),
+    "\n"
+  )
+  cat("Parameter names - brms model:",
+      paste(x@parameter_names_brms, collapse = ", "),
+      "\n")
   cat("\nBrms model:\n")
   print(x@brms_model)
-  
+
   invisible(x)
 }
-

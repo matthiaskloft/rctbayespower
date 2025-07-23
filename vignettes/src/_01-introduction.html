@@ -2242,7 +2242,7 @@ vertical-align: -.125em;
 <span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>  model_ancova <span class="ot">&lt;-</span> <span class="fu">readRDS</span>(model_file)</span>
 <span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>} <span class="cf">else</span>{</span>
 <span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>  <span class="co"># create the model</span></span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>  model_ancova <span class="ot">&lt;-</span> <span class="fu">build_model</span>(<span class="at">pre_defined_model =</span> <span class="st">&quot;ancova_cont_2arms&quot;</span>)</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>  model_ancova <span class="ot">&lt;-</span> <span class="fu">build_model</span>(<span class="at">predefined_model =</span> <span class="st">&quot;ancova_cont_2arms&quot;</span>)</span>
 <span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>  <span class="co"># save the model to a file</span></span>
 <span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">saveRDS</span>(model_ancova, <span class="at">file =</span> model_file)</span>
 <span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>}</span>
@@ -3031,7 +3031,7 @@ vertical-align: -.125em;
 <span id="cb9-64"><a href="#cb9-64" aria-hidden="true" tabindex="-1"></a>  model_ancova <span class="ot">&lt;-</span> <span class="fu">readRDS</span>(model_file)</span>
 <span id="cb9-65"><a href="#cb9-65" aria-hidden="true" tabindex="-1"></a>} <span class="cf">else</span>{</span>
 <span id="cb9-66"><a href="#cb9-66" aria-hidden="true" tabindex="-1"></a>  <span class="co"># create the model</span></span>
-<span id="cb9-67"><a href="#cb9-67" aria-hidden="true" tabindex="-1"></a>  model_ancova <span class="ot">&lt;-</span> <span class="fu">build_model</span>(<span class="at">pre_defined_model =</span> <span class="st">&quot;ancova_cont_2arms&quot;</span>)</span>
+<span id="cb9-67"><a href="#cb9-67" aria-hidden="true" tabindex="-1"></a>  model_ancova <span class="ot">&lt;-</span> <span class="fu">build_model</span>(<span class="at">predefined_model =</span> <span class="st">&quot;ancova_cont_2arms&quot;</span>)</span>
 <span id="cb9-68"><a href="#cb9-68" aria-hidden="true" tabindex="-1"></a>  <span class="co"># save the model to a file</span></span>
 <span id="cb9-69"><a href="#cb9-69" aria-hidden="true" tabindex="-1"></a>  <span class="fu">saveRDS</span>(model_ancova, <span class="at">file =</span> model_file)</span>
 <span id="cb9-70"><a href="#cb9-70" aria-hidden="true" tabindex="-1"></a>}</span>
