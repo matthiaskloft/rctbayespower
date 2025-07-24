@@ -6,7 +6,7 @@ rctbp_power_analysis <- S7::new_class(
   properties = list(
     n_sims = S7::class_numeric,
     n_cores = S7::class_numeric,
-    verbose = S7::class_logical,
+    verbose = S7::new_property(class = S7::class_logical, default = TRUE),
     brms_args = S7::class_list,
     design_prior = S7::class_character | S7::class_function | NULL,
     conditions = S7::class_any,
@@ -18,9 +18,9 @@ rctbp_power_analysis <- S7::new_class(
       getter = function(self)
         self@conditions@design@model
     ),
-    summarized_results = S7::class_data.frame | NULL,
-    raw_results = S7::class_data.frame | NULL,
-    elapsed_time = S7::class_numeric | NULL
+    summarized_results = S7::class_data.frame,
+    raw_results = S7::class_data.frame,
+    elapsed_time = S7::new_property(class = S7::class_numeric, default = NA_real_)
   ),
   validator = function(self) {
     # Validate conditions object
@@ -39,12 +39,15 @@ rctbp_power_analysis <- S7::new_class(
     # Validate n_cores, positive whole number, < available cores
     if (!is.numeric(self@n_cores) ||
         length(self@n_cores) != 1 ||
-        self@n_cores <= 0 || self@n_cores != round(self@n_cores)) {
+        self@n_cores <= 0 ||
+        self@n_cores != round(self@n_cores)) {
       stop("'n_cores' must be a positive whole number")
     }
     # Validate n_cores <= parallel::detectCores()
     if (self@n_cores > parallel::detectCores()) {
-      stop("'n_cores' must not exceed available cores. We recommend using at most detectCores() - 1 cores.")
+      stop(
+        "'n_cores' must not exceed available cores. We recommend using at most detectCores() - 1 cores."
+      )
     }
     
     # Validate verbose
@@ -61,6 +64,88 @@ rctbp_power_analysis <- S7::new_class(
     NULL
   }
 )
+
+#' Build Power Analysis Configuration
+#'
+#' Creates a power analysis configuration object that specifies all parameters
+#' needed to conduct Bayesian power analysis for randomized controlled trials.
+#' This function creates an S7 object that serves as the main interface for
+#' configuring and executing power analysis simulations.
+#'
+#' @param run Logical indicating whether to immediately execute the analysis
+#'   after creating the configuration object (default TRUE)
+#' @param ... Arguments passed to the rctbp_power_analysis constructor, including:
+#'   \itemize{
+#'     \item conditions: An rctbp_conditions object containing the experimental
+#'       conditions and design parameters for the power analysis
+#'     \item n_sims: Number of simulations to run per condition (default 100)
+#'     \item n_cores: Number of CPU cores to use for parallel execution (default 1).
+#'       Must not exceed the number of available cores
+#'     \item verbose: Logical indicating whether to display progress information
+#'       and analysis details (default TRUE)
+#'     \item brms_args: List of additional arguments to pass to [brms::brm()]
+#'       function (default empty list)
+#'     \item design_prior: Prior specification for design parameters. Can be NULL
+#'       (no prior), a string with brms syntax, or a function for custom priors
+#'   }
+#'
+#' @return An S7 object of class "rctbp_power_analysis" containing:
+#'   \itemize{
+#'     \item All input parameters for simulation control
+#'     \item Access to design and model specifications via properties
+#'     \item Placeholder slots for results (filled after running analysis)
+#'   }
+#'
+#' @details
+#' This function validates input parameters and creates a configuration object
+#' that can be executed using [run()]. The resulting object provides access
+#' to design and model information through S7 properties:
+#'
+#' \strong{Key Properties:}
+#' \itemize{
+#'   \item \code{design}: Access to the experimental design configuration
+#'   \item \code{model}: Access to the underlying Bayesian model specification
+#'   \item \code{conditions}: The condition grid for analysis
+#' }
+#'
+#' \strong{Parallel Processing:}
+#' When \code{n_cores > 1}, simulations are distributed across multiple cores
+#' for improved performance. The function validates that \code{n_cores} does
+#' not exceed available system cores.
+#'
+#' @seealso [build_conditions()], [build_design()], [build_model()], [run()]
+#'
+#' @export
+#' @examples
+#' \dontrun{
+#' # Create conditions for power analysis
+#' conditions <- build_conditions(design, n_total = c(100, 200))
+#'
+#' # Basic power analysis configuration
+#' power_config <- build_power_analysis(conditions, n_sims = 100)
+#'
+#' # Parallel execution with custom BRMS arguments
+#' power_config <- build_power_analysis(
+#'   conditions = conditions,
+#'   n_sims = 1000,
+#'   n_cores = 4,
+#'   brms_args = list(chains = 4, iter = 2000)
+#' )
+#'
+#' # Execute the analysis
+#' results <- run(power_config)
+#' }
+power_analysis <- function(run = TRUE, ...) {
+  power_object <- rctbp_power_analysis(...)
+
+  if (run) {
+    # Run the power analysis immediately if requested)
+    power_object <- run(object = power_object)
+  }
+  
+  return(power_object)
+}
+
 
 #' Run Analysis Objects
 #'
@@ -140,6 +225,7 @@ S7::method(run, rctbp_power_analysis) <- function(object, ...) {
   
   # Extract parameters from the object
   conditions <- object@conditions
+  design <- object@design
   design_prior <- object@design_prior
   n_sims <- object@n_sims
   n_cores <- object@n_cores
@@ -427,25 +513,6 @@ S7::method(run, rctbp_power_analysis) <- function(object, ...) {
     })
   }
   
-  # Debug: Check what we got back
-  if (verbose) {
-    cat("\nResults list length:", length(results_raw_list), "\n")
-    cat("First condition_args structure:\n")
-    if (length(condition_args_list) > 0) {
-      str(condition_args_list[[1]])
-    }
-    if (length(results_raw_list) > 0) {
-      cat("First result class:", class(results_raw_list[[1]]), "\n")
-      if (!is.null(results_raw_list[[1]])) {
-        cat("First result dimensions:",
-            dim(results_raw_list[[1]]),
-            "\n")
-      } else {
-        cat("First result is NULL\n")
-      }
-    }
-  }
-  
   # Filter out NULL results before combining
   results_raw_list <- results_raw_list[!sapply(results_raw_list, is.null)]
   
@@ -537,7 +604,8 @@ S7::method(print, rctbp_power_analysis) <- function(x, ...) {
   
   
   # Check if analysis has been run
-  has_results <- !is.null(x@summarized_results)
+  has_results <- nrow(x@summarized_results) > 0 ||
+    nrow(x@raw_results) > 0
   
   if (has_results) {
     cat("STATUS: [COMPLETED] Analysis completed\n\n")

@@ -9,7 +9,7 @@ format:
     toc: true
     number-sections: true
     theme: cosmo
-    code-fold: true
+    code-fold: false
     code-tools: true
     code-summary: "Show the code"
     fig-width: 7
@@ -20,7 +20,7 @@ execute:
   warning: false
 ---
 
-```{r }
+```{r setup}
 #| include: false
 #| eval: true
 #| message: false
@@ -29,7 +29,7 @@ execute:
 options(repos = c(CRAN = "https://cloud.r-project.org/"))
 
 # Check and install required packages
-packages <- c("tidyverse", "devtools")
+packages <- c("tidyverse")
 install.packages(setdiff(packages, rownames(installed.packages())))
 invisible(lapply(packages, require, character.only = TRUE))
 library(rctbayespower)
@@ -45,23 +45,21 @@ The `rctbayespower` package provides tools for conducting Bayesian power analysi
 
 
 
-### Model
+## Model
 
+Show predefined models available in the package:
 ```{r}
-model_file <- here::here("test_model_ancova.rds")
-if (file.exists(model_file)) {
-  # load the model from a file
-  model_ancova <- readRDS(model_file)
-} else{
-  # create the model
-  model_ancova <- build_model(predefined_model = "ancova_cont_2arms")
-  # save the model to a file
-  saveRDS(model_ancova, file = model_file)
-}
-print(model_ancova)
+list_predefined_models()
 ```
 
-### Design
+
+Get the predefined ANCOVA model for continuous outcomes with two arms:
+```{r build_model_ancova}
+model_ancova <- build_model(predefined_model = "ancova_cont_2arms")
+model_ancova@parameter_names_brms
+```
+
+## Design
 
 Find possible target parameters in the model.
 ```{r}
@@ -69,7 +67,7 @@ model_ancova@parameter_names_brms
 ```
 
 Specify the study design with target parameter, thresholds for success and futility, and significance levels for frequentist-like power.
-```{r}
+```{r build_design}
 design <- build_design(
   model = model_ancova,
   target_params = "b_arm2",
@@ -90,20 +88,17 @@ required_fn_args(design)
 ```
 
 Specify conditions.
-```{r}
+```{r build_conditions}
 conditions <- build_conditions(
   design = design,
   condition_values = list(
     # two sample sizes
-    n_total = 300,
-        # two effect sizes
-    b_arm_treat = c(0,0.3)
+    n_total = seq(80, 240, by = 40),
+    # two effect sizes
+    b_arm_treat = c(0, 0.3)
   ),
   static_values = list(
-    # equal allocation
-    p_alloc =
-      list(c(0.5, 0.5)),
-          # baseline effect
+    # baseline effect
     b_covariate = 0
   )
 )
@@ -112,14 +107,16 @@ print(conditions, n = 100)
 
 
 ## Run Power Analysis
-Set number of cores and simulations. The number of simulations is set to a lower value for faster vignette building, but you can increase it for more robust results.
-```{r}
+
+Set number of cores and simulations:
+```{r n_cores_n_sims}
 n_cores <- parallel::detectCores() - 2
 n_sims <- 1e3
 ```
 
-```{r basic_performance}
-power <- rctbp_power_analysis(
+Run the analysis using the `power_analysis` function. This will run the model for each condition and return the results.
+```{r run_sim}
+power <- power_analysis(
   conditions = conditions,
   n_cores = n_cores,
   n_sims = n_sims,
@@ -130,18 +127,64 @@ power <- rctbp_power_analysis(
     warmup = 200
   )
 )
-
-power <- run(power)
-
-power$summarized_results |> 
-  kableExt::kableExtra(
-    caption = "Power Analysis Results",
-    digits = 3,
-    format = "html"
-  )
 ```
 
 
+## Power for Effect of 0.3
+```{r power_success}
+power@summarized_results |> 
+  dplyr::filter(b_arm_treat != 0) |> 
+  select(
+    n_total,
+    b_arm_treat,
+    prob_success,
+    prob_success_se,
+    prob_futility,
+    prob_futility_se,
+    power_success,
+    power_success_se,
+    power_futility,
+    power_futility_se
+  ) |>
+  dplyr::arrange(desc(b_arm_treat)) |> 
+    kableExtra::kable(digits = 3, 
+                    format = "html")
+```
+
+
+## Alpha Error Rate for Null Effect 
+
+The power for success indicates the alpha error rate for the null effect (b_arm_treat = 0). This is the probability of rejecting the null hypothesis when it is true, which should be close to the significance level (0.05) if the design is well specified.
+
+```{r power_null}
+power@summarized_results |> 
+  dplyr::filter(b_arm_treat == 0) |>
+  select(
+    n_total,
+    b_arm_treat,
+    prob_success,
+    prob_success_se,
+    prob_futility,
+    prob_futility_se,
+    power_success,
+    power_success_se,
+    power_futility,
+    power_futility_se
+  ) |>
+  dplyr::arrange(desc(b_arm_treat)) |> 
+  kableExtra::kable(digits = 3, 
+                    format = "html")
+```
+
+## Run Time
+
+```{r}
+#| code-fold: true
+
+
+n_runs <- nrow(power@conditions@conditions_grid) * power@n_sims
+cat("Total run time:", round(power@elapsed_time,1), "minutes for", n_runs, "total simulation repetitions using", power@n_cores, "cores.\n")
+```
 
 ***
 

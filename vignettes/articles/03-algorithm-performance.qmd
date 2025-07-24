@@ -9,7 +9,7 @@ format:
     toc: true
     number-sections: true
     theme: cosmo
-    code-fold: true
+    code-fold: false
     code-tools: true
     code-summary: "Show the code"
     fig-width: 7
@@ -41,10 +41,6 @@ invisible(lapply(packages, require, character.only = TRUE))
 
 # Load the package
 library(rctbayespower)
-
-# Fast performance testing settings
-n_cores <- parallel::detectCores() - 1
-n_sims <- 1e3
 ```
 
 
@@ -69,23 +65,21 @@ The `rctbayespower` package supports multiple algorithms via `brms` / `Stan`:
 ## Setup
 ### Model
 
+Show predefined models available in the package:
 ```{r}
-model_file <- here::here("test_model_ancova.rds")
-if (file.exists(model_file)) {
-  # load the model from a file
-  model_ancova <- readRDS(model_file)
-} else{
-  # create the model
-  model_ancova <- build_model_ancova_cont()
-  # save the model to a file
-  saveRDS(model_ancova, file = model_file)
-}
-model_ancova$parameter_names_brms
+list_predefined_models()
+```
+
+
+Get the predefined ANCOVA model for continuous outcomes with two arms:
+```{r build_model_ancova}
+model_ancova <- build_model(predefined_model = "ancova_cont_2arms")
+model_ancova@parameter_names_brms
 ```
 
 ### Design
 
-```{r}
+```{r build_design}
 design <- build_design(
   model = model_ancova,
   target_params = "b_arm2",
@@ -102,7 +96,7 @@ required_fn_args(design)
 
 ### Conditions
 
-```{r}
+```{r build_conditions}
 conditions <- build_conditions(
   design = design,
   condition_values = list(
@@ -118,23 +112,26 @@ conditions <- build_conditions(
     b_covariate = 0
   )
 )
-print(conditions, n = 100)
 ```
 
 
-## Run Simulations for Comparison
+## Run Simulations
 
-```{r basic_performance}
+
+Set number of cores and simulations:
+```{r n_cores_n_sims}
 n_cores <- parallel::detectCores() - 2
-n_sims <- 1000
+n_sims <- 500
+```
 
+
+```{r run_power_analyses}
 # Meanfield
-suppressWarnings(
   power_result_meanfield <-
     power_analysis(
       conditions = conditions,
       n_cores = n_cores,
-      n_simulations = n_sims,
+      n_sims = n_sims,
       verbose = FALSE,
       brms_args = list(
         algorithm = "meanfield",
@@ -143,14 +140,13 @@ suppressWarnings(
         output_samples = 2e3
       )
     )
-)
+
 # Fullrank
-suppressWarnings(
   power_result_fullrank <-
     power_analysis(
       conditions = conditions,
       n_cores = n_cores,
-      n_simulations = n_sims,
+      n_sims = n_sims,
       verbose = FALSE,
       brms_args = list(
         algorithm = "fullrank",
@@ -159,12 +155,12 @@ suppressWarnings(
         output_samples = 2e3
       )
     )
-)
+
 # Sampling
 power_result_sampling <- power_analysis(
   conditions = conditions,
   n_cores = n_cores,
-  n_simulations = n_sims,
+  n_sims = n_sims,
   verbose = FALSE,
   brms_args = list(
     chains = 4,
@@ -172,51 +168,58 @@ power_result_sampling <- power_analysis(
     warmup = 200
   )
 )
+```
 
+
+## 
+Extract the summarized results from each power analysis:
+```{r}
 results_summary<- rbind(
-  power_result_meanfield$results_df |> 
+  power_result_meanfield@summarized_results |> 
     mutate(Algorithm = "Meanfield"),
-  power_result_fullrank$results_df |> 
+  power_result_fullrank@summarized_results |> 
     mutate(Algorithm = "Fullrank"),
-  power_result_sampling$results_df |> 
+  power_result_sampling@summarized_results |> 
     mutate(Algorithm = "Sampling")
 )
 ```
 
+## Comparison of Results
 
-Power
+### Probability of Success and Futility and Power
 ```{r}
 results_summary |> 
   select(
     Algorithm,
     n_total,
-    b_arms_treat,
-    success_prob,
-    success_power,
-    futility_prob,
-    futility_power
+    b_arm_treat,
+    prob_success,
+    prob_futility,
+    power_success,
+    power_futility
   ) |>
+  dplyr::arrange(desc(b_arm_treat)) |> 
   kableExtra::kable(digits = 2)
 ```
 
 
-Convergence:
+### Convergence
 ```{r}
 results_summary |> 
   select(
     Algorithm,
     n_total,
-    b_arms_treat,
+    b_arm_treat,
     rhat,
     ess_bulk,
     ess_tail,
-    convergence_rate
+    conv_rate
   ) |>
   kableExtra::kable(digits = 3)
 ```
 
 
-Compare run times for each algorithm:
+### Run Time
 ```{r}
 # extract elapsed time
 data.frame(
@@ -226,9 +229,9 @@ data.frame(
     "Sampling"
   ),
     "Elapsed Time" = c(
-      power_result_meanfield$elapsed_time,
-      power_result_fullrank$elapsed_time,
-      power_result_sampling$elapsed_time
+      power_result_meanfield@elapsed_time,
+      power_result_fullrank@elapsed_time,
+      power_result_sampling@elapsed_time
     )
   ) |> 
   kableExtra::kable(digits = 2)

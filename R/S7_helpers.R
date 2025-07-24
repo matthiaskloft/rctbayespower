@@ -29,3 +29,27 @@ update_s7_with_dots <- function(object, ...) {
   
   return(object)
 }
+
+
+
+#' S7 Class Validator for Data Frames
+#'
+#' Defines an S7 class `class_data_frame` that accepts only S3 `data.frame` objects.
+#' This is useful for validating properties in S7 classes that should hold standard
+#' data frame values. Used when `S7::class_data.frame` fails to match S3 objects.
+#'
+#' @format An S7 class object for validating standard data frames.
+#'
+#' @return An S7 class validator that passes only if the object is a `data.frame`.
+#'
+#' @keywords internal
+class_data_frame <- S7::new_class(
+  "class_data_frame",
+  parent = S7::new_S3_class("data.frame"),
+  validator = function(self) {
+    if (!is.data.frame(self)) {
+      stop("Must be a data.frame")
+    }
+    NULL
+  }
+)

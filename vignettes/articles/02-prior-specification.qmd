@@ -20,21 +20,21 @@ execute:
   warning: false
 ---
 
-```{r setup, include = FALSE}
-knitr::opts_chunk$set(
-  collapse = TRUE,
-  comment = "#>",
-  fig.path = "/man/figures/02-prior-specification-",
-  out.width = "90%",
-  message = FALSE
-)
+```{r setup}
+#| include: false
 
-# Load the package
+# Set CRAN mirror
+options(repos = c(CRAN = "https://cloud.r-project.org/"))
+
+# Check and install required packages
+packages <- c("tidyverse", "brms")
+install.packages(setdiff(packages, rownames(installed.packages())))
+invisible(lapply(packages, require, character.only = TRUE))
 library(rctbayespower)
 
 # Fast settings for examples
-n_cores <- parallel::detectCores() - 1
-n_sims <- 1e3
+n_cores <- parallel::detectCores() - 2
+n_sims <- 500
 ```
 
 
@@ -45,12 +45,26 @@ The `rctbayespower` package uses two types of priors: **estimation priors** (for
 
 Estimation priors affect how treatment effects are estimated during Bayesian model fitting. Here we compare default priors versus informative priors.
 
-## Power Analysis with Different Priors
 
 Ancova model with two arms is used to illustrate the impact of different priors on power analysis results. We will compare uninformative and sceptical priors.
 
+Let's first define the sample size for our analysis:
+```{r}
+sample_size <- 100
+```
 
-Analysis with uninformative priors:
+## Analysis of Medium Effect of Cohen's d = 0.5
+
+
+
+
+
+### Analysis with uninformative priors
+
+Uninformative, locally flat prior on treatment effect:
+$$d \sim \mathcal{N}(0,100)$$
+
+
 ```{r}
 # Create ANCOVA model with uninformative priors
 uninformative_model <- build_model_ancova_cont_2arms(
@@ -77,27 +91,40 @@ uninformative_design <- build_design(
 uninformative_conditions <- build_conditions(
   design = uninformative_design,
   condition_values = list(
-    n_total = 120
+    n_total = sample_size
   ),
-  static_values = list(
-    p_alloc = list(c(0.5, 0.5))
-  )
-)
+  static_values = list())
 
 # Run power analysis
-uninformative_analysis <- power_analysis(
+uninformative_analysis <- rctbayespower::power_analysis(
   conditions = uninformative_conditions,
-  n_simulations = n_sims,
-  n_cores = n_cores
+  n_sims = n_sims,
+  n_cores = n_cores,
+  verbose = FALSE
 )
+```
 
-uninformative_analysis$results_df|>
-  # round the numeric columns for better readability
-  kableExtra::kable(digits = 2)
+```{r}
+res_uninformative <- uninformative_analysis@summarized_results|>
+  select(
+    n_total,
+    prob_success,
+    prob_futility,
+    power_success,
+    power_futility
+  ) |>
+  dplyr::mutate(Prior = "informative", .before = everything())
+
+res_uninformative |> 
+  kableExtra::kable(digits = 3, format = "html")
 ```
 
 
-Analysis with informative, sceptical prior:
+Analysis with Informative Prior
+
+Informative, sceptical prior on treatment effect:
+
+$$d \sim \mathcal{t_3}(0,1)$$
 
 ```{r}
 # Create ANCOVA model with informative/sceptical priors
@@ -125,157 +152,122 @@ informative_design <- build_design(
 informative_conditions <- build_conditions(
   design = informative_design,
   condition_values = list(
-    n_total = 120
+    n_total = sample_size
   ),
   static_values = list(
-    p_alloc = list(c(0.5, 0.5))
   )
 )
 
 # Run power analysis
 informative_analysis <- power_analysis(
   conditions = informative_conditions,
-  n_simulations = n_sims,
-  n_cores = n_cores
+  n_sims = n_sims,
+  n_cores = n_cores,
+  verbose = FALSE
 )
-informative_analysis$results_df|>
-  # round the numeric columns for better readability
-  kableExtra::kable(digits = 2)
 ```
+
+```{r}
+res_informative <- informative_analysis@summarized_results|>
+  select(
+    n_total,
+    prob_success,
+    prob_futility,
+    power_success,
+    power_futility
+  ) |>
+  dplyr::mutate(Prior = "informative", .before = everything())
+
+res_informative |> 
+  kableExtra::kable(digits = 3, format = "html")
+```
+
+
 
 Comparing the results of the two analyses:
 ```{r}
-
-estimation_comparison <- data.frame(
-  Prior_Type = c("Uninformative", "Sceptical"),
-  "Success Power" = c(
-    uninformative_analysis$results_df$success_power,
-    informative_analysis$results_df$success_power
-  ),
-  "Futility Power" = c(
-    uninformative_analysis$results_df$futility_power,
-    informative_analysis$results_df$futility_power
-  ),
-  "Success Probability" = c(
-    uninformative_analysis$results_df$success_prob,
-    informative_analysis$results_df$success_prob
-  ),
-  "Futility Probability" = c(
-    uninformative_analysis$results_df$futility_prob,
-    informative_analysis$results_df$futility_prob
-  ),
-  "Mean Post Median" = c(
-    uninformative_analysis$results_df$est_median,
-    informative_analysis$results_df$est_median
-  ),
-  "Mean Post SD" = c(
-    uninformative_analysis$results_df$est_sd,
-    informative_analysis$results_df$est_sd
-  )
-) 
+estimation_comparison <- 
+  rbind(
+    res_uninformative,
+    res_informative
+  ) 
 
 estimation_comparison|>
   # round the numeric columns for better readability
-  kableExtra::kable(digits = 2)
+  kableExtra::kable(digits = 3)
 ```
 
 
 ## Alpha Error Rate
 
 To evaluate the alpha error rate (false positive rate) for both prior configurations, we need to run the power analysis under the null hypothesis (effect size = 0) and examine how often we incorrectly conclude for success. This tells us how well our Bayesian decision framework controls Type I error.
+Luckily, the `rctbayespower` package allows us to reuse the same model and design configurations, only changing the effect size to zero.
 
 ```{r alpha_error_uninformative}
-# Alpha error rate with uninformative priors
-alpha_uninformative_model <- build_model_ancova_cont_2arms(
-  b_arm_treat = 0, # Null hypothesis: no effect
-  b_covariate = 0.3,
-  prior_treatment = brms::set_prior("normal(0, 100)", class = "b"),
-  prior_covariate = brms::set_prior("normal(0, 100)", class = "b", coef = "covariate"),
-  prior_intercept = brms::set_prior("normal(0, 100)", class = "Intercept"),
-  prior_sigma = brms::set_prior("normal(0, 100)", class = "sigma")
-)
-
-alpha_uninformative_design <- build_design(
-  model = alpha_uninformative_model,
-  target_params = "b_arm2",
-  n_interim_analyses = 0,
-  thresholds_success = 0.3,
-  thresholds_futility = 0,
-  p_sig_success = 0.975,
-  p_sig_futility = 0.5
-)
-
 alpha_uninformative_conditions <- build_conditions(
-  design = alpha_uninformative_design,
+  design = uninformative_design,
   condition_values = list(
-    n_total = 120
+    n_total = sample_size
   ),
   static_values = list(
-    p_alloc = list(c(0.5, 0.5))
-  )
-)
-
+  # Set the effect size to zero for the null hypothesis
+    b_arm_treat = 0 # Null hypothesis: no effect
+  ))
+  
 alpha_uninformative <- power_analysis(
   conditions = alpha_uninformative_conditions,
-  n_simulations = n_sims,
-  n_cores = n_cores
+  n_sims = n_sims,
+  n_cores = n_cores,
+  verbose = FALSE
 )
 ```
 
 ```{r alpha_error_informative}
-# Alpha error rate with informative, sceptical priors
-alpha_informative_model <- build_model_ancova_cont_2arms(
-  b_arm_treat = 0, # Null hypothesis: no effect
-  b_covariate = 0.3,
-  prior_treatment = brms::set_prior("student_t(3, 0, 1)", class = "b"),
-  prior_covariate = brms::set_prior("student_t(3, 0, 0.5)", class = "b", coef = "covariate"),
-  prior_intercept = brms::set_prior("student_t(3, 0, 1)", class = "Intercept"),
-  prior_sigma = brms::set_prior("student_t(3, 0, 2)", class = "sigma")
-)
-
-alpha_informative_design <- build_design(
-  model = alpha_informative_model,
-  target_params = "b_arm2",
-  n_interim_analyses = 0,
-  thresholds_success = 0.3,
-  thresholds_futility = 0.1,
-  p_sig_success = 0.975,
-  p_sig_futility = 0.5
-)
-
 alpha_informative_conditions <- build_conditions(
-  design = alpha_informative_design,
+  design = informative_design,
   condition_values = list(
     n_total = 120
   ),
   static_values = list(
-    p_alloc = list(c(0.5, 0.5))
+    # Set the effect size to zero for the null hypothesis
+    b_arm_treat = 0 # Null hypothesis: no effect
   )
 )
 
 alpha_informative <- power_analysis(
   conditions = alpha_informative_conditions,
-  n_simulations = n_sims,
-  n_cores = n_cores
+  n_sims = n_sims,
+  n_cores = n_cores,
+  verbose = FALSE
 )
 ```
 
 Comparing the alpha error rates:
 ```{r alpha_comparison}
-# Compare alpha error rates
-alpha_comparison <- data.frame(
-  Prior_Type = c("Uninformative", "Sceptical"),
-  Alpha_Error_Rate = c(
-    alpha_uninformative$results_df$success_power,
-    alpha_informative$results_df$success_power
-  ),
-  Probability_False_Positive = c(
-    alpha_uninformative$results_df$success_prob,
-    alpha_informative$results_df$success_prob
+res_alpha <- 
+  rbind(
+    alpha_uninformative@summarized_results |>
+      select(
+        n_total,
+        prob_success,
+        prob_futility,
+        power_success,
+        power_futility
+      ) |>
+      dplyr::mutate(Prior = "uninformative", .before = everything()),
+    alpha_informative@summarized_results |>
+      select(
+        n_total,
+        prob_success,
+        prob_futility,
+        power_success,
+        power_futility
+      ) |>
+      dplyr::mutate(Prior = "informative", .before = everything())
   )
-)
-alpha_comparison |>
-  kableExtra::kable(digits = 3)
+
+res_alpha |> 
+  kableExtra::kable(digits = 3, format = "html")
 ```
 
 Using a sceptical prior reduces the probability of falsely concluding success when there is no true effect, thus controlling the alpha error rate more effectively than the uninformative priors.
