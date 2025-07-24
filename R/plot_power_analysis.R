@@ -375,7 +375,7 @@ create_heatmap_plot <- function(plot_data, design, analysis_type, target_param, 
   if (metric == "success") {
     p <- ggplot2::ggplot(plot_data, ggplot2::aes(x = .data[[target_param]], y = .data$n_total, fill = .data[[fill_var_success]])) +
       ggplot2::geom_tile() +
-      ggplot2::scale_fill_viridis_c(name = fill_name, labels = scales::percent_format()) +
+      ggplot2::scale_fill_gradient(name = fill_name, labels = scales::percent_format(), low = "lightblue", high = "darkblue") +
       ggplot2::labs(
         title = paste("Success", plot_suffix, "Heatmap"),
         subtitle = if (values == "both") paste("Showing power | Target power:", design@p_sig_success) else paste("Target:", design@p_sig_success),
@@ -385,7 +385,7 @@ create_heatmap_plot <- function(plot_data, design, analysis_type, target_param, 
   } else if (metric == "futility") {
     p <- ggplot2::ggplot(plot_data, ggplot2::aes(x = .data[[target_param]], y = .data$n_total, fill = .data[[fill_var_futility]])) +
       ggplot2::geom_tile() +
-      ggplot2::scale_fill_viridis_c(name = fill_name, labels = scales::percent_format()) +
+      ggplot2::scale_fill_gradient(name = fill_name, labels = scales::percent_format(), low = "lightblue", high = "darkblue") +
       ggplot2::labs(
         title = paste("Futility", plot_suffix, "Heatmap"),
         subtitle = if (values == "both") paste("Showing power | Target power:", design@p_sig_futility) else paste("Target:", design@p_sig_futility),
@@ -436,7 +436,7 @@ create_heatmap_plot <- function(plot_data, design, analysis_type, target_param, 
     p <- ggplot2::ggplot(plot_data_long, ggplot2::aes(x = .data$effect_size, y = .data$n_total, fill = .data$value)) +
       ggplot2::geom_tile() +
       ggplot2::facet_wrap(~type) +
-      ggplot2::scale_fill_viridis_c(name = fill_name, labels = scales::percent_format()) +
+      ggplot2::scale_fill_gradient(name = fill_name, labels = scales::percent_format(), low = "lightblue", high = "darkblue") +
       ggplot2::labs(
         title = if (values == "both") "Power and Probability Analysis Heatmap" else paste(plot_suffix, "Analysis Heatmap"),
         subtitle = paste(
