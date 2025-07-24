@@ -159,7 +159,7 @@ Probability of futility significance: 0.5
 Parameter names - interim function:  
 
 
-=== Brms Model ===
+=== 'brms' Model ===
 
  Family: gaussian 
   Links: mu = identity; sigma = identity 

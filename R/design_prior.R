@@ -313,7 +313,7 @@ parse_design_prior <- function(design_prior, effect_sizes, verbose = TRUE) {
 
 #' Validate Weighting Function Implementation
 #'
-#' Tests that the weighting function parsing and computation in power_analysis()
+#' Tests that the weighting function parsing and computation in rctbp_power_analysis objects
 #' works correctly. This function validates both brms syntax parsing and R function handling,
 #' as well as the weighted power computation logic.
 #'
@@ -346,7 +346,7 @@ validate_weighting_function <- function(effect_sizes = seq(0.2, 0.8, 0.1),
                                         verbose = TRUE) {
   if (verbose) {
     cat("=== Weighting Function Validation ===\n")
-    cat("Testing weighting function implementation in power_analysis()\n\n")
+    cat("Testing weighting function implementation in rctbp_power_analysis objects\n\n")
   }
 
   test_results <- list()

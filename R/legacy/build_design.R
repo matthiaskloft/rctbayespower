@@ -301,7 +301,7 @@ print.rctbp_design <- function(x, ...) {
   )
   #cat("\n\n=== Data Simulation Function ===\n\n")
   #print(x$data_simulation_fn)
-  cat("\n\n=== Brms Model ===\n\n")
+  cat("\n\n=== 'brms' Model ===\n\n")
   print(x$brms_model)
   cat("\n\n === Allocation Function ===\n\n")
   print(x$interim_function)

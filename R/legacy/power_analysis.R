@@ -9,7 +9,6 @@
 #' #'
 #' #' For new code, use:
 #' #' \itemize{
-#' #'   \item [power_analysis()] to create configuration objects
 #' #'   \item [run()] method to execute the analysis
 #' #' }
 #' #'

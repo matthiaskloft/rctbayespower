@@ -14,7 +14,7 @@ run(object, ...)
 \value{
 The result depends on the specific method called. For power analysis
 objects, returns the modified object with results stored in the
-\code{sim_results} slot.
+\code{summarized_results} and \code{raw_results} properties.
 }
 \description{
 Generic function for executing analysis objects. This function provides a
@@ -30,10 +30,7 @@ of the input object. Currently supported:
 \examples{
 \dontrun{
 # Create and run power analysis
-power_config <- power_analysis(conditions, n_sims = 100)
+power_config <- rctbp_power_analysis(conditions = conditions, n_sims = 100)
 power_config <- run(power_config)
 }
-}
-\seealso{
-\code{\link[=power_analysis]{power_analysis()}} for creating power analysis configurations
 }

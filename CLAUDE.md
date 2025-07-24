@@ -13,7 +13,6 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 **✅ IMPLEMENTED FEATURES - Object-Oriented API:**
 
 **Core Functions (100% Complete & Working):**
-- **`power_analysis()`** - Main Bayesian power analysis function using new object-oriented API
 - **`build_model()`** - Create model specifications for power analysis
 - **`build_design()`** - Create experimental design configurations
 - **`build_conditions()`** - Generate analysis conditions from design parameters
@@ -56,7 +55,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 model_ancova <- build_model("ancova_cont_2arms")()
 design <- build_design(model, target_params, thresholds, p_sig)
 conditions <- build_conditions(design, condition_values, static_values)
-result <- power_analysis(conditions, n_cores, n_sims)
+power_config <- rctbp_power_analysis(conditions = conditions, n_cores = n_cores, n_sims = n_sims)
+result <- run(power_config)
 ```
 
 ## Development Practices and R CMD Check Guidelines

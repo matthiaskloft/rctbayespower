@@ -7,7 +7,7 @@
 #'   created by [build_conditions()]. Contains 'sim_args' with 'n_total', 'p_alloc',
 #'   and 'true_parameter_values', plus optional 'interim_args'.
 #' @param id_sim Simulation identifier for tracking individual simulation runs
-#' @param design A rctbp_design object containing the simulation and model specifications
+#' @param design A rctbp_design or rctbp_power_analysis object containing the simulation and model specifications
 #' @param brms_args Arguments passed to brms for model fitting. Default includes 'algorithm' = "sampling", 'iter' = 500, 'warmup' = 250, 'chains' = 4, 'cores' = 1. User can override any of these or add additional arguments.
 #'
 #' @return A fitted brms model object on success, NULL on failure
@@ -60,9 +60,13 @@ simulate_single_run <- function(condition_arguments,
                                 brms_args = list()) {
   # no validations since this is the lowest level function
 
-  # Handle both S7 design objects and regular list design components (for parallel workers)
+  # Handle S7 design objects, power analysis objects, and regular list design components (for parallel workers)
   if (inherits(design, "rctbayespower::rctbp_design") || inherits(design, "rctbp_design")) {
     # S7 design object
+    data_simulation_fn <- design@model@data_simulation_fn
+    brms_model <- design@model@brms_model
+  } else if (inherits(design, "rctbayespower::rctbp_power_analysis") || inherits(design, "rctbp_power_analysis")) {
+    # S7 power analysis object - use direct model access
     data_simulation_fn <- design@model@data_simulation_fn
     brms_model <- design@model@brms_model
   } else if (is.list(design)) {
@@ -152,10 +156,10 @@ simulate_single_run <- function(condition_arguments,
       futility_prob = NA_real_,
       power_success = NA_real_,
       power_futility = NA_real_,
-      est_median = NA_real_,
-      est_mad = NA_real_,
-      est_mean = NA_real_,
-      est_sd = NA_real_,
+      median = NA_real_,
+      mad = NA_real_,
+      mean = NA_real_,
+      sd = NA_real_,
       rhat = NA_real_,
       ess_bulk = NA_real_,
       ess_tail = NA_real_,
@@ -186,10 +190,10 @@ simulate_single_run <- function(condition_arguments,
       futility_prob = NA_real_,
       power_success = NA_real_,
       power_futility = NA_real_,
-      est_median = NA_real_,
-      est_mad = NA_real_,
-      est_mean = NA_real_,
-      est_sd = NA_real_,
+      median = NA_real_,
+      mad = NA_real_,
+      mean = NA_real_,
+      sd = NA_real_,
       rhat = NA_real_,
       ess_bulk = NA_real_,
       ess_tail = NA_real_,

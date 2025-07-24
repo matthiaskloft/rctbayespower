@@ -127,7 +127,7 @@ print(design)
 #> Parameter names - interim function:  
 #> 
 #> 
-#> === Brms Model ===
+#> === 'brms' Model ===
 #> 
 #>  Family: gaussian 
 #>   Links: mu = identity; sigma = identity 

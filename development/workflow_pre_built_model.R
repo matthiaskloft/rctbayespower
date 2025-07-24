@@ -34,7 +34,7 @@ conditions <- build_conditions(
   design = design,
   condition_values = list(
     # two sample sizes
-    n_total = c(100), #seq(80,320, 20),
+    n_total = c(80, 120), #seq(60,280, 20),
     # two effect sizes
     b_arm_treat = .5 #c(0,seq(.2,.5,.1))
   ),
@@ -52,14 +52,18 @@ conditions <- build_conditions(
 
 
 n_cores <- 1#parallel::detectCores() - 1
-n_sims <- 50
+n_sims <- 100
 
-power_config <- power_analysis(conditions, n_sims = n_sims, n_cores = n_cores, verbose = TRUE)
-result <- run(power_config)
+power<- rctbp_power_analysis(conditions = conditions, n_sims = n_sims, n_cores = n_cores, verbose = F)
 
-plot(result)
-class(result)
+power <- run(power, verbose = TRUE)
+sum <- power@summarized_results
+sum
+raw <- power@raw_results
+raw
 
-plot(power_config)
+plot(power)
+class(power)
 
-power_config@run()
+plot(power)
+

@@ -1,0 +1,20 @@
+build_conditions        Build Conditions for Power Analysis
+build_design            Constructor for rctbp_design Objects
+build_model             Create a Build Model Object
+build_model_ancova      Create General ANCOVA Model with Flexible
+                        Specifications
+build_model_ancova_cont_2arms
+                        Create 2-Arm ANCOVA Model for Continuous
+                        Outcomes
+build_model_ancova_cont_3arms
+                        Create 3-Arm ANCOVA Model for Continuous
+                        Outcomes
+get_predefined_model    Get a predefined model by name
+list_predefined_models
+                        List available predefined models
+required_fn_args        Identify Required Parameters for Design or
+                        Model Objects
+run                     Run Analysis Objects
+simulate_single_run     Single Run Simulation for RCT Bayesian Power
+                        Analysis
+update_s7_with_dots     Update Properties of an S7 Object with '...'

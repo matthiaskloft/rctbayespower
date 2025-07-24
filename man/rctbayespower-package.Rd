@@ -7,33 +7,7 @@
 \title{The 'rctbayespower' package.}
 \description{
 Bayesian power analysis for randomized controlled trials (RCTs) using brms and Stan.
-Provides tools for estimating power curves, determining optimal sample sizes, and
-incorporating prior knowledge about treatment effects using region of practical
-equivalence (ROPE) for decision making.
 }
-\section{Main Functions}{
-
-\describe{
-\item{\code{\link[=power_analysis]{power_analysis()}}}{Comprehensive power analysis varying sample sizes and effect sizes}
-\item{\code{\link[=build_model]{build_model()}}}{Create model specifications for power analysis}
-\item{\code{\link[=build_design]{build_design()}}}{Create experimental design configurations}
-\item{\code{\link[=build_conditions]{build_conditions()}}}{Generate analysis conditions from design parameters}
-\item{\code{\link[=simulate_single_run]{simulate_single_run()}}}{Execute single simulation run for power analysis}
-\item{\code{\link[=validate_weighting_function]{validate_weighting_function()}}}{Testing weighting function implementations}
-\item{\code{\link[=plot]{plot()}}}{Visualization of power analysis results}
-}
-}
-
-\section{Key Features}{
-
-\itemize{
-\item Design prior integration for weighted power computation
-\item Comprehensive plotting system with multiple visualization options
-\item Robust parallelization with proper parameter handling
-\item ANCOVA models with baseline covariate support
-}
-}
-
 \seealso{
 Useful links:
 \itemize{

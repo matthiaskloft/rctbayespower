@@ -65,7 +65,7 @@ print(model_ancova)
 
 Find possible target parameters in the model.
 ```{r}
-attr(model_ancova, "parameter_names_brms")
+model_ancova@parameter_names_brms
 ```
 
 Specify the study design with target parameter, thresholds for success and futility, and significance levels for frequentist-like power.
@@ -119,10 +119,10 @@ n_sims <- 1e3
 ```
 
 ```{r basic_performance}
-power_results <- power_analysis(
+power <- rctbp_power_analysis(
   conditions = conditions,
   n_cores = n_cores,
-  n_simulations = n_sims,
+  n_sims = n_sims,
   verbose = TRUE,
   brms_args = list(
     chains = 4,
@@ -131,7 +131,14 @@ power_results <- power_analysis(
   )
 )
 
-power_results$results_df
+power <- run(power)
+
+power$summarized_results |> 
+  kableExt::kableExtra(
+    caption = "Power Analysis Results",
+    digits = 3,
+    format = "html"
+  )
 ```
 
 

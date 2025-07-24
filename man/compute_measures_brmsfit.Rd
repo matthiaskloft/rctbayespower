@@ -66,7 +66,4 @@ measures <- compute_measures_brmsfit(fitted_model, design)
 }
 
 }
-\seealso{
-\code{\link[=power_analysis]{power_analysis()}}, \code{\link[=simulate_single_run]{simulate_single_run()}}
-}
 \keyword{internal}

@@ -20,7 +20,7 @@ A list containing validation results:
 }
 }
 \description{
-Tests that the weighting function parsing and computation in power_analysis()
+Tests that the weighting function parsing and computation in rctbp_power_analysis objects
 works correctly. This function validates both brms syntax parsing and R function handling,
 as well as the weighted power computation logic.
 }

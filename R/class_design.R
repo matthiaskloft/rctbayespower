@@ -266,7 +266,7 @@ S7::method(print, rctbp_design) <- function(x, ...) {
     "\n"
   )
 
-  cat("\n=== Brms Model ===\n\n")
+  cat("\n=== 'brms' Model ===\n\n")
   print(x@model@brms_model)
 
   if (!is.null(x@interim_function)) {
