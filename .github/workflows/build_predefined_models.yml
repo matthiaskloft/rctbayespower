@@ -30,8 +30,7 @@ jobs:
 
       - name: Run model build script
         run: |
-          Rscript -e 'devtools::load_all()'
-          Rscript data-raw/build_predefined_models.R
+          Rscript -e 'devtools::load_all(); source("data-raw/build_predefined_models.R")'
 
       # Optional: commit and push new .rda files back to the repo
       - name: Commit and push model data
