@@ -4,12 +4,12 @@
 #' MCSE provides an estimate of the uncertainty in power estimates due to Monte Carlo sampling.
 #'
 #' @param successes Vector of success indicators (TRUE/FALSE or 1/0)
-#' @param n_simulations Total number of simulations
+#' @param n_sims Total number of simulations
 #' @return Monte Carlo Standard Error
 #' @importFrom stats sd
 #' @keywords internal
-calculate_mcse_power <- function(successes, n_simulations) {
-  if (length(successes) == 0 || n_simulations == 0) {
+calculate_mcse_power <- function(successes, n_sims) {
+  if (length(successes) == 0 || n_sims == 0) {
     return(NA_real_)
   }
 
@@ -22,7 +22,7 @@ calculate_mcse_power <- function(successes, n_simulations) {
   p <- mean(successes, na.rm = TRUE)
 
   # MCSE for proportion = sqrt(p * (1 - p) / n)
-  mcse <- sqrt(p * (1 - p) / n_simulations)
+  mcse <- sqrt(p * (1 - p) / n_sims)
 
   return(mcse)
 }
@@ -32,11 +32,11 @@ calculate_mcse_power <- function(successes, n_simulations) {
 #' Calculate Monte Carlo Standard Error for continuous metrics like mean probabilities.
 #'
 #' @param values Vector of continuous values
-#' @param n_simulations Total number of simulations
+#' @param n_sims Total number of simulations
 #' @return Monte Carlo Standard Error
 #' @keywords internal
-calculate_mcse_mean <- function(values, n_simulations) {
-  if (length(values) == 0 || n_simulations == 0) {
+calculate_mcse_mean <- function(values, n_sims) {
+  if (length(values) == 0 || n_sims == 0) {
     return(NA_real_)
   }
 
@@ -60,12 +60,12 @@ calculate_mcse_mean <- function(values, n_simulations) {
 #'
 #' @param values Vector of power or probability values
 #' @param weights Vector of weights for integration
-#' @param n_simulations Total number of simulations
+#' @param n_sims Total number of simulations
 #' @param is_power_metric Logical indicating if this is a power metric (TRUE) or probability metric (FALSE)
 #' @return Monte Carlo Standard Error for integrated metric
 #' @keywords internal
-calculate_mcse_integrated_power <- function(values, weights, n_simulations, is_power_metric = TRUE) {
-  if (length(values) == 0 || length(weights) == 0 || n_simulations == 0) {
+calculate_mcse_integrated_power <- function(values, weights, n_sims, is_power_metric = TRUE) {
+  if (length(values) == 0 || length(weights) == 0 || n_sims == 0) {
     return(NA_real_)
   }
 
@@ -91,13 +91,14 @@ calculate_mcse_integrated_power <- function(values, weights, n_simulations, is_p
   if (is_power_metric) {
     # For power metrics (proportions), use binomial-based MCSE
     # MCSE for weighted proportion approximation
-    mcse <- sqrt(weighted_avg * (1 - weighted_avg) / n_simulations)
+    mcse <- sqrt(weighted_avg * (1 - weighted_avg) / n_sims)
   } else {
     # For probability metrics (continuous), use weighted variance approach
     # Approximate MCSE using weighted variance
     weighted_var <- sum(weights * (values - weighted_avg)^2)
-    mcse <- sqrt(weighted_var / n_simulations)
+    mcse <- sqrt(weighted_var / n_sims)
   }
 
   return(mcse)
 }
+

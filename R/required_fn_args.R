@@ -1,10 +1,10 @@
 #' Identify Required Parameters for Design or Model Objects
 #'
 #' Generic wrapper function that identifies required parameters for either
-#' rctbayespower_design or rctbayespower_model objects by dispatching to the
+#' rctbp_design or rctbayespower_model objects by dispatching to the
 #' appropriate specific function.
 #'
-#' @param object Either an rctbayespower_design or rctbayespower_model object
+#' @param object Either an rctbp_design or rctbayespower_model object
 #' @param print Logical. If TRUE (default), prints the required parameters to console
 #'
 #' @return For design objects: a list with simulation, interim, and all parameters.
@@ -18,12 +18,12 @@
 #'
 #' @export
 required_fn_args <- function(object, print = TRUE) {
-  if (inherits(object, "rctbayespower::rctbp_design")) {
+  if (inherits(object, "rctbayespower::rctbp_design") || inherits(object, "rctbp_design")) {
     return(required_fn_args_design(object, print))
-  } else if (inherits(object, "rctbayespower::rctbp_model")) {
+  } else if (inherits(object, "rctbayespower::rctbp_model") || inherits(object, "rctbp_model")) {
     return(required_fn_args_model(object, print))
   } else {
-    stop("'object' must be either an rctbayespower_design or rctbayespower_model object.")
+    stop("'object' must be either an rctbp_design or rctbayespower_model object.")
   }
 }
 
@@ -88,16 +88,16 @@ get_arg_defaults <- function(fn) {
 #' design object. This helps users identify which parameters must be specified
 #' before running simulations.
 #'
-#' @param design An rctbayespower_design object
+#' @param design An rctbp_design object
 #' @param print Logical. If TRUE (default), prints the required parameters to console
 #'
 #' @return A character vector containing the names of all required parameters
 #'
 #' @keywords internal
 required_fn_args_design <- function(design, print = TRUE) {
-  # check that design is a valid rctbayespower_design object
-  if (!inherits(design, "rctbayespower::rctbp_design")) {
-    stop("'design' must be a valid rctbayespower_design object.")
+  # check that design is a valid rctbp_design object (allow both namespaced and non-namespaced for testing)
+  if (!inherits(design, "rctbayespower::rctbp_design") && !inherits(design, "rctbp_design")) {
+    stop("'design' must be a valid rctbp_design object.")
   }
 
   # get args without defaults for the data simulation function
@@ -144,8 +144,8 @@ required_fn_args_design <- function(design, print = TRUE) {
 #'
 #' @keywords internal
 required_fn_args_model <- function(model, print = TRUE) {
-  # check that model is a valid rctbayespower_model object
-  if (!inherits(model, "rctbayespower::rctbp_model")) {
+  # check that model is a valid rctbayespower_model object (allow both namespaced and non-namespaced for testing)
+  if (!inherits(model, "rctbayespower::rctbp_model") && !inherits(model, "rctbp_model")) {
     stop("'model' must be a valid rctbayespower_model object.")
   }
 

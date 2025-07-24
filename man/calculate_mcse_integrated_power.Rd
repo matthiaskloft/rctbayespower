@@ -7,7 +7,7 @@
 calculate_mcse_integrated_power(
   values,
   weights,
-  n_simulations,
+  n_sims,
   is_power_metric = TRUE
 )
 }
@@ -16,7 +16,7 @@ calculate_mcse_integrated_power(
 
 \item{weights}{Vector of weights for integration}
 
-\item{n_simulations}{Total number of simulations}
+\item{n_sims}{Total number of simulations}
 
 \item{is_power_metric}{Logical indicating if this is a power metric (TRUE) or probability metric (FALSE)}
 }

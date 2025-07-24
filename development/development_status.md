@@ -129,7 +129,7 @@ n_cores <- 15
 result <- power_analysis(
   conditions = conditions,
   n_cores = n_cores,
-  n_simulations = n_cores * 40,
+  n_sims = n_cores * 40,
   verbose = TRUE
 )
 ```

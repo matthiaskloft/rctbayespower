@@ -52,7 +52,7 @@ test_ancova_caching <- function() {
       power_analysis_fn = "power_analysis_ancova",
       outcome_type = "continuous",
       baseline_effect = 0.2,
-      n_simulations = 5  # Small number for testing
+      n_sims = 5  # Small number for testing
     )
     cat("ANCOVA caching test completed successfully!\n")
     return(TRUE)
@@ -76,7 +76,7 @@ test_grouping <- function() {
       power_analysis_fn = "power_analysis_ancova",
       outcome_type = "continuous",
       baseline_effect = 0.2,
-      n_simulations = 3  # Small number for testing
+      n_sims = 3  # Small number for testing
     )
     cat("Effect size grouping test completed successfully!\n")
     return(TRUE)

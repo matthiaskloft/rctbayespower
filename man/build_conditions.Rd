@@ -7,7 +7,7 @@
 build_conditions(design, condition_values, static_values)
 }
 \arguments{
-\item{design}{An rctbayespower_design object that defines the study design}
+\item{design}{An rctbp_design object that defines the study design}
 
 \item{condition_values}{A named list where each element contains vectors of
 parameter values to vary across conditions. All combinations will be created.}
@@ -20,7 +20,7 @@ An S7 object of class "rctbp_conditions" containing:
 \item{conditions_grid}{A data.frame with all parameter combinations}
 \item{condition_arguments}{A list of argument lists for each condition,
 separated into simulation and interim analysis arguments}
-\item{design}{The original rctbayespower_design object}
+\item{design}{The original rctbp_design object}
 \item{condition_values}{The original condition_values list}
 \item{static_values}{The original static_values list}
 }

@@ -1,6 +1,6 @@
-#' Create an rctbayespower_design Object
+#' Create an rctbp_design Object
 #'
-#' Constructs an rctbayespower_design object that combines a rctbayespower_model
+#' Constructs an rctbp_design object that combines a rctbayespower_model
 #' with analysis configuration parameters for Bayesian power analysis. This object
 #' encapsulates all information needed to conduct power simulations.
 #'
@@ -29,7 +29,7 @@
 #' @param design_name Optional character string providing a descriptive name for the design
 #'
 #' @details
-#' The rctbayespower_design class combines model specifications with analysis
+#' The rctbp_design class combines model specifications with analysis
 #' decision criteria:
 #'
 #'
@@ -48,7 +48,7 @@
 #' \strong{Validation:} All parameters are validated for consistency with the
 #' underlying model structure and each other.
 #'
-#' @return An object of class "rctbayespower_design" containing all elements from
+#' @return An object of class "rctbayespower::rctbp_design" containing all elements from
 #'   the model plus the analysis configuration. Key components include:
 #' \describe{
 #'   \item{data_simulation_fn}{Data simulation function from the model}
@@ -206,7 +206,7 @@ build_design <- function(model = NULL,
   )
 
   # overwrite class
-  class(output_list) <- "rctbayespower_design"
+  class(output_list) <- "rctbayespower::rctbp_design"
 
   # add attributes not inherited from the model
   attr(output_list, "design_name") <- attr(model, "design_name")
@@ -235,18 +235,18 @@ build_design <- function(model = NULL,
 }
 
 
-#' Print Method for rctbayespower_design Objects
+#' Print Method for rctbp_design Objects
 #'
-#' Displays a comprehensive summary of an rctbayespower_design object, showing
+#' Displays a comprehensive summary of an rctbp_design object, showing
 #' both model specifications and analysis configuration in an organized format.
 #'
-#' @param x An object of class "rctbayespower_design"
+#' @param x An object of class "rctbayespower::rctbp_design"
 #' @param ... Additional arguments (currently unused)
 #'
 #' @return Invisibly returns the input object. Used for side effects (printing).
 #' @export
 #' @method print rctbayespower_design
-print.rctbayespower_design <- function(x, ...) {
+print.rctbp_design <- function(x, ...) {
   cat("\nObject of class: 'rctbayespower_design'\n")
   cat("--------------------------------------------------\n")
   # model

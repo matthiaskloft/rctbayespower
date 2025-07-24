@@ -7,7 +7,7 @@
 #'   created by [build_conditions()]. Contains 'sim_args' with 'n_total', 'p_alloc',
 #'   and 'true_parameter_values', plus optional 'interim_args'.
 #' @param id_sim Simulation identifier for tracking individual simulation runs
-#' @param design A rctbayespower_design object containing the simulation and model specifications
+#' @param design A rctbp_design object containing the simulation and model specifications
 #' @param brms_args Arguments passed to brms for model fitting. Default includes 'algorithm' = "sampling", 'iter' = 500, 'warmup' = 250, 'chains' = 4, 'cores' = 1. User can override any of these or add additional arguments.
 #'
 #' @return A fitted brms model object on success, NULL on failure
@@ -60,13 +60,24 @@ simulate_single_run <- function(condition_arguments,
                                 brms_args = list()) {
   # no validations since this is the lowest level function
 
+  # Handle both S7 design objects and regular list design components (for parallel workers)
+  if (inherits(design, "rctbayespower::rctbp_design") || inherits(design, "rctbp_design")) {
+    # S7 design object
+    data_simulation_fn <- design@model@data_simulation_fn
+    brms_model <- design@model@brms_model
+  } else if (is.list(design)) {
+    # Regular list with design components (from parallel workers)
+    data_simulation_fn <- design$model_data_simulation_fn
+    brms_model <- design$model_brms_model
+  } else {
+    stop("Invalid design object")
+  }
 
-  sim_args <- condition_arguments$sim_args
   # Simulate data with error handling
   simulated_data <- tryCatch({
-    do.call(design$data_simulation_fn, args = sim_args)
+    do.call(data_simulation_fn, args = condition_arguments$sim_args)
   }, error = function(e) {
-    n_total <- sim_args$n_total %||% "unknown"
+    n_total <- if(is.null(condition_arguments$sim_args$n_total)) "unknown" else condition_arguments$sim_args$n_total
     warning("Data simulation failed for 'n_total'=",
             n_total,
             ": ",
@@ -75,7 +86,26 @@ simulate_single_run <- function(condition_arguments,
   })
 
   if (is.null(simulated_data)) {
-    return(NULL)
+    return(data.frame(
+      parameter = NA_character_,
+      threshold_success = NA_real_,
+      threshold_futility = NA_real_,
+      success_prob = NA_real_,
+      futility_prob = NA_real_,
+      power_success = NA_real_,
+      power_futility = NA_real_,
+      median = NA_real_,
+      mad = NA_real_,
+      mean = NA_real_,
+      sd = NA_real_,
+      rhat = NA_real_,
+      ess_bulk = NA_real_,
+      ess_tail = NA_real_,
+      id_sim = id_sim,
+      id_cond = condition_arguments$id_cond,
+      converged = 0L,
+      error = "Data simulation failed"
+    ))
   }
 
   # default brms arguments
@@ -101,10 +131,10 @@ simulate_single_run <- function(condition_arguments,
   # Fit the model to the simulated data with error handling
   fitted_model <- tryCatch({
     do.call(function(...) {
-      stats::update(object = design$brms_model, newdata = simulated_data, ...)
+      stats::update(object = brms_model, newdata = simulated_data, ...)
     }, brms_args_final)
   }, error = function(e) {
-    n_total <- sim_args$n_total %||% "unknown"
+    n_total <- if(is.null(condition_arguments$sim_args$n_total)) "unknown" else condition_arguments$sim_args$n_total
     warning("Model fitting failed for 'n_total'=",
             n_total,
             ": ",
@@ -120,8 +150,8 @@ simulate_single_run <- function(condition_arguments,
       threshold_futility = NA_real_,
       success_prob = NA_real_,
       futility_prob = NA_real_,
-      sig_success = NA_real_,
-      sig_futility = NA_real_,
+      power_success = NA_real_,
+      power_futility = NA_real_,
       est_median = NA_real_,
       est_mad = NA_real_,
       est_mean = NA_real_,
@@ -154,8 +184,8 @@ simulate_single_run <- function(condition_arguments,
       threshold_futility = NA_real_,
       success_prob = NA_real_,
       futility_prob = NA_real_,
-      sig_success = NA_real_,
-      sig_futility = NA_real_,
+      power_success = NA_real_,
+      power_futility = NA_real_,
       est_median = NA_real_,
       est_mad = NA_real_,
       est_mean = NA_real_,

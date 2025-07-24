@@ -12,7 +12,7 @@
 #'
 #' @param conditions An S7 conditions object created by [build_conditions()] containing:
 #'   \itemize{
-#'     \item design: An rctbayespower_design object with model specifications
+#'     \item design: An rctbp_design object with model specifications
 #'     \item condition_arguments: List of prepared condition arguments for simulation
 #'   }
 #' @param design_prior Optional design prior for integrated power computation. Can be:
@@ -21,7 +21,7 @@
 #'     \item An R function taking effect size as input (e.g., function(x) dnorm(x, 0.5, 0.2))
 #'     \item NULL for no design prior (default)
 #'   }
-#' @param n_simulations Number of MCMC iterations per condition (default: 500)
+#' @param n_sims Number of MCMC iterations per condition (default: 500)
 #' @param n_cores Number of parallel cores for condition execution (default: 1)
 #' @param n_progress_updates Show progress every N conditions when running sequentially (default: 10)
 #' @param verbose Logical. Whether to show detailed progress information (default: FALSE)
@@ -32,7 +32,7 @@
 #' This modernized function uses the new object-oriented API and provides several advantages:
 #'
 #' \strong{Unified Parameter Management:} All model and analysis specifications are contained
-#' in the rctbayespower_design object, ensuring consistency and reducing parameter errors.
+#' in the rctbp_design object, ensuring consistency and reducing parameter errors.
 #'
 #' \strong{Flexible Condition Specification:} Conditions can vary any combination of sample sizes,
 #' effect sizes, interim analyses, allocation ratios, and other parameters independently.
@@ -86,13 +86,13 @@
 #' # Run power analysis
 #' result <- power_analysis(
 #'   conditions = conditions,
-#'   n_simulations = 10, # Low for example
+#'   n_sims = 10, # Low for example
 #'   n_cores = 1
 #' )
 #' }
 power_analysis <- function(conditions,
                            design_prior = NULL,
-                           n_simulations = 500,
+                           n_sims = 500,
                            n_cores = 1,
                            n_progress_updates = 10,
                            verbose = FALSE,
@@ -100,96 +100,297 @@ power_analysis <- function(conditions,
                            ...) {
   # time start
   start_time <- Sys.time()
-
-  # Validate conditions, must be of class rctbp_conditions
-  if (!inherits(conditions, "rctbayespower::rctbp_conditions")) {
+  # handlers for progress bar
+  progressr::handlers(global = TRUE)
+  
+  # Validate conditions, must be of class rctbp_conditions (allow both namespaced and non-namespaced for testing)
+  if (!inherits(conditions, "rctbayespower::rctbp_conditions") && !inherits(conditions, "rctbp_conditions")) {
     stop("'conditions' must be a valid rctbp_conditions object")
   }
-
-  # Validate n_simulations, must be a positive integer
-  if (!is.numeric(n_simulations) || n_simulations <= 0) {
-    stop("'n_simulations' must be a positive number")
+  
+  # Validate n_sims, must be a positive integer
+  if (!is.numeric(n_sims) || n_sims <= 0) {
+    stop("'n_sims' must be a positive number")
   }
-
+  
   # Validate n_cores, must be a positive integer
   if (!is.numeric(n_cores) || n_cores <= 0) {
     n_cores <- 1
     warning("Invalid n_cores value. Using n_cores = 1.")
   }
-
-  # expand condition_arguments_list to match n_simulations
-  condition_args_list <- rep(conditions@condition_arguments, each = n_simulations)
-
+  
+  # expand condition_arguments_list to match n_sims
+  condition_args_list <- rep(conditions@condition_arguments, each = n_sims)
+  
   # Extract design from conditions object
   design <- conditions@design
-
-  # Validate design object
-  if (!inherits(design, "rctbayespower_design")) {
-    stop("'design' must be a valid rctbayespower_design object")
+  
+  # Validate design object (allow both namespaced and non-namespaced for testing)
+  if (!inherits(design, "rctbayespower::rctbp_design") && !inherits(design, "rctbp_design")) {
+    stop("'design' must be a valid rctbp_design object")
   }
-
+  
   # Set up parallelization -----------------------------------------------------
   total_runs <- length(condition_args_list)
-
+  
   # Optional logging
   if (verbose) {
     cat("\n=== Power Analysis ===\n")
-    cat("Total simulations:", total_runs, "\n")
-    cat("Total conditions to test:",
-        attr(conditions, "n_conditions"),
-        "\n")
     cat("Conditions:\n")
     print(conditions@conditions_grid)
     cat("\n")
-    cat("Number of simulations per condition:", n_simulations, "\n")
-    cat(
-      "Number of total simulations :",
-      n_simulations * attr(conditions, "n_conditions"),
-      "\n"
-    )
+    cat("Conditions to test:",
+        nrow(conditions@conditions_grid),
+        "\n")
+    cat("Simulations per condition:", n_sims, "\n")
+    cat("Total simulations:", total_runs, "\n\n")
+    
     if (n_cores > 1) {
-      cat("Parallel cores:", n_cores, "\n")
+      cat("Parallel execution using", n_cores, "cores:", "\n")
+    } else {
+      cat("Sequential execution:\n")
     }
   }
-
+  
   # Progress bar for sequential execution
-  pb <- NULL
-  if (n_cores == 1) {
-    pb <- utils::txtProgressBar(min = 0,
-                                max = total_runs,
-                                style = 3)
-  }
-
+  
+  
   # Execute simulations
-  if (n_cores > 1) {
-    # Set up cluster
-    cl <- parallel::makeCluster(n_cores, type = "PSOCK")
-
-    # Load required packages on workers
-    parallel::clusterEvalQ(cl, {
-      library(rctbayespower)
-      library(brms)
-      library(dplyr)
-    })
-
-    # Export required objects to cluster
-    parallel::clusterExport(
-      cl,
-      varlist = c(
-        "condition_args_list",
-        "design",
-        "brms_args",
+  if (requireNamespace("pbapply", quietly = TRUE)) {
+    if (n_cores > 1) {
+      # Set up cluster
+      cl <- parallel::makeCluster(n_cores, type = "PSOCK")
+      
+      # Load required packages on workers first
+      parallel::clusterEvalQ(cl, {
+        library(brms)
+        library(dplyr)
+        library(progressr)
+        library(posterior)
+        library(purrr)
+        library(stats)
+        library(utils)
+        library(S7)
+        library(stringr)
+        
+        # For development with devtools/pkgload, try to load the package
+        tryCatch({
+          if (requireNamespace("rctbayespower", quietly = TRUE)) {
+            library(rctbayespower)
+          }
+        }, error = function(e) {
+          # Package might not be properly installed, will rely on explicit exports
+        })
+      })
+      
+      # Extract design components for parallel workers (S7 objects don't serialize well)
+      design_components <- list(
+        target_params = design@target_params,
+        thresholds_success = design@thresholds_success,
+        thresholds_futility = design@thresholds_futility,
+        p_sig_success = design@p_sig_success,
+        p_sig_futility = design@p_sig_futility,
+        n_interim_analyses = design@n_interim_analyses,
+        interim_function = design@interim_function,
+        design_name = design@design_name,
+        model_data_simulation_fn = design@model@data_simulation_fn,
+        model_brms_model = design@model@brms_model
+      )
+      
+      # Export required objects to cluster
+      parallel::clusterExport(
+        cl,
+        varlist = c(
+          "condition_args_list",
+          "design_components", 
+          "brms_args"
+        ),
+        envir = environment()
+      )
+      
+      # Export package functions - try multiple approaches for robustness
+      functions_to_export <- c(
         "simulate_single_run",
-        "compute_measures_brmsfit"
-      ),
-      envir = environment()
-    )
-
-    # Run parallel computation - direct index access is faster
-    results_raw_list <- parallel::parLapply(cl, seq_along(condition_args_list), function(i) {
-
-      print(condition_args_list[[i]])
-
+        "compute_measures_brmsfit", 
+        "calculate_mcse_power",
+        "calculate_mcse_mean",
+        "calculate_mcse_integrated_power"
+      )
+      
+      # Try multiple approaches to export functions to workers
+      export_success <- FALSE
+      
+      # Method 1: Try namespace export first (for installed package)
+      tryCatch({
+        ns <- asNamespace("rctbayespower")
+        # Check if all functions exist in namespace
+        all_exist <- all(sapply(functions_to_export, exists, envir = ns))
+        if (all_exist) {
+          parallel::clusterExport(cl, varlist = functions_to_export, envir = ns)
+          export_success <- TRUE
+          if (verbose) cat("Functions exported from package namespace\n")
+        }
+      }, error = function(e) {
+        if (verbose) cat("Namespace export failed:", e$message, "\n")
+      })
+      
+      # Method 2: Try getting functions from current environment (for devtools/pkgload)
+      if (!export_success) {
+        # Get function objects directly and assign them on workers
+        function_objects <- list()
+        for (fn_name in functions_to_export) {
+          # Try multiple locations to find the function
+          fn_obj <- NULL
+          
+          # Try namespace first
+          tryCatch({
+            ns <- asNamespace("rctbayespower")
+            if (exists(fn_name, envir = ns)) {
+              fn_obj <- get(fn_name, envir = ns)
+            }
+          }, error = function(e) {})
+          
+          # Try global environment if not found in namespace
+          if (is.null(fn_obj) && exists(fn_name, envir = .GlobalEnv)) {
+            fn_obj <- get(fn_name, envir = .GlobalEnv)
+          }
+          
+          # Try current environment if still not found
+          if (is.null(fn_obj) && exists(fn_name, envir = environment())) {
+            fn_obj <- get(fn_name, envir = environment())
+          }
+          
+          if (!is.null(fn_obj)) {
+            function_objects[[fn_name]] <- fn_obj
+          }
+        }
+        
+        # Export the function objects we found
+        if (length(function_objects) > 0) {
+          for (fn_name in names(function_objects)) {
+            parallel::clusterCall(cl, function(name, obj) {
+              assign(name, obj, envir = .GlobalEnv)
+            }, fn_name, function_objects[[fn_name]])
+          }
+          export_success <- TRUE
+          if (verbose) cat("Functions exported as objects:", paste(names(function_objects), collapse = ", "), "\n")
+        }
+      }
+      
+      if (!export_success && verbose) {
+        cat("Warning: Could not export all required functions to workers\n")
+      }
+    } else{
+      cl <- NULL
+    }
+    
+    # Parallel -----------------------------------------------------------------
+    results_raw_list <-
+      pbapply::pblapply(cl = cl, seq_along(condition_args_list), function(i) {
+        # Top-level error capture for any issues in parallel worker
+        tryCatch({
+          # Test basic functionality first
+          if (!exists("condition_args_list") || !exists("design_components")) {
+            stop("Required objects not found in worker environment")
+          }
+          
+          # Check and load required functions if they don't exist
+          required_functions <- c("simulate_single_run", "compute_measures_brmsfit", 
+                                 "calculate_mcse_power", "calculate_mcse_mean", 
+                                 "calculate_mcse_integrated_power")
+          
+          missing_functions <- c()
+          for (fn_name in required_functions) {
+            if (!exists(fn_name)) {
+              # Try to get from package namespace
+              tryCatch({
+                if (requireNamespace("rctbayespower", quietly = TRUE)) {
+                  assign(fn_name, get(fn_name, envir = asNamespace("rctbayespower")), envir = .GlobalEnv)
+                } else {
+                  missing_functions <- c(missing_functions, fn_name)
+                }
+              }, error = function(e) {
+                missing_functions <- c(missing_functions, fn_name)
+              })
+            }
+          }
+          
+          if (length(missing_functions) > 0) {
+            stop("Required functions not found in worker environment: ", paste(missing_functions, collapse = ", "))
+          }
+          
+          if (i > length(condition_args_list)) {
+            stop("Index out of bounds for condition_args_list")
+          }
+          
+          # Simulate single run and compute measures with detailed error capture
+          df_measures <- tryCatch({
+            simulate_single_run(
+              condition_arguments = condition_args_list[[i]],
+              id_sim = i,
+              design = design_components,
+              brms_args = brms_args
+            )
+          }, error = function(e) {
+            # Return error info for debugging
+            data.frame(
+              parameter = "ERROR",
+              threshold_success = NA_real_,
+              threshold_futility = NA_real_,
+              success_prob = NA_real_,
+              futility_prob = NA_real_,
+              power_success = NA_real_,
+              power_futility = NA_real_,
+              median = NA_real_,
+              mad = NA_real_,
+              mean = NA_real_,
+              sd = NA_real_,
+              rhat = NA_real_,
+              ess_bulk = NA_real_,
+              ess_tail = NA_real_,
+              id_sim = i,
+              id_cond = if(!is.null(condition_args_list[[i]]$id_cond)) condition_args_list[[i]]$id_cond else NA_integer_,
+              converged = 0L,
+              error = paste("simulate_single_run error:", e$message)
+            )
+          })
+          
+          return(df_measures)
+          
+        }, error = function(e) {
+          # Top-level worker error
+          data.frame(
+            parameter = "ERROR",
+            threshold_success = NA_real_,
+            threshold_futility = NA_real_,
+            success_prob = NA_real_,
+            futility_prob = NA_real_,
+            power_success = NA_real_,
+            power_futility = NA_real_,
+            median = NA_real_,
+            mad = NA_real_,
+            mean = NA_real_,
+            sd = NA_real_,
+            rhat = NA_real_,
+            ess_bulk = NA_real_,
+            ess_tail = NA_real_,
+            id_sim = i,
+            id_cond = NA_integer_,
+            converged = 0L,
+            error = paste("Worker error:", e$message)
+          )
+        })
+      })
+    
+    if (n_cores > 1) {
+      # Stop cluster after use
+    parallel::stopCluster(cl)
+    }
+    
+    
+  } else {
+    # Sequential ---------------------------------------------------------------
+    results_raw_list <- lapply(seq_along(condition_args_list), function(i) {
       # Simulate single run and compute measures
       df_measures <- simulate_single_run(
         condition_arguments = condition_args_list[[i]],
@@ -197,36 +398,58 @@ power_analysis <- function(conditions,
         design = design,
         brms_args = brms_args
       )
+      
       return(df_measures)
     })
-
-    parallel::stopCluster(cl)
-  } else {
-    # Sequential execution with progress bar
-    results_raw_list <- lapply(seq_along(condition_args_list), function(i) {
-      args <- condition_args_list[[i]]
-      # Simulate single run and compute measures
-      df_measures <- simulate_single_run(
-        condition_arguments = args,
-        id_sim = i,
-        design = design,
-        brms_args = brms_args
-      )
-      if (!is.null(pb)) {
-        utils::setTxtProgressBar(pb, i)
+  }
+  # Debug: Check what we got back
+  if (verbose) {
+    cat("\nResults list length:", length(results_raw_list), "\n")
+    cat("First condition_args structure:\n")
+    if (length(condition_args_list) > 0) {
+      str(condition_args_list[[1]])
+    }
+    if (length(results_raw_list) > 0) {
+      cat("First result class:", class(results_raw_list[[1]]), "\n")
+      if (!is.null(results_raw_list[[1]])) {
+        cat("First result dimensions:", dim(results_raw_list[[1]]), "\n")
+      } else {
+        cat("First result is NULL\n")
       }
-      return(df_measures)
-    })
-    if (!is.null(pb)) {
-      close(pb)
     }
   }
-
+  
+  # Filter out NULL results before combining
+  results_raw_list <- results_raw_list[!sapply(results_raw_list, is.null)]
+  
+  if (length(results_raw_list) == 0) {
+    stop("All simulations failed. Check your model and data simulation parameters.")
+  }
+  
+  # Check for and report any error messages
+  if (verbose || TRUE) {  # Always show errors for debugging
+    error_results <- do.call(rbind, results_raw_list)
+    error_rows <- !is.na(error_results$parameter) & error_results$parameter == "ERROR" & !is.na(error_results$error)
+    if (any(error_rows)) {
+      error_msgs <- error_results[error_rows, "error"]
+      cat("Simulation errors found:\n")
+      cat(paste(unique(error_msgs), collapse = "\n"), "\n")
+    }
+  }
+  
   # Combine results - bind_rows is faster than do.call(rbind, ...)
   results_df_raw <- do.call(rbind, results_raw_list)
-
+  
+  # Debug: Check combined results
+  if (verbose) {
+    cat("Combined results dimensions:", dim(results_df_raw), "\n")
+    if (!is.null(results_df_raw) && nrow(results_df_raw) > 0) {
+      cat("Column names:", paste(colnames(results_df_raw), collapse = ", "), "\n")
+    }
+  }
+  
   # Average across simulation runs
-  results_df <- summarize_sims(results_df_raw, n_simulations)
+  results_df <- summarize_sims(results_df_raw, n_sims)
   # Add condition IDs and arguments to results
   results_df <- dplyr::full_join(conditions@conditions_grid, results_df, by = "id_cond")
   # End time
@@ -237,19 +460,19 @@ power_analysis <- function(conditions,
         round(as.numeric(elapsed_time), 2),
         "minutes\n")
   }
-
+  
   # prepare return list
   return_list <- list(
     results_df = results_df,
     results_df_raw = results_df_raw,
     design = design,
     conditions = conditions,
-    n_simulations = n_simulations,
+    n_sims = n_sims,
     elapsed_time = elapsed_time
   )
   # add class for S3 methods
   class(return_list) <- "rctbayespower_sim_result"
-
+  
   # return the result
   invisible(return_list)
 }

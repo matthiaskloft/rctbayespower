@@ -117,12 +117,12 @@ print(ancova_design)
 
 simulate_single_run <- function(n_total = NULL,
                                 p_alloc = NULL,
-                                rctbayespower_design = NULL,
+                                rctbp_design = NULL,
                                 true_parameter_values = NULL,
                                 ...) {
   # validate the rctbayespower_design
-  if (!inherits(rctbayespower_design, "rctbayespower_design")) {
-    stop("'rctbayespower_design' must be a valid rctbayespower_design object.")
+  if (!inherits(rctbayespower_design, "rctbayespower::rctbp_design")) {
+    stop("'rctbayespower_design' must be a valid rctbp_design object.")
   }
   
   # validate n_total
@@ -206,7 +206,7 @@ system.time(
   fitted_model_single_run <- simulate_single_run(
     n_total = n_total,
     p_alloc = p_alloc,
-    rctbayespower_design = ancova_design,
+    rctbp_design = ancova_design,
     true_parameter_values = true_parameter_values
   )
 )
@@ -214,7 +214,7 @@ system.time(
 fitted_model_single_run <- simulate_single_run(
   n_total = n_total,
   p_alloc = p_alloc,
-  rctbayespower_design = ancova_design,
+  rctbp_design = ancova_design,
   true_parameter_values = true_parameter_values
 )
 fitted_model_single_run

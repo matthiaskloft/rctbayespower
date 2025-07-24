@@ -7,7 +7,7 @@
 power_analysis(
   conditions,
   design_prior = NULL,
-  n_simulations = 500,
+  n_sims = 500,
   n_cores = 1,
   n_progress_updates = 10,
   verbose = FALSE,
@@ -18,7 +18,7 @@ power_analysis(
 \arguments{
 \item{conditions}{An S7 conditions object created by \code{\link[=build_conditions]{build_conditions()}} containing:
 \itemize{
-\item design: An rctbayespower_design object with model specifications
+\item design: An rctbp_design object with model specifications
 \item condition_arguments: List of prepared condition arguments for simulation
 }}
 
@@ -29,7 +29,7 @@ power_analysis(
 \item NULL for no design prior (default)
 }}
 
-\item{n_simulations}{Number of MCMC iterations per condition (default: 500)}
+\item{n_sims}{Number of MCMC iterations per condition (default: 500)}
 
 \item{n_cores}{Number of parallel cores for condition execution (default: 1)}
 
@@ -73,7 +73,7 @@ This implementation is optimized for performance through:
 This modernized function uses the new object-oriented API and provides several advantages:
 
 \strong{Unified Parameter Management:} All model and analysis specifications are contained
-in the rctbayespower_design object, ensuring consistency and reducing parameter errors.
+in the rctbp_design object, ensuring consistency and reducing parameter errors.
 
 \strong{Flexible Condition Specification:} Conditions can vary any combination of sample sizes,
 effect sizes, interim analyses, allocation ratios, and other parameters independently.
@@ -110,7 +110,7 @@ conditions <- expand_conditions(
 # Run power analysis
 result <- power_analysis(
   conditions = conditions,
-  n_simulations = 10, # Low for example
+  n_sims = 10, # Low for example
   n_cores = 1
 )
 }

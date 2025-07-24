@@ -76,7 +76,7 @@ cardio_power <- power_analysis_ancova(
   threshold_futility = 0.1,
   p_sig_success = 0.95,
   p_sig_futility = 0.5,
-  n_simulations = n_sims,
+  n_sims = n_sims,
   n_cores = n_cores,
   brms_args = list(
     chains = 4,
@@ -104,7 +104,7 @@ cardio_sample_size <- power_analysis(
   threshold_futility = 0.1,
   p_sig_success = 0.95,
   p_sig_futility = 0.5,
-  n_simulations = n_sims,
+  n_sims = n_sims,
   n_cores = n_cores,
   brms_args = list(
     chains = 4,
@@ -136,7 +136,7 @@ cardio_informed <- power_analysis(
   threshold_futility = 0.1,
   p_sig_success = 0.95,
   p_sig_futility = 0.5,
-  n_simulations = n_sims,
+  n_sims = n_sims,
   n_cores = n_cores,
   brms_args = list(
     chains = 4,
@@ -195,7 +195,7 @@ depression_power <- power_analysis_ancova(
   threshold_futility = 0.1,
   p_sig_success = 0.95,
   p_sig_futility = 0.5,
-  n_simulations = n_sims,
+  n_sims = n_sims,
   n_cores = n_cores,
   brms_args = list(
     chains = 4,
@@ -215,7 +215,7 @@ depression_power_weak <- power_analysis_ancova(
   threshold_futility = 0.1,
   p_sig_success = 0.95,
   p_sig_futility = 0.5,
-  n_simulations = n_sims,
+  n_sims = n_sims,
   n_cores = n_cores,
   brms_args = list(
     chains = 4,
@@ -243,7 +243,7 @@ depression_curve <- power_analysis(
   threshold_futility = 0.1,
   p_sig_success = 0.95,
   p_sig_futility = 0.5,
-  n_simulations = n_sims,
+  n_sims = n_sims,
   n_cores = n_cores,
   brms_args = list(
     chains = 4,
@@ -303,7 +303,7 @@ rare_disease_power <- power_analysis_ancova(
   threshold_futility = 0.2,
   p_sig_success = 0.9, # Lower probability threshold
   p_sig_futility = 0.9,
-  n_simulations = n_sims,
+  n_sims = n_sims,
   n_cores = n_cores,
   brms_args = list(
     chains = 4,
@@ -330,7 +330,7 @@ rare_disease_sample_sizes <- power_analysis(
   threshold_futility = 0.2,
   p_sig_success = 0.9,
   p_sig_futility = 0.9,
-  n_simulations = n_sims,
+  n_sims = n_sims,
   n_cores = n_cores,
   brms_args = list(
     chains = 4,
@@ -390,7 +390,7 @@ public_health_power <- power_analysis_ancova(
   threshold_futility = 0.05,
   p_sig_success = 0.95,
   p_sig_futility = 0.5,
-  n_simulations = n_sims,
+  n_sims = n_sims,
   n_cores = n_cores,
   brms_args = list(
     chains = 4,
@@ -425,7 +425,7 @@ public_health_cost_analysis <- function(sample_sizes, cost_per_participant = 50,
       baseline_prob = baseline_rate,
       threshold_success = abs(public_health_log_or) * 0.5,
       threshold_futility = 0.05,
-      n_simulations = n_sims,
+      n_sims = n_sims,
       n_cores = n_cores,
       brms_args = list(
     chains = 4,

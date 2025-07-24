@@ -5,7 +5,7 @@
 #' #' parameters, validates them against the design requirements, and creates
 #' #' all necessary argument combinations for simulation runs.
 #' #'
-#' #' @param design An rctbayespower_design object that defines the study design
+#' #' @param design An rctbp_design object that defines the study design
 #' #' @param condition_values A named list where each element contains vectors of
 #' #'   parameter values to vary across conditions. All combinations will be created.
 #' #' @param static_values A named list of parameter values that remain constant
@@ -15,7 +15,7 @@
 #' #'   \item{conditions_grid}{A data.frame with all parameter combinations}
 #' #'   \item{condition_arguments}{A list of argument lists for each condition,
 #' #'     separated into simulation and interim analysis arguments}
-#' #'   \item{design}{The original rctbayespower_design object}
+#' #'   \item{design}{The original rctbp_design object}
 #' #'
 #' #' @details The function performs several validation steps:
 #' #' \itemize{
@@ -47,8 +47,8 @@
 #' #' @export
 #' build_conditions <- function(design, condition_values, static_values) {
 #'   # validate design
-#'   if (!inherits(design, "rctbayespower_design")) {
-#'     stop("'design' must be a valid rctbayespower_design object.")
+#'   if (!inherits(design, "rctbayespower::rctbp_design")) {
+#'     stop("'design' must be a valid rctbp_design object.")
 #'   }
 #' 
 #'   # validate inputs

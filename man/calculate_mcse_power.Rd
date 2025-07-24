@@ -4,12 +4,12 @@
 \alias{calculate_mcse_power}
 \title{Monte Carlo Standard Error (MCSE) Calculation}
 \usage{
-calculate_mcse_power(successes, n_simulations)
+calculate_mcse_power(successes, n_sims)
 }
 \arguments{
 \item{successes}{Vector of success indicators (TRUE/FALSE or 1/0)}
 
-\item{n_simulations}{Total number of simulations}
+\item{n_sims}{Total number of simulations}
 }
 \value{
 Monte Carlo Standard Error

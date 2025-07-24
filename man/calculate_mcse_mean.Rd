@@ -4,12 +4,12 @@
 \alias{calculate_mcse_mean}
 \title{Monte Carlo Standard Error for Continuous Metrics}
 \usage{
-calculate_mcse_mean(values, n_simulations)
+calculate_mcse_mean(values, n_sims)
 }
 \arguments{
 \item{values}{Vector of continuous values}
 
-\item{n_simulations}{Total number of simulations}
+\item{n_sims}{Total number of simulations}
 }
 \value{
 Monte Carlo Standard Error

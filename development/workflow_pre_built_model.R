@@ -1,6 +1,6 @@
 # Load package - try devtools first, then pkgload, then library
 devtools::load_all()
-
+#library(rctbayespower)
 #-------------------------------------------------------------------------------
 # 1. Create model
 
@@ -35,39 +35,29 @@ conditions <- build_conditions(
   condition_values = list(
     # two sample sizes
     n_total = 400,
-    # baseline effect
-    b_covariate = c(0, .5),
+    
     # two effect sizes
-    b_arms_treat = c(0, .5)
+    b_arm_treat = c(.5)
   ),
   static_values = list(
+    # baseline effect
+    b_covariate = c(0),
     # equal allocation
     p_alloc =
       list(c(0.5, 0.5))
   )
 )
-print(conditions, n = 100)
 
 #-------------------------------------------------------------------------------
 # 4. Run analysis
-#future::plan("sequential")
-n_cores <- 2
+
+
+n_cores <- 15
+n_sims <- 1e3
+# run the power analysis
 result <- power_analysis(
   conditions = conditions,
   n_cores = n_cores,
-  n_simulations = n_cores * 10,
+  n_sims = n_sims,
   verbose = TRUE
 )
-
-model_ancova$data_simulation_fn(conditions$condition_arguments[[1]]$sim_args)
-conditions$condition_arguments[[1]]$sim_args
-model_ancova$data_simulation_fn
-do.call(model_ancova$data_simulation_fn,
-        conditions$condition_arguments[[1]]$sim_args)
-get_arg_defaults(model_ancova$data_simulation_fn)
-
-# design$target_params <- c("b_arms_treat", "b_Intercept")
-# design$thresholds_success <- c(0.2, 0.0)
-# design$thresholds_futility <- c(0.0, 0.0)
-#
-# brmsfit <- simulate_single_run(conditions$condition_arguments[[1]], design)

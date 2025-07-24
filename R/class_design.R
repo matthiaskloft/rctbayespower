@@ -217,16 +217,16 @@ S7::method(print, rctbp_design) <- function(x, ...) {
   cat("--------------------------------------------------\n")
   # model
   cat("\n=== Model Specifications ===\n\n")
-  cat("Number of endpoints:", x@n_endpoints, "\n")
+  cat("Number of endpoints:", x@model@n_endpoints, "\n")
   cat("Endpoint types:",
       paste(x@model@endpoint_types, collapse = ", "),
       "\n")
-  cat("Number of arms:", x@n_arms, "\n")
+  cat("Number of arms:", x@model@n_arms, "\n")
   cat("Number of repeated measures:",
       if (is.null(x@model@n_repeated_measures))
         "NULL"
       else
-        x@n_repeated_measures,
+        x@model@n_repeated_measures,
       "\n")
   cat(
     "Parameter names - simulation function:",
@@ -267,7 +267,7 @@ S7::method(print, rctbp_design) <- function(x, ...) {
   )
 
   cat("\n=== Brms Model ===\n\n")
-  print(x@brms_model)
+  print(x@model@brms_model)
 
   if (!is.null(x@interim_function)) {
     cat("\n=== Interim Function ===\n\n")

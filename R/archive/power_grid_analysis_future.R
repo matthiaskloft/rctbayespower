@@ -28,7 +28,7 @@
 #' #'
 #' #' @param conditions A conditions object created by [build_conditions()] containing:
 #' #'   \itemize{
-#' #'     \item design: An rctbayespower_design object with model specifications
+#' #'     \item design: An rctbp_design object with model specifications
 #' #'     \item condition_arguments: List of prepared condition arguments for simulation
 #' #'   }
 #' #' @param design_prior Optional design prior for integrated power computation. Can be:
@@ -37,7 +37,7 @@
 #' #'     \item An R function taking effect size as input (e.g., function(x) dnorm(x, 0.5, 0.2))
 #' #'     \item NULL for no design prior (default)
 #' #'   }
-#' #' @param n_simulations Number of MCMC iterations per condition (default: 500)
+#' #' @param n_sims Number of MCMC iterations per condition (default: 500)
 #' #' @param n_cores Number of parallel cores for condition execution (default: 1)
 #' #' @param n_progress_updates Show progress every N conditions when running sequentially (default: 10)
 #' #' @param brms_args Arguments passed to brms for model fitting. Default includes 'algorithm' = "sampling", 'iter' = 500, 'warmup' = 250, 'chains' = 4, 'cores' = 1. User can override any of these or add additional arguments.
@@ -47,7 +47,7 @@
 #' #' This modernized function uses the new object-oriented API and provides several advantages:
 #' #'
 #' #' \strong{Unified Parameter Management:} All model and analysis specifications are contained
-#' #' in the rctbayespower_design object, ensuring consistency and reducing parameter errors.
+#' #' in the rctbp_design object, ensuring consistency and reducing parameter errors.
 #' #'
 #' #' \strong{Flexible Condition Specification:} Conditions can vary any combination of sample sizes,
 #' #' effect sizes, interim analyses, allocation ratios, and other parameters independently.
@@ -101,13 +101,13 @@
 #' #' # Run power analysis
 #' #' result <- power_analysis(
 #' #'   conditions = conditions,
-#' #'   n_simulations = 10, # Low for example
+#' #'   n_sims = 10, # Low for example
 #' #'   n_cores = 1
 #' #' )
 #' #' }
 #' power_analysis <- function(conditions,
 #'                                 design_prior = NULL,
-#'                                 n_simulations = 500,
+#'                                 n_sims = 500,
 #'                                 n_cores = 1,
 #'                                 n_progress_updates = 10,
 #'                                 brms_args = list(),
@@ -120,9 +120,9 @@
 #'     stop("'conditions' must be a valid rctbayespower_conditions object")
 #'   }
 #'
-#'   # Validate n_simulations, must be a positive integer
-#'   if (!is.numeric(n_simulations) || n_simulations <= 0) {
-#'     stop("'n_simulations' must be a positive number")
+#'   # Validate n_sims, must be a positive integer
+#'   if (!is.numeric(n_sims) || n_sims <= 0) {
+#'     stop("'n_sims' must be a positive number")
 #'   }
 #'
 #'   # Validate n_cores, must be a positive integer
@@ -131,15 +131,15 @@
 #'     warning("Invalid n_cores value. Using n_cores = 1.")
 #'   }
 #'
-#'   # expand condition_arguments_list to match n_simulations
-#'   condition_arguments_list <- rep(conditions$condition_arguments, each = n_simulations)
+#'   # expand condition_arguments_list to match n_sims
+#'   condition_arguments_list <- rep(conditions$condition_arguments, each = n_sims)
 #'
 #'   # Extract design from conditions object
 #'   design <- conditions$design
 #'
 #'   # Validate design object
-#'   if (!inherits(design, "rctbayespower_design")) {
-#'     stop("'design' must be a valid rctbayespower_design object")
+#'   if (!inherits(design, "rctbayespower::rctbp_design")) {
+#'     stop("'design' must be a valid rctbp_design object")
 #'   }
 #'
 #'   # Design Prior ---------------------------------------------------------------
@@ -181,10 +181,10 @@
 #'   cat("Conditions:\n")
 #'   print(conditions$conditions_grid)
 #'   cat("\n")
-#'   cat("Number of simulations per condition:", n_simulations, "\n")
+#'   cat("Number of simulations per condition:", n_sims, "\n")
 #'   cat(
 #'     "Number of total simulations :",
-#'     n_simulations * attr(conditions, "n_conditions"),
+#'     n_sims * attr(conditions, "n_conditions"),
 #'     "\n"
 #'   )
 #'   if (n_cores > 1) {
@@ -288,7 +288,7 @@
 #'       rhat = mean(rhat, na.rm = TRUE),
 #'       ess_bulk = mean(ess_bulk, na.rm = TRUE),
 #'       ess_tail = mean(ess_tail, na.rm = TRUE),
-#'       convergence_rate = sum(!is.na(success_prob)) / n_simulations,
+#'       convergence_rate = sum(!is.na(success_prob)) / n_sims,
 #'       error = paste(unique(error), collapse = "; ")
 #'     ) |>
 #'     dplyr::ungroup()

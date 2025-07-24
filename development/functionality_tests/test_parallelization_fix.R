@@ -23,7 +23,7 @@ test_parallelization <- function() {
       power_analysis_fn = "power_analysis_ancova",
       outcome_type = "continuous",
       baseline_effect = 0.2,
-      n_simulations = 10,            # Small number for testing
+      n_sims = 10,            # Small number for testing
       n_cores = 2,                   # Test parallelization
       progress_updates = 3           # Test progress updates
     )

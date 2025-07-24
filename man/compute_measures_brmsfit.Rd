@@ -26,12 +26,12 @@ A data frame containing power analysis measures with the following columns:
 \item \code{threshold_futility}: Futility threshold used for the parameter
 \item \code{success_prob}: Probability that parameter exceeds success threshold
 \item \code{futility_prob}: Probability that parameter falls below futility threshold
-\item \code{sig_success}: Binary indicator (1/0) if success probability meets significance threshold
-\item \code{sig_futility}: Binary indicator (1/0) if futility probability meets significance threshold
-\item \code{est_median}: Posterior median estimate of the parameter
-\item \code{est_mad}: Posterior median absolute deviation of the parameter
-\item \code{est_mean}: Posterior mean estimate of the parameter
-\item \code{est_sd}: Posterior standard deviation of the parameter
+\item \code{power_success}: Binary indicator (1/0) if success probability meets significance threshold
+\item \code{power_futility}: Binary indicator (1/0) if futility probability meets significance threshold
+\item \code{median}: Posterior median estimate of the parameter
+\item \code{mad}: Posterior median absolute deviation of the parameter
+\item \code{mean}: Posterior mean estimate of the parameter
+\item \code{sd}: Posterior standard deviation of the parameter
 \item \code{rhat}: R-hat convergence diagnostic
 \item \code{ess_bulk}: Effective sample size for bulk estimates
 \item \code{ess_tail}: Effective sample size for tail estimates

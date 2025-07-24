@@ -4,7 +4,7 @@ rctbp_conditions <- S7::new_class("rctbp_conditions",
   properties = list(
     conditions_grid = S7::class_data.frame,
     condition_arguments = S7::class_list,
-    design = S7::class_any,  # rctbayespower_design objects
+    design = S7::class_any,  # rctbp_design objects
     condition_values = S7::class_list,
     static_values = S7::class_list
   ),
@@ -17,9 +17,9 @@ rctbp_conditions <- S7::new_class("rctbp_conditions",
     if (length(self@condition_arguments) != nrow(self@conditions_grid)) {
       return("'condition_arguments' length must match 'conditions_grid' rows.")
     }
-    # Validate design object
-    if (!inherits(self@design, "rctbayespower_design")) {
-      return("'design' must be a valid rctbayespower_design object.")
+    # Validate design object (allow both namespaced and non-namespaced for testing)
+    if (!inherits(self@design, "rctbayespower::rctbp_design") && !inherits(self@design, "rctbp_design")) {
+      return("'design' must be a valid rctbp_design object.")
     }
     # If all validations pass, return NULL
     NULL
@@ -33,7 +33,7 @@ rctbp_conditions <- S7::new_class("rctbp_conditions",
 #' parameters, validates them against the design requirements, and creates
 #' all necessary argument combinations for simulation runs.
 #'
-#' @param design An rctbayespower_design object that defines the study design
+#' @param design An rctbp_design object that defines the study design
 #' @param condition_values A named list where each element contains vectors of
 #'   parameter values to vary across conditions. All combinations will be created.
 #' @param static_values A named list of parameter values that remain constant
@@ -43,7 +43,7 @@ rctbp_conditions <- S7::new_class("rctbp_conditions",
 #'   \item{conditions_grid}{A data.frame with all parameter combinations}
 #'   \item{condition_arguments}{A list of argument lists for each condition,
 #'     separated into simulation and interim analysis arguments}
-#'   \item{design}{The original rctbayespower_design object}
+#'   \item{design}{The original rctbp_design object}
 #'   \item{condition_values}{The original condition_values list}
 #'   \item{static_values}{The original static_values list}
 #'
@@ -76,9 +76,9 @@ rctbp_conditions <- S7::new_class("rctbp_conditions",
 #'
 #' @export
 build_conditions <- function(design, condition_values, static_values) {
-  # validate design
-  if (!inherits(design, "rctbayespower_design")) {
-    stop("'design' must be a valid rctbayespower_design object.")
+  # validate design (allow both namespaced and non-namespaced class for testing)
+  if (!inherits(design, "rctbayespower::rctbp_design") && !inherits(design, "rctbp_design")) {
+    stop("'design' must be a valid rctbp_design object.")
   }
 
   # validate inputs

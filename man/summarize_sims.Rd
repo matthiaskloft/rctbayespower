@@ -4,7 +4,7 @@
 \alias{summarize_sims}
 \title{Summarize Power Analysis Simulation Results}
 \usage{
-summarize_sims(results_df_raw, n_simulations)
+summarize_sims(results_df_raw, n_sims)
 }
 \arguments{
 \item{results_df_raw}{A data frame containing raw simulation results with columns:
@@ -28,19 +28,18 @@ summarize_sims(results_df_raw, n_simulations)
 \item \code{error}: Error messages (if any)
 }}
 
-\item{n_simulations}{Integer specifying the total number of simulations run}
+\item{n_sims}{Integer specifying the total number of simulations run}
 }
 \value{
 A data frame with summarized results grouped by condition and parameter,
-containing mean estimates and Monte Carlo standard errors (MCSE) for all metrics:
+containing mean estimates and Monte Carlo standard errors (SE) for all metrics:
 \itemize{
-\item Power estimates: \code{pow_success}, \code{pow_futility}
-\item Probability estimates: \code{success_prob}, \code{futility_prob}
-\item Parameter estimates: \code{est_median}, \code{est_mean}, \code{est_mad}, \code{est_sd}
-\item Convergence metrics: \code{rhat}, \code{ess_bulk}, \code{ess_tail}, \code{convergence_rate}
-\item Error summary: \code{error}
+\item Probability estimates: \code{prob_success}, \code{prob_futility}
+\item Power estimates: \code{power_success}, \code{power_futility}
+\item Parameter estimates: \code{median}, \code{mean}, \code{mad}, \code{sd}
+\item Convergence metrics: \code{rhat}, \code{ess_bulk}, \code{ess_tail}, \code{conv_rate}
 }
-Each metric includes corresponding \code{_mcse} columns with Monte Carlo standard errors.
+Each metric includes corresponding \code{_se} columns with standard errors.
 }
 \description{
 This function aggregates raw simulation results across multiple runs to compute

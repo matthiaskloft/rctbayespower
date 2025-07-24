@@ -56,7 +56,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 model_ancova <- build_model("ancova_cont_2arms")()
 design <- build_design(model, target_params, thresholds, p_sig)
 conditions <- build_conditions(design, condition_values, static_values)
-result <- power_analysis(conditions, n_cores, n_simulations)
+result <- power_analysis(conditions, n_cores, n_sims)
 ```
 
 ## Development Practices and R CMD Check Guidelines

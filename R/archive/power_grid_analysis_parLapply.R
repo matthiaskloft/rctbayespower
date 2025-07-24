@@ -27,11 +27,11 @@
 #' #'
 #' #' @param conditions A conditions object created by [build_conditions()] containing:
 #' #'   \itemize{
-#' #'     \item design: An rctbayespower_design object with model specifications
+#' #'     \item design: An rctbp_design object with model specifications
 #' #'     \item condition_arguments: List of prepared condition arguments for simulation
 #' #'   }
 #' #' @param design_prior Optional design prior for integrated power computation. See original API docs.
-#' #' @param n_simulations Number of MCMC iterations per condition (default: 500)
+#' #' @param n_sims Number of MCMC iterations per condition (default: 500)
 #' #' @param n_cores Number of parallel cores for execution (default: 1)
 #' #' @param n_progress_updates Show progress every N conditions when running sequentially (default: 10)
 #' #' @param brms_args Arguments passed to brms for model fitting.
@@ -43,7 +43,7 @@
 #' power_analysis <- function(
 #'     conditions,
 #'     design_prior = NULL,
-#'     n_simulations = 500,
+#'     n_sims = 500,
 #'     n_cores = 1,
 #'     n_progress_updates = 10,
 #'     brms_args = list(),
@@ -55,8 +55,8 @@
 #'   if (!inherits(conditions, "rctbayespower_conditions")) {
 #'     stop("'conditions' must be a valid rctbayespower_conditions object")
 #'   }
-#'   if (!is.numeric(n_simulations) || n_simulations <= 0) {
-#'     stop("'n_simulations' must be a positive number")
+#'   if (!is.numeric(n_sims) || n_sims <= 0) {
+#'     stop("'n_sims' must be a positive number")
 #'   }
 #'   if (!is.numeric(n_cores) || n_cores <= 0) {
 #'     warning("Invalid n_cores value. Using n_cores = 1.")
@@ -64,10 +64,10 @@
 #'   }
 #'
 #'   # Expand conditions for each simulation
-#'   condition_args_list <- rep(conditions$condition_arguments, each = n_simulations)
+#'   condition_args_list <- rep(conditions$condition_arguments, each = n_sims)
 #'   design <- conditions$design
-#'   if (!inherits(design, "rctbayespower_design")) {
-#'     stop("'design' must be a valid rctbayespower_design object")
+#'   if (!inherits(design, "rctbayespower::rctbp_design")) {
+#'     stop("'design' must be a valid rctbp_design object")
 #'   }
 #'
 #'   # Parse design_prior if provided (same as original) ...
@@ -172,7 +172,7 @@
 #'       rhat = mean(rhat, na.rm = TRUE),
 #'       ess_bulk = mean(ess_bulk, na.rm = TRUE),
 #'       ess_tail = mean(ess_tail, na.rm = TRUE),
-#'       convergence_rate = sum(converged) / n_simulations,
+#'       convergence_rate = sum(converged) / n_sims,
 #'       error = paste(unique(error), collapse = "; ")
 #'     ) |>
 #'     dplyr::ungroup()

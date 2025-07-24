@@ -7,7 +7,7 @@
 required_fn_args_design(design, print = TRUE)
 }
 \arguments{
-\item{design}{An rctbayespower_design object}
+\item{design}{An rctbp_design object}
 
 \item{print}{Logical. If TRUE (default), prints the required parameters to console}
 }

@@ -22,12 +22,12 @@
 #'     \item \code{threshold_futility}: Futility threshold used for the parameter
 #'     \item \code{success_prob}: Probability that parameter exceeds success threshold
 #'     \item \code{futility_prob}: Probability that parameter falls below futility threshold
-#'     \item \code{sig_success}: Binary indicator (1/0) if success probability meets significance threshold
-#'     \item \code{sig_futility}: Binary indicator (1/0) if futility probability meets significance threshold
-#'     \item \code{est_median}: Posterior median estimate of the parameter
-#'     \item \code{est_mad}: Posterior median absolute deviation of the parameter
-#'     \item \code{est_mean}: Posterior mean estimate of the parameter
-#'     \item \code{est_sd}: Posterior standard deviation of the parameter
+#'     \item \code{power_success}: Binary indicator (1/0) if success probability meets significance threshold
+#'     \item \code{power_futility}: Binary indicator (1/0) if futility probability meets significance threshold
+#'     \item \code{median}: Posterior median estimate of the parameter
+#'     \item \code{mad}: Posterior median absolute deviation of the parameter
+#'     \item \code{mean}: Posterior mean estimate of the parameter
+#'     \item \code{sd}: Posterior standard deviation of the parameter
 #'     \item \code{rhat}: R-hat convergence diagnostic
 #'     \item \code{ess_bulk}: Effective sample size for bulk estimates
 #'     \item \code{ess_tail}: Effective sample size for tail estimates
@@ -64,7 +64,24 @@ compute_measures_brmsfit <- function(brmsfit, design) {
     stop("brmsfit must be a fitted brms model object")
   }
 
-  target_params <- design$target_params
+  # Handle both S7 design objects and regular list design components (for parallel workers)
+  if (inherits(design, "rctbayespower::rctbp_design") || inherits(design, "rctbp_design")) {
+    # S7 design object
+    target_params <- design@target_params
+    thresholds_success <- design@thresholds_success
+    thresholds_futility <- design@thresholds_futility
+    p_sig_success <- design@p_sig_success
+    p_sig_futility <- design@p_sig_futility
+  } else if (is.list(design)) {
+    # Regular list with design components (from parallel workers)
+    target_params <- design$target_params
+    thresholds_success <- design$thresholds_success
+    thresholds_futility <- design$thresholds_futility
+    p_sig_success <- design$p_sig_success
+    p_sig_futility <- design$p_sig_futility
+  } else {
+    stop("Invalid design object")
+  }
 
   # Compute measures
   measures_list <- purrr::map(target_params, function(param) {
@@ -73,26 +90,26 @@ compute_measures_brmsfit <- function(brmsfit, design) {
 
     # extract thresholds
     if (length(target_params) > 1) {
-      threshold_success <- design$thresholds_success[which(target_params == param)]
+      threshold_success <- thresholds_success[which(target_params == param)]
       # if the threshold is NA, use the first one
       if (is.na(threshold_success)) {
-        threshold_success <- design$thresholds_success[1]
+        threshold_success <- thresholds_success[1]
       }
-      threshold_futility <- design$thresholds_futility[which(target_params == param)]
+      threshold_futility <- thresholds_futility[which(target_params == param)]
       # if the threshold is NA, use the first one
       if (is.na(threshold_futility)) {
-        threshold_futility <- design$thresholds_futility[1]
+        threshold_futility <- thresholds_futility[1]
       }
     } else {
-      threshold_success <- design$thresholds_success
-      threshold_futility <- design$thresholds_futility
+      threshold_success <- thresholds_success
+      threshold_futility <- thresholds_futility
     }
     # calculate the probability of success / futility
     success_prob <- posterior::Pr(posterior_samples[[param]] > threshold_success)
     futility_prob <- posterior::Pr(posterior_samples[[param]] < threshold_futility)
     # significance
-    sig_success <- as.numeric(success_prob >= design$p_sig_success, na.rm = TRUE)
-    sig_futility <- as.numeric(futility_prob >= design$p_sig_futility, na.rm = TRUE)
+    sig_success <- as.numeric(success_prob >= p_sig_success, na.rm = TRUE)
+    sig_futility <- as.numeric(futility_prob >= p_sig_futility, na.rm = TRUE)
     # parameter estimates
     est_median <- stats::median(posterior_samples[[param]])
     est_mad <- posterior::mad(posterior_samples[[param]])
@@ -110,12 +127,12 @@ compute_measures_brmsfit <- function(brmsfit, design) {
       threshold_futility = threshold_futility,
       success_prob = success_prob,
       futility_prob = futility_prob,
-      sig_success = sig_success,
-      sig_futility = sig_futility,
-      est_median = est_median,
-      est_mad = est_mad,
-      est_mean = est_mean,
-      est_sd = est_sd,
+      power_success = sig_success,
+      power_futility = sig_futility,
+      median = est_median,
+      mad = est_mad,
+      mean = est_mean,
+      sd = est_sd,
       rhat = rhat,
       ess_bulk = ess_bulk,
       ess_tail = ess_tail
@@ -129,30 +146,30 @@ compute_measures_brmsfit <- function(brmsfit, design) {
     # extract posterior samples and compute power metrics
     posterior_samples <- brms::as_draws_matrix(brmsfit, variable = target_params)
     # extract thresholds and broadcast if necessary
-    if (length(target_params) > length(design$thresholds_success)) {
-      thresholds_success <- rep(design$thresholds_success[1], length(target_params))
+    if (length(target_params) > length(thresholds_success)) {
+      thresholds_success_combined <- rep(thresholds_success[1], length(target_params))
     } else {
-      thresholds_success <- design$thresholds_success
+      thresholds_success_combined <- thresholds_success
     }
-    if (length(target_params) > length(design$thresholds_futility)) {
-      thresholds_futility <- rep(design$thresholds_futility[1], length(target_params))
+    if (length(target_params) > length(thresholds_futility)) {
+      thresholds_futility_combined <- rep(thresholds_futility[1], length(target_params))
     } else {
-      thresholds_futility <- design$thresholds_futility
+      thresholds_futility_combined <- thresholds_futility
     }
 
     # calculate combined probabilities
     combined_success_prob <- mean(apply(ifelse(
-      posterior_samples > thresholds_success, 1, 0
+      posterior_samples > thresholds_success_combined, 1, 0
     ), 1, min))
     combined_futility_prob <- mean(apply(
-      ifelse(posterior_samples < thresholds_futility, 1, 0),
+      ifelse(posterior_samples < thresholds_futility_combined, 1, 0),
       1,
       min
     ))
 
     # calculate combined significance
-    combined_sig_success <- as.numeric(combined_success_prob >= design$p_sig_success, na.rm = TRUE)
-    combined_sig_futility <- as.numeric(combined_futility_prob >= design$p_sig_futility, na.rm = TRUE)
+    combined_sig_success <- as.numeric(combined_success_prob >= p_sig_success, na.rm = TRUE)
+    combined_sig_futility <- as.numeric(combined_futility_prob >= p_sig_futility, na.rm = TRUE)
 
     # combine results into a list
     measures_list_combined <- list(
@@ -161,12 +178,12 @@ compute_measures_brmsfit <- function(brmsfit, design) {
       threshold_futility = NA,
       success_prob = combined_success_prob,
       futility_prob = combined_futility_prob,
-      sig_success = combined_sig_success,
-      sig_futility = combined_sig_success,
-      est_median = NA,
-      est_mad = NA,
-      est_mean = NA,
-      est_sd = NA,
+      power_success = combined_sig_success,
+      power_futility = combined_sig_futility,
+      median = NA,
+      mad = NA,
+      mean = NA,
+      sd = NA,
       rhat = NA,
       ess_bulk = NA,
       ess_tail = NA
@@ -222,18 +239,17 @@ compute_measures_brmsfit <- function(brmsfit, design) {
 #'     \item \code{converged}: Convergence status indicator
 #'     \item \code{error}: Error messages (if any)
 #'   }
-#' @param n_simulations Integer specifying the total number of simulations run
+#' @param n_sims Integer specifying the total number of simulations run
 #'
 #' @return A data frame with summarized results grouped by condition and parameter,
-#'   containing mean estimates and Monte Carlo standard errors (MCSE) for all metrics:
+#'   containing mean estimates and Monte Carlo standard errors (SE) for all metrics:
 #'   \itemize{
-#'     \item Power estimates: \code{pow_success}, \code{pow_futility}
-#'     \item Probability estimates: \code{success_prob}, \code{futility_prob}
-#'     \item Parameter estimates: \code{est_median}, \code{est_mean}, \code{est_mad}, \code{est_sd}
-#'     \item Convergence metrics: \code{rhat}, \code{ess_bulk}, \code{ess_tail}, \code{convergence_rate}
-#'     \item Error summary: \code{error}
+#'     \item Probability estimates: \code{prob_success}, \code{prob_futility}
+#'     \item Power estimates: \code{power_success}, \code{power_futility}
+#'     \item Parameter estimates: \code{median}, \code{mean}, \code{mad}, \code{sd}
+#'     \item Convergence metrics: \code{rhat}, \code{ess_bulk}, \code{ess_tail}, \code{conv_rate}
 #'   }
-#'   Each metric includes corresponding \code{_mcse} columns with Monte Carlo standard errors.
+#'   Each metric includes corresponding \code{_se} columns with standard errors.
 #'
 #' @details
 #' The function groups results by condition ID, parameter, and thresholds, then computes:
@@ -247,7 +263,7 @@ compute_measures_brmsfit <- function(brmsfit, design) {
 #'
 #' @seealso [compute_measures_brmsfit()], [power_analysis()]
 #' @keywords internal
-summarize_sims <- function(results_df_raw, n_simulations) {
+summarize_sims <- function(results_df_raw, n_sims) {
   # Validate input
   if (!is.data.frame(results_df_raw) || nrow(results_df_raw) == 0) {
     stop("results_df_raw must be a non-empty data frame")
@@ -260,31 +276,58 @@ summarize_sims <- function(results_df_raw, n_simulations) {
   results_summarized <- results_df_raw |>
     dplyr::group_by(id_cond, parameter, threshold_success, threshold_futility) |>
     dplyr::summarise(
-      success_prob = mean(success_prob, na.rm = TRUE),
-      success_prob_mcse = calculate_mcse_mean(success_prob, n_simulations),
-      futility_prob = mean(futility_prob, na.rm = TRUE),
-      futility_prob_mcse = calculate_mcse_mean(futility_prob, n_simulations),
-      success_power = mean(sig_success, na.rm = TRUE),
-      success_power_mcse = calculate_mcse_power(sig_success, n_simulations),
-      futility_power = mean(sig_futility, na.rm = TRUE),
-      futility_power_mcse = calculate_mcse_power(sig_futility, n_simulations),
-      est_median = mean(est_median, na.rm = TRUE),
-      est_median_mcse = calculate_mcse_mean(est_median, n_simulations),
-      est_mad = mean(est_mad, na.rm = TRUE),
-      est_mad_mcse = calculate_mcse_mean(est_mad, n_simulations),
-      est_mean = mean(est_mean, na.rm = TRUE),
-      est_mean_mcse = calculate_mcse_mean(est_mean, n_simulations),
-      est_sd = mean(est_sd, na.rm = TRUE),
-      est_sd_mcse = calculate_mcse_mean(est_sd, n_simulations),
-      rhat = mean(rhat, na.rm = TRUE),
-      rhat_mcse = calculate_mcse_mean(rhat, n_simulations),
-      ess_bulk = mean(ess_bulk, na.rm = TRUE),
-      ess_bulk_mcse = calculate_mcse_mean(ess_bulk, n_simulations),
-      ess_tail = mean(ess_tail, na.rm = TRUE),
-      ess_tail_mcse = calculate_mcse_mean(ess_tail, n_simulations),
-      convergence_rate = sum(converged, na.rm = TRUE) / n_simulations,
-      convergence_rate_mcse = calculate_mcse_power(convergence_rate, n_simulations),
+      success_prob_mean = mean(success_prob, na.rm = TRUE),
+      success_prob_mcse = calculate_mcse_mean(success_prob, n_sims),
+      futility_prob_mean = mean(futility_prob, na.rm = TRUE),
+      futility_prob_mcse = calculate_mcse_mean(futility_prob, n_sims),
+      success_power_mean = mean(power_success, na.rm = TRUE),
+      success_power_mcse = calculate_mcse_power(power_success, n_sims),
+      futility_power_mean = mean(power_futility, na.rm = TRUE),
+      futility_power_mcse = calculate_mcse_power(power_futility, n_sims),
+      est_median_mean = mean(.data$median, na.rm = TRUE),
+      est_median_mcse = calculate_mcse_mean(.data$median, n_sims),
+      est_mad_mean = mean(.data$mad, na.rm = TRUE),
+      est_mad_mcse = calculate_mcse_mean(.data$mad, n_sims),
+      est_mean_mean = mean(.data$mean, na.rm = TRUE),
+      est_mean_mcse = calculate_mcse_mean(.data$mean, n_sims),
+      est_sd_mean = mean(.data$sd, na.rm = TRUE),
+      est_sd_mcse = calculate_mcse_mean(.data$sd, n_sims),
+      rhat_mean = mean(rhat, na.rm = TRUE),
+      rhat_mcse = calculate_mcse_mean(rhat, n_sims),
+      ess_bulk_mean = mean(ess_bulk, na.rm = TRUE),
+      ess_bulk_mcse = calculate_mcse_mean(ess_bulk, n_sims),
+      ess_tail_mean = mean(ess_tail, na.rm = TRUE),
+      ess_tail_mcse = calculate_mcse_mean(ess_tail, n_sims),
+      convergence_rate_mean = mean(converged, na.rm = TRUE),
+      convergence_rate_mcse = calculate_mcse_power(converged, n_sims),
       .groups = "drop"
+    ) |>
+    # make shorter names
+    dplyr::rename(
+      prob_success = success_prob_mean,
+      prob_success_se = success_prob_mcse,
+      prob_futility = futility_prob_mean,
+      prob_futility_se = futility_prob_mcse,
+      power_success = success_power_mean,
+      power_success_se = success_power_mcse,
+      power_futility = futility_power_mean,
+      power_futility_se = futility_power_mcse,
+      median = est_median_mean,
+      median_se = est_median_mcse,
+      mad = est_mad_mean,
+      mad_se = est_mad_mcse,
+      mean = est_mean_mean,
+      mean_se = est_mean_mcse,
+      sd = est_sd_mean,
+      sd_se = est_sd_mcse,
+      rhat = rhat_mean,
+      rhat_se = rhat_mcse,
+      ess_bulk = ess_bulk_mean,
+      ess_bulk_se = ess_bulk_mcse,
+      ess_tail = ess_tail_mean,
+      ess_tail_se = ess_tail_mcse,
+      conv_rate = convergence_rate_mean,
+      conv_rate_se = convergence_rate_mcse
     )
 
   return(results_summarized)

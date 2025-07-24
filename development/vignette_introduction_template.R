@@ -95,7 +95,7 @@ val <- validate_power_design(
 ### 6) Power Analysis with Validated Model -------------------------------------
 
 n_cores <- parallel::detectCores() - 1  # use all but one core
-n_simulations <- n_cores * 50
+n_sims <- n_cores * 50
 
 
 power_mcmc <-
@@ -110,7 +110,7 @@ power_mcmc <-
     threshold_futility = threshold_futility,
     p_sig_success = 0.95,
     p_sig_futility = 0.5,
-    n_simulations = n_simulations,
+    n_sims = n_sims,
     n_cores = n_cores,
     brms_args = list(
       algorithm = "sampling",
@@ -139,7 +139,7 @@ power_meanfield <-
     threshold_futility = threshold_futility,
     p_sig_success = 0.95,
     p_sig_futility = 0.5,
-    n_simulations = n_simulations,
+    n_sims = n_sims,
     n_cores = n_cores,
     brms_args = list(
       algorithm = "meanfield",
@@ -162,7 +162,7 @@ power_fullrank <-
     threshold_futility = threshold_futility,
     p_sig_success = 0.95,
     p_sig_futility = 0.5,
-    n_simulations = n_simulations,
+    n_sims = n_sims,
     n_cores = n_cores,
     brms_args = list(
       algorithm = "fullrank",
@@ -225,7 +225,7 @@ power_ancova <-
     threshold_futility = .05,
     p_sig_futility = 0.5,
     outcome_type = "continuous",
-    n_simulations = n_cores * 20,
+    n_sims = n_cores * 20,
     n_cores = n_cores
   )
 
@@ -235,7 +235,7 @@ summary(power_ancova)
 ### Sample Size Analysis -------------------------------------------------------
 
 n_cores <- parallel::detectCores() - 1  # use all but one core
-n_simulations <- n_cores * 30
+n_sims <- n_cores * 30
 
 sample_size_ancova <-
   sample_size_analysis(
@@ -251,7 +251,7 @@ sample_size_ancova <-
     threshold_futility = .3,
     p_sig_success = 0.95,
     p_sig_futility = 0.95,
-    n_simulations = n_simulations,
+    n_sims = n_sims,
     n_cores = n_cores
     
   )
@@ -261,7 +261,7 @@ plot_power_curve(sample_size_ancova)
 ### Power Curve Analyses -------------------------------------------------------
 
 n_cores <- parallel::detectCores() - 1  # use all but one core
-n_simulations <- n_cores * 30
+n_sims <- n_cores * 30
 
 
 # vary sample sizes
@@ -279,7 +279,7 @@ sample_size_ancova <-
     threshold_futility = .4,
     p_sig_success = 0.95,
     p_sig_futility = 0.95,
-    n_simulations = n_simulations,
+    n_sims = n_sims,
     n_cores = n_cores
   )
 print(sample_size_ancova)
@@ -303,7 +303,7 @@ effect_size_ancova <-
     threshold_futility = .4,
     p_sig_success = 0.95,
     p_sig_futility = 0.95,
-    n_simulations = n_simulations,
+    n_sims = n_sims,
     n_cores = n_cores
   )
 print(effect_size_ancova)
@@ -326,7 +326,7 @@ power_ancova <- power_analysis(
   threshold_futility = .4,
   p_sig_success = 0.95,
   p_sig_futility = 0.95,
-  n_simulations = n_simulations,
+  n_sims = n_sims,
   n_cores = n_cores
 )
 print(power_ancova)
