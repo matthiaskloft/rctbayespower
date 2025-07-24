@@ -29,7 +29,7 @@
 ^\.gitattributes$
 ^\..*Rcheck$
 ^test_model_ancova.rds$
-^R/archive/
+^R/legacy/
 ^vignettes/articles/\.quarto$
 ^vignettes/articles/*_files$
 ^vignettes/articles$
