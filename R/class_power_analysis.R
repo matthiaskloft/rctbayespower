@@ -350,57 +350,57 @@ S7::method(run, rctbp_power_analysis) <- function(object, ...) {
       })
       
       # Method 2: Try getting functions from current environment (for devtools/pkgload)
-      if (!export_success) {
-        # Get function objects directly and assign them on workers
-        function_objects <- list()
-        for (fn_name in functions_to_export) {
-          # Try multiple locations to find the function
-          fn_obj <- NULL
-          
-          # Try namespace first
-          tryCatch({
-            ns <- asNamespace("rctbayespower")
-            if (exists(fn_name, envir = ns)) {
-              fn_obj <- get(fn_name, envir = ns)
-            }
-          }, error = function(e) {
-            
-          })
-          
-          # Try global environment if not found in namespace
-          if (is.null(fn_obj) &&
-              exists(fn_name, envir = .GlobalEnv)) {
-            fn_obj <- get(fn_name, envir = .GlobalEnv)
-          }
-          
-          # Try current environment if still not found
-          if (is.null(fn_obj) &&
-              exists(fn_name, envir = environment())) {
-            fn_obj <- get(fn_name, envir = environment())
-          }
-          
-          if (!is.null(fn_obj)) {
-            function_objects[[fn_name]] <- fn_obj
-          }
-        }
-        
-        # Export the function objects we found
-        if (length(function_objects) > 0) {
-          for (fn_name in names(function_objects)) {
-            parallel::clusterCall(cl, function(name, obj) {
-              # NOTE: Assignment to .GlobalEnv is required for R parallel processing
-              # This is the standard R idiom for making functions available to worker processes
-              # The assignment occurs within the worker environment, not the main session
-              assign(name, obj, envir = .GlobalEnv)
-            }, fn_name, function_objects[[fn_name]])
-          }
-          export_success <- TRUE
-          if (verbose)
-            cat("Functions exported as objects:",
-                paste(names(function_objects), collapse = ", "),
-                "\n")
-        }
-      }
+      # if (!export_success) {
+      #   # Get function objects directly and assign them on workers
+      #   function_objects <- list()
+      #   for (fn_name in functions_to_export) {
+      #     # Try multiple locations to find the function
+      #     fn_obj <- NULL
+      #     
+      #     # Try namespace first
+      #     tryCatch({
+      #       ns <- asNamespace("rctbayespower")
+      #       if (exists(fn_name, envir = ns)) {
+      #         fn_obj <- get(fn_name, envir = ns)
+      #       }
+      #     }, error = function(e) {
+      #       
+      #     })
+      #     
+      #     # Try global environment if not found in namespace
+      #     if (is.null(fn_obj) &&
+      #         exists(fn_name, envir = .GlobalEnv)) {
+      #       fn_obj <- get(fn_name, envir = .GlobalEnv)
+      #     }
+      #     
+      #     # Try current environment if still not found
+      #     if (is.null(fn_obj) &&
+      #         exists(fn_name, envir = environment())) {
+      #       fn_obj <- get(fn_name, envir = environment())
+      #     }
+      #     
+      #     if (!is.null(fn_obj)) {
+      #       function_objects[[fn_name]] <- fn_obj
+      #     }
+      #   }
+      #   
+      #   # Export the function objects we found
+      #   if (length(function_objects) > 0) {
+      #     for (fn_name in names(function_objects)) {
+      #       parallel::clusterCall(cl, function(name, obj) {
+      #         # NOTE: Assignment to .GlobalEnv is required for R parallel processing
+      #         # This is the standard R idiom for making functions available to worker processes
+      #         # The assignment occurs within the worker environment, not the main session
+      #         assign(name, obj, envir = .GlobalEnv)
+      #       }, fn_name, function_objects[[fn_name]])
+      #     }
+      #     export_success <- TRUE
+      #     if (verbose)
+      #       cat("Functions exported as objects:",
+      #           paste(names(function_objects), collapse = ", "),
+      #           "\n")
+      #   }
+      # }
       
       if (!export_success && verbose) {
         cat("Warning: Could not export all required functions to workers\n")
@@ -428,24 +428,24 @@ S7::method(run, rctbp_power_analysis) <- function(object, ...) {
           )
           
           missing_functions <- c()
-          for (fn_name in required_functions) {
-            if (!exists(fn_name)) {
-              # Try to get from package namespace
-              tryCatch({
-                if (requireNamespace("rctbayespower", quietly = TRUE)) {
-                  # NOTE: Assignment to .GlobalEnv is required for R parallel processing
-                  # This makes package functions available within the worker process environment
-                  assign(fn_name,
-                         get(fn_name, envir = asNamespace("rctbayespower")),
-                         envir = .GlobalEnv)
-                } else {
-                  missing_functions <- c(missing_functions, fn_name)
-                }
-              }, error = function(e) {
-                missing_functions <- c(missing_functions, fn_name)
-              })
-            }
-          }
+          # for (fn_name in required_functions) {
+          #   if (!exists(fn_name)) {
+          #     # Try to get from package namespace
+          #     tryCatch({
+          #       if (requireNamespace("rctbayespower", quietly = TRUE)) {
+          #         # NOTE: Assignment to .GlobalEnv is required for R parallel processing
+          #         # This makes package functions available within the worker process environment
+          #         assign(fn_name,
+          #                get(fn_name, envir = asNamespace("rctbayespower")),
+          #                envir = .GlobalEnv)
+          #       } else {
+          #         missing_functions <- c(missing_functions, fn_name)
+          #       }
+          #     }, error = function(e) {
+          #       missing_functions <- c(missing_functions, fn_name)
+          #     })
+          #   }
+          # }
           
           if (length(missing_functions) > 0) {
             stop(

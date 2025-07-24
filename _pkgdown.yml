@@ -34,11 +34,6 @@ reference:
   - build_design
   - build_conditions
 
-- title: "Visualization"
-  desc: "Functions for plotting and visualizing power analysis results"
-  contents:
-  - plot.rctbayespower_sim_result
-
 - title: "Analysis Helper Functions"
   desc: "Functions for computing measures and summarizing results"
   contents:
@@ -68,7 +63,3 @@ reference:
   - get_args_without_defaults
   - update_s7_with_dots
 
-- title: "S7 Methods"
-  desc: "Print and generic methods for S7 package objects"
-  contents:
-  - starts_with("print.rctbp_")

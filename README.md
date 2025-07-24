@@ -40,12 +40,11 @@ introductory vignette:
 
   - [Introduction](https://matthiaskloft.github.io/rctbayespower/articles/01-introduction.html):
     Basic usage and concepts
+
   - [Prior
     Specifications](https://matthiaskloft.github.io/rctbayespower/articles/03-prior-specifications.html):
     Working with priors
-  - [Advanced
-    Modeling](https://matthiaskloft.github.io/rctbayespower/articles/04-advanced-modeling.html):
-    Complex designs
+
   - [Algorithm
     Performance](https://matthiaskloft.github.io/rctbayespower/articles/05-algorithm-performance.html):
     Performance optimization
