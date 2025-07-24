@@ -1,43 +1,6 @@
 # S7 Class Definition for Power Analysis Configuration
 #' @importFrom S7 new_class class_any class_numeric class_logical class_list class_character
 
-# Define constructor function first
-power_analysis <- function(conditions,
-                           design_prior = NULL,
-                           n_sims = 500,
-                           n_cores = 1,
-                           n_progress_updates = 10,
-                           verbose = FALSE,
-                           brms_args = list(),
-                           ...) {
-  # Check if first argument is an existing rctbp_power_analysis object (execution mode)
-  if (inherits(conditions, "rctbayespower::rctbp_power_analysis") ||
-      inherits(conditions, "rctbp_power_analysis")) {
-    
-    # Execute the analysis - call the S7 method
-    return(power_analysis_method(conditions))
-  }
-  
-  # Creation mode - create new S7 object
-  # Merge additional arguments into brms_args
-  dots <- list(...)
-  if (length(dots) > 0) {
-    brms_args <- utils::modifyList(brms_args, dots)
-  }
-  
-  # Create S7 object using new_object()
-  S7::new_object(S7::S7_object(),
-                 sim_results = NULL,
-                 conditions = conditions,
-                 design_prior = design_prior,
-                 n_sims = n_sims,
-                 n_cores = n_cores,
-                 n_progress_updates = n_progress_updates,
-                 verbose = verbose,
-                 brms_args = brms_args,
-                 .class = "rctbp_power_analysis")
-}
-
 rctbp_power_analysis <- S7::new_class(
   "rctbp_power_analysis",
   properties = list(
@@ -52,7 +15,6 @@ rctbp_power_analysis <- S7::new_class(
     verbose = S7::class_logical,
     brms_args = S7::class_list
   ),
-  constructor = power_analysis,
   validator = function(self) {
     # Validate conditions object
     if (!inherits(self@conditions, "rctbayespower::rctbp_conditions") &&
@@ -94,6 +56,113 @@ rctbp_power_analysis <- S7::new_class(
   }
 )
 
+#' #' Create Power Analysis Configuration
+#' #'
+#' #' Creates an S7 power analysis configuration object that encapsulates all
+#' #' parameters needed for Bayesian power analysis. This object-oriented approach
+#' #' provides better organization, validation, and extensibility compared to the
+#' #' functional approach.
+#' #'
+#' #' @param conditions An S7 conditions object created by [build_conditions()] containing:
+#' #'   \itemize{
+#' #'     \item design: An rctbp_design object with model specifications
+#' #'     \item condition_arguments: List of prepared condition arguments for simulation
+#' #'   }
+#' #' @param design_prior Optional design prior for integrated power computation. Can be:
+#' #'   \itemize{
+#' #'     \item A string in brms prior syntax (e.g., "normal(0.3, 0.1)", "student_t(6, 0.5, 0.2)")
+#' #'     \item An R function taking effect size as input (e.g., function(x) dnorm(x, 0.5, 0.2))
+#' #'     \item NULL for no design prior (default)
+#' #'   }
+#' #' @param n_sims Number of MCMC iterations per condition (default: 500)
+#' #' @param n_cores Number of parallel cores for condition execution (default: 1)
+#' #' @param n_progress_updates Show progress every N conditions when running sequentially (default: 10)
+#' #' @param verbose Logical. Whether to show detailed progress information (default: FALSE)
+#' #' @param brms_args Arguments passed to brms for model fitting. Default includes 'algorithm' = "sampling", 'iter' = 500, 'warmup' = 250, 'chains' = 4, 'cores' = 1. User can override any of these or add additional arguments.
+#' #' @param ... Additional arguments passed to brms for model fitting. These have the highest priority and will override both defaults and 'brms_args'.
+#' #'
+#' #' @details
+#' #' This S7 class approach provides several advantages over the functional approach:
+#' #'
+#' #' \strong{Parameter Validation:} All parameters are validated upon object creation,
+#' #' preventing runtime errors during expensive simulation runs.
+#' #'
+#' #' \strong{Reusable Configurations:} The same power analysis configuration can be
+#' #' reused multiple times or modified easily.
+#' #'
+#' #' \strong{Method Dispatch:} Different analysis methods can be implemented cleanly
+#' #' using S7 method dispatch.
+#' #'
+#' #' \strong{Extensibility:} New analysis parameters or methods can be added without
+#' #' breaking existing code.
+#' #'
+#' #' @return An S7 object of class "rctbp_power_analysis" containing all analysis
+#' #'   configuration parameters with validation applied.
+#' #'
+#' #' @export
+#' #' @seealso [run()], [build_conditions()], [build_design()]
+#' #'
+#' #' @examples
+#' #' \dontrun{
+#' #' # Create an ANCOVA model and design
+#' #' ancova_model <- build_model("ancova_cont_2arms")()
+#' #' design <- build_design(
+#' #'   build_model = ancova_model,
+#' #'   target_params = "b_arms_treat",
+#' #'   n_interim_analyses = 0,
+#' #'   thresholds_success = 0.2,
+#' #'   thresholds_futility = 0.0,
+#' #'   p_sig_success = 0.975,
+#' #'   p_sig_futility = 0.5
+#' #' )
+#' #'
+#' #' # Create conditions grid
+#' #' conditions <- build_conditions(
+#' #'   design = design,
+#' #'   condition_values = list(
+#' #'     n_total = c(100),
+#' #'     b_arms_treat = c(0.5)
+#' #'   ),
+#' #'   static_values = list(
+#' #'     p_alloc = list(c(0.5, 0.5))
+#' #'   )
+#' #' )
+#' #'
+#' #' # Create power analysis configuration
+#' #' power_config <- power_analysis(
+#' #'   conditions = conditions,
+#' #'   n_sims = 10, # Low for example
+#' #'   n_cores = 1
+#' #' )
+#' #'
+#' #' # Run the analysis
+#' #' result <- run(power_config)
+#' #' }
+#' power_analysis <- function(conditions,
+#'                            design_prior = NULL,
+#'                            n_sims = 500,
+#'                            n_cores = 1,
+#'                            n_progress_updates = 10,
+#'                            verbose = FALSE,
+#'                            brms_args = list(),
+#'                            ...) {
+#'   # Merge additional arguments into brms_args
+#'   dots <- list(...)
+#'   if (length(dots) > 0) {
+#'     brms_args <- utils::modifyList(brms_args, dots)
+#'   }
+#'   
+#'   # Create S7 object - validation happens automatically
+#'   rctbp_power_analysis(
+#'     conditions = conditions,
+#'     design_prior = design_prior,
+#'     n_sims = n_sims,
+#'     n_cores = n_cores,
+#'     n_progress_updates = n_progress_updates,
+#'     verbose = verbose,
+#'     brms_args = brms_args
+#'   )
+#' }
 
 # S7 Method for Print
 #' @importFrom S7 method
@@ -209,30 +278,30 @@ S7::method(print, rctbp_power_analysis) <- function(x, ...) {
     cat("Total simulations:", total_sims, "\n")
     
     cat("\n=== Available Actions ===\n")
-    cat("- power_analysis() - Execute the analysis\n")
+    cat("- run() - Execute the analysis\n")
     cat("- power_config@conditions - View condition details\n")
   }
   
   invisible(x)
 }
 
-#' Execute Power Analysis
+#' Run Analysis Objects
 #'
-#' S7 generic function for executing power analysis objects. This function provides
-#' the interface for running power analysis configurations created with the
-#' power_analysis() constructor.
+#' Generic function for executing analysis objects. This function provides a
+#' unified interface for running different types of analysis configurations.
 #'
-#' @param object An S7 object to execute (must be rctbp_power_analysis)
+#' @param object An S7 object to run (e.g., rctbp_power_analysis)
 #' @param ... Additional arguments passed to specific methods
 #'
 #' @details
-#' This S7 generic function dispatches to the appropriate method based on the class
+#' This generic function dispatches to appropriate methods based on the class
 #' of the input object. Currently supported:
 #' \itemize{
 #'   \item \code{rctbp_power_analysis}: Executes Bayesian power analysis
 #' }
 #'
-#' @return The modified rctbp_power_analysis object with results stored in the 
+#' @return The result depends on the specific method called. For power analysis
+#'   objects, returns the modified object with results stored in the 
 #'   \code{sim_results} slot.
 #'
 #' @seealso [power_analysis()] for creating power analysis configurations
@@ -240,13 +309,13 @@ S7::method(print, rctbp_power_analysis) <- function(x, ...) {
 #' @importFrom S7 method new_generic
 #' @examples
 #' \dontrun{
-#' # Create and execute power analysis
+#' # Create and run power analysis
 #' power_config <- power_analysis(conditions, n_sims = 100)
-#' power_config <- power_analysis(power_config)
+#' power_config <- run(power_config)
 #' }
-power_analysis<- S7::new_generic("power_analysis", "object")
+run <- S7::new_generic("run", "object")
 
-#' Execute Power Analysis Method
+#' Run Power Analysis
 #'
 #' Executes the Bayesian power analysis using the configuration specified in
 #' the rctbp_power_analysis object. This method contains the core simulation
@@ -283,7 +352,7 @@ power_analysis<- S7::new_generic("power_analysis", "object")
 #' @export
 #' @importFrom parallel detectCores makeCluster stopCluster parLapply clusterEvalQ clusterExport
 #' @importFrom utils modifyList
-S7::method(power_analysis, rctbp_power_analysis) <- function(object, ...) {
+S7::method(run, rctbp_power_analysis) <- function(object, ...) {
   # Time start
   start_time <- Sys.time()
   
@@ -302,7 +371,7 @@ S7::method(power_analysis, rctbp_power_analysis) <- function(object, ...) {
   # Validate n_cores, must be a positive integer
   if (!is.numeric(n_cores) || n_cores <= 0) {
     n_cores <- 1
-    warning("Invalid 'n_cores' value. Using n_cores = 1.")
+    warning("Invalid n_cores value. Using n_cores = 1.")
   }
   
   # Expand condition_arguments_list to match n_sims
@@ -316,20 +385,20 @@ S7::method(power_analysis, rctbp_power_analysis) <- function(object, ...) {
   
   # Optional logging
   if (verbose) {
-    cat("\\n=== Power Analysis ===\\n")
-    cat("Conditions:\\n")
+    cat("\n=== Power Analysis ===\n")
+    cat("Conditions:\n")
     print(conditions@conditions_grid)
-    cat("\\n")
+    cat("\n")
     cat("Conditions to test:",
         nrow(conditions@conditions_grid),
-        "\\n")
-    cat("Simulations per condition:", n_sims, "\\n")
-    cat("Total simulations:", total_runs, "\\n\\n")
+        "\n")
+    cat("Simulations per condition:", n_sims, "\n")
+    cat("Total simulations:", total_runs, "\n\n")
     
     if (n_cores > 1) {
-      cat("Parallel execution using", n_cores, "cores:", "\\n")
+      cat("Parallel execution using", n_cores, "cores:", "\n")
     } else {
-      cat("Sequential execution:\\n")
+      cat("Sequential execution:\n")
     }
   }
   
@@ -407,11 +476,11 @@ S7::method(power_analysis, rctbp_power_analysis) <- function(object, ...) {
           parallel::clusterExport(cl, varlist = functions_to_export, envir = ns)
           export_success <- TRUE
           if (verbose)
-            cat("Functions exported from package namespace\\n")
+            cat("Functions exported from package namespace\n")
         }
       }, error = function(e) {
         if (verbose)
-          cat("Namespace export failed:", e$message, "\\n")
+          cat("Namespace export failed:", e$message, "\n")
       })
       
       # Method 2: Try getting functions from current environment (for devtools/pkgload)
@@ -463,12 +532,12 @@ S7::method(power_analysis, rctbp_power_analysis) <- function(object, ...) {
           if (verbose)
             cat("Functions exported as objects:",
                 paste(names(function_objects), collapse = ", "),
-                "\\n")
+                "\n")
         }
       }
       
       if (!export_success && verbose) {
-        cat("Warning: Could not export all required functions to workers\\n")
+        cat("Warning: Could not export all required functions to workers\n")
       }
     } else{
       cl <- NULL
@@ -609,19 +678,19 @@ S7::method(power_analysis, rctbp_power_analysis) <- function(object, ...) {
   
   # Debug: Check what we got back
   if (verbose) {
-    cat("\\nResults list length:", length(results_raw_list), "\\n")
-    cat("First condition_args structure:\\n")
+    cat("\nResults list length:", length(results_raw_list), "\n")
+    cat("First condition_args structure:\n")
     if (length(condition_args_list) > 0) {
       str(condition_args_list[[1]])
     }
     if (length(results_raw_list) > 0) {
-      cat("First result class:", class(results_raw_list[[1]]), "\\n")
+      cat("First result class:", class(results_raw_list[[1]]), "\n")
       if (!is.null(results_raw_list[[1]])) {
         cat("First result dimensions:",
             dim(results_raw_list[[1]]),
-            "\\n")
+            "\n")
       } else {
-        cat("First result is NULL\\n")
+        cat("First result is NULL\n")
       }
     }
   }
@@ -642,8 +711,8 @@ S7::method(power_analysis, rctbp_power_analysis) <- function(object, ...) {
       !is.na(error_results$error)
     if (any(error_rows)) {
       error_msgs <- error_results[error_rows, "error"]
-      cat("Simulation errors found:\\n")
-      cat(paste(unique(error_msgs), collapse = "\\n"), "\\n")
+      cat("Simulation errors found:\n")
+      cat(paste(unique(error_msgs), collapse = "\n"), "\n")
     }
   }
   
@@ -652,9 +721,9 @@ S7::method(power_analysis, rctbp_power_analysis) <- function(object, ...) {
   
   # Debug: Check combined results
   if (verbose) {
-    cat("Combined results dimensions:", dim(results_df_raw), "\\n")
+    cat("Combined results dimensions:", dim(results_df_raw), "\n")
     if (!is.null(results_df_raw) && nrow(results_df_raw) > 0) {
-      cat("Column names:", paste(colnames(results_df_raw), collapse = ", "), "\\n")
+      cat("Column names:", paste(colnames(results_df_raw), collapse = ", "), "\n")
     }
   }
   
@@ -666,9 +735,9 @@ S7::method(power_analysis, rctbp_power_analysis) <- function(object, ...) {
   elapsed_time <- difftime(Sys.time(), start_time, units = "mins")
   # Print elapsed time
   if (verbose) {
-    cat("\\nTotal analysis time:",
+    cat("\nTotal analysis time:",
         round(as.numeric(elapsed_time), 2),
-        "minutes\\n")
+        "minutes\n")
   }
   
   # Prepare return list
