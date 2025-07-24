@@ -7,6 +7,7 @@
 
 <!-- Note: Badges are placeholders for when the package is published -->
 
+[![R-CMD-check](https://github.com/matthiaskloft/rctbayespower/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/matthiaskloft/rctbayespower/actions/workflows/R-CMD-check.yaml)
 <!-- badges: end -->
 
 ## Disclaimer
@@ -42,11 +43,11 @@ introductory vignette:
     Basic usage and concepts
 
   - [Prior
-    Specifications](https://matthiaskloft.github.io/rctbayespower/articles/03-prior-specifications.html):
+    Specifications](https://matthiaskloft.github.io/rctbayespower/articles/02-prior-specifications.html):
     Working with priors
 
   - [Algorithm
-    Performance](https://matthiaskloft.github.io/rctbayespower/articles/05-algorithm-performance.html):
+    Performance](https://matthiaskloft.github.io/rctbayespower/articles/03-algorithm-performance.html):
     Performance optimization
 
 - [Open an Issue](https://github.com/matthiaskloft/rctbayespower/issues)
