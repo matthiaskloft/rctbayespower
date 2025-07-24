@@ -12,8 +12,7 @@ build_model(
   endpoint_types = NULL,
   n_arms = NULL,
   n_repeated_measures = NULL,
-  model_name = NULL,
-  ...
+  model_name = NULL
 )
 }
 \arguments{

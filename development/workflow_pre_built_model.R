@@ -18,7 +18,7 @@ print(model_ancova)
 design <- build_design(
   model = model_ancova,
   target_params = "b_arm2",
-  thresholds_success = 0.0,
+  thresholds_success = 0.1,
   thresholds_futility = 0.0,
   p_sig_success = 0.975,
   p_sig_futility = 0.5
@@ -34,14 +34,13 @@ conditions <- build_conditions(
   design = design,
   condition_values = list(
     # two sample sizes
-    n_total = 400,
-    
+    n_total = c(100), #seq(80,320, 20),
     # two effect sizes
-    b_arm_treat = c(.5)
+    b_arm_treat = .5 #c(0,seq(.2,.5,.1))
   ),
   static_values = list(
     # baseline effect
-    b_covariate = c(0),
+    b_covariate = c(0.2),
     # equal allocation
     p_alloc =
       list(c(0.5, 0.5))
@@ -52,12 +51,15 @@ conditions <- build_conditions(
 # 4. Run analysis
 
 
-n_cores <- 15
-n_sims <- 1e3
-# run the power analysis
-result <- power_analysis(
-  conditions = conditions,
-  n_cores = n_cores,
-  n_sims = n_sims,
-  verbose = TRUE
-)
+n_cores <- 1#parallel::detectCores() - 1
+n_sims <- 50
+
+power_config <- power_analysis(conditions, n_sims = n_sims, n_cores = n_cores, verbose = TRUE)
+result <- run(power_config)
+
+plot(result)
+class(result)
+
+plot(power_config)
+
+power_config@run()

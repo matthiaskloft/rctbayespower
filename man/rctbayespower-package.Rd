@@ -20,7 +20,7 @@ equivalence (ROPE) for decision making.
 \item{\code{\link[=build_conditions]{build_conditions()}}}{Generate analysis conditions from design parameters}
 \item{\code{\link[=simulate_single_run]{simulate_single_run()}}}{Execute single simulation run for power analysis}
 \item{\code{\link[=validate_weighting_function]{validate_weighting_function()}}}{Testing weighting function implementations}
-\item{\code{\link[=plot.rctbayespower_sim_result]{plot.rctbayespower_sim_result()}}}{Visualization of power analysis results}
+\item{\code{\link[=plot]{plot()}}}{Visualization of power analysis results}
 }
 }
 

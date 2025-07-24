@@ -128,8 +128,7 @@ build_model <- function(predefined_model = NULL,
                         endpoint_types = NULL,
                         n_arms = NULL,
                         n_repeated_measures = NULL,
-                        model_name = NULL,
-                        ...) {
+                        model_name = NULL) {
   # pre-defined model ----------------------------------------------------------
 
   # validate predefined_model

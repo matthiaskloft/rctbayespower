@@ -47,6 +47,32 @@
 #' @importFrom stats as.formula
 #' @importFrom rlang .data
 #'
+# S7 Plot Method for rctbp_power_analysis Objects
+#' @importFrom S7 method
+S7::method(plot, rctbp_power_analysis) <- function(x,
+                                                   type = "auto",
+                                                   metric = "both",
+                                                   values = "both",
+                                                   show_target = TRUE,
+                                                   show_integrated = TRUE,
+                                                   facet_by = "effect_size",
+                                                   design_prior = NULL,
+                                                   ...) {
+  
+  # Check if analysis has been run
+  if (is.null(x@sim_results)) {
+    stop("No simulation results found. Please run the analysis first using run(power_config).")
+  }
+  
+  # Extract results from S7 object
+  sim_results <- x@sim_results
+  
+  # Call the internal plotting function
+  create_power_plot(sim_results, type, metric, values, show_target, show_integrated, facet_by, design_prior, ...)
+}
+
+# Legacy S3 plot method (for backward compatibility)
+#' @export
 plot.rctbayespower_sim_result <- function(x,
                                     type = "auto",
                                     metric = "both",
@@ -56,6 +82,21 @@ plot.rctbayespower_sim_result <- function(x,
                                     facet_by = "effect_size",
                                     design_prior = NULL,
                                     ...) {
+  
+  # Call the internal plotting function
+  create_power_plot(x, type, metric, values, show_target, show_integrated, facet_by, design_prior, ...)
+}
+
+# Internal plotting function (shared by both S7 and S3 methods)
+create_power_plot <- function(x,
+                             type = "auto",
+                             metric = "both", 
+                             values = "both",
+                             show_target = TRUE,
+                             show_integrated = TRUE,
+                             facet_by = "effect_size",
+                             design_prior = NULL,
+                             ...) {
   if (!requireNamespace("ggplot2", quietly = TRUE)) {
     stop("Package 'ggplot2' is required for plotting.")
   }
@@ -74,28 +115,22 @@ plot.rctbayespower_sim_result <- function(x,
   design <- x$design
   conditions <- x$conditions
 
-  # Check for missing essential columns - adapt to new API
+  # Check for missing essential columns - updated for new S7 API
   required_cols <- c(
-    "pow_success", "pow_futility",
-    "success_prob", "futility_prob"
+    "power_success", "power_futility",
+    "prob_success", "prob_futility"
   )
   missing_cols <- setdiff(required_cols, names(power_surface))
   if (length(missing_cols) > 0) {
     stop("Missing required columns in results_df: ", paste(missing_cols, collapse = ", "))
   }
 
-  # Map column names from new API to plotting expectations
-  if ("pow_success" %in% names(power_surface)) {
-    power_surface$power_success <- power_surface$pow_success
+  # Map column names to plotting expectations (prob_* -> mean_prob_*)
+  if ("prob_success" %in% names(power_surface)) {
+    power_surface$mean_prob_success <- power_surface$prob_success
   }
-  if ("pow_futility" %in% names(power_surface)) {
-    power_surface$power_futility <- power_surface$pow_futility
-  }
-  if ("success_prob" %in% names(power_surface)) {
-    power_surface$mean_prob_success <- power_surface$success_prob
-  }
-  if ("futility_prob" %in% names(power_surface)) {
-    power_surface$mean_prob_futility <- power_surface$futility_prob
+  if ("prob_futility" %in% names(power_surface)) {
+    power_surface$mean_prob_futility <- power_surface$prob_futility
   }
 
   # Validate and compute design prior integration for plotting
@@ -180,9 +215,9 @@ plot.rctbayespower_sim_result <- function(x,
     analysis_type = analysis_type,
     target_power_success = design$p_sig_success,
     target_power_futility = design$p_sig_futility,
-    sample_sizes = if ("n_total" %in% names(power_surface)) unique(power_surface$n_total) else NULL,
-    effect_sizes = if (length(target_param_cols) > 0) unique(power_surface[[target_param_cols[1]]]) else NULL,
-    integrated_power = NULL
+    sample_sizes = unique_n_total,
+    effect_sizes = unique_effects,
+    integrated_power = x$integrated_power
   )
 
   # Validate parameters
@@ -221,7 +256,7 @@ create_power_curve_plot <- function(x, metric, values, show_target, show_integra
     x_var <- "n_total"
     x_label <- "Total Sample Size"
     title_base <- "Sample Size Analysis"
-    subtitle <- paste("Fixed effect size:", x$effect_size)
+    subtitle <- paste("Fixed effect size:", x$effect_sizes[1])
     facet_var <- NULL
   } else if (x$analysis_type == "effect_only") {
     # Use the actual target parameter name from the data
