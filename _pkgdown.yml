@@ -15,6 +15,7 @@ reference:
   desc: "Main functions for conducting Bayesian power analysis"
   contents:
   - power_analysis
+  - run
   - simulate_single_run
 
 - title: "Model Building"
@@ -24,6 +25,8 @@ reference:
   - build_model_ancova
   - build_model_ancova_cont_2arms
   - build_model_ancova_cont_3arms
+  - list_predefined_models
+  - get_predefined_model
 
 - title: "Design and Conditions"
   desc: "Functions for setting up study designs and simulation conditions"
@@ -36,14 +39,36 @@ reference:
   contents:
   - plot.rctbayespower_sim_result
 
+- title: "Analysis Helper Functions"
+  desc: "Functions for computing measures and summarizing results"
+  contents:
+  - compute_measures_brmsfit
+  - summarize_sims
+
+- title: "Monte Carlo Standard Error Functions"
+  desc: "Functions for calculating Monte Carlo standard errors"
+  contents:
+  - calculate_mcse_power
+  - calculate_mcse_mean
+  - calculate_mcse_integrated_power
+
+- title: "Design Prior and Weighting"
+  desc: "Functions for handling design priors and effect size weighting"
+  contents:
+  - parse_design_prior
+  - validate_weighting_function
+
 - title: "Utilities"
   desc: "Helper functions and utilities"
   contents:
   - required_fn_args
+  - required_fn_args_design
+  - required_fn_args_model
+  - get_arg_defaults
+  - get_args_without_defaults
+  - update_s7_with_dots
 
-- title: "S3 Methods"
-  desc: "Print methods for package objects"
+- title: "S7 Methods"
+  desc: "Print and generic methods for S7 package objects"
   contents:
-  - print.rctbayespower_design
-  - print.rctbayespower_conditions
-  - print.rctbayespower_model
+  - starts_with("print.rctbp_")
