@@ -27,7 +27,7 @@ execute:
 options(repos = c(CRAN = "https://cloud.r-project.org/"))
 
 # Check and install required packages
-packages <- c("tidyverse", "devtools")
+packages <- c("dplyr", "kableExtra")
 install.packages(setdiff(packages, rownames(installed.packages())))
 invisible(lapply(packages, require, character.only = TRUE))
 
