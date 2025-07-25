@@ -15,7 +15,7 @@ results across multiple effect sizes or sample sizes using weighted averages."><
 
     <a class="navbar-brand me-2" href="../index.html">rctbayespower</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.0.9000</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -24,9 +24,16 @@ results across multiple effect sizes or sample sizes using weighted averages."><
 
     <div id="navbar" class="collapse navbar-collapse ms-3">
       <ul class="navbar-nav me-auto"><li class="active nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
+<li class="nav-item dropdown">
+  <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/01-introduction.html">Getting Started with 'rctbayespower'</a></li>
+    <li><a class="dropdown-item" href="../articles/02-prior-specification.html">Prior Specifications in 'rctbayespower'</a></li>
+    <li><a class="dropdown-item" href="../articles/03-algorithm-performance.html">Comparative Algorithm Performance in 'rctbayespower'</a></li>
+  </ul></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
  <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="../search.json"></form></li>
+<li class="nav-item"><a class="external-link nav-link" href="https://github.com/matthiaskloft/rctbayespower/" aria-label="GitHub"><span class="fa fab fa-github fa-lg"></span></a></li>
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-lightswitch" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true" aria-label="Light switch"><span class="fa fa-sun"></span></button>
   <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdown-lightswitch"><li><button class="dropdown-item" data-bs-theme-value="light"><span class="fa fa-sun"></span> Light</button></li>
@@ -42,7 +49,7 @@ results across multiple effect sizes or sample sizes using weighted averages."><
   <main id="main" class="col-md-9"><div class="page-header">
 
       <h1>Monte Carlo Standard Error for Integrated Power Metrics</h1>
-
+      <small class="dont-index">Source: <a href="https://github.com/matthiaskloft/rctbayespower/blob/main/R/MCSE.R" class="external-link"><code>R/MCSE.R</code></a></small>
       <div class="d-none name"><code>calculate_mcse_integrated_power.Rd</code></div>
     </div>
 
@@ -56,7 +63,7 @@ results across multiple effect sizes or sample sizes using weighted averages.</p
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">calculate_mcse_integrated_power</span><span class="op">(</span></span>
 <span>  <span class="va">values</span>,</span>
 <span>  <span class="va">weights</span>,</span>
-<span>  <span class="va">n_simulations</span>,</span>
+<span>  <span class="va">n_sims</span>,</span>
 <span>  is_power_metric <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -73,7 +80,7 @@ results across multiple effect sizes or sample sizes using weighted averages.</p
 <dd><p>Vector of weights for integration</p></dd>
 
 
-<dt id="arg-n-simulations">n_simulations<a class="anchor" aria-label="anchor" href="#arg-n-simulations"></a></dt>
+<dt id="arg-n-sims">n_sims<a class="anchor" aria-label="anchor" href="#arg-n-sims"></a></dt>
 <dd><p>Total number of simulations</p></dd>
 
 

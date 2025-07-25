@@ -15,7 +15,7 @@ This function is the core simulation engine used by power analysis functions."><
 
     <a class="navbar-brand me-2" href="../index.html">rctbayespower</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.0.9000</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -24,9 +24,16 @@ This function is the core simulation engine used by power analysis functions."><
 
     <div id="navbar" class="collapse navbar-collapse ms-3">
       <ul class="navbar-nav me-auto"><li class="active nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
+<li class="nav-item dropdown">
+  <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/01-introduction.html">Getting Started with 'rctbayespower'</a></li>
+    <li><a class="dropdown-item" href="../articles/02-prior-specification.html">Prior Specifications in 'rctbayespower'</a></li>
+    <li><a class="dropdown-item" href="../articles/03-algorithm-performance.html">Comparative Algorithm Performance in 'rctbayespower'</a></li>
+  </ul></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
  <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="../search.json"></form></li>
+<li class="nav-item"><a class="external-link nav-link" href="https://github.com/matthiaskloft/rctbayespower/" aria-label="GitHub"><span class="fa fab fa-github fa-lg"></span></a></li>
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-lightswitch" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true" aria-label="Light switch"><span class="fa fa-sun"></span></button>
   <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdown-lightswitch"><li><button class="dropdown-item" data-bs-theme-value="light"><span class="fa fa-sun"></span> Light</button></li>
@@ -42,7 +49,7 @@ This function is the core simulation engine used by power analysis functions."><
   <main id="main" class="col-md-9"><div class="page-header">
 
       <h1>Single Run Simulation for RCT Bayesian Power Analysis</h1>
-
+      <small class="dont-index">Source: <a href="https://github.com/matthiaskloft/rctbayespower/blob/main/R/simulate_single_run.R" class="external-link"><code>R/simulate_single_run.R</code></a></small>
       <div class="d-none name"><code>simulate_single_run.Rd</code></div>
     </div>
 
@@ -71,7 +78,7 @@ and 'true_parameter_values', plus optional 'interim_args'.</p></dd>
 
 
 <dt id="arg-design">design<a class="anchor" aria-label="anchor" href="#arg-design"></a></dt>
-<dd><p>A rctbayespower_design object containing the simulation and model specifications</p></dd>
+<dd><p>A rctbp_design or rctbp_power_analysis object containing the simulation and model specifications</p></dd>
 
 
 <dt id="arg-brms-args">brms_args<a class="anchor" aria-label="anchor" href="#arg-brms-args"></a></dt>

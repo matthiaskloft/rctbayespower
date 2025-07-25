@@ -19,7 +19,7 @@ For multiple target parameters, it also computes combined (union) measures."></h
 
     <a class="navbar-brand me-2" href="../index.html">rctbayespower</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.0.9000</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -28,9 +28,16 @@ For multiple target parameters, it also computes combined (union) measures."></h
 
     <div id="navbar" class="collapse navbar-collapse ms-3">
       <ul class="navbar-nav me-auto"><li class="active nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
+<li class="nav-item dropdown">
+  <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/01-introduction.html">Getting Started with 'rctbayespower'</a></li>
+    <li><a class="dropdown-item" href="../articles/02-prior-specification.html">Prior Specifications in 'rctbayespower'</a></li>
+    <li><a class="dropdown-item" href="../articles/03-algorithm-performance.html">Comparative Algorithm Performance in 'rctbayespower'</a></li>
+  </ul></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
  <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="../search.json"></form></li>
+<li class="nav-item"><a class="external-link nav-link" href="https://github.com/matthiaskloft/rctbayespower/" aria-label="GitHub"><span class="fa fab fa-github fa-lg"></span></a></li>
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-lightswitch" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true" aria-label="Light switch"><span class="fa fa-sun"></span></button>
   <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdown-lightswitch"><li><button class="dropdown-item" data-bs-theme-value="light"><span class="fa fa-sun"></span> Light</button></li>
@@ -46,7 +53,7 @@ For multiple target parameters, it also computes combined (union) measures."></h
   <main id="main" class="col-md-9"><div class="page-header">
 
       <h1>Compute Power Measures from brms Model Fit</h1>
-
+      <small class="dont-index">Source: <a href="https://github.com/matthiaskloft/rctbayespower/blob/main/R/compute_measures.R" class="external-link"><code>R/compute_measures.R</code></a></small>
       <div class="d-none name"><code>compute_measures_brmsfit.Rd</code></div>
     </div>
 
@@ -86,12 +93,12 @@ For multiple target parameters, it also computes combined (union) measures.</p>
 <li><p><code>threshold_futility</code>: Futility threshold used for the parameter</p></li>
 <li><p><code>success_prob</code>: Probability that parameter exceeds success threshold</p></li>
 <li><p><code>futility_prob</code>: Probability that parameter falls below futility threshold</p></li>
-<li><p><code>sig_success</code>: Binary indicator (1/0) if success probability meets significance threshold</p></li>
-<li><p><code>sig_futility</code>: Binary indicator (1/0) if futility probability meets significance threshold</p></li>
-<li><p><code>est_median</code>: Posterior median estimate of the parameter</p></li>
-<li><p><code>est_mad</code>: Posterior median absolute deviation of the parameter</p></li>
-<li><p><code>est_mean</code>: Posterior mean estimate of the parameter</p></li>
-<li><p><code>est_sd</code>: Posterior standard deviation of the parameter</p></li>
+<li><p><code>power_success</code>: Binary indicator (1/0) if success probability meets significance threshold</p></li>
+<li><p><code>power_futility</code>: Binary indicator (1/0) if futility probability meets significance threshold</p></li>
+<li><p><code>median</code>: Posterior median estimate of the parameter</p></li>
+<li><p><code>mad</code>: Posterior median absolute deviation of the parameter</p></li>
+<li><p><code>mean</code>: Posterior mean estimate of the parameter</p></li>
+<li><p><code>sd</code>: Posterior standard deviation of the parameter</p></li>
 <li><p><code>rhat</code>: R-hat convergence diagnostic</p></li>
 <li><p><code>ess_bulk</code>: Effective sample size for bulk estimates</p></li>
 <li><p><code>ess_tail</code>: Effective sample size for tail estimates</p></li>
@@ -104,10 +111,6 @@ ALL parameters to exceed their respective success thresholds simultaneously, and
 futility requires ALL parameters to fall below their respective futility thresholds.</p>
 <p>If threshold vectors are shorter than the number of target parameters, the first
 threshold value is recycled for additional parameters.</p>
-    </div>
-    <div class="section level2">
-    <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
-    <div class="dont-index"><p><code><a href="power_analysis.html">power_analysis()</a></code>, <code><a href="simulate_single_run.html">simulate_single_run()</a></code></p></div>
     </div>
 
     <div class="section level2">

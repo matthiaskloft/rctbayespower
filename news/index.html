@@ -13,7 +13,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">rctbayespower</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.0.9000</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -22,9 +22,16 @@
 
     <div id="navbar" class="collapse navbar-collapse ms-3">
       <ul class="navbar-nav me-auto"><li class="nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
+<li class="nav-item dropdown">
+  <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/01-introduction.html">Getting Started with 'rctbayespower'</a></li>
+    <li><a class="dropdown-item" href="../articles/02-prior-specification.html">Prior Specifications in 'rctbayespower'</a></li>
+    <li><a class="dropdown-item" href="../articles/03-algorithm-performance.html">Comparative Algorithm Performance in 'rctbayespower'</a></li>
+  </ul></li>
 <li class="active nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
  <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="../search.json"></form></li>
+<li class="nav-item"><a class="external-link nav-link" href="https://github.com/matthiaskloft/rctbayespower/" aria-label="GitHub"><span class="fa fab fa-github fa-lg"></span></a></li>
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-lightswitch" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true" aria-label="Light switch"><span class="fa fa-sun"></span></button>
   <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdown-lightswitch"><li><button class="dropdown-item" data-bs-theme-value="light"><span class="fa fa-sun"></span> Light</button></li>
@@ -40,7 +47,7 @@
   <main id="main" class="col-md-9"><div class="page-header">
 
       <h1>Changelog</h1>
-
+      <small>Source: <a href="https://github.com/matthiaskloft/rctbayespower/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
     <div class="section level2">
@@ -53,8 +60,6 @@
 <ul><li>
 <strong>Core Functions</strong>:
 <ul><li>
-<code><a href="../reference/power_analysis.html">power_analysis()</a></code>: Main function for Bayesian power analysis using object-oriented API</li>
-<li>
 <code><a href="../reference/build_model.html">build_model()</a></code>: Create model specifications for power analysis</li>
 <li>
 <code><a href="../reference/build_design.html">build_design()</a></code>: Create experimental design configurations<br></li>
@@ -95,7 +100,7 @@
 </ul></div>
 <div class="section level4">
 <h4 id="api-design-0-1-0">API Design<a class="anchor" aria-label="anchor" href="#api-design-0-1-0"></a></h4>
-<p>This package uses an object-oriented approach requiring users to: 1. Build model specifications using <code><a href="../reference/build_model.html">build_model()</a></code> or pre-built models 2. Create experimental designs with <code><a href="../reference/build_design.html">build_design()</a></code> 3. Generate analysis conditions with <code><a href="../reference/build_conditions.html">build_conditions()</a></code> 4. Execute power analysis with <code><a href="../reference/power_analysis.html">power_analysis()</a></code></p>
+<p>This package uses an object-oriented approach requiring users to: 1. Build model specifications using <code><a href="../reference/build_model.html">build_model()</a></code> or pre-built models 2. Create experimental designs with <code><a href="../reference/build_design.html">build_design()</a></code> 3. Generate analysis conditions with <code><a href="../reference/build_conditions.html">build_conditions()</a></code></p>
 </div>
 </div>
 </div>

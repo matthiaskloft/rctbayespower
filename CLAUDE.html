@@ -13,7 +13,7 @@
 
     <a class="navbar-brand me-2" href="index.html">rctbayespower</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.0.9000</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -22,9 +22,16 @@
 
     <div id="navbar" class="collapse navbar-collapse ms-3">
       <ul class="navbar-nav me-auto"><li class="nav-item"><a class="nav-link" href="reference/index.html">Reference</a></li>
+<li class="nav-item dropdown">
+  <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="articles/01-introduction.html">Getting Started with 'rctbayespower'</a></li>
+    <li><a class="dropdown-item" href="articles/02-prior-specification.html">Prior Specifications in 'rctbayespower'</a></li>
+    <li><a class="dropdown-item" href="articles/03-algorithm-performance.html">Comparative Algorithm Performance in 'rctbayespower'</a></li>
+  </ul></li>
 <li class="nav-item"><a class="nav-link" href="news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
  <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="search.json"></form></li>
+<li class="nav-item"><a class="external-link nav-link" href="https://github.com/matthiaskloft/rctbayespower/" aria-label="GitHub"><span class="fa fab fa-github fa-lg"></span></a></li>
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-lightswitch" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true" aria-label="Light switch"><span class="fa fa-sun"></span></button>
   <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdown-lightswitch"><li><button class="dropdown-item" data-bs-theme-value="light"><span class="fa fa-sun"></span> Light</button></li>
@@ -40,7 +47,7 @@
   <main id="main" class="col-md-9"><div class="page-header">
 
       <h1>CLAUDE.md</h1>
-
+      <small class="dont-index">Source: <a href="https://github.com/matthiaskloft/rctbayespower/blob/main/CLAUDE.md" class="external-link"><code>CLAUDE.md</code></a></small>
     </div>
 
 <div id="claudemd" class="section level1">
@@ -54,10 +61,10 @@
 <h2 id="current-status-updated---2025-07-21">Current Status (Updated - 2025-07-21)<a class="anchor" aria-label="anchor" href="#current-status-updated---2025-07-21"></a></h2>
 <p><strong>Core Package State: Functional and stable core with documentation lag</strong></p>
 <p><strong>✅ IMPLEMENTED FEATURES - Object-Oriented API:</strong></p>
-<p><strong>Core Functions (100% Complete &amp; Working):</strong> - <strong><code><a href="reference/power_analysis.html">power_analysis()</a></code></strong> - Main Bayesian power analysis function using new object-oriented API - <strong><code><a href="reference/build_model.html">build_model()</a></code></strong> - Create model specifications for power analysis - <strong><code><a href="reference/build_design.html">build_design()</a></code></strong> - Create experimental design configurations - <strong><code><a href="reference/build_conditions.html">build_conditions()</a></code></strong> - Generate analysis conditions from design parameters - <strong><code><a href="reference/simulate_single_run.html">simulate_single_run()</a></code></strong> - Execute single simulation run for power analysis</p>
+<p><strong>Core Functions (100% Complete &amp; Working):</strong> - <strong><code><a href="reference/build_model.html">build_model()</a></code></strong> - Create model specifications for power analysis - <strong><code><a href="reference/build_design.html">build_design()</a></code></strong> - Create experimental design configurations - <strong><code><a href="reference/build_conditions.html">build_conditions()</a></code></strong> - Generate analysis conditions from design parameters - <strong><code><a href="reference/simulate_single_run.html">simulate_single_run()</a></code></strong> - Execute single simulation run for power analysis</p>
 <p><strong>Pre-built Models:</strong> - <strong><code>build_model("ancova_cont_2arms")()</code></strong> - ANCOVA model for continuous outcomes ✅ - <strong>To Do</strong>: <code><a href="reference/build_model_ancova.html">build_model_ancova()</a></code> as generalized version with wrappers for specific defaults</p>
 <p><strong>Advanced Features (100% Complete):</strong> - <strong>Design Prior Integration</strong> - Supports brms syntax with comprehensive fallback hierarchy - <strong>Integrated Power Computation</strong> - Weighted power across effect sizes using priors - <strong>Sophisticated Parallelization</strong> - Robust parallel processing with parameter preservation - <strong>Comprehensive Plotting</strong> - Multiple visualization types with auto-detection - <strong>Model Caching</strong> - Significant performance improvements for grid analyses</p>
-<p><strong>S3 Methods (100% Complete):</strong> - <code><a href="reference/plot.rctbayespower_sim_result.html">plot.rctbayespower_sim_result()</a></code> - Visualization of power analysis results - <code>print.rctbayespower_*()</code> methods for all object types</p>
+<p><strong>S3 Methods (100% Complete):</strong> - <code>plot.rctbayespower_sim_result()</code> - Visualization of power analysis results - <code>print.rctbayespower_*()</code> methods for all object types</p>
 <p><strong>⚠️ INCOMPLETE FEATURES:</strong></p>
 <p><strong>Documentation Inconsistencies (Critical):</strong> - <strong>Vignettes</strong>: Still reference non-existent <code>power_analysis_ancova()</code> function - need complete rewriting - <strong>Manual pages</strong>: Some still reference old function names - <strong>All vignettes need updating</strong> for new API</p>
 <p><strong>Test Suite (0% Complete):</strong> - <strong>Status</strong>: All test files contain only TODO comments - <strong>Impact</strong>: No automated testing coverage - <strong>Files</strong>: 4 test files with placeholder content only</p>
@@ -68,7 +75,8 @@
 <span><span class="va">model_ancova</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/build_model.html">build_model</a></span><span class="op">(</span><span class="st">"ancova_cont_2arms"</span><span class="op">)</span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/build_design.html">build_design</a></span><span class="op">(</span><span class="va">model</span>, <span class="va">target_params</span>, <span class="va">thresholds</span>, <span class="va">p_sig</span><span class="op">)</span></span>
 <span><span class="va">conditions</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/build_conditions.html">build_conditions</a></span><span class="op">(</span><span class="va">design</span>, <span class="va">condition_values</span>, <span class="va">static_values</span><span class="op">)</span></span>
-<span><span class="va">result</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/power_analysis.html">power_analysis</a></span><span class="op">(</span><span class="va">conditions</span>, <span class="va">n_cores</span>, <span class="va">n_simulations</span><span class="op">)</span></span></code></pre></div>
+<span><span class="va">power_config</span> <span class="op">&lt;-</span> <span class="fu">rctbp_power_analysis</span><span class="op">(</span>conditions <span class="op">=</span> <span class="va">conditions</span>, n_cores <span class="op">=</span> <span class="va">n_cores</span>, n_sims <span class="op">=</span> <span class="va">n_sims</span><span class="op">)</span></span>
+<span><span class="va">result</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/run.html">run</a></span><span class="op">(</span><span class="va">power_config</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="development-practices-and-r-cmd-check-guidelines">Development Practices and R CMD Check Guidelines<a class="anchor" aria-label="anchor" href="#development-practices-and-r-cmd-check-guidelines"></a></h2>
