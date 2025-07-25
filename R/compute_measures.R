@@ -17,20 +17,20 @@
 #'
 #' @return A data frame containing power analysis measures with the following columns:
 #'   \itemize{
-#'     \item \code{parameter}: Parameter name or "union" for combined measures
-#'     \item \code{threshold_success}: Success threshold used for the parameter
-#'     \item \code{threshold_futility}: Futility threshold used for the parameter
-#'     \item \code{success_prob}: Probability that parameter exceeds success threshold
-#'     \item \code{futility_prob}: Probability that parameter falls below futility threshold
-#'     \item \code{power_success}: Binary indicator (1/0) if success probability meets significance threshold
-#'     \item \code{power_futility}: Binary indicator (1/0) if futility probability meets significance threshold
-#'     \item \code{median}: Posterior median estimate of the parameter
-#'     \item \code{mad}: Posterior median absolute deviation of the parameter
-#'     \item \code{mean}: Posterior mean estimate of the parameter
-#'     \item \code{sd}: Posterior standard deviation of the parameter
-#'     \item \code{rhat}: R-hat convergence diagnostic
-#'     \item \code{ess_bulk}: Effective sample size for bulk estimates
-#'     \item \code{ess_tail}: Effective sample size for tail estimates
+#'     \item `parameter`: Parameter name or "union" for combined measures
+#'     \item `threshold_success`: Success threshold used for the parameter
+#'     \item `threshold_futility`: Futility threshold used for the parameter
+#'     \item `success_prob`: Probability that parameter exceeds success threshold
+#'     \item `futility_prob`: Probability that parameter falls below futility threshold
+#'     \item `power_success`: Binary indicator (1/0) if success probability meets significance threshold
+#'     \item `power_futility`: Binary indicator (1/0) if futility probability meets significance threshold
+#'     \item `median`: Posterior median estimate of the parameter
+#'     \item `mad`: Posterior median absolute deviation of the parameter
+#'     \item `mean`: Posterior mean estimate of the parameter
+#'     \item `sd`: Posterior standard deviation of the parameter
+#'     \item `rhat`: R-hat convergence diagnostic
+#'     \item `ess_bulk`: Effective sample size for bulk estimates
+#'     \item `ess_tail`: Effective sample size for tail estimates
 #'   }
 #'
 #' @details
@@ -220,35 +220,35 @@ compute_measures_brmsfit <- function(brmsfit, design) {
 #'
 #' @param results_df_raw A data frame containing raw simulation results with columns:
 #'   \itemize{
-#'     \item \code{id_cond}: Condition identifier
-#'     \item \code{parameter}: Parameter name
-#'     \item \code{threshold_success}: Success threshold for the parameter
-#'     \item \code{threshold_futility}: Futility threshold for the parameter
-#'     \item \code{success_prob}: Probability of success for each simulation
-#'     \item \code{futility_prob}: Probability of futility for each simulation
-#'     \item \code{sig_success}: Binary success significance indicator
-#'     \item \code{sig_futility}: Binary futility significance indicator
-#'     \item \code{est_median}: Posterior median estimates
-#'     \item \code{est_mad}: Posterior median absolute deviation
-#'     \item \code{est_mean}: Posterior mean estimates
-#'     \item \code{est_sd}: Posterior standard deviation
-#'     \item \code{rhat}: R-hat convergence diagnostic
-#'     \item \code{ess_bulk}: Bulk effective sample size
-#'     \item \code{ess_tail}: Tail effective sample size
-#'     \item \code{converged}: Convergence status indicator
-#'     \item \code{error}: Error messages (if any)
+#'     \item `id_cond`: Condition identifier
+#'     \item `parameter`: Parameter name
+#'     \item `threshold_success`: Success threshold for the parameter
+#'     \item `threshold_futility`: Futility threshold for the parameter
+#'     \item `success_prob`: Probability of success for each simulation
+#'     \item `futility_prob`: Probability of futility for each simulation
+#'     \item `sig_success`: Binary success significance indicator
+#'     \item `sig_futility`: Binary futility significance indicator
+#'     \item `est_median`: Posterior median estimates
+#'     \item `est_mad`: Posterior median absolute deviation
+#'     \item `est_mean`: Posterior mean estimates
+#'     \item `est_sd`: Posterior standard deviation
+#'     \item `rhat`: R-hat convergence diagnostic
+#'     \item `ess_bulk`: Bulk effective sample size
+#'     \item `ess_tail`: Tail effective sample size
+#'     \item `converged`: Convergence status indicator
+#'     \item `error`: Error messages (if any)
 #'   }
 #' @param n_sims Integer specifying the total number of simulations run
 #'
 #' @return A data frame with summarized results grouped by condition and parameter,
 #'   containing mean estimates and Monte Carlo standard errors (SE) for all metrics:
 #'   \itemize{
-#'     \item Probability estimates: \code{prob_success}, \code{prob_futility}
-#'     \item Power estimates: \code{power_success}, \code{power_futility}
-#'     \item Parameter estimates: \code{median}, \code{mean}, \code{mad}, \code{sd}
-#'     \item Convergence metrics: \code{rhat}, \code{ess_bulk}, \code{ess_tail}, \code{conv_rate}
+#'     \item Probability estimates: `prob_success`, `prob_futility`
+#'     \item Power estimates: `power_success`, `power_futility`
+#'     \item Parameter estimates: `median`, `mean`, `mad`, `sd`
+#'     \item Convergence metrics: `rhat`, `ess_bulk`, `ess_tail`, `conv_rate`
 #'   }
-#'   Each metric includes corresponding \code{_se} columns with standard errors.
+#'   Each metric includes corresponding `_se` columns with standard errors.
 #'
 #' @details
 #' The function groups results by condition ID, parameter, and thresholds, then computes:

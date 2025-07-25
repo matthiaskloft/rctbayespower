@@ -34,7 +34,7 @@ library(rctbayespower)
 
 # Fast settings for examples
 n_cores <- min(4, parallel::detectCores())
-n_sims <- 500
+n_sims <- 1e3
 ```
 
 
@@ -68,12 +68,11 @@ $$d \sim \mathcal{N}(0,100)$$
 ```{r}
 # Create ANCOVA model with uninformative priors
 uninformative_model <- build_model_ancova_cont_2arms(
-  b_arm_treat = 0.5,
-  b_covariate = 0.3,
   prior_treatment = brms::set_prior("normal(0, 100)", class = "b"),
   prior_covariate = brms::set_prior("normal(0, 100)", class = "b", coef = "covariate"),
   prior_intercept = brms::set_prior("normal(0, 100)", class = "Intercept"),
-  prior_sigma = brms::set_prior("normal(0, 100)", class = "sigma")
+  prior_sigma = brms::set_prior("normal(0, 100)", class = "sigma", lb = 0),
+  link_sigma = "identity"
 )
 
 # Create design
@@ -83,7 +82,7 @@ uninformative_design <- build_design(
   n_interim_analyses = 0,
   thresholds_success = 0.3,
   thresholds_futility = 0.1,
-  p_sig_success = 0.975,
+  p_sig_success = 0.95,
   p_sig_futility = 0.5
 )
 
@@ -93,7 +92,11 @@ uninformative_conditions <- build_conditions(
   condition_values = list(
     n_total = sample_size
   ),
-  static_values = list())
+  static_values = list(
+    b_arm_treat = 0.5, # Medium effect
+    b_covariate = 0 # No covariate effect
+  )
+)
 
 # Run power analysis
 uninformative_analysis <- rctbayespower::power_analysis(
@@ -108,12 +111,14 @@ uninformative_analysis <- rctbayespower::power_analysis(
 res_uninformative <- uninformative_analysis@summarized_results|>
   select(
     n_total,
+    median,
+    sd,
     prob_success,
-    prob_futility,
     power_success,
+    prob_futility,
     power_futility
   ) |>
-  dplyr::mutate(Prior = "informative", .before = everything())
+  dplyr::mutate(Prior = "uninformative", .before = everything())
 
 res_uninformative |> 
   kableExtra::kable(digits = 3, format = "html")
@@ -129,12 +134,11 @@ $$d \sim \mathcal{t_3}(0,1)$$
 ```{r}
 # Create ANCOVA model with informative/sceptical priors
 informative_model <- build_model_ancova_cont_2arms(
-  b_arm_treat = 0.5,
-  b_covariate = 0.3,
-  prior_treatment = brms::set_prior("student_t(3, 0, 1)", class = "b"),
-  prior_covariate = brms::set_prior("student_t(3, 0, 0.5)", class = "b", coef = "covariate"),
-  prior_intercept = brms::set_prior("student_t(3, 0, 1)", class = "Intercept"),
-  prior_sigma = brms::set_prior("student_t(3, 0, 2)", class = "sigma")
+  prior_treatment = brms::set_prior("student_t(3, 0, 2)", class = "b"),
+  prior_covariate = brms::set_prior("student_t(3, 0, 2)", class = "b", coef = "covariate"),
+  prior_intercept = brms::set_prior("student_t(3, 0, 2)", class = "Intercept"),
+  prior_sigma = brms::set_prior("student_t(3, 0, 2)", class = "sigma", lb = 0),
+  link_sigma = "identity"
 )
 
 # Create design (same as uninformative)
@@ -151,10 +155,10 @@ informative_design <- build_design(
 # Create conditions
 informative_conditions <- build_conditions(
   design = informative_design,
-  condition_values = list(
-    n_total = sample_size
-  ),
+  condition_values = list(n_total = sample_size),
   static_values = list(
+    b_arm_treat = 0.5, # Medium effect
+    b_covariate = 0 # No covariate effect
   )
 )
 
@@ -171,9 +175,11 @@ informative_analysis <- power_analysis(
 res_informative <- informative_analysis@summarized_results|>
   select(
     n_total,
+    median,
+    sd,
     prob_success,
-    prob_futility,
     power_success,
+    prob_futility,
     power_futility
   ) |>
   dplyr::mutate(Prior = "informative", .before = everything())
@@ -204,16 +210,26 @@ To evaluate the alpha error rate (false positive rate) for both prior configurat
 Luckily, the `rctbayespower` package allows us to reuse the same model and design configurations, only changing the effect size to zero.
 
 ```{r alpha_error_uninformative}
+# Create design (same as uninformative)
+alpha_uninformative_design <- build_design(
+  model = uninformative_model,
+  target_params = "b_arm2",
+  n_interim_analyses = 0,
+  thresholds_success = 0,
+  thresholds_futility = 0,
+  p_sig_success = 0.95,
+  p_sig_futility = 0.5
+)
+
 alpha_uninformative_conditions <- build_conditions(
-  design = uninformative_design,
-  condition_values = list(
-    n_total = sample_size
-  ),
+  design = alpha_uninformative_design,
+  condition_values = list(n_total = sample_size),
   static_values = list(
-  # Set the effect size to zero for the null hypothesis
-    b_arm_treat = 0 # Null hypothesis: no effect
-  ))
-  
+    b_arm_treat = 0, # Null hypothesis: no effect
+    b_covariate = 0 # No covariate effect
+  )
+)
+
 alpha_uninformative <- power_analysis(
   conditions = alpha_uninformative_conditions,
   n_sims = n_sims,
@@ -223,14 +239,22 @@ alpha_uninformative <- power_analysis(
 ```
 
 ```{r alpha_error_informative}
+alpha_informative_design <- build_design(
+  model = informative_model,
+  target_params = "b_arm2",
+  n_interim_analyses = 0,
+  thresholds_success = 0,
+  thresholds_futility = 0,
+  p_sig_success = 0.95,
+  p_sig_futility = 0.5
+)
+
 alpha_informative_conditions <- build_conditions(
-  design = informative_design,
-  condition_values = list(
-    n_total = 120
-  ),
+  design = alpha_informative_design,
+  condition_values = list(n_total = sample_size),
   static_values = list(
-    # Set the effect size to zero for the null hypothesis
-    b_arm_treat = 0 # Null hypothesis: no effect
+    b_arm_treat = 0, # Null hypothesis: no effect
+    b_covariate = 0 # No covariate effect
   )
 )
 
@@ -238,7 +262,7 @@ alpha_informative <- power_analysis(
   conditions = alpha_informative_conditions,
   n_sims = n_sims,
   n_cores = n_cores,
-  verbose = FALSE
+  verbose = TRUE
 )
 ```
 
@@ -250,20 +274,21 @@ res_alpha <-
       select(
         n_total,
         prob_success,
-        prob_futility,
-        power_success,
-        power_futility
+        power_success
       ) |>
       dplyr::mutate(Prior = "uninformative", .before = everything()),
     alpha_informative@summarized_results |>
       select(
         n_total,
         prob_success,
-        prob_futility,
         power_success,
-        power_futility
       ) |>
       dplyr::mutate(Prior = "informative", .before = everything())
+  ) |> 
+  dplyr::rename(
+    
+    alpha = power_success,
+    "p(d > 0)" = prob_success,
   )
 
 res_alpha |> 

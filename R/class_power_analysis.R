@@ -103,14 +103,14 @@ rctbp_power_analysis <- S7::new_class(
 #'
 #' \strong{Key Properties:}
 #' \itemize{
-#'   \item \code{design}: Access to the experimental design configuration
-#'   \item \code{model}: Access to the underlying Bayesian model specification
-#'   \item \code{conditions}: The condition grid for analysis
+#'   \item `design`: Access to the experimental design configuration
+#'   \item `model`: Access to the underlying Bayesian model specification
+#'   \item `conditions`: The condition grid for analysis
 #' }
 #'
 #' \strong{Parallel Processing:}
-#' When \code{n_cores > 1}, simulations are distributed across multiple cores
-#' for improved performance. The function validates that \code{n_cores} does
+#' When `n_cores > 1`, simulations are distributed across multiple cores
+#' for improved performance. The function validates that `n_cores` does
 #' not exceed available system cores.
 #'
 #' @seealso [build_conditions()], [build_design()], [build_model()], [run()]
@@ -213,6 +213,7 @@ run <- S7::new_generic("run", "object")
 #' @export
 #' @importFrom parallel detectCores makeCluster stopCluster parLapply clusterEvalQ clusterExport
 #' @importFrom utils modifyList
+#' @name run.rctbp_power_analysis
 S7::method(run, rctbp_power_analysis) <- function(object, ...) {
   # Time start
   start_time <- Sys.time()
@@ -288,8 +289,6 @@ S7::method(run, rctbp_power_analysis) <- function(object, ...) {
       # Set up cluster
       cl <- parallel::makeCluster(n_cores, type = "PSOCK")
       # Ensure cleanup on exit
-      on.exit(message("Cleaning up!"), add = TRUE)
-      on.exit(parallel::stopCluster(cl), add = TRUE)
       
       # Load required packages on workers first
       parallel::clusterEvalQ(cl, {
@@ -573,7 +572,6 @@ S7::method(run, rctbp_power_analysis) <- function(object, ...) {
 
 
 # S7 Method for Print
-#' @importFrom S7 method
 
 #' Print Method for rctbp_power_analysis Objects
 #'
@@ -584,6 +582,8 @@ S7::method(run, rctbp_power_analysis) <- function(object, ...) {
 #' @param ... Additional arguments (currently unused)
 #'
 #' @return Invisibly returns the input object. Used for side effects (printing).
+#' @importFrom S7 method
+#' @name print.rctbp_power_analysis
 #' @export
 S7::method(print, rctbp_power_analysis) <- function(x, ...) {
   cat("\nS7 Object of class: 'rctbp_power_analysis'\n")

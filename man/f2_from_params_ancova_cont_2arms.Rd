@@ -4,34 +4,54 @@
 \alias{f2_from_params_ancova_cont_2arms}
 \title{Compute Cohen's f² for Group Effect in Linear Model}
 \usage{
-f2_from_params_ancova_cont_2arms(beta_group, beta_cov, sigma)
+f2_from_params_ancova_cont_2arms(
+  d,
+  beta_cov,
+  sigma,
+  equal_groups = TRUE,
+  p_group = 0.5
+)
 }
 \arguments{
-\item{beta_group}{Numeric or vector of numerics. True coefficient(s) for the group effect.}
+\item{d}{Numeric or vector of numerics. Cohen's d for the group effect (standardized mean difference).
+This represents the difference in group means divided by the pooled standard
+deviation, after adjusting for the covariate.}
 
 \item{beta_cov}{Numeric. True coefficient for the covariate (assumes covariate ~ N(0,1)).}
 
-\item{sigma}{Numeric. Residual standard deviation of the outcome.}
+\item{sigma}{Numeric. Residual standard deviation after fitting the full model.}
+
+\item{equal_groups}{Logical. If TRUE (default), assumes equal group sizes (n1 = n2).
+If FALSE, requires p_group to be specified.}
+
+\item{p_group}{Numeric. Proportion in group 1 (only used if equal_groups = FALSE).}
 }
 \value{
 Numeric vector. Cohen's f² for the group effect(s).
 }
 \description{
 Calculates Cohen's f² for the group effect in a linear regression model of the form
-\code{y ~ covariate + group}, assuming:
-\itemize{
-\item \code{covariate} is standard normal: N(0, 1),
-\item \code{group} is binary: 0/1, with equal sample sizes,
-\item the true regression coefficients and residual SD are known.
+\code{y ~ covariate + group}. Cohen's f² represents the proportion of variance
+uniquely explained by the group variable relative to the unexplained variance.
+This function is vectorized and can handle multiple values for the d parameter.
 }
-The f² represents the proportion of variance uniquely explained by the \code{group}
-variable, over and above the covariate. This function is vectorized for beta_group.
+\details{
+Cohen's f² is calculated as the ratio of variance uniquely explained by the group
+to the unexplained variance:
+\deqn{f² = \frac{R²_{full} - R²_{reduced}}{1 - R²_{full}}}
+
+where R²_full includes both predictors and R²_reduced includes only the covariate.
 }
 \examples{
+\donttest{
 # Single value
-f2_from_params_ancova_cont_2arms(beta_group = 0.5, beta_cov = 0.4, sigma = 1)
+f2_from_params_ancova_cont_2arms(d = 0.5, beta_cov = 0.4, sigma = 1)
 
-# Multiple beta_group values
-f2_from_params_ancova_cont_2arms(beta_group = c(0.2, 0.5, 0.8), beta_cov = 0.4, sigma = 1)
+# Multiple d values (vectorized)
+f2_from_params_ancova_cont_2arms(d = c(0.2, 0.5, 0.8), beta_cov = 0.4, sigma = 1)
 
+# Unequal groups (70/30 split)
+f2_from_params_ancova_cont_2arms(d = 0.5, beta_cov = 0.4, sigma = 1,
+                                  equal_groups = FALSE, p_group = 0.7)
+}
 }

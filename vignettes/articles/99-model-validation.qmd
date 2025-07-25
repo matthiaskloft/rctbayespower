@@ -1,18 +1,71 @@
-# Load package - try devtools first, then pkgload, then library
-devtools::load_all()
-#library(rctbayespower)
+---
+title: "Prior Specifications in 'rctbayespower'"
+author: 
+ - name: Matthias Kloft
+   orcid: 0000-0003-1845-6957
+date: "`r Sys.Date()`"
+format:
+  html:
+    toc: true
+    number-sections: true
+    theme: cosmo
+    code-fold: true
+    code-tools: true
+    code-summary: "Show the code"
+    fig-width: 7
+    fig-height: 4.5
+    embed-resources: true
+execute:
+  message: false
+  warning: false
+---
 
-#-------------------------------------------------------------------------------
-# 1. Uninformative priors for ANCOVA with continuous outcome
+```{r setup}
+#| include: false
 
+# Set CRAN mirror
+options(repos = c(CRAN = "https://cloud.r-project.org/"))
+
+# Check and install required packages
+packages <- c("dplyr", "kableExtra")
+install.packages(setdiff(packages, rownames(installed.packages())))
+invisible(lapply(packages, require, character.only = TRUE))
+library(rctbayespower)
+
+# Fast settings for examples
+n_cores <- 15#min(4, parallel::detectCores())
+n_sims <- 150#1e4
+```
+
+
+# ANCOVA
+
+## Model: Two-Arm ANCOVA with continuous outcome
+
+$$ y_{ij} = \beta_0 + d \cdot \text{arm}_{ij} + 
+\rho \cdot \text{covariate}_{ij} + \epsilon_{ij},\\
+\epsilon_{ij} \sim \mathcal{N}(0,1)$$
+
+where $i$ is the subject and $j$ is the arm (1 or 2).
+
+
+## True Parameters
+
+True effect size and covariate effect, and sample size range.
+```{r}
+#| code-fold: false
 rho <- .3
 d <- .5
-sample_size <- seq(40, 280, 20)
+sample_size <- seq(40, 260, 20)
+```
 
 
-#-------------------------------------------------------------------------------
-# 1. Monte Carlo Estimate with uninformative priors for ANCOVA
+## Monte Carlo Estimate with uninformative priors for ANCOVA
 
+Set up model, design, and conditions for Monte Carlo power analysis.
+```{r}
+#| include: false
+#| 
 # Create ANCOVA model with uninformative priors
 model <- build_model_ancova_cont_2arms(
   b_arm_treat = d,
@@ -42,11 +95,10 @@ conditions <- build_conditions(
     n_total = sample_size
   ),
   static_values = list())
+```
 
-# Run power analysis
-n_cores <- parallel::detectCores() - 1
-n_sims <- 1e3
-
+Run the Monte Carlo power analysis.
+```{r}
 power <- rctbayespower::power_analysis(
   conditions = conditions,
   n_sims = n_sims,
@@ -65,8 +117,12 @@ power_ci_95 <- paste0("[",
                       round(power_mc - 1.96 * power_mcse, 3), ", ", 
                       round(power_mc + 1.96 * power_mcse, 3), "]")
 
-#-------------------------------------------------------------------------------
-# 5. Compare to analytical power
+```
+
+
+## Analytical Power Calculation for ANCOVA
+```{r}
+#| code-fold: false
 
 power_analytic <- analytical_power_ancova_cont_2arms(
   n = sample_size,
@@ -77,9 +133,12 @@ power_analytic <- analytical_power_ancova_cont_2arms(
   covariate_method = "expected",
   alternative = "greater"
 )
+```
 
-# Compare
-tibble(
+
+## Comparison of Monte Carlo and Analytical Power
+```{r}
+dplyr::tibble(
   "N total" = sample_size,
   "MC estimate" = power_mc,
   "95% CI" = power_ci_95 ,
@@ -90,4 +149,18 @@ tibble(
     `Analytical estimate` = round(`Analytical estimate`, 3),
     Difference = round(`MC estimate` - `Analytical estimate`, 3)
   ) |>
-  dplyr::arrange(`N total`)
+  dplyr::arrange(`N total`) |> 
+  kableExtra::kable("html",align = c("c","c", "c", "c", "c"))
+```
+
+
+
+***
+
+
+
+# Session Info
+
+```{r session_info}
+sessionInfo()
+```

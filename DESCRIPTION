@@ -17,17 +17,16 @@ Depends:
 Imports:
     brms (>= 2.20.0),
     posterior,
-    ggplot2,
     plotly,
     dplyr,
     tidyr,
     tibble,
     parallel,
-    scales,
     rlang,
     stringr,
     purrr,
-    S7
+    S7,
+    pwr
 Suggests: 
     testthat (>= 3.0.0),
     knitr,

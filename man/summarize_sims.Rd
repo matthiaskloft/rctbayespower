@@ -39,7 +39,7 @@ containing mean estimates and Monte Carlo standard errors (SE) for all metrics:
 \item Parameter estimates: \code{median}, \code{mean}, \code{mad}, \code{sd}
 \item Convergence metrics: \code{rhat}, \code{ess_bulk}, \code{ess_tail}, \code{conv_rate}
 }
-Each metric includes corresponding \code{_se} columns with standard errors.
+Each metric includes corresponding \verb{_se} columns with standard errors.
 }
 \description{
 This function aggregates raw simulation results across multiple runs to compute

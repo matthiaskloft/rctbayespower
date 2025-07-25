@@ -66,7 +66,8 @@ if (getRversion() >= "2.15.1") {
       "ess_tail_mcse",
       "convergence_rate_mean",
       "convergence_rate_mcse",
-      "x"
+      "x",
+      "n"
     )
   )
 }

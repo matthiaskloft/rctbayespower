@@ -9,9 +9,13 @@ analytical_power_ancova_cont_2arms(
   d,
   beta_cov,
   sigma,
-  p_alloc = c(0.5, 0.5),
+  equal_groups = TRUE,
+  p_group = 0.5,
   alpha = 0.05,
-  alternative = c("two.sided", "greater", "less")
+  alternative = c("two.sided", "greater", "less"),
+  method = c("cohen", "theory"),
+  covariate_method = c("fixed", "expected"),
+  numint = 2000
 )
 }
 \arguments{
@@ -28,14 +32,30 @@ Assumes the covariate follows a standard normal distribution N(0,1).}
 \item{sigma}{Numeric. Residual standard deviation of the outcome after fitting
 the full model (including both covariate and group effects).}
 
-\item{p_alloc}{Numeric vector of length 2. Allocation proportions for the two groups.
-Must sum to 1. Default is \code{c(0.5, 0.5)} for equal allocation.}
+\item{equal_groups}{Logical. If TRUE (default), assumes equal group sizes (n1 = n2).
+If FALSE, requires p_group to be specified.}
+
+\item{p_group}{Numeric. Proportion in group 1 (only used if equal_groups = FALSE).}
 
 \item{alpha}{Numeric. Type I error rate (significance level). Default is 0.05.}
 
 \item{alternative}{Character. Specifies the alternative hypothesis. Must be one of
 "two.sided" (default), "greater", or "less". For one-sided tests, "greater"
 tests if group 1 > group 0, "less" tests if group 1 < group 0.}
+
+\item{method}{Character. Specifies the lambda calculation method. Must be one of:
+\itemize{
+\item "cohen" (default): Uses Cohen's convention where lambda = f² * (u + v + 1)
+\item "theory": Uses statistical theory where lambda = n * f²
+}}
+
+\item{covariate_method}{Character. Specifies how to handle the covariate. Must be one of:
+\itemize{
+\item "fixed" (default): Assumes fixed covariate values (conditional power)
+\item "expected": Integrates over covariate distribution (expected power, SAS-style)
+}}
+
+\item{numint}{Integer. Number of integration points for covariate_method = "expected" (default = 2000).}
 }
 \value{
 Numeric vector. The statistical power(s) to detect the specified group effect(s).
@@ -59,6 +79,18 @@ The function calculates power for testing the group effect in a linear model:
 \item Residuals ε follow N(0, σ²)
 }
 
+Method options:
+\itemize{
+\item "cohen": Uses Cohen's convention matching pwr.f2.test
+\item "theory": Uses classical statistical theory
+}
+
+Covariate method options:
+\itemize{
+\item "fixed": Conditional power given fixed covariate values
+\item "expected": Expected power integrating over covariate distribution (SAS approach)
+}
+
 For two-sided tests, the function uses the F-test which is equivalent to the
 square of a two-sided t-test. For one-sided tests, it uses the t-distribution
 directly.
@@ -72,25 +104,33 @@ This function assumes:
 }
 }
 \examples{
-# Two-sided test with equal allocation
+\donttest{
+# Two-sided test with Cohen's method and fixed covariate
 analytical_power_ancova_cont_2arms(n = 100, d = 0.5, beta_cov = 0.4, sigma = 1)
 
-# Vectorized: multiple sample sizes with fixed effect size
+# Using statistical theory method
+analytical_power_ancova_cont_2arms(n = 100, d = 0.5, beta_cov = 0.4, sigma = 1,
+                                   method = "theory")
+
+# Using expected power with Cohen's lambda
+analytical_power_ancova_cont_2arms(n = 100, d = 0.5, beta_cov = 0.4, sigma = 1,
+                                   covariate_method = "expected")
+
+# Using expected power with theory lambda
+analytical_power_ancova_cont_2arms(n = 100, d = 0.5, beta_cov = 0.4, sigma = 1,
+                                   method = "theory", covariate_method = "expected")
+
+# Vectorized: multiple sample sizes
 analytical_power_ancova_cont_2arms(n = c(50, 100, 150), d = 0.5, beta_cov = 0.4, sigma = 1)
-
-# Vectorized: multiple effect sizes with fixed sample size
-analytical_power_ancova_cont_2arms(n = 100, d = c(0.2, 0.5, 0.8), beta_cov = 0.4, sigma = 1)
-
-# Vectorized: both n and d (recycled to same length)
-analytical_power_ancova_cont_2arms(n = c(80, 120), d = c(0.3, 0.7), beta_cov = 0.4, sigma = 1)
 
 # One-sided test (group 1 > group 0)
 analytical_power_ancova_cont_2arms(n = 100, d = 0.5, beta_cov = 0.4, sigma = 1,
                                    alternative = "greater")
 
-# Unequal allocation (2:1 ratio)
+# Unequal groups (70/30 split)
 analytical_power_ancova_cont_2arms(n = 150, d = 0.5, beta_cov = 0.4, sigma = 1,
-                                   p_alloc = c(2/3, 1/3))
+                                   equal_groups = FALSE, p_group = 0.7)
+}
 
 }
 \references{

@@ -1,7 +1,8 @@
 
 ## class model
-dots for brms arguments like link functions for family
-
+- dots for brms arguments like link functions for family 
+  -> implemented link_sigma as argument for ancova
+- print() should show default values for the data_simulation_fn as well as required arguments to specify
 
 
 ## promotion of classes to top level

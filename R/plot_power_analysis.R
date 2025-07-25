@@ -40,7 +40,7 @@
 #'   If provided, integrated power will be computed using this design prior instead of
 #'   any design prior specified in the original rctbp_power_analysis object.
 #'   Only valid when effect sizes vary (length > 1).
-#' @param ... Additional arguments passed to ggplot2 functions
+#' @param ... Additional arguments passed to plotly functions
 #'
 #' @return A plotly object for all plot types (power curves, heatmaps, and comparison plots)
 #' @export
@@ -50,6 +50,8 @@
 #'
 # S7 Plot Method for rctbp_power_analysis Objects
 #' @importFrom S7 method
+#' @name plot.rctbp_power_analysis
+#' @export
 S7::method(plot, rctbp_power_analysis) <- function(x,
                                                    type = "auto",
                                                    metric = "both",
@@ -88,13 +90,13 @@ create_power_plot <- function(x,
                               facet_by = "effect_size",
                               design_prior = NULL,
                               ...) {
-  if (!requireNamespace("ggplot2", quietly = TRUE)) {
-    stop("Package 'ggplot2' is required for plotting.")
-  }
-  
-  if (!requireNamespace("scales", quietly = TRUE)) {
-    stop("Package 'scales' is required for plotting.")
-  }
+  # if (!requireNamespace("ggplot2", quietly = TRUE)) {
+  #   stop("Package 'ggplot2' is required for plotting.")
+  # }
+  # 
+  # if (!requireNamespace("scales", quietly = TRUE)) {
+  #   stop("Package 'scales' is required for plotting.")
+  # }
   
   if (!requireNamespace("plotly", quietly = TRUE)) {
     stop("Package 'plotly' is required for interactive plotting.")
@@ -283,7 +285,7 @@ create_power_curve_plot <- function(plot_data,
   if (metric == "success" || metric == "both") {
     # Add power if requested
     if (values == "power" || values == "both") {
-      p <- p %>%
+      p <- p |>
         plotly::add_trace(
           x = ~ get(x_var),
           y = ~ power_success,
@@ -295,7 +297,7 @@ create_power_curve_plot <- function(plot_data,
         )
       
       if (show_target) {
-        p <- p %>%
+        p <- p |>
           plotly::add_trace(
             x = c(min(plot_data[[x_var]]), max(plot_data[[x_var]])),
             y = c(design@p_sig_success, design@p_sig_success),
@@ -314,7 +316,7 @@ create_power_curve_plot <- function(plot_data,
     
     # Add posterior probability if requested
     if (values == "post_prob" || values == "both") {
-      p <- p %>%
+      p <- p |>
         plotly::add_trace(
           x = ~ get(x_var),
           y = ~ prob_success,
@@ -339,7 +341,7 @@ create_power_curve_plot <- function(plot_data,
   if (metric == "futility" || metric == "both") {
     # Add power if requested
     if (values == "power" || values == "both") {
-      p <- p %>%
+      p <- p |>
         plotly::add_trace(
           x = ~ get(x_var),
           y = ~ power_futility,
@@ -351,7 +353,7 @@ create_power_curve_plot <- function(plot_data,
         )
       
       if (show_target) {
-        p <- p %>%
+        p <- p |>
           plotly::add_trace(
             x = c(min(plot_data[[x_var]]), max(plot_data[[x_var]])),
             y = c(design@p_sig_futility, design@p_sig_futility),
@@ -370,7 +372,7 @@ create_power_curve_plot <- function(plot_data,
     
     # Add posterior probability if requested
     if (values == "post_prob" || values == "both") {
-      p <- p %>%
+      p <- p |>
         plotly::add_trace(
           x = ~ get(x_var),
           y = ~ prob_futility,
@@ -405,7 +407,7 @@ create_power_curve_plot <- function(plot_data,
   }
   
   # Apply layout to plotly figure
-  p <- p %>%
+  p <- p |>
     plotly::layout(
       title = list(
         text = paste("Bayesian RCT", title_base),
@@ -529,7 +531,7 @@ create_heatmap_plot <- function(plot_data,
         fill_name,
         ": %{z:.1%}<extra></extra>"
       )
-    ) %>%
+    ) |>
       plotly::layout(
         title = list(
           text = paste("Success", plot_suffix, "Heatmap"),
@@ -588,7 +590,7 @@ create_heatmap_plot <- function(plot_data,
         fill_name,
         ": %{z:.1%}<extra></extra>"
       )
-    ) %>%
+    ) |>
       plotly::layout(
         title = list(
           text = paste("Futility", plot_suffix, "Heatmap"),
@@ -695,7 +697,7 @@ create_heatmap_plot <- function(plot_data,
         ),
         shareX = TRUE,
         shareY = TRUE
-      ) %>%
+      ) |>
         plotly::layout(
           title = list(
             text = "Power and Probability Analysis Heatmap",
@@ -773,7 +775,7 @@ create_heatmap_plot <- function(plot_data,
         ),
         shareX = TRUE,
         shareY = TRUE
-      ) %>%
+      ) |>
         plotly::layout(title = list(
           text = paste(plot_suffix, "Analysis Heatmap"),
           font = list(size = 16, family = "Arial, sans-serif")
@@ -844,7 +846,7 @@ create_comparison_plot <- function(plot_data,
   p <- plotly::plot_ly(plot_data)
   
   if (metric == "success" || metric == "both") {
-    p <- p %>%
+    p <- p |>
       plotly::add_trace(
         x = ~ get(x_var),
         y = ~ power_success,
@@ -853,7 +855,7 @@ create_comparison_plot <- function(plot_data,
         name = "Success Power",
         line = list(color = "steelblue", width = 2),
         marker = list(color = "steelblue", size = 6)
-      ) %>%
+      ) |>
       plotly::add_trace(
         x = ~ get(x_var),
         y = ~ prob_success,
@@ -874,7 +876,7 @@ create_comparison_plot <- function(plot_data,
   }
   
   if (metric == "futility" || metric == "both") {
-    p <- p %>%
+    p <- p |>
       plotly::add_trace(
         x = ~ get(x_var),
         y = ~ power_futility,
@@ -883,7 +885,7 @@ create_comparison_plot <- function(plot_data,
         name = "Futility Power",
         line = list(color = "darkred", width = 2),
         marker = list(color = "darkred", size = 6)
-      ) %>%
+      ) |>
       plotly::add_trace(
         x = ~ get(x_var),
         y = ~ prob_futility,
@@ -904,7 +906,7 @@ create_comparison_plot <- function(plot_data,
   }
   
   # Apply layout to plotly figure
-  p <- p %>%
+  p <- p |>
     plotly::layout(
       title = list(
         text = title_base,

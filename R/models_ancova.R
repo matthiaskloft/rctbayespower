@@ -12,6 +12,7 @@
 #'   uses student_t(3, 0, 1). Must be a brmsprior object created with [brms::set_prior()].
 #' @param prior_treatment Prior for the treatment effect. If NULL (default),
 #'   uses student_t(3, 0, 1). Must be a brmsprior object created with [brms::set_prior()].
+#' @param link_sigma Link function for the residual standard deviation. Default is "identity".
 #' @param n_arms Number of arms in the trial (must be >= 2). Required parameter.
 #' @param contrasts Contrast method for treatment arms. Either a character string
 #'   (e.g., "contr.treatment", "contr.sum") or a contrast matrix. Required parameter.
@@ -73,6 +74,7 @@ build_model_ancova <- function(prior_intercept = NULL,
                                prior_sigma = NULL,
                                prior_covariate = NULL,
                                prior_treatment = NULL,
+                               link_sigma = "identity",
                                n_arms = NULL,
                                contrasts = NULL,
                                p_alloc = NULL,
@@ -282,7 +284,7 @@ build_model_ancova <- function(prior_intercept = NULL,
     stop("'prior_intercept' must be a valid brmsprior object.")
   }
   if (is.null(prior_sigma)) {
-    prior_sigma <- brms::set_prior("normal(0, 10)", class = "sigma")
+    prior_sigma <- brms::set_prior("normal(0, 10)", class = "sigma", lb = 0)
   } else if (!inherits(prior_sigma, "brmsprior")) {
     stop("'prior_sigma' must be a valid brmsprior object.")
   }
@@ -322,7 +324,7 @@ build_model_ancova <- function(prior_intercept = NULL,
       brms::brm(
         formula = outcome ~ 1 + covariate + arm,
         data = mock_data_ancova,
-        family = gaussian(),
+        family = brms::brmsfamily("gaussian",link_sigma = link_sigma),
         prior = priors,
         chains = 1,
         iter = 500,

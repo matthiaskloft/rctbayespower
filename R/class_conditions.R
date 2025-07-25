@@ -210,7 +210,6 @@ build_conditions <- function(design, condition_values, static_values) {
 
 
 # S7 Method for Print (uses existing base print generic)
-#' @importFrom S7 method
 
 #' Print Method for rctbp_conditions Objects
 #'
@@ -222,6 +221,9 @@ build_conditions <- function(design, condition_values, static_values) {
 #' @param ... Additional arguments passed to [print()]
 #'
 #' @return Invisibly returns the input object
+#' @importFrom S7 method
+#' @name print.rctbp_conditions
+#' @export
 #'
 #' @examples
 #' \dontrun{

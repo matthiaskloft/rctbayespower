@@ -22,8 +22,8 @@
 #'   n_interim_analyses = 0,
 #'   thresholds_success = 0.2,
 #'   thresholds_futility = 0,
-#'   "p_sig_success" = 0.975,
-#'   "p_sig_futility" = 0.5
+#'   p_sig_success = 0.975,
+#'   p_sig_futility = 0.5
 #' )
 #'
 #' conditions <- build_conditions(

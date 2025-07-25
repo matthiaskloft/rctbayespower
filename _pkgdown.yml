@@ -16,6 +16,7 @@ reference:
   contents:
   - power_analysis
   - run
+  - run.rctbp_power_analysis
   - simulate_single_run
 
 - title: "Model Building"
@@ -34,34 +35,24 @@ reference:
   - build_design
   - build_conditions
 
-- title: "Analysis Helper Functions"
-  desc: "Functions for computing measures and summarizing results"
+- title: "Analysis Functions"
+  desc: "Functions for power calculations and comparisons"
   contents:
-  - compute_measures_brmsfit
-  - summarize_sims
   - analytical_power_ancova_cont_2arms
   - f2_from_params_ancova_cont_2arms
+  - compare_power_methods
 
-- title: "Monte Carlo Standard Error Functions"
-  desc: "Functions for calculating Monte Carlo standard errors"
+- title: "S3 Methods"
+  desc: "Print and plot methods for package objects"
   contents:
-  - calculate_mcse_power
-  - calculate_mcse_mean
-  - calculate_mcse_integrated_power
-
-- title: "Design Prior and Weighting"
-  desc: "Functions for handling design priors and effect size weighting"
-  contents:
-  - parse_design_prior
-  - validate_weighting_function
+  - plot.rctbp_power_analysis
+  - print.rctbp_power_analysis
+  - print.rctbp_conditions
+  - print.rctbp_design
+  - print.rctbp_model
 
 - title: "Utilities"
   desc: "Helper functions and utilities"
   contents:
   - required_fn_args
-  - required_fn_args_design
-  - required_fn_args_model
-  - get_arg_defaults
-  - get_args_without_defaults
-  - update_S7_with_dots
 

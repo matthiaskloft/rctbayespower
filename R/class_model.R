@@ -186,7 +186,6 @@ build_model <- function(predefined_model = NULL,
 
 
 # S7 Method for Print (uses existing base print generic)
-#' @importFrom S7 method
 
 #' Print Method for rctbp_model Objects
 #'
@@ -197,6 +196,8 @@ build_model <- function(predefined_model = NULL,
 #' @param ... Additional arguments (currently unused)
 #'
 #' @return Invisibly returns the input object. Used for side effects (printing).
+#' @importFrom S7 method
+#' @name print.rctbp_model
 #' @export
 S7::method(print, rctbp_model) <- function(x, ...) {
   cat("\nS7 Object of class: 'rctbp_model'\n")
@@ -250,7 +251,7 @@ S7::method(print, rctbp_model) <- function(x, ...) {
 #' The returned model names can be used directly with [build_model()] by passing
 #' them to the `predefined_model` parameter:
 #'
-#' \code{model <- build_model(predefined_model = "model_name")}
+#' `model <- build_model(predefined_model = "model_name")`
 #'
 #' This provides a convenient way to discover and use prebuilt models without
 #' needing to specify all model parameters manually.

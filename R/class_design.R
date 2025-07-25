@@ -200,7 +200,6 @@ build_design <- function(model,
 
 
 # S7 Method for Print (uses existing base print generic)
-#' @importFrom S7 method
 
 #' Print Method for rctbp_design Objects
 #'
@@ -211,6 +210,8 @@ build_design <- function(model,
 #' @param ... Additional arguments (currently unused)
 #'
 #' @return Invisibly returns the input object. Used for side effects (printing).
+#' @importFrom S7 method
+#' @name print.rctbp_design
 #' @export
 S7::method(print, rctbp_design) <- function(x, ...) {
   cat("\nS7 Object of class: 'rctbp_design'\n")

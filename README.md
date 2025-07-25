@@ -50,4 +50,8 @@ introductory vignette:
     Performance](https://matthiaskloft.github.io/rctbayespower/articles/03-algorithm-performance.html):
     Performance optimization
 
+  - [Model
+    Validation](https://matthiaskloft.github.io/rctbayespower/articles/99-model-validation.html):
+    Validation of implemented predefined models
+
 - [Open an Issue](https://github.com/matthiaskloft/rctbayespower/issues)
