@@ -33,7 +33,7 @@ invisible(lapply(packages, require, character.only = TRUE))
 library(rctbayespower)
 
 # Fast settings for examples
-n_cores <- parallel::detectCores() - 2
+n_cores <- min(4, parallel::detectCores())
 n_sims <- 500
 ```
 

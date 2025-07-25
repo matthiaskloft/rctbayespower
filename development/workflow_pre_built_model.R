@@ -20,7 +20,7 @@ design <- build_design(
   target_params = "b_arm2",
   thresholds_success = 0.1,
   thresholds_futility = 0.0,
-  p_sig_success = 0.975,
+  p_sig_success = 0.95,
   p_sig_futility = 0.5
 )
 # check the required parameters for the design
@@ -34,13 +34,13 @@ conditions <- build_conditions(
   design = design,
   condition_values = list(
     # two sample sizes
-    n_total = c(80, 120), #seq(60,280, 20),
+    n_total = seq(100,200, 20),
     # two effect sizes
-    b_arm_treat = .5 #c(0,seq(.2,.5,.1))
+    b_arm_treat = c(0,seq(.3,.5,.1))
   ),
   static_values = list(
     # baseline effect
-    b_covariate = c(0.2),
+    b_covariate = c(0.3),
     # equal allocation
     p_alloc =
       list(c(0.5, 0.5))
@@ -50,20 +50,23 @@ conditions <- build_conditions(
 #-------------------------------------------------------------------------------
 # 4. Run analysis
 
+n_cores <- parallel::detectCores() - 1
+n_sims <- 300
 
-n_cores <- 1#parallel::detectCores() - 1
-n_sims <- 100
+power <- power_analysis(
+  conditions = conditions,
+  n_sims = n_sims,
+  n_cores = n_cores,
+  verbose = T
+)
 
-power<- rctbp_power_analysis(conditions = conditions, n_sims = n_sims, n_cores = n_cores, verbose = F)
+res<- power@summarized_results
 
-power <- run(power, verbose = TRUE)
-sum <- power@summarized_results
-sum
-raw <- power@raw_results
-raw
 
-plot(power)
-class(power)
 
-plot(power)
+#-------------------------------------------------------------------------------
+# 5. Plot Results
+
+plot(power, type = "power_curve", facet_by = "sample_size")
+
 

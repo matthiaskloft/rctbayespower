@@ -10,7 +10,7 @@
 #' @return The modified S7 object with updated property values.
 #'
 #' @keywords internal
-update_s7_with_dots <- function(object, ...) {
+update_S7_with_dots <- function(object, ...) {
   dots <- list(...)
   
   # Get all property names of the object

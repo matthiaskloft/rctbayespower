@@ -220,7 +220,7 @@ S7::method(run, rctbp_power_analysis) <- function(object, ...) {
   # Overwrite object parameters with dots if provided
   if (length(list(...)) > 0) {
     # Recreate the S7 object with updated parameters
-    object <- update_s7_with_dots(object, ...)
+    object <- update_S7_with_dots(object, ...)
   }
   
   # Extract parameters from the object
@@ -287,6 +287,9 @@ S7::method(run, rctbp_power_analysis) <- function(object, ...) {
     if (n_cores > 1) {
       # Set up cluster
       cl <- parallel::makeCluster(n_cores, type = "PSOCK")
+      # Ensure cleanup on exit
+      on.exit(message("Cleaning up!"), add = TRUE)
+      on.exit(parallel::stopCluster(cl), add = TRUE)
       
       # Load required packages on workers first
       parallel::clusterEvalQ(cl, {

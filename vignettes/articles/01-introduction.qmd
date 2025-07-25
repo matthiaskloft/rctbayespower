@@ -110,7 +110,7 @@ print(conditions, n = 100)
 
 Set number of cores and simulations:
 ```{r n_cores_n_sims}
-n_cores <- parallel::detectCores() - 2
+n_cores <- min(4, parallel::detectCores())
 n_sims <- 1e3
 ```
 

@@ -1,3 +1,6 @@
+# load package
+devtools::load_all()
+
 # ANCOVA
 ancova_cont_2arms <- build_model_ancova_cont_2arms()
 ancova_cont_3arms <- build_model_ancova_cont_3arms()

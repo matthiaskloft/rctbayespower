@@ -27,7 +27,8 @@
       "Bash(awk:*)",
       "Bash(done)",
       "WebFetch(domain:rconsortium.github.io)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "WebFetch(domain:plotly.com)"
     ],
     "deny": []
   }

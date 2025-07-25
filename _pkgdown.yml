@@ -1,4 +1,4 @@
-url: https://github.com/matthiaskloft/rctbayespower
+url: ~
 template:
   light-switch: yes
   bootstrap: 5
@@ -61,5 +61,5 @@ reference:
   - required_fn_args_model
   - get_arg_defaults
   - get_args_without_defaults
-  - update_s7_with_dots
+  - update_S7_with_dots
 
