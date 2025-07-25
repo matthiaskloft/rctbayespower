@@ -31,11 +31,15 @@ packages <- c("dplyr", "kableExtra")
 install.packages(setdiff(packages, rownames(installed.packages())))
 invisible(lapply(packages, require, character.only = TRUE))
 library(rctbayespower)
+```
 
+Set up number of cores and simulations for Monte Carlo estimates.
+```{r}
 # Fast settings for examples
 n_cores <- min(4, parallel::detectCores())
 n_sims <- 1e4
 ```
+
 
 
 # ANCOVA
@@ -64,8 +68,8 @@ sample_size <- seq(40, 260, 20)
 
 Set up model, design, and conditions for Monte Carlo power analysis.
 ```{r}
-#| include: false
-#| 
+#| code-fold: false
+
 # Create ANCOVA model with uninformative priors
 model <- build_model_ancova_cont_2arms(
   b_arm_treat = d,
