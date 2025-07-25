@@ -1,4 +1,4 @@
-url: ~
+url: https://matthiaskloft.github.io/rctbayespower/
 template:
   light-switch: yes
   bootstrap: 5
@@ -39,6 +39,8 @@ reference:
   contents:
   - compute_measures_brmsfit
   - summarize_sims
+  - analytical_power_ancova_cont_2arms
+  - f2_from_params_ancova_cont_2arms
 
 - title: "Monte Carlo Standard Error Functions"
   desc: "Functions for calculating Monte Carlo standard errors"
