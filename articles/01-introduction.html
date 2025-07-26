@@ -44,7 +44,7 @@
 <li><a class="dropdown-item" href="../articles/01-introduction.html">Getting Started with 'rctbayespower'</a></li>
     <li><a class="dropdown-item" href="../articles/02-prior-specification.html">Prior Specifications in 'rctbayespower'</a></li>
     <li><a class="dropdown-item" href="../articles/03-algorithm-performance.html">Comparative Algorithm Performance in 'rctbayespower'</a></li>
-    <li><a class="dropdown-item" href="../articles/99-model-validation.html">Prior Specifications in 'rctbayespower'</a></li>
+    <li><a class="dropdown-item" href="../articles/99-model-validation.html">Model Validation for Predefined Models in 'rctbayespower'</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -85,7 +85,25 @@
 
 
 
-    <section class="section level2" data-number="1"><h2 data-number="1" id="introduction">
+    <hr>
+<p>Setup:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb1"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Set CRAN mirror</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">options</a></span><span class="op">(</span>repos <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>CRAN <span class="op">=</span> <span class="st">"https://cloud.r-project.org/"</span><span class="op">)</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Check and install required packages</span></span>
+<span><span class="va">packages</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"dplyr"</span>, <span class="st">"kableExtra"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/sets.html" class="external-link">setdiff</a></span><span class="op">(</span><span class="va">packages</span>, <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/utils/installed.packages.html" class="external-link">installed.packages</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html" class="external-link">invisible</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="va">packages</span>, <span class="va">require</span>, character.only <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://matthiaskloft.github.io/rctbayespower/">rctbayespower</a></span><span class="op">)</span></span>
+<span></span>
+<span></span>
+<span><span class="co"># Set number of cores and simulations:</span></span>
+<span><span class="va">n_cores</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">min</a></span><span class="op">(</span><span class="fl">8</span>, <span class="fu">parallel</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/parallel/detectCores.html" class="external-link">detectCores</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">n_sims</span> <span class="op">&lt;-</span> <span class="fl">500</span></span></code></pre></div>
+</div>
+<section class="section level2" data-number="1"><h2 data-number="1" id="introduction">
 <span class="header-section-number">1</span> Introduction<a class="anchor" aria-label="anchor" href="#introduction"></a>
 </h2>
 <p>The <code>rctbayespower</code> package provides tools for conducting Bayesian power analysis for randomized controlled trials (RCTs) using the <code>brms</code> package and Stan.</p>
@@ -97,7 +115,7 @@
 </h3>
 <p>Show predefined models available in the package:</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb1"><pre class="downlit sourceCode r">
+<div class="sourceCode cell-code" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/list_predefined_models.html">list_predefined_models</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>[1] "ancova_cont_2arms" "ancova_cont_3arms"</code></pre>
@@ -105,7 +123,7 @@
 </div>
 <p>Get the predefined ANCOVA model for continuous outcomes with two arms:</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb3"><pre class="downlit sourceCode r">
+<div class="sourceCode cell-code" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">model_ancova</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/build_model.html">build_model</a></span><span class="op">(</span>predefined_model <span class="op">=</span> <span class="st">"ancova_cont_2arms"</span><span class="op">)</span></span>
 <span><span class="va">model_ancova</span><span class="op">@</span><span class="va">parameter_names_brms</span></span></code></pre></div>
 <div class="cell-output cell-output-stdout">
@@ -117,7 +135,7 @@
 </h3>
 <p>Find possible target parameters in the model.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode cell-code" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">model_ancova</span><span class="op">@</span><span class="va">parameter_names_brms</span></span></code></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>[1] "b_Intercept" "b_covariate" "b_arm2"     </code></pre>
@@ -125,7 +143,7 @@
 </div>
 <p>Specify the study design with target parameter, thresholds for success and futility, and significance levels for frequentist-like power.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode cell-code" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/build_design.html">build_design</a></span><span class="op">(</span></span>
 <span>  model <span class="op">=</span> <span class="va">model_ancova</span>,</span>
 <span>  target_params <span class="op">=</span> <span class="st">"b_arm2"</span>,</span>
@@ -189,7 +207,7 @@ scale reduction factor on split chains (at convergence, Rhat = 1).</code></pre>
 </h4>
 <p>Find parameters that need user specification for the design.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb9"><pre class="downlit sourceCode r">
+<div class="sourceCode cell-code" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/required_fn_args.html">required_fn_args</a></span><span class="op">(</span><span class="va">design</span><span class="op">)</span></span></code></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>
@@ -204,7 +222,7 @@ Interim function:
 </div>
 <p>Specify conditions.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb11"><pre class="downlit sourceCode r">
+<div class="sourceCode cell-code" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">conditions</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/build_conditions.html">build_conditions</a></span><span class="op">(</span></span>
 <span>  design <span class="op">=</span> <span class="va">design</span>,</span>
 <span>  condition_values <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
@@ -247,12 +265,6 @@ Condition Grid:
 </section></section><section class="level2" data-number="2.3"><h3 data-number="2.3" id="run-power-analysis">
 <span class="header-section-number">2.3</span> Run Power Analysis<a class="anchor" aria-label="anchor" href="#run-power-analysis"></a>
 </h3>
-<p>Set number of cores and simulations:</p>
-<div class="cell">
-<div class="sourceCode cell-code" id="cb13"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">n_cores</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">min</a></span><span class="op">(</span><span class="fl">8</span>, <span class="fu">parallel</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/parallel/detectCores.html" class="external-link">detectCores</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="va">n_sims</span> <span class="op">&lt;-</span> <span class="fl">1e3</span></span></code></pre></div>
-</div>
 <p>Run the analysis using the <code>power_analysis</code> function. This will run the model for each condition and return the results.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb14"><pre class="downlit sourceCode r">
@@ -286,16 +298,16 @@ Conditions:
 10      10     240         0.3
 
 Conditions to test: 10
-Simulations per condition: 1000
-Total simulations: 10000
+Simulations per condition: 500
+Total simulations: 5000
 
 Parallel execution using 4 cores: </code></pre>
 </div>
 <div class="cell-output cell-output-stdout">
-<pre><code>Combined results dimensions: 10000 18
+<pre><code>Combined results dimensions: 5000 18
 Column names: parameter, threshold_success, threshold_futility, success_prob, futility_prob, power_success, power_futility, median, mad, mean, sd, rhat, ess_bulk, ess_tail, id_sim, id_cond, converged, error
 
-Total analysis time: 25.11 minutes</code></pre>
+Total analysis time: 12.54 minutes</code></pre>
 </div>
 </div>
 </section><section class="level2" data-number="2.4"><h3 data-number="2.4" id="power-for-effect-of-0-3">
@@ -508,7 +520,7 @@ Total analysis time: 25.11 minutes</code></pre>
 <code class="sourceCode R"><span><span class="va">n_runs</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">power</span><span class="op">@</span><span class="va">conditions</span><span class="op">@</span><span class="va">conditions_grid</span><span class="op">)</span> <span class="op">*</span> <span class="va">power</span><span class="op">@</span><span class="va">n_sims</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Total run time:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">power</span><span class="op">@</span><span class="va">elapsed_time</span>,<span class="fl">1</span><span class="op">)</span>, <span class="st">"minutes for"</span>, <span class="va">n_runs</span>, <span class="st">"total simulation repetitions using"</span>, <span class="va">power</span><span class="op">@</span><span class="va">n_cores</span>, <span class="st">"cores.\n"</span><span class="op">)</span></span></code></pre></div>
 </details><div class="cell-output cell-output-stdout">
-<pre><code>Total run time: 25.1 minutes for 10000 total simulation repetitions using 4 cores.</code></pre>
+<pre><code>Total run time: 12.5 minutes for 5000 total simulation repetitions using 4 cores.</code></pre>
 </div>
 </div>
 <hr></section></section><section class="section level2" data-number="3"><h2 data-number="3" id="session-information">

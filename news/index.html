@@ -27,7 +27,7 @@
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/01-introduction.html">Getting Started with 'rctbayespower'</a></li>
     <li><a class="dropdown-item" href="../articles/02-prior-specification.html">Prior Specifications in 'rctbayespower'</a></li>
     <li><a class="dropdown-item" href="../articles/03-algorithm-performance.html">Comparative Algorithm Performance in 'rctbayespower'</a></li>
-    <li><a class="dropdown-item" href="../articles/99-model-validation.html">Prior Specifications in 'rctbayespower'</a></li>
+    <li><a class="dropdown-item" href="../articles/99-model-validation.html">Model Validation for Predefined Models in 'rctbayespower'</a></li>
   </ul></li>
 <li class="active nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
@@ -52,36 +52,27 @@
     </div>
 
     <div class="section level2">
-<h2 class="pkg-version" data-toc-text="0.1.0" id="rctbayespower-010-development-version">rctbayespower 0.1.0 (Development Version)<a class="anchor" aria-label="anchor" href="#rctbayespower-010-development-version"></a></h2>
+<h2 class="pkg-version" data-toc-text="0.0.0.9000" id="rctbayespower-0009000-development-version">rctbayespower 0.0.0.9000 (Development Version)<a class="anchor" aria-label="anchor" href="#rctbayespower-0009000-development-version"></a></h2>
 <div class="section level3">
-<h3 id="development-status-0-1-0">Development Status<a class="anchor" aria-label="anchor" href="#development-status-0-1-0"></a></h3>
+<h3 id="development-status-0-0-0-9000">Development Status<a class="anchor" aria-label="anchor" href="#development-status-0-0-0-9000"></a></h3>
 <p><strong>⚠️ This package is currently in active development and not yet released.</strong></p>
 <div class="section level4">
-<h4 id="new-features-0-1-0">New Features<a class="anchor" aria-label="anchor" href="#new-features-0-1-0"></a></h4>
+<h4 id="new-features-0-0-0-9000">New Features<a class="anchor" aria-label="anchor" href="#new-features-0-0-0-9000"></a></h4>
 <ul><li>
 <strong>Core Functions</strong>:
 <ul><li>
-<code><a href="../reference/build_model.html">build_model()</a></code>: Create model specifications for power analysis</li>
-<li>
-<code><a href="../reference/build_design.html">build_design()</a></code>: Create experimental design configurations<br></li>
-<li>
-<code><a href="../reference/build_conditions.html">build_conditions()</a></code>: Generate analysis conditions from design parameters</li>
-<li>
-<code><a href="../reference/simulate_single_run.html">simulate_single_run()</a></code>: Execute single simulation run for power analysis</li>
+<code><a href="../reference/power_analysis.html">power_analysis()</a></code>: Run a power analysis</li>
 </ul></li>
 <li>
 <strong>Pre-built Models</strong>:
-<ul><li>
-<code>build_model("ancova_cont_2arms")</code>: ANCOVA model for continuous outcomes with baseline covariates</li>
-</ul></li>
-<li>
-<strong>Outcome Types</strong>:
-<ul><li>Continuous outcomes with Cohen’s d effect sizes (via ANCOVA models)</li>
+<ul><li>ANCOVA model for continuous outcomes with baseline covariate</li>
+<li><code>build_model("ancova_cont_2arms")</code></li>
+<li><code>build_model("ancova_cont_3arms")</code></li>
 </ul></li>
 <li>
 <strong>Power Metrics</strong>:
-<ul><li>Directional Power: Probability effect is in expected direction</li>
-<li>Significance Power: Traditional frequentist-like power</li>
+<ul><li>Probability of success and futility</li>
+<li>Significance Power: Traditional frequentist-like power for success and futility</li>
 </ul></li>
 <li>
 <strong>Advanced Features</strong>:
@@ -90,19 +81,19 @@
 </ul></li>
 </ul></div>
 <div class="section level4">
-<h4 id="dependencies-0-1-0">Dependencies<a class="anchor" aria-label="anchor" href="#dependencies-0-1-0"></a></h4>
+<h4 id="api-design-0-0-0-9000">API Design<a class="anchor" aria-label="anchor" href="#api-design-0-0-0-9000"></a></h4>
+<p>This package uses an object-oriented approach requiring users to: 1. Build model specifications using <code><a href="../reference/build_model.html">build_model()</a></code> or pre-built models 2. Create study designs with <code><a href="../reference/build_design.html">build_design()</a></code> 3. Generate analysis conditions with <code><a href="../reference/build_conditions.html">build_conditions()</a></code> 4. Run power analysis using <code><a href="../reference/power_analysis.html">power_analysis()</a></code></p>
+</div>
+<div class="section level4">
+<h4 id="dependencies-0-0-0-9000">Dependencies<a class="anchor" aria-label="anchor" href="#dependencies-0-0-0-9000"></a></h4>
 <ul><li>Requires R &gt;= 4.1.0</li>
 <li>Integrates with <code>brms</code> for Bayesian model fitting</li>
-<li>Plotting capabilities via <code>ggplot2</code>
+<li>Plotting capabilities via <code>plotly</code>
 </li>
 <li>Data manipulation with <code>dplyr</code>, <code>tidyr</code>, <code>purrr</code>
 </li>
 <li>Parallelization support via <code>parallel</code> package</li>
 </ul></div>
-<div class="section level4">
-<h4 id="api-design-0-1-0">API Design<a class="anchor" aria-label="anchor" href="#api-design-0-1-0"></a></h4>
-<p>This package uses an object-oriented approach requiring users to: 1. Build model specifications using <code><a href="../reference/build_model.html">build_model()</a></code> or pre-built models 2. Create experimental designs with <code><a href="../reference/build_design.html">build_design()</a></code> 3. Generate analysis conditions with <code><a href="../reference/build_conditions.html">build_conditions()</a></code></p>
-</div>
 </div>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
