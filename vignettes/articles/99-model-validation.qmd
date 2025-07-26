@@ -36,8 +36,8 @@ library(rctbayespower)
 Set up number of cores and simulations for Monte Carlo estimates.
 ```{r}
 # Fast settings for examples
-n_cores <- min(4, parallel::detectCores())
-n_sims <- 1e4
+n_cores <- min(8, parallel::detectCores())
+n_sims <- 1e3
 ```
 
 

@@ -112,7 +112,7 @@ conditions <- build_conditions(
 
 Set number of cores and simulations:
 ```{r n_cores_n_sims}
-n_cores <- min(4, parallel::detectCores())
+n_cores <- min(8, parallel::detectCores())
 n_sims <- 500
 ```
 
