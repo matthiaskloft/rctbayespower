@@ -44,6 +44,7 @@
 <li><a class="dropdown-item" href="../articles/01-introduction.html">Getting Started with 'rctbayespower'</a></li>
     <li><a class="dropdown-item" href="../articles/02-prior-specification.html">Prior Specifications in 'rctbayespower'</a></li>
     <li><a class="dropdown-item" href="../articles/03-algorithm-performance.html">Comparative Algorithm Performance in 'rctbayespower'</a></li>
+    <li><a class="dropdown-item" href="../articles/99-model-validation.html">Prior Specifications in 'rctbayespower'</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -73,7 +74,7 @@
       <h1>Prior Specifications in ‘rctbayespower’</h1>
 
       <p class="author">Matthias Kloft</p>
-      <p class="date">2025-07-25</p>
+      <p class="date">2025-07-26</p>
 
       <small class="dont-index">Source: <a href="https://github.com/matthiaskloft/rctbayespower/blob/main/vignettes/articles/02-prior-specification.qmd" class="external-link"><code>vignettes/articles/02-prior-specification.qmd</code></a></small>
       <div class="d-none name"><code></code></div>
@@ -107,12 +108,11 @@
 <details class="code-fold"><summary>Show the code</summary><div class="sourceCode cell-code" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Create ANCOVA model with uninformative priors</span></span>
 <span><span class="va">uninformative_model</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/build_model_ancova_cont_2arms.html">build_model_ancova_cont_2arms</a></span><span class="op">(</span></span>
-<span>  b_arm_treat <span class="op">=</span> <span class="fl">0.5</span>,</span>
-<span>  b_covariate <span class="op">=</span> <span class="fl">0.3</span>,</span>
 <span>  prior_treatment <span class="op">=</span> <span class="fu">brms</span><span class="fu">::</span><span class="fu"><a href="https://paulbuerkner.com/brms/reference/set_prior.html" class="external-link">set_prior</a></span><span class="op">(</span><span class="st">"normal(0, 100)"</span>, class <span class="op">=</span> <span class="st">"b"</span><span class="op">)</span>,</span>
 <span>  prior_covariate <span class="op">=</span> <span class="fu">brms</span><span class="fu">::</span><span class="fu"><a href="https://paulbuerkner.com/brms/reference/set_prior.html" class="external-link">set_prior</a></span><span class="op">(</span><span class="st">"normal(0, 100)"</span>, class <span class="op">=</span> <span class="st">"b"</span>, coef <span class="op">=</span> <span class="st">"covariate"</span><span class="op">)</span>,</span>
 <span>  prior_intercept <span class="op">=</span> <span class="fu">brms</span><span class="fu">::</span><span class="fu"><a href="https://paulbuerkner.com/brms/reference/set_prior.html" class="external-link">set_prior</a></span><span class="op">(</span><span class="st">"normal(0, 100)"</span>, class <span class="op">=</span> <span class="st">"Intercept"</span><span class="op">)</span>,</span>
-<span>  prior_sigma <span class="op">=</span> <span class="fu">brms</span><span class="fu">::</span><span class="fu"><a href="https://paulbuerkner.com/brms/reference/set_prior.html" class="external-link">set_prior</a></span><span class="op">(</span><span class="st">"normal(0, 100)"</span>, class <span class="op">=</span> <span class="st">"sigma"</span><span class="op">)</span></span>
+<span>  prior_sigma <span class="op">=</span> <span class="fu">brms</span><span class="fu">::</span><span class="fu"><a href="https://paulbuerkner.com/brms/reference/set_prior.html" class="external-link">set_prior</a></span><span class="op">(</span><span class="st">"normal(0, 100)"</span>, class <span class="op">=</span> <span class="st">"sigma"</span>, lb <span class="op">=</span> <span class="fl">0</span><span class="op">)</span>,</span>
+<span>  link_sigma <span class="op">=</span> <span class="st">"identity"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 </details><div class="cell-output cell-output-stdout">
 <pre><code>Compiling the brms model ...
@@ -126,7 +126,7 @@ Model compilation done!</code></pre>
 <span>  n_interim_analyses <span class="op">=</span> <span class="fl">0</span>,</span>
 <span>  thresholds_success <span class="op">=</span> <span class="fl">0.3</span>,</span>
 <span>  thresholds_futility <span class="op">=</span> <span class="fl">0.1</span>,</span>
-<span>  p_sig_success <span class="op">=</span> <span class="fl">0.975</span>,</span>
+<span>  p_sig_success <span class="op">=</span> <span class="fl">0.95</span>,</span>
 <span>  p_sig_futility <span class="op">=</span> <span class="fl">0.5</span></span>
 <span><span class="op">)</span></span>
 <span></span>
@@ -136,7 +136,11 @@ Model compilation done!</code></pre>
 <span>  condition_values <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
 <span>    n_total <span class="op">=</span> <span class="va">sample_size</span></span>
 <span>  <span class="op">)</span>,</span>
-<span>  static_values <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
+<span>  static_values <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>    b_arm_treat <span class="op">=</span> <span class="fl">0.5</span>, <span class="co"># Medium effect</span></span>
+<span>    b_covariate <span class="op">=</span> <span class="fl">0</span> <span class="co"># No covariate effect</span></span>
+<span>  <span class="op">)</span></span>
+<span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Run power analysis</span></span>
 <span><span class="va">uninformative_analysis</span> <span class="op">&lt;-</span> <span class="fu">rctbayespower</span><span class="fu">::</span><span class="fu"><a href="../reference/power_analysis.html">power_analysis</a></span><span class="op">(</span></span>
@@ -152,12 +156,14 @@ Model compilation done!</code></pre>
 <code class="sourceCode R"><span><span class="va">res_uninformative</span> <span class="op">&lt;-</span> <span class="va">uninformative_analysis</span><span class="op">@</span><span class="va">summarized_results</span><span class="op">|&gt;</span></span>
 <span>  <span class="fu">select</span><span class="op">(</span></span>
 <span>    <span class="va">n_total</span>,</span>
+<span>    <span class="va">median</span>,</span>
+<span>    <span class="va">sd</span>,</span>
 <span>    <span class="va">prob_success</span>,</span>
-<span>    <span class="va">prob_futility</span>,</span>
 <span>    <span class="va">power_success</span>,</span>
+<span>    <span class="va">prob_futility</span>,</span>
 <span>    <span class="va">power_futility</span></span>
 <span>  <span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html" class="external-link">mutate</a></span><span class="op">(</span>Prior <span class="op">=</span> <span class="st">"informative"</span>, .before <span class="op">=</span> <span class="fu">everything</span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
+<span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html" class="external-link">mutate</a></span><span class="op">(</span>Prior <span class="op">=</span> <span class="st">"uninformative"</span>, .before <span class="op">=</span> <span class="fu">everything</span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">res_uninformative</span> <span class="op">|&gt;</span> </span>
 <span>  <span class="fu">kableExtra</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span>digits <span class="op">=</span> <span class="fl">3</span>, format <span class="op">=</span> <span class="st">"html"</span><span class="op">)</span></span></code></pre></div>
@@ -166,18 +172,22 @@ Model compilation done!</code></pre>
 <thead><tr class="header">
 <th style="text-align: left;" data-quarto-table-cell-role="th">Prior</th>
 <th style="text-align: right;" data-quarto-table-cell-role="th">n_total</th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">median</th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">sd</th>
 <th style="text-align: right;" data-quarto-table-cell-role="th">prob_success</th>
-<th style="text-align: right;" data-quarto-table-cell-role="th">prob_futility</th>
 <th style="text-align: right;" data-quarto-table-cell-role="th">power_success</th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">prob_futility</th>
 <th style="text-align: right;" data-quarto-table-cell-role="th">power_futility</th>
 </tr></thead>
 <tbody><tr class="odd">
-<td style="text-align: left;">informative</td>
+<td style="text-align: left;">uninformative</td>
 <td style="text-align: right;">100</td>
-<td style="text-align: right;">0.742</td>
-<td style="text-align: right;">0.088</td>
-<td style="text-align: right;">0.158</td>
-<td style="text-align: right;">0.02</td>
+<td style="text-align: right;">0.497</td>
+<td style="text-align: right;">0.204</td>
+<td style="text-align: right;">0.756</td>
+<td style="text-align: right;">0.261</td>
+<td style="text-align: right;">0.083</td>
+<td style="text-align: right;">0.024</td>
 </tr></tbody>
 </table>
 </div>
@@ -189,12 +199,11 @@ Model compilation done!</code></pre>
 <details class="code-fold"><summary>Show the code</summary><div class="sourceCode cell-code" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Create ANCOVA model with informative/sceptical priors</span></span>
 <span><span class="va">informative_model</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/build_model_ancova_cont_2arms.html">build_model_ancova_cont_2arms</a></span><span class="op">(</span></span>
-<span>  b_arm_treat <span class="op">=</span> <span class="fl">0.5</span>,</span>
-<span>  b_covariate <span class="op">=</span> <span class="fl">0.3</span>,</span>
-<span>  prior_treatment <span class="op">=</span> <span class="fu">brms</span><span class="fu">::</span><span class="fu"><a href="https://paulbuerkner.com/brms/reference/set_prior.html" class="external-link">set_prior</a></span><span class="op">(</span><span class="st">"student_t(3, 0, 1)"</span>, class <span class="op">=</span> <span class="st">"b"</span><span class="op">)</span>,</span>
-<span>  prior_covariate <span class="op">=</span> <span class="fu">brms</span><span class="fu">::</span><span class="fu"><a href="https://paulbuerkner.com/brms/reference/set_prior.html" class="external-link">set_prior</a></span><span class="op">(</span><span class="st">"student_t(3, 0, 0.5)"</span>, class <span class="op">=</span> <span class="st">"b"</span>, coef <span class="op">=</span> <span class="st">"covariate"</span><span class="op">)</span>,</span>
-<span>  prior_intercept <span class="op">=</span> <span class="fu">brms</span><span class="fu">::</span><span class="fu"><a href="https://paulbuerkner.com/brms/reference/set_prior.html" class="external-link">set_prior</a></span><span class="op">(</span><span class="st">"student_t(3, 0, 1)"</span>, class <span class="op">=</span> <span class="st">"Intercept"</span><span class="op">)</span>,</span>
-<span>  prior_sigma <span class="op">=</span> <span class="fu">brms</span><span class="fu">::</span><span class="fu"><a href="https://paulbuerkner.com/brms/reference/set_prior.html" class="external-link">set_prior</a></span><span class="op">(</span><span class="st">"student_t(3, 0, 2)"</span>, class <span class="op">=</span> <span class="st">"sigma"</span><span class="op">)</span></span>
+<span>  prior_treatment <span class="op">=</span> <span class="fu">brms</span><span class="fu">::</span><span class="fu"><a href="https://paulbuerkner.com/brms/reference/set_prior.html" class="external-link">set_prior</a></span><span class="op">(</span><span class="st">"student_t(3, 0, 2)"</span>, class <span class="op">=</span> <span class="st">"b"</span><span class="op">)</span>,</span>
+<span>  prior_covariate <span class="op">=</span> <span class="fu">brms</span><span class="fu">::</span><span class="fu"><a href="https://paulbuerkner.com/brms/reference/set_prior.html" class="external-link">set_prior</a></span><span class="op">(</span><span class="st">"student_t(3, 0, 2)"</span>, class <span class="op">=</span> <span class="st">"b"</span>, coef <span class="op">=</span> <span class="st">"covariate"</span><span class="op">)</span>,</span>
+<span>  prior_intercept <span class="op">=</span> <span class="fu">brms</span><span class="fu">::</span><span class="fu"><a href="https://paulbuerkner.com/brms/reference/set_prior.html" class="external-link">set_prior</a></span><span class="op">(</span><span class="st">"student_t(3, 0, 2)"</span>, class <span class="op">=</span> <span class="st">"Intercept"</span><span class="op">)</span>,</span>
+<span>  prior_sigma <span class="op">=</span> <span class="fu">brms</span><span class="fu">::</span><span class="fu"><a href="https://paulbuerkner.com/brms/reference/set_prior.html" class="external-link">set_prior</a></span><span class="op">(</span><span class="st">"student_t(3, 0, 2)"</span>, class <span class="op">=</span> <span class="st">"sigma"</span>, lb <span class="op">=</span> <span class="fl">0</span><span class="op">)</span>,</span>
+<span>  link_sigma <span class="op">=</span> <span class="st">"identity"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 </details><div class="cell-output cell-output-stdout">
 <pre><code>Compiling the brms model ...
@@ -215,10 +224,10 @@ Model compilation done!</code></pre>
 <span><span class="co"># Create conditions</span></span>
 <span><span class="va">informative_conditions</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/build_conditions.html">build_conditions</a></span><span class="op">(</span></span>
 <span>  design <span class="op">=</span> <span class="va">informative_design</span>,</span>
-<span>  condition_values <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
-<span>    n_total <span class="op">=</span> <span class="va">sample_size</span></span>
-<span>  <span class="op">)</span>,</span>
+<span>  condition_values <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>n_total <span class="op">=</span> <span class="va">sample_size</span><span class="op">)</span>,</span>
 <span>  static_values <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>    b_arm_treat <span class="op">=</span> <span class="fl">0.5</span>, <span class="co"># Medium effect</span></span>
+<span>    b_covariate <span class="op">=</span> <span class="fl">0</span> <span class="co"># No covariate effect</span></span>
 <span>  <span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span></span>
@@ -236,9 +245,11 @@ Model compilation done!</code></pre>
 <code class="sourceCode R"><span><span class="va">res_informative</span> <span class="op">&lt;-</span> <span class="va">informative_analysis</span><span class="op">@</span><span class="va">summarized_results</span><span class="op">|&gt;</span></span>
 <span>  <span class="fu">select</span><span class="op">(</span></span>
 <span>    <span class="va">n_total</span>,</span>
+<span>    <span class="va">median</span>,</span>
+<span>    <span class="va">sd</span>,</span>
 <span>    <span class="va">prob_success</span>,</span>
-<span>    <span class="va">prob_futility</span>,</span>
 <span>    <span class="va">power_success</span>,</span>
+<span>    <span class="va">prob_futility</span>,</span>
 <span>    <span class="va">power_futility</span></span>
 <span>  <span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html" class="external-link">mutate</a></span><span class="op">(</span>Prior <span class="op">=</span> <span class="st">"informative"</span>, .before <span class="op">=</span> <span class="fu">everything</span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
@@ -250,18 +261,22 @@ Model compilation done!</code></pre>
 <thead><tr class="header">
 <th style="text-align: left;" data-quarto-table-cell-role="th">Prior</th>
 <th style="text-align: right;" data-quarto-table-cell-role="th">n_total</th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">median</th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">sd</th>
 <th style="text-align: right;" data-quarto-table-cell-role="th">prob_success</th>
-<th style="text-align: right;" data-quarto-table-cell-role="th">prob_futility</th>
 <th style="text-align: right;" data-quarto-table-cell-role="th">power_success</th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">prob_futility</th>
 <th style="text-align: right;" data-quarto-table-cell-role="th">power_futility</th>
 </tr></thead>
 <tbody><tr class="odd">
 <td style="text-align: left;">informative</td>
 <td style="text-align: right;">100</td>
-<td style="text-align: right;">0.743</td>
-<td style="text-align: right;">0.085</td>
-<td style="text-align: right;">0.144</td>
-<td style="text-align: right;">0.028</td>
+<td style="text-align: right;">0.487</td>
+<td style="text-align: right;">0.203</td>
+<td style="text-align: right;">0.739</td>
+<td style="text-align: right;">0.153</td>
+<td style="text-align: right;">0.092</td>
+<td style="text-align: right;">0.032</td>
 </tr></tbody>
 </table>
 </div>
@@ -282,36 +297,44 @@ Model compilation done!</code></pre>
 <table class="table caption-top">
 <colgroup>
 <col style="width: 15%">
-<col style="width: 10%">
-<col style="width: 17%">
-<col style="width: 18%">
-<col style="width: 18%">
-<col style="width: 19%">
+<col style="width: 8%">
+<col style="width: 7%">
+<col style="width: 6%">
+<col style="width: 14%">
+<col style="width: 15%">
+<col style="width: 15%">
+<col style="width: 16%">
 </colgroup>
 <thead><tr class="header">
 <th style="text-align: left;">Prior</th>
 <th style="text-align: right;">n_total</th>
+<th style="text-align: right;">median</th>
+<th style="text-align: right;">sd</th>
 <th style="text-align: right;">prob_success</th>
-<th style="text-align: right;">prob_futility</th>
 <th style="text-align: right;">power_success</th>
+<th style="text-align: right;">prob_futility</th>
 <th style="text-align: right;">power_futility</th>
 </tr></thead>
 <tbody>
 <tr class="odd">
-<td style="text-align: left;">informative</td>
+<td style="text-align: left;">uninformative</td>
 <td style="text-align: right;">100</td>
-<td style="text-align: right;">0.742</td>
-<td style="text-align: right;">0.088</td>
-<td style="text-align: right;">0.158</td>
-<td style="text-align: right;">0.020</td>
+<td style="text-align: right;">0.497</td>
+<td style="text-align: right;">0.204</td>
+<td style="text-align: right;">0.756</td>
+<td style="text-align: right;">0.261</td>
+<td style="text-align: right;">0.083</td>
+<td style="text-align: right;">0.024</td>
 </tr>
 <tr class="even">
 <td style="text-align: left;">informative</td>
 <td style="text-align: right;">100</td>
-<td style="text-align: right;">0.743</td>
-<td style="text-align: right;">0.085</td>
-<td style="text-align: right;">0.144</td>
-<td style="text-align: right;">0.028</td>
+<td style="text-align: right;">0.487</td>
+<td style="text-align: right;">0.203</td>
+<td style="text-align: right;">0.739</td>
+<td style="text-align: right;">0.153</td>
+<td style="text-align: right;">0.092</td>
+<td style="text-align: right;">0.032</td>
 </tr>
 </tbody>
 </table>
@@ -323,16 +346,26 @@ Model compilation done!</code></pre>
 <p>To evaluate the alpha error rate (false positive rate) for both prior configurations, we need to run the power analysis under the null hypothesis (effect size = 0) and examine how often we incorrectly conclude for success. This tells us how well our Bayesian decision framework controls Type I error. Luckily, the <code>rctbayespower</code> package allows us to reuse the same model and design configurations, only changing the effect size to zero.</p>
 <div class="cell">
 <details class="code-fold"><summary>Show the code</summary><div class="sourceCode cell-code" id="cb11"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">alpha_uninformative_conditions</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/build_conditions.html">build_conditions</a></span><span class="op">(</span></span>
-<span>  design <span class="op">=</span> <span class="va">uninformative_design</span>,</span>
-<span>  condition_values <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
-<span>    n_total <span class="op">=</span> <span class="va">sample_size</span></span>
-<span>  <span class="op">)</span>,</span>
+<code class="sourceCode R"><span><span class="co"># Create design (same as uninformative)</span></span>
+<span><span class="va">alpha_uninformative_design</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/build_design.html">build_design</a></span><span class="op">(</span></span>
+<span>  model <span class="op">=</span> <span class="va">uninformative_model</span>,</span>
+<span>  target_params <span class="op">=</span> <span class="st">"b_arm2"</span>,</span>
+<span>  n_interim_analyses <span class="op">=</span> <span class="fl">0</span>,</span>
+<span>  thresholds_success <span class="op">=</span> <span class="fl">0</span>,</span>
+<span>  thresholds_futility <span class="op">=</span> <span class="fl">0</span>,</span>
+<span>  p_sig_success <span class="op">=</span> <span class="fl">0.95</span>,</span>
+<span>  p_sig_futility <span class="op">=</span> <span class="fl">0.5</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">alpha_uninformative_conditions</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/build_conditions.html">build_conditions</a></span><span class="op">(</span></span>
+<span>  design <span class="op">=</span> <span class="va">alpha_uninformative_design</span>,</span>
+<span>  condition_values <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>n_total <span class="op">=</span> <span class="va">sample_size</span><span class="op">)</span>,</span>
 <span>  static_values <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
-<span>  <span class="co"># Set the effect size to zero for the null hypothesis</span></span>
-<span>    b_arm_treat <span class="op">=</span> <span class="fl">0</span> <span class="co"># Null hypothesis: no effect</span></span>
-<span>  <span class="op">)</span><span class="op">)</span></span>
-<span>  </span>
+<span>    b_arm_treat <span class="op">=</span> <span class="fl">0</span>, <span class="co"># Null hypothesis: no effect</span></span>
+<span>    b_covariate <span class="op">=</span> <span class="fl">0</span> <span class="co"># No covariate effect</span></span>
+<span>  <span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
 <span><span class="va">alpha_uninformative</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/power_analysis.html">power_analysis</a></span><span class="op">(</span></span>
 <span>  conditions <span class="op">=</span> <span class="va">alpha_uninformative_conditions</span>,</span>
 <span>  n_sims <span class="op">=</span> <span class="va">n_sims</span>,</span>
@@ -343,14 +376,22 @@ Model compilation done!</code></pre>
 </div>
 <div class="cell">
 <details class="code-fold"><summary>Show the code</summary><div class="sourceCode cell-code" id="cb12"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">alpha_informative_conditions</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/build_conditions.html">build_conditions</a></span><span class="op">(</span></span>
-<span>  design <span class="op">=</span> <span class="va">informative_design</span>,</span>
-<span>  condition_values <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
-<span>    n_total <span class="op">=</span> <span class="fl">120</span></span>
-<span>  <span class="op">)</span>,</span>
+<code class="sourceCode R"><span><span class="va">alpha_informative_design</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/build_design.html">build_design</a></span><span class="op">(</span></span>
+<span>  model <span class="op">=</span> <span class="va">informative_model</span>,</span>
+<span>  target_params <span class="op">=</span> <span class="st">"b_arm2"</span>,</span>
+<span>  n_interim_analyses <span class="op">=</span> <span class="fl">0</span>,</span>
+<span>  thresholds_success <span class="op">=</span> <span class="fl">0</span>,</span>
+<span>  thresholds_futility <span class="op">=</span> <span class="fl">0</span>,</span>
+<span>  p_sig_success <span class="op">=</span> <span class="fl">0.95</span>,</span>
+<span>  p_sig_futility <span class="op">=</span> <span class="fl">0.5</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">alpha_informative_conditions</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/build_conditions.html">build_conditions</a></span><span class="op">(</span></span>
+<span>  design <span class="op">=</span> <span class="va">alpha_informative_design</span>,</span>
+<span>  condition_values <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>n_total <span class="op">=</span> <span class="va">sample_size</span><span class="op">)</span>,</span>
 <span>  static_values <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
-<span>    <span class="co"># Set the effect size to zero for the null hypothesis</span></span>
-<span>    b_arm_treat <span class="op">=</span> <span class="fl">0</span> <span class="co"># Null hypothesis: no effect</span></span>
+<span>    b_arm_treat <span class="op">=</span> <span class="fl">0</span>, <span class="co"># Null hypothesis: no effect</span></span>
+<span>    b_covariate <span class="op">=</span> <span class="fl">0</span> <span class="co"># No covariate effect</span></span>
 <span>  <span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span></span>
@@ -358,33 +399,52 @@ Model compilation done!</code></pre>
 <span>  conditions <span class="op">=</span> <span class="va">alpha_informative_conditions</span>,</span>
 <span>  n_sims <span class="op">=</span> <span class="va">n_sims</span>,</span>
 <span>  n_cores <span class="op">=</span> <span class="va">n_cores</span>,</span>
-<span>  verbose <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span>  verbose <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-</details>
+</details><div class="cell-output cell-output-stdout">
+<pre><code>
+=== Power Analysis ===
+Conditions:
+# A tibble: 1 × 2
+  id_cond n_total
+    &lt;int&gt;   &lt;dbl&gt;
+1       1     100
+
+Conditions to test: 1
+Simulations per condition: 1000
+Total simulations: 1000
+
+Parallel execution using 4 cores:
+Combined results dimensions: 1000 18
+Column names: parameter, threshold_success, threshold_futility, success_prob, futility_prob, power_success, power_futility, median, mad, mean, sd, rhat, ess_bulk, ess_tail, id_sim, id_cond, converged, error
+
+Total analysis time: 4.12 minutes</code></pre>
+</div>
 </div>
 <p>Comparing the alpha error rates:</p>
 <div class="cell">
-<details class="code-fold"><summary>Show the code</summary><div class="sourceCode cell-code" id="cb13"><pre class="downlit sourceCode r">
+<details class="code-fold"><summary>Show the code</summary><div class="sourceCode cell-code" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">res_alpha</span> <span class="op">&lt;-</span> </span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">rbind</a></span><span class="op">(</span></span>
 <span>    <span class="va">alpha_uninformative</span><span class="op">@</span><span class="va">summarized_results</span> <span class="op">|&gt;</span></span>
 <span>      <span class="fu">select</span><span class="op">(</span></span>
 <span>        <span class="va">n_total</span>,</span>
 <span>        <span class="va">prob_success</span>,</span>
-<span>        <span class="va">prob_futility</span>,</span>
-<span>        <span class="va">power_success</span>,</span>
-<span>        <span class="va">power_futility</span></span>
+<span>        <span class="va">power_success</span></span>
 <span>      <span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>      <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html" class="external-link">mutate</a></span><span class="op">(</span>Prior <span class="op">=</span> <span class="st">"uninformative"</span>, .before <span class="op">=</span> <span class="fu">everything</span><span class="op">(</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>    <span class="va">alpha_informative</span><span class="op">@</span><span class="va">summarized_results</span> <span class="op">|&gt;</span></span>
 <span>      <span class="fu">select</span><span class="op">(</span></span>
 <span>        <span class="va">n_total</span>,</span>
 <span>        <span class="va">prob_success</span>,</span>
-<span>        <span class="va">prob_futility</span>,</span>
 <span>        <span class="va">power_success</span>,</span>
-<span>        <span class="va">power_futility</span></span>
 <span>      <span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>      <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html" class="external-link">mutate</a></span><span class="op">(</span>Prior <span class="op">=</span> <span class="st">"informative"</span>, .before <span class="op">=</span> <span class="fu">everything</span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
+<span>  <span class="op">)</span> <span class="op">|&gt;</span> </span>
+<span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/rename.html" class="external-link">rename</a></span><span class="op">(</span></span>
+<span>    </span>
+<span>    alpha <span class="op">=</span> <span class="va">power_success</span>,</span>
+<span>    <span class="st">"p(d &gt; 0)"</span> <span class="op">=</span> <span class="va">prob_success</span>,</span>
 <span>  <span class="op">)</span></span>
 <span></span>
 <span><span class="va">res_alpha</span> <span class="op">|&gt;</span> </span>
@@ -394,27 +454,21 @@ Model compilation done!</code></pre>
 <thead><tr class="header">
 <th style="text-align: left;" data-quarto-table-cell-role="th">Prior</th>
 <th style="text-align: right;" data-quarto-table-cell-role="th">n_total</th>
-<th style="text-align: right;" data-quarto-table-cell-role="th">prob_success</th>
-<th style="text-align: right;" data-quarto-table-cell-role="th">prob_futility</th>
-<th style="text-align: right;" data-quarto-table-cell-role="th">power_success</th>
-<th style="text-align: right;" data-quarto-table-cell-role="th">power_futility</th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">p(d &gt; 0)</th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">alpha</th>
 </tr></thead>
 <tbody>
 <tr class="odd">
 <td style="text-align: left;">uninformative</td>
 <td style="text-align: right;">100</td>
-<td style="text-align: right;">0.760</td>
-<td style="text-align: right;">0.08</td>
-<td style="text-align: right;">0.158</td>
-<td style="text-align: right;">0.024</td>
+<td style="text-align: right;">0.503</td>
+<td style="text-align: right;">0.062</td>
 </tr>
 <tr class="even">
 <td style="text-align: left;">informative</td>
-<td style="text-align: right;">120</td>
-<td style="text-align: right;">0.758</td>
-<td style="text-align: right;">0.07</td>
-<td style="text-align: right;">0.160</td>
-<td style="text-align: right;">0.020</td>
+<td style="text-align: right;">100</td>
+<td style="text-align: right;">0.493</td>
+<td style="text-align: right;">0.046</td>
 </tr>
 </tbody>
 </table>
@@ -423,7 +477,7 @@ Model compilation done!</code></pre>
 <p>Using a sceptical prior reduces the probability of falsely concluding success when there is no true effect, thus controlling the alpha error rate more effectively than the uninformative priors.</p>
 <hr>
 <div class="cell">
-<details class="code-fold"><summary>Show the code</summary><div class="sourceCode cell-code" id="cb14"><pre class="downlit sourceCode r">
+<details class="code-fold"><summary>Show the code</summary><div class="sourceCode cell-code" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/sessionInfo.html" class="external-link">sessionInfo</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 </details><div class="cell-output cell-output-stdout">
 <pre><code>R version 4.5.1 (2025-06-13)
@@ -472,10 +526,11 @@ loaded via a namespace (and not attached):
 [58] withr_3.0.2          scales_1.4.0         backports_1.5.0
 [61] rmarkdown_2.29       httr_1.4.7           matrixStats_1.5.0
 [64] gridExtra_2.3        coda_0.19-4.1        evaluate_1.0.4
-[67] knitr_1.50           viridisLite_0.4.2    rstantools_2.4.0
-[70] rlang_1.1.6          Rcpp_1.1.0           glue_1.8.0
-[73] xml2_1.3.8           svglite_2.2.1        rstudioapi_0.17.1
-[76] jsonlite_2.0.0       R6_2.6.1             systemfonts_1.2.3   </code></pre>
+[67] knitr_1.50           pwr_1.3-0            viridisLite_0.4.2
+[70] rstantools_2.4.0     rlang_1.1.6          Rcpp_1.1.0
+[73] glue_1.8.0           xml2_1.3.8           svglite_2.2.1
+[76] rstudioapi_0.17.1    jsonlite_2.0.0       R6_2.6.1
+[79] systemfonts_1.2.3   </code></pre>
 </div>
 </div>
 </section></section><script id="quarto-html-after-body" type="application/javascript">

@@ -27,6 +27,7 @@
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/01-introduction.html">Getting Started with 'rctbayespower'</a></li>
     <li><a class="dropdown-item" href="../articles/02-prior-specification.html">Prior Specifications in 'rctbayespower'</a></li>
     <li><a class="dropdown-item" href="../articles/03-algorithm-performance.html">Comparative Algorithm Performance in 'rctbayespower'</a></li>
+    <li><a class="dropdown-item" href="../articles/99-model-validation.html">Prior Specifications in 'rctbayespower'</a></li>
   </ul></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
@@ -72,6 +73,12 @@
 
         </dt>
         <dd>Run Analysis Objects</dd>
+      </dl><dl><dt>
+
+          <code><a href="run.rctbp_power_analysis.html">run.rctbp_power_analysis</a></code>
+
+        </dt>
+        <dd>Run Power Analysis</dd>
       </dl><dl><dt>
 
           <code><a href="simulate_single_run.html">simulate_single_run()</a></code>
@@ -149,9 +156,9 @@
         </dt>
         <dd>Build Conditions for Power Analysis</dd>
       </dl></div><div class="section level2">
-      <h2 id="analysis-helper-functions">Analysis Helper Functions<a class="anchor" aria-label="anchor" href="#analysis-helper-functions"></a></h2>
+      <h2 id="analysis-functions">Analysis Functions<a class="anchor" aria-label="anchor" href="#analysis-functions"></a></h2>
 
-      <div class="section-desc"><p>Functions for computing measures and summarizing results</p></div>
+      <div class="section-desc"><p>Functions for power calculations and comparisons</p></div>
 
 
     </div><div class="section level2">
@@ -160,18 +167,6 @@
 
 
       <dl><dt>
-
-          <code><a href="compute_measures_brmsfit.html">compute_measures_brmsfit()</a></code>
-
-        </dt>
-        <dd>Compute Power Measures from brms Model Fit</dd>
-      </dl><dl><dt>
-
-          <code><a href="summarize_sims.html">summarize_sims()</a></code>
-
-        </dt>
-        <dd>Summarize Power Analysis Simulation Results</dd>
-      </dl><dl><dt>
 
           <code><a href="analytical_power_ancova_cont_2arms.html">analytical_power_ancova_cont_2arms()</a></code>
 
@@ -183,10 +178,16 @@
 
         </dt>
         <dd>Compute Cohen's f² for Group Effect in Linear Model</dd>
-      </dl></div><div class="section level2">
-      <h2 id="monte-carlo-standard-error-functions">Monte Carlo Standard Error Functions<a class="anchor" aria-label="anchor" href="#monte-carlo-standard-error-functions"></a></h2>
+      </dl><dl><dt>
 
-      <div class="section-desc"><p>Functions for calculating Monte Carlo standard errors</p></div>
+          <code><a href="compare_power_methods.html">compare_power_methods()</a></code>
+
+        </dt>
+        <dd>Compare Power Calculation Methods</dd>
+      </dl></div><div class="section level2">
+      <h2 id="s-methods">S3 Methods<a class="anchor" aria-label="anchor" href="#s-methods"></a></h2>
+
+      <div class="section-desc"><p>Print and plot methods for package objects</p></div>
 
 
     </div><div class="section level2">
@@ -196,45 +197,34 @@
 
       <dl><dt>
 
-          <code><a href="calculate_mcse_power.html">calculate_mcse_power()</a></code>
+          <code><a href="plot.rctbp_power_analysis.html">plot.rctbp_power_analysis</a></code>
 
         </dt>
-        <dd>Monte Carlo Standard Error (MCSE) Calculation</dd>
+        <dd>Plot Power Analysis Results</dd>
       </dl><dl><dt>
 
-          <code><a href="calculate_mcse_mean.html">calculate_mcse_mean()</a></code>
+          <code><a href="print.rctbp_power_analysis.html">print.rctbp_power_analysis</a></code>
 
         </dt>
-        <dd>Monte Carlo Standard Error for Continuous Metrics</dd>
+        <dd>Print Method for rctbp_power_analysis Objects</dd>
       </dl><dl><dt>
 
-          <code><a href="calculate_mcse_integrated_power.html">calculate_mcse_integrated_power()</a></code>
+          <code><a href="print.rctbp_conditions.html">print.rctbp_conditions</a></code>
 
         </dt>
-        <dd>Monte Carlo Standard Error for Integrated Power Metrics</dd>
-      </dl></div><div class="section level2">
-      <h2 id="design-prior-and-weighting">Design Prior and Weighting<a class="anchor" aria-label="anchor" href="#design-prior-and-weighting"></a></h2>
-
-      <div class="section-desc"><p>Functions for handling design priors and effect size weighting</p></div>
-
-
-    </div><div class="section level2">
-
-
-
-
-      <dl><dt>
-
-          <code><a href="parse_design_prior.html">parse_design_prior()</a></code>
-
-        </dt>
-        <dd>Parse and Validate Design Prior</dd>
+        <dd>Print Method for rctbp_conditions Objects</dd>
       </dl><dl><dt>
 
-          <code><a href="validate_weighting_function.html">validate_weighting_function()</a></code>
+          <code><a href="print.rctbp_design.html">print.rctbp_design</a></code>
 
         </dt>
-        <dd>Validate Weighting Function Implementation</dd>
+        <dd>Print Method for rctbp_design Objects</dd>
+      </dl><dl><dt>
+
+          <code><a href="print.rctbp_model.html">print.rctbp_model</a></code>
+
+        </dt>
+        <dd>Print Method for rctbp_model Objects</dd>
       </dl></div><div class="section level2">
       <h2 id="utilities">Utilities<a class="anchor" aria-label="anchor" href="#utilities"></a></h2>
 
@@ -252,36 +242,6 @@
 
         </dt>
         <dd>Identify Required Parameters for Design or Model Objects</dd>
-      </dl><dl><dt>
-
-          <code><a href="required_fn_args_design.html">required_fn_args_design()</a></code>
-
-        </dt>
-        <dd>Identify Required Parameters for a Design</dd>
-      </dl><dl><dt>
-
-          <code><a href="required_fn_args_model.html">required_fn_args_model()</a></code>
-
-        </dt>
-        <dd>Identify Required Parameters for a Model</dd>
-      </dl><dl><dt>
-
-          <code><a href="get_arg_defaults.html">get_arg_defaults()</a></code>
-
-        </dt>
-        <dd>Get Function Arguments Without Default Values</dd>
-      </dl><dl><dt>
-
-          <code><a href="get_args_without_defaults.html">get_args_without_defaults()</a></code>
-
-        </dt>
-        <dd>Get Function Arguments Without Default Values</dd>
-      </dl><dl><dt>
-
-          <code><a href="update_s7_with_dots.html">update_S7_with_dots()</a></code>
-
-        </dt>
-        <dd>Update Properties of an S7 Object with <code>...</code></dd>
       </dl></div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>

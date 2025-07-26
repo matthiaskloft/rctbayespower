@@ -5,6 +5,7 @@
 <url><loc>https://matthiaskloft.github.io/rctbayespower/articles/01-introduction.html</loc></url>
 <url><loc>https://matthiaskloft.github.io/rctbayespower/articles/02-prior-specification.html</loc></url>
 <url><loc>https://matthiaskloft.github.io/rctbayespower/articles/03-algorithm-performance.html</loc></url>
+<url><loc>https://matthiaskloft.github.io/rctbayespower/articles/99-model-validation.html</loc></url>
 <url><loc>https://matthiaskloft.github.io/rctbayespower/articles/index.html</loc></url>
 <url><loc>https://matthiaskloft.github.io/rctbayespower/authors.html</loc></url>
 <url><loc>https://matthiaskloft.github.io/rctbayespower/index.html</loc></url>
@@ -20,6 +21,7 @@
 <url><loc>https://matthiaskloft.github.io/rctbayespower/reference/calculate_mcse_mean.html</loc></url>
 <url><loc>https://matthiaskloft.github.io/rctbayespower/reference/calculate_mcse_power.html</loc></url>
 <url><loc>https://matthiaskloft.github.io/rctbayespower/reference/class_data_frame.html</loc></url>
+<url><loc>https://matthiaskloft.github.io/rctbayespower/reference/compare_power_methods.html</loc></url>
 <url><loc>https://matthiaskloft.github.io/rctbayespower/reference/compute_measures_brmsfit.html</loc></url>
 <url><loc>https://matthiaskloft.github.io/rctbayespower/reference/f2_from_params_ancova_cont_2arms.html</loc></url>
 <url><loc>https://matthiaskloft.github.io/rctbayespower/reference/get_arg_defaults.html</loc></url>
@@ -28,12 +30,18 @@
 <url><loc>https://matthiaskloft.github.io/rctbayespower/reference/index.html</loc></url>
 <url><loc>https://matthiaskloft.github.io/rctbayespower/reference/list_predefined_models.html</loc></url>
 <url><loc>https://matthiaskloft.github.io/rctbayespower/reference/parse_design_prior.html</loc></url>
+<url><loc>https://matthiaskloft.github.io/rctbayespower/reference/plot.rctbp_power_analysis.html</loc></url>
 <url><loc>https://matthiaskloft.github.io/rctbayespower/reference/power_analysis.html</loc></url>
+<url><loc>https://matthiaskloft.github.io/rctbayespower/reference/print.rctbp_conditions.html</loc></url>
+<url><loc>https://matthiaskloft.github.io/rctbayespower/reference/print.rctbp_design.html</loc></url>
+<url><loc>https://matthiaskloft.github.io/rctbayespower/reference/print.rctbp_model.html</loc></url>
+<url><loc>https://matthiaskloft.github.io/rctbayespower/reference/print.rctbp_power_analysis.html</loc></url>
 <url><loc>https://matthiaskloft.github.io/rctbayespower/reference/rctbayespower-package.html</loc></url>
 <url><loc>https://matthiaskloft.github.io/rctbayespower/reference/required_fn_args.html</loc></url>
 <url><loc>https://matthiaskloft.github.io/rctbayespower/reference/required_fn_args_design.html</loc></url>
 <url><loc>https://matthiaskloft.github.io/rctbayespower/reference/required_fn_args_model.html</loc></url>
 <url><loc>https://matthiaskloft.github.io/rctbayespower/reference/run.html</loc></url>
+<url><loc>https://matthiaskloft.github.io/rctbayespower/reference/run.rctbp_power_analysis.html</loc></url>
 <url><loc>https://matthiaskloft.github.io/rctbayespower/reference/simulate_single_run.html</loc></url>
 <url><loc>https://matthiaskloft.github.io/rctbayespower/reference/summarize_sims.html</loc></url>
 <url><loc>https://matthiaskloft.github.io/rctbayespower/reference/update_s7_with_dots.html</loc></url>

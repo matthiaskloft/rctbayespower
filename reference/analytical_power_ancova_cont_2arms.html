@@ -33,6 +33,7 @@ This function is vectorized and can handle multiple values for n and/or d parame
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/01-introduction.html">Getting Started with 'rctbayespower'</a></li>
     <li><a class="dropdown-item" href="../articles/02-prior-specification.html">Prior Specifications in 'rctbayespower'</a></li>
     <li><a class="dropdown-item" href="../articles/03-algorithm-performance.html">Comparative Algorithm Performance in 'rctbayespower'</a></li>
+    <li><a class="dropdown-item" href="../articles/99-model-validation.html">Prior Specifications in 'rctbayespower'</a></li>
   </ul></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
@@ -71,9 +72,13 @@ This function is vectorized and can handle multiple values for n and/or d parame
 <span>  <span class="va">d</span>,</span>
 <span>  <span class="va">beta_cov</span>,</span>
 <span>  <span class="va">sigma</span>,</span>
-<span>  p_alloc <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.5</span>, <span class="fl">0.5</span><span class="op">)</span>,</span>
+<span>  equal_groups <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  p_group <span class="op">=</span> <span class="fl">0.5</span>,</span>
 <span>  alpha <span class="op">=</span> <span class="fl">0.05</span>,</span>
-<span>  alternative <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"two.sided"</span>, <span class="st">"greater"</span>, <span class="st">"less"</span><span class="op">)</span></span>
+<span>  alternative <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"two.sided"</span>, <span class="st">"greater"</span>, <span class="st">"less"</span><span class="op">)</span>,</span>
+<span>  method <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"cohen"</span>, <span class="st">"theory"</span><span class="op">)</span>,</span>
+<span>  covariate_method <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"fixed"</span>, <span class="st">"expected"</span><span class="op">)</span>,</span>
+<span>  numint <span class="op">=</span> <span class="fl">2000</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -102,9 +107,13 @@ Assumes the covariate follows a standard normal distribution N(0,1).</p></dd>
 the full model (including both covariate and group effects).</p></dd>
 
 
-<dt id="arg-p-alloc">p_alloc<a class="anchor" aria-label="anchor" href="#arg-p-alloc"></a></dt>
-<dd><p>Numeric vector of length 2. Allocation proportions for the two groups.
-Must sum to 1. Default is <code>c(0.5, 0.5)</code> for equal allocation.</p></dd>
+<dt id="arg-equal-groups">equal_groups<a class="anchor" aria-label="anchor" href="#arg-equal-groups"></a></dt>
+<dd><p>Logical. If TRUE (default), assumes equal group sizes (n1 = n2).
+If FALSE, requires p_group to be specified.</p></dd>
+
+
+<dt id="arg-p-group">p_group<a class="anchor" aria-label="anchor" href="#arg-p-group"></a></dt>
+<dd><p>Numeric. Proportion in group 1 (only used if equal_groups = FALSE).</p></dd>
 
 
 <dt id="arg-alpha">alpha<a class="anchor" aria-label="anchor" href="#arg-alpha"></a></dt>
@@ -115,6 +124,22 @@ Must sum to 1. Default is <code>c(0.5, 0.5)</code> for equal allocation.</p></dd
 <dd><p>Character. Specifies the alternative hypothesis. Must be one of
 "two.sided" (default), "greater", or "less". For one-sided tests, "greater"
 tests if group 1 &gt; group 0, "less" tests if group 1 &lt; group 0.</p></dd>
+
+
+<dt id="arg-method">method<a class="anchor" aria-label="anchor" href="#arg-method"></a></dt>
+<dd><p>Character. Specifies the lambda calculation method. Must be one of:</p><ul><li><p>"cohen" (default): Uses Cohen's convention where lambda = f² * (u + v + 1)</p></li>
+<li><p>"theory": Uses statistical theory where lambda = n * f²</p></li>
+</ul></dd>
+
+
+<dt id="arg-covariate-method">covariate_method<a class="anchor" aria-label="anchor" href="#arg-covariate-method"></a></dt>
+<dd><p>Character. Specifies how to handle the covariate. Must be one of:</p><ul><li><p>"fixed" (default): Assumes fixed covariate values (conditional power)</p></li>
+<li><p>"expected": Integrates over covariate distribution (expected power, SAS-style)</p></li>
+</ul></dd>
+
+
+<dt id="arg-numint">numint<a class="anchor" aria-label="anchor" href="#arg-numint"></a></dt>
+<dd><p>Integer. Number of integration points for covariate_method = "expected" (default = 2000).</p></dd>
 
 </dl></div>
     <div class="section level2">
@@ -131,6 +156,10 @@ If both n and d are vectors, returns a vector with length equal to the maximum o
 <li><p>The covariate follows N(0,1)</p></li>
 <li><p>Group is coded as 0 or 1</p></li>
 <li><p>Residuals ε follow N(0, σ²)</p></li>
+</ul><p>Method options:</p><ul><li><p>"cohen": Uses Cohen's convention matching pwr.f2.test</p></li>
+<li><p>"theory": Uses classical statistical theory</p></li>
+</ul><p>Covariate method options:</p><ul><li><p>"fixed": Conditional power given fixed covariate values</p></li>
+<li><p>"expected": Expected power integrating over covariate distribution (SAS approach)</p></li>
 </ul><p>For two-sided tests, the function uses the F-test which is equivalent to the
 square of a two-sided t-test. For one-sided tests, it uses the t-distribution
 directly.</p>
@@ -151,31 +180,40 @@ Psychometrika, 85(1), 101-120.</p>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="co"># Two-sided test with equal allocation</span></span></span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="co"># \donttest{</span></span></span>
+<span class="r-in"><span><span class="co"># Two-sided test with Cohen's method and fixed covariate</span></span></span>
 <span class="r-in"><span><span class="fu">analytical_power_ancova_cont_2arms</span><span class="op">(</span>n <span class="op">=</span> <span class="fl">100</span>, d <span class="op">=</span> <span class="fl">0.5</span>, beta_cov <span class="op">=</span> <span class="fl">0.4</span>, sigma <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.6924571</span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Using statistical theory method</span></span></span>
+<span class="r-in"><span><span class="fu">analytical_power_ancova_cont_2arms</span><span class="op">(</span>n <span class="op">=</span> <span class="fl">100</span>, d <span class="op">=</span> <span class="fl">0.5</span>, beta_cov <span class="op">=</span> <span class="fl">0.4</span>, sigma <span class="op">=</span> <span class="fl">1</span>,</span></span>
+<span class="r-in"><span>                                   method <span class="op">=</span> <span class="st">"theory"</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.6968047</span>
 <span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># Vectorized: multiple sample sizes with fixed effect size</span></span></span>
+<span class="r-in"><span><span class="co"># Using expected power with Cohen's lambda</span></span></span>
+<span class="r-in"><span><span class="fu">analytical_power_ancova_cont_2arms</span><span class="op">(</span>n <span class="op">=</span> <span class="fl">100</span>, d <span class="op">=</span> <span class="fl">0.5</span>, beta_cov <span class="op">=</span> <span class="fl">0.4</span>, sigma <span class="op">=</span> <span class="fl">1</span>,</span></span>
+<span class="r-in"><span>                                   covariate_method <span class="op">=</span> <span class="st">"expected"</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.6879996</span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Using expected power with theory lambda</span></span></span>
+<span class="r-in"><span><span class="fu">analytical_power_ancova_cont_2arms</span><span class="op">(</span>n <span class="op">=</span> <span class="fl">100</span>, d <span class="op">=</span> <span class="fl">0.5</span>, beta_cov <span class="op">=</span> <span class="fl">0.4</span>, sigma <span class="op">=</span> <span class="fl">1</span>,</span></span>
+<span class="r-in"><span>                                   method <span class="op">=</span> <span class="st">"theory"</span>, covariate_method <span class="op">=</span> <span class="st">"expected"</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.6923516</span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Vectorized: multiple sample sizes</span></span></span>
 <span class="r-in"><span><span class="fu">analytical_power_ancova_cont_2arms</span><span class="op">(</span>n <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">50</span>, <span class="fl">100</span>, <span class="fl">150</span><span class="op">)</span>, d <span class="op">=</span> <span class="fl">0.5</span>, beta_cov <span class="op">=</span> <span class="fl">0.4</span>, sigma <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.4098082 0.6968047 0.8603373</span>
-<span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># Vectorized: multiple effect sizes with fixed sample size</span></span></span>
-<span class="r-in"><span><span class="fu">analytical_power_ancova_cont_2arms</span><span class="op">(</span>n <span class="op">=</span> <span class="fl">100</span>, d <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.2</span>, <span class="fl">0.5</span>, <span class="fl">0.8</span><span class="op">)</span>, beta_cov <span class="op">=</span> <span class="fl">0.4</span>, sigma <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.1676509 0.6968047 0.9772570</span>
-<span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># Vectorized: both n and d (recycled to same length)</span></span></span>
-<span class="r-in"><span><span class="fu">analytical_power_ancova_cont_2arms</span><span class="op">(</span>n <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">80</span>, <span class="fl">120</span><span class="op">)</span>, d <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.3</span>, <span class="fl">0.7</span><span class="op">)</span>, beta_cov <span class="op">=</span> <span class="fl">0.4</span>, sigma <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.2632142 0.9672944</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.4030670 0.6924571 0.8580682</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># One-sided test (group 1 &gt; group 0)</span></span></span>
 <span class="r-in"><span><span class="fu">analytical_power_ancova_cont_2arms</span><span class="op">(</span>n <span class="op">=</span> <span class="fl">100</span>, d <span class="op">=</span> <span class="fl">0.5</span>, beta_cov <span class="op">=</span> <span class="fl">0.4</span>, sigma <span class="op">=</span> <span class="fl">1</span>,</span></span>
 <span class="r-in"><span>                                   alternative <span class="op">=</span> <span class="st">"greater"</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.7988858</span>
 <span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># Unequal allocation (2:1 ratio)</span></span></span>
+<span class="r-in"><span><span class="co"># Unequal groups (70/30 split)</span></span></span>
 <span class="r-in"><span><span class="fu">analytical_power_ancova_cont_2arms</span><span class="op">(</span>n <span class="op">=</span> <span class="fl">150</span>, d <span class="op">=</span> <span class="fl">0.5</span>, beta_cov <span class="op">=</span> <span class="fl">0.4</span>, sigma <span class="op">=</span> <span class="fl">1</span>,</span></span>
-<span class="r-in"><span>                                   p_alloc <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2</span><span class="op">/</span><span class="fl">3</span>, <span class="fl">1</span><span class="op">/</span><span class="fl">3</span><span class="op">)</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.8180295</span>
+<span class="r-in"><span>                                   equal_groups <span class="op">=</span> <span class="cn">FALSE</span>, p_group <span class="op">=</span> <span class="fl">0.7</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.7934917</span>
+<span class="r-in"><span><span class="co"># }</span></span></span>
 <span class="r-in"><span></span></span>
 </code></pre></div>
     </div>
