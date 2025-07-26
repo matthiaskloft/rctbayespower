@@ -20,8 +20,6 @@ execute:
   warning: false
 ---
 
-***
-
 Setup:
 ```{r setup}
 # Set CRAN mirror
@@ -38,7 +36,7 @@ n_cores <- min(8, parallel::detectCores())
 n_sims <- 500
 ```
 
-
+***
 
 # ANCOVA
 
@@ -75,7 +73,7 @@ model <- build_model_ancova_cont_2arms(
   prior_treatment = brms::set_prior("normal(0, 1e3)", class = "b"),
   prior_covariate = brms::set_prior("normal(0, 1e3)", class = "b", coef = "covariate"),
   prior_intercept = brms::set_prior("constant(0)", class = "Intercept"),
-  prior_sigma = brms::set_prior("normal(0, 2)", class = "sigma", lb = 0),
+  prior_sigma = brms::set_prior("normal(0, 100)", class = "sigma", lb = 0),
   link_sigma = "identity"
 )
 

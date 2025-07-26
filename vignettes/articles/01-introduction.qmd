@@ -20,8 +20,6 @@ execute:
   warning: false
 ---
 
-***
-
 Setup:
 ```{r setup}
 #| message: false
@@ -41,6 +39,7 @@ n_cores <- min(8, parallel::detectCores())
 n_sims <- 500
 ```
 
+***
 
 # Introduction
 

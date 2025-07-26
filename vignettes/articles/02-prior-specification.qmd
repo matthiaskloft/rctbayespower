@@ -20,8 +20,6 @@ execute:
   warning: false
 ---
 
-***
-
 Setup:
 ```{r setup}
 # Set CRAN mirror
@@ -38,6 +36,8 @@ n_cores <- min(8, parallel::detectCores())
 n_sims <- 500
 ```
 
+
+***
 
 
 The `rctbayespower` package uses two types of priors: **estimation priors** (for Bayesian model fitting) and **design priors** (for integrating effect size uncertainty). This vignette demonstrates their impact on power analysis through two focused examples.

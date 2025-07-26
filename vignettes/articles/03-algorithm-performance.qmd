@@ -20,8 +20,6 @@ execute:
   warning: false
 ---
 
-***
-
 Setup:
 ```{r setup}
 # Set CRAN mirror
@@ -40,6 +38,7 @@ n_cores <- min(8, parallel::detectCores())
 n_sims <- 500
 ```
 
+***
 
 # Algorithm Performance and Computational Considerations
 
@@ -159,7 +158,6 @@ power_result_sampling <- power_analysis(
 ```
 
 
-## 
 Extract the summarized results from each power analysis:
 ```{r}
 results_summary<- rbind(
