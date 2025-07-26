@@ -85,8 +85,7 @@
 
 
 
-    <hr>
-<p>Setup:</p>
+    <p>Setup:</p>
 <div class="cell">
 <details class="code-fold"><summary>Show the code</summary><div class="sourceCode cell-code" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Set CRAN mirror</span></span>
@@ -103,6 +102,7 @@
 <span><span class="va">n_sims</span> <span class="op">&lt;-</span> <span class="fl">500</span></span></code></pre></div>
 </details>
 </div>
+<hr>
 <section class="section level2" data-number="1"><h2 data-number="1" id="ancova">
 <span class="header-section-number">1</span> ANCOVA<a class="anchor" aria-label="anchor" href="#ancova"></a>
 </h2>
@@ -136,7 +136,7 @@
 <span>  prior_treatment <span class="op">=</span> <span class="fu">brms</span><span class="fu">::</span><span class="fu"><a href="https://paulbuerkner.com/brms/reference/set_prior.html" class="external-link">set_prior</a></span><span class="op">(</span><span class="st">"normal(0, 1e3)"</span>, class <span class="op">=</span> <span class="st">"b"</span><span class="op">)</span>,</span>
 <span>  prior_covariate <span class="op">=</span> <span class="fu">brms</span><span class="fu">::</span><span class="fu"><a href="https://paulbuerkner.com/brms/reference/set_prior.html" class="external-link">set_prior</a></span><span class="op">(</span><span class="st">"normal(0, 1e3)"</span>, class <span class="op">=</span> <span class="st">"b"</span>, coef <span class="op">=</span> <span class="st">"covariate"</span><span class="op">)</span>,</span>
 <span>  prior_intercept <span class="op">=</span> <span class="fu">brms</span><span class="fu">::</span><span class="fu"><a href="https://paulbuerkner.com/brms/reference/set_prior.html" class="external-link">set_prior</a></span><span class="op">(</span><span class="st">"constant(0)"</span>, class <span class="op">=</span> <span class="st">"Intercept"</span><span class="op">)</span>,</span>
-<span>  prior_sigma <span class="op">=</span> <span class="fu">brms</span><span class="fu">::</span><span class="fu"><a href="https://paulbuerkner.com/brms/reference/set_prior.html" class="external-link">set_prior</a></span><span class="op">(</span><span class="st">"normal(0, 2)"</span>, class <span class="op">=</span> <span class="st">"sigma"</span>, lb <span class="op">=</span> <span class="fl">0</span><span class="op">)</span>,</span>
+<span>  prior_sigma <span class="op">=</span> <span class="fu">brms</span><span class="fu">::</span><span class="fu"><a href="https://paulbuerkner.com/brms/reference/set_prior.html" class="external-link">set_prior</a></span><span class="op">(</span><span class="st">"normal(0, 100)"</span>, class <span class="op">=</span> <span class="st">"sigma"</span>, lb <span class="op">=</span> <span class="fl">0</span><span class="op">)</span>,</span>
 <span>  link_sigma <span class="op">=</span> <span class="st">"identity"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <div class="cell-output cell-output-stdout">
@@ -206,7 +206,7 @@ Parallel execution using 4 cores:
 Combined results dimensions: 6000 18
 Column names: parameter, threshold_success, threshold_futility, success_prob, futility_prob, power_success, power_futility, median, mad, mean, sd, rhat, ess_bulk, ess_tail, id_sim, id_cond, converged, error
 
-Total analysis time: 26.45 minutes</code></pre>
+Total analysis time: 26.53 minutes</code></pre>
 </div>
 <details class="code-fold"><summary>Show the code</summary><div class="sourceCode cell-code" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">power_mc</span> <span class="op">&lt;-</span> <span class="va">power</span><span class="op">@</span><span class="va">summarized_results</span><span class="op">$</span><span class="va">power_success</span></span>
@@ -261,80 +261,80 @@ Total analysis time: 26.45 minutes</code></pre>
 <tbody>
 <tr class="odd">
 <td style="text-align: center;">40</td>
-<td style="text-align: center;">0.388</td>
-<td style="text-align: center;">[0.345, 0.431]</td>
+<td style="text-align: center;">0.452</td>
+<td style="text-align: center;">[0.408, 0.496]</td>
 <td style="text-align: center;">0.455</td>
-<td style="text-align: center;">-0.067</td>
+<td style="text-align: center;">-0.003</td>
 </tr>
 <tr class="even">
 <td style="text-align: center;">60</td>
-<td style="text-align: center;">0.564</td>
-<td style="text-align: center;">[0.521, 0.607]</td>
+<td style="text-align: center;">0.548</td>
+<td style="text-align: center;">[0.504, 0.592]</td>
 <td style="text-align: center;">0.600</td>
-<td style="text-align: center;">-0.036</td>
+<td style="text-align: center;">-0.052</td>
 </tr>
 <tr class="odd">
 <td style="text-align: center;">80</td>
-<td style="text-align: center;">0.684</td>
-<td style="text-align: center;">[0.643, 0.725]</td>
+<td style="text-align: center;">0.710</td>
+<td style="text-align: center;">[0.67, 0.75]</td>
 <td style="text-align: center;">0.711</td>
-<td style="text-align: center;">-0.027</td>
+<td style="text-align: center;">-0.001</td>
 </tr>
 <tr class="even">
 <td style="text-align: center;">100</td>
-<td style="text-align: center;">0.756</td>
-<td style="text-align: center;">[0.718, 0.794]</td>
+<td style="text-align: center;">0.770</td>
+<td style="text-align: center;">[0.733, 0.807]</td>
 <td style="text-align: center;">0.795</td>
-<td style="text-align: center;">-0.039</td>
+<td style="text-align: center;">-0.025</td>
 </tr>
 <tr class="odd">
 <td style="text-align: center;">120</td>
-<td style="text-align: center;">0.842</td>
-<td style="text-align: center;">[0.81, 0.874]</td>
+<td style="text-align: center;">0.826</td>
+<td style="text-align: center;">[0.793, 0.859]</td>
 <td style="text-align: center;">0.857</td>
-<td style="text-align: center;">-0.015</td>
+<td style="text-align: center;">-0.031</td>
 </tr>
 <tr class="even">
 <td style="text-align: center;">140</td>
-<td style="text-align: center;">0.892</td>
-<td style="text-align: center;">[0.865, 0.919]</td>
+<td style="text-align: center;">0.888</td>
+<td style="text-align: center;">[0.86, 0.916]</td>
 <td style="text-align: center;">0.901</td>
-<td style="text-align: center;">-0.009</td>
+<td style="text-align: center;">-0.013</td>
 </tr>
 <tr class="odd">
 <td style="text-align: center;">160</td>
-<td style="text-align: center;">0.920</td>
-<td style="text-align: center;">[0.896, 0.944]</td>
+<td style="text-align: center;">0.922</td>
+<td style="text-align: center;">[0.898, 0.946]</td>
 <td style="text-align: center;">0.932</td>
-<td style="text-align: center;">-0.012</td>
+<td style="text-align: center;">-0.010</td>
 </tr>
 <tr class="even">
 <td style="text-align: center;">180</td>
-<td style="text-align: center;">0.942</td>
-<td style="text-align: center;">[0.922, 0.962]</td>
+<td style="text-align: center;">0.964</td>
+<td style="text-align: center;">[0.948, 0.98]</td>
 <td style="text-align: center;">0.954</td>
-<td style="text-align: center;">-0.012</td>
+<td style="text-align: center;">0.010</td>
 </tr>
 <tr class="odd">
 <td style="text-align: center;">200</td>
-<td style="text-align: center;">0.960</td>
-<td style="text-align: center;">[0.943, 0.977]</td>
+<td style="text-align: center;">0.978</td>
+<td style="text-align: center;">[0.965, 0.991]</td>
 <td style="text-align: center;">0.969</td>
-<td style="text-align: center;">-0.009</td>
+<td style="text-align: center;">0.009</td>
 </tr>
 <tr class="even">
 <td style="text-align: center;">220</td>
-<td style="text-align: center;">0.976</td>
-<td style="text-align: center;">[0.963, 0.989]</td>
+<td style="text-align: center;">0.982</td>
+<td style="text-align: center;">[0.97, 0.994]</td>
 <td style="text-align: center;">0.979</td>
-<td style="text-align: center;">-0.003</td>
+<td style="text-align: center;">0.003</td>
 </tr>
 <tr class="odd">
 <td style="text-align: center;">240</td>
-<td style="text-align: center;">0.984</td>
-<td style="text-align: center;">[0.973, 0.995]</td>
+<td style="text-align: center;">0.990</td>
+<td style="text-align: center;">[0.981, 0.999]</td>
 <td style="text-align: center;">0.986</td>
-<td style="text-align: center;">-0.002</td>
+<td style="text-align: center;">0.004</td>
 </tr>
 <tr class="even">
 <td style="text-align: center;">260</td>
