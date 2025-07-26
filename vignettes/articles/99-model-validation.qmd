@@ -1,5 +1,5 @@
 ---
-title: "Prior Specifications in 'rctbayespower'"
+title: "Model Validation for Predefined Models in 'rctbayespower'"
 author: 
  - name: Matthias Kloft
    orcid: 0000-0003-1845-6957
@@ -20,9 +20,10 @@ execute:
   warning: false
 ---
 
-```{r setup}
-#| include: false
+***
 
+Setup:
+```{r setup}
 # Set CRAN mirror
 options(repos = c(CRAN = "https://cloud.r-project.org/"))
 
@@ -31,13 +32,10 @@ packages <- c("dplyr", "kableExtra")
 install.packages(setdiff(packages, rownames(installed.packages())))
 invisible(lapply(packages, require, character.only = TRUE))
 library(rctbayespower)
-```
 
-Set up number of cores and simulations for Monte Carlo estimates.
-```{r}
-# Fast settings for examples
+# Set up number of cores and simulations for Monte Carlo estimates.
 n_cores <- min(8, parallel::detectCores())
-n_sims <- 1e3
+n_sims <- 500
 ```
 
 

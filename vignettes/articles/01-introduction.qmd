@@ -20,9 +20,10 @@ execute:
   warning: false
 ---
 
+***
+
+Setup:
 ```{r setup}
-#| include: false
-#| eval: true
 #| message: false
 
 # Set CRAN mirror
@@ -33,7 +34,13 @@ packages <- c("dplyr", "kableExtra")
 install.packages(setdiff(packages, rownames(installed.packages())))
 invisible(lapply(packages, require, character.only = TRUE))
 library(rctbayespower)
+
+
+# Set number of cores and simulations:
+n_cores <- min(8, parallel::detectCores())
+n_sims <- 500
 ```
+
 
 # Introduction
 
@@ -107,12 +114,6 @@ print(conditions, n = 100)
 
 
 ## Run Power Analysis
-
-Set number of cores and simulations:
-```{r n_cores_n_sims}
-n_cores <- min(8, parallel::detectCores())
-n_sims <- 1e3
-```
 
 Run the analysis using the `power_analysis` function. This will run the model for each condition and return the results.
 ```{r run_sim}

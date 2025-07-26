@@ -20,9 +20,10 @@ execute:
   warning: false
 ---
 
-```{r setup}
-#| include: false
+***
 
+Setup:
+```{r setup}
 # Set CRAN mirror
 options(repos = c(CRAN = "https://cloud.r-project.org/"))
 
@@ -32,9 +33,9 @@ install.packages(setdiff(packages, rownames(installed.packages())))
 invisible(lapply(packages, require, character.only = TRUE))
 library(rctbayespower)
 
-# Fast settings for examples
-n_cores <- min(4, parallel::detectCores())
-n_sims <- 1e3
+# Set number of cores and simulations
+n_cores <- min(8, parallel::detectCores())
+n_sims <- 500
 ```
 
 
@@ -296,6 +297,11 @@ res_alpha |>
 ```
 
 Using a sceptical prior reduces the probability of falsely concluding success when there is no true effect, thus controlling the alpha error rate more effectively than the uninformative priors.
+
+
+# Example 2: Design Priors
+
+Coming soon ...
 
 
 ***

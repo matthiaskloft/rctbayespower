@@ -20,9 +20,10 @@ execute:
   warning: false
 ---
 
-```{r setup}
-#| include: false
+***
 
+Setup:
+```{r setup}
 # Set CRAN mirror
 options(repos = c(CRAN = "https://cloud.r-project.org/"))
 
@@ -33,8 +34,11 @@ invisible(lapply(packages, require, character.only = TRUE))
 
 # Load the package
 library(rctbayespower)
-```
 
+# Set number of cores and simulations:
+n_cores <- min(8, parallel::detectCores())
+n_sims <- 500
+```
 
 
 # Algorithm Performance and Computational Considerations
@@ -108,14 +112,6 @@ conditions <- build_conditions(
 
 
 ## Run Simulations
-
-
-Set number of cores and simulations:
-```{r n_cores_n_sims}
-n_cores <- min(8, parallel::detectCores())
-n_sims <- 500
-```
-
 
 ```{r run_power_analyses}
 # Meanfield
