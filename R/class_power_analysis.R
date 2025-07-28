@@ -16,7 +16,7 @@ rctbp_power_analysis <- S7::new_class(
     ),
     model = S7::new_property(
       getter = function(self)
-        self@conditions@design@model
+        self@conditions@model
     ),
     summarized_results = S7::class_data.frame,
     raw_results = S7::class_data.frame,

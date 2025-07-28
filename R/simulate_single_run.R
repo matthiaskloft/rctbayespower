@@ -66,7 +66,7 @@ simulate_single_run <- function(condition_arguments,
     data_simulation_fn <- design@model@data_simulation_fn
     brms_model <- design@model@brms_model
   } else if (inherits(design, "rctbayespower::rctbp_power_analysis") || inherits(design, "rctbp_power_analysis")) {
-    # S7 power analysis object - use direct model access
+    # S7 power analysis object - use promoted model access
     data_simulation_fn <- design@model@data_simulation_fn
     brms_model <- design@model@brms_model
   } else if (is.list(design)) {
