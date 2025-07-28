@@ -6,7 +6,7 @@ articles:
   articles/02-prior-specification: 02-prior-specification.html
   articles/03-algorithm-performance: 03-algorithm-performance.html
   articles/99-model-validation: 99-model-validation.html
-last_built: 2025-07-26T22:55Z
+last_built: 2025-07-28T00:16Z
 urls:
   reference: https://matthiaskloft.github.io/rctbayespower/reference
   article: https://matthiaskloft.github.io/rctbayespower/articles
