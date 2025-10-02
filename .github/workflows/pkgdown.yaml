@@ -36,9 +36,9 @@ jobs:
           extra-packages: any::pkgdown, local::., any::dplyr, any::kableExtra
           needs: website
 
-      # - name: Build articles (to see errors in detail)
-      #   run: pkgdown::build_articles(lazy = TRUE, quiet = FALSE)
-      #   shell: Rscript {0}
+      - name: Build articles (to see errors in detail)
+        run: pkgdown::build_articles(lazy = TRUE, quiet = FALSE)
+        shell: Rscript {0}
         
       - name: Build site
         run: pkgdown::build_site_github_pages(new_process = FALSE, install = FALSE, lazy = TRUE)
