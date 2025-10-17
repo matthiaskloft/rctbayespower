@@ -3,7 +3,8 @@
 rctbp_design <- S7::new_class(
   "rctbp_design",
   properties = list(
-    model = S7::class_any,  # Inherits from rctbp_model
+    model = S7::class_any,
+    # Inherits from rctbp_model
     interim_function = S7::class_function | NULL,
     parameter_names_interim_fn =  S7::new_property(
       getter = function(self) {
@@ -13,7 +14,8 @@ rctbp_design <- S7::new_class(
         } else {
           NULL
         }
-      }),
+      }
+    ),
     target_params = S7::class_character,
     n_interim_analyses = S7::class_numeric,
     thresholds_success = S7::class_numeric,
@@ -28,15 +30,18 @@ rctbp_design <- S7::new_class(
       return("'model' must be a valid rctbp_model object.")
     }
     # Design-specific validations only (parent validation is automatic via inheritance)
-
+    
     # Check for required parameters
-    if (is.null(self@target_params) || length(self@target_params) == 0) {
+    if (is.null(self@target_params) ||
+        length(self@target_params) == 0) {
       return("'target_params' cannot be NULL or empty.")
     }
-    if (is.null(self@thresholds_success) || length(self@thresholds_success) == 0) {
+    if (is.null(self@thresholds_success) ||
+        length(self@thresholds_success) == 0) {
       return("'thresholds_success' cannot be NULL or empty.")
     }
-    if (is.null(self@thresholds_futility) || length(self@thresholds_futility) == 0) {
+    if (is.null(self@thresholds_futility) ||
+        length(self@thresholds_futility) == 0) {
       return("'thresholds_futility' cannot be NULL or empty.")
     }
     if (is.null(self@p_sig_success)) {
@@ -45,12 +50,13 @@ rctbp_design <- S7::new_class(
     if (is.null(self@p_sig_futility)) {
       return("'p_sig_futility' cannot be NULL.")
     }
-
+    
     # Validate n_interim_analyses
-    if (length(self@n_interim_analyses) != 1 || self@n_interim_analyses < 0) {
+    if (length(self@n_interim_analyses) != 1 ||
+        self@n_interim_analyses < 0) {
       return("'n_interim_analyses' must be a non-negative numeric value.")
     }
-
+    
     # Check that target_params is a subset of the parameter names in the model
     if (!all(self@target_params %in% self@model@parameter_names_brms)) {
       return(paste(
@@ -58,7 +64,7 @@ rctbp_design <- S7::new_class(
         paste(self@model@parameter_names_brms, collapse = ", ")
       ))
     }
-
+    
     # Check that thresholds have the same length as target_params
     if (length(self@thresholds_success) != length(self@target_params)) {
       return("'thresholds_success' must have the same length as 'target_params'.")
@@ -66,7 +72,7 @@ rctbp_design <- S7::new_class(
     if (length(self@thresholds_futility) != length(self@target_params)) {
       return("'thresholds_futility' must have the same length as 'target_params'.")
     }
-
+    
     # Validate probability values
     if (length(self@p_sig_success) != 1 ||
         self@p_sig_success < 0 || self@p_sig_success > 1) {
@@ -76,15 +82,16 @@ rctbp_design <- S7::new_class(
         self@p_sig_futility < 0 || self@p_sig_futility > 1) {
       return("'p_sig_futility' must be a numeric value between 0 and 1.")
     }
-
+    
     # Check parameter name uniqueness across simulation and interim functions
     if (!is.null(self@parameter_names_interim_fn)) {
-      all_parameter_names <- c(self@model@parameter_names_sim_fn, self@parameter_names_interim_fn)
+      all_parameter_names <- c(self@model@parameter_names_sim_fn,
+                               self@parameter_names_interim_fn)
       if (length(unique(all_parameter_names)) != length(all_parameter_names)) {
         return("Parameter names must be unique across the simulation and interim functions.")
       }
     }
-
+    
     # If all validations pass, return NULL
     NULL
   }
@@ -181,9 +188,6 @@ build_design <- function(model,
                          n_interim_analyses = 0,
                          interim_function = NULL,
                          design_name = NULL) {
-
-
-
   # Use S7 constructor directly - all validation happens in the class validator
   rctbp_design(
     model = model,
@@ -234,10 +238,12 @@ S7::method(print, rctbp_design) <- function(x, ...) {
     paste(x@model@parameter_names_sim_fn, collapse = ", "),
     "\n"
   )
-  cat("Parameter names - brms model:",
-      paste(x@model@parameter_names_brms, collapse = ", "),
-      "\n")
-
+  cat(
+    "Parameter names - brms model:",
+    paste(x@model@parameter_names_brms, collapse = ", "),
+    "\n"
+  )
+  
   # design
   cat("\n=== Design Specifications ===\n\n")
   cat("Design name:", if (is.null(x@design_name))
@@ -266,14 +272,14 @@ S7::method(print, rctbp_design) <- function(x, ...) {
       paste(x@parameter_names_interim_fn, collapse = ", "),
     "\n"
   )
-
+  
   cat("\n=== 'brms' Model ===\n\n")
   print(x@model@brms_model)
-
+  
   if (!is.null(x@interim_function)) {
     cat("\n=== Interim Function ===\n\n")
     print(x@interim_function)
   }
-
+  
   invisible(x)
 }
