@@ -53,7 +53,9 @@ build_vignette <- function(source_file)
   source_basename <- basename(source_file)
 
   # Remove leading underscore to create output filename (e.g., "intro.Rmd")
-  output_file <- sub(source_basename, pattern = "^_", replacement = "")
+  output_file <- sub(source_basename,
+                     pattern = "^_",
+                     replacement = "")
 
   # Remove existing output file if present
   rmf(output_file)
@@ -68,7 +70,8 @@ build_vignette <- function(source_file)
   rmarkdown::render(
     source_file,
     output_file = output_file,
-    output_dir = getwd(),  # Output to current directory (vignettes/)
+    output_dir = getwd(),
+    # Output to current directory (vignettes/)
     output_format = output_format
   )
 
