@@ -2,7 +2,7 @@
 # Need help debugging build failures? Start at https://github.com/r-lib/actions#where-to-find-help
 on:
   push:
-    branches: [main, master]
+    branches: [main, master, development]
   pull_request:
   release:
     types: [published]
@@ -33,16 +33,20 @@ jobs:
 
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
-          extra-packages: any::pkgdown, local::., any::dplyr, any::kableExtra
+          extra-packages: any::pkgdown, local::.
           needs: website
 
-      # - name: Build articles (to see errors in detail)
-      #   run: pkgdown::build_articles(lazy = TRUE, quiet = FALSE)
-      #   shell: Rscript {0}
-        
+      - name: Run Makefile
+        run: |
+          make vignettes
+
       - name: Build site
-        run: pkgdown::build_site_github_pages(new_process = FALSE, install = FALSE, lazy = TRUE)
+        run: pkgdown::build_site_github_pages(new_process = FALSE, install = FALSE)
         shell: Rscript {0}
+
+      - name: Run Makefile
+        run: |
+          make delete_claude
 
       - name: Deploy to GitHub pages 🚀
         if: github.event_name != 'pull_request'

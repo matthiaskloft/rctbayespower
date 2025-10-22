@@ -1,29 +1,26 @@
 ---
 title: "Getting Started with 'rctbayespower'"
-author: 
+author:
  - name: Matthias Kloft
    orcid: 0000-0003-1845-6957
 date: "`r Sys.Date()`"
-format:
-  html:
-    toc: true
-    number-sections: true
-    theme: cosmo
-    code-fold: false
-    code-tools: true
-    code-summary: "Show the code"
-    fig-width: 7
-    fig-height: 4.5
-    embed-resources: true
-execute:
-  message: false
-  warning: false
+always_allow_html: true
 ---
 
-Setup:
-```{r setup}
-#| message: false
+```{r include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.path = "../man/figures/README-",
+  out.width = "90%",
+  fig.width = 10,
+  fig.height = 7,
+  message = FALSE
+)
+```
 
+Setup:
+```{r setup, message=FALSE}
 # Set CRAN mirror
 options(repos = c(CRAN = "https://cloud.r-project.org/"))
 
@@ -35,15 +32,15 @@ library(rctbayespower)
 
 
 # Set number of cores and simulations:
-n_cores <- 4
-n_sims <- 200
+n_cores <- 8
+n_sims <- 100
 ```
 
 ***
 
 # Introduction
 
-The `rctbayespower` package provides tools for conducting Bayesian power analysis for randomized controlled trials (RCTs) using the `brms` package and Stan. 
+The `rctbayespower` package provides tools for conducting Bayesian power analysis for randomized controlled trials (RCTs) using the `brms` package and Stan.
 
 
 
@@ -151,12 +148,12 @@ power@summarized_results |>
 ```
 
 
-## Alpha Error Rate for Null Effect 
+## Alpha Error Rate for Null Effect
 
 The power for success indicates the alpha error rate for the null effect (b_arm_treat = 0). This is the probability of rejecting the null hypothesis when it is true, which should be close to the significance level (0.05) if the design is well specified.
 
 ```{r power_null}
-power@summarized_results |> 
+power@summarized_results |>
   dplyr::filter(b_arm_treat == 0) |>
   select(
     n_total,
@@ -167,20 +164,17 @@ power@summarized_results |>
     power_success_se,
     power_futility,
     power_futility_se,
-    prob_futility, 
-    prob_futility_se 
+    prob_futility,
+    prob_futility_se
   ) |>
-  dplyr::arrange(desc(b_arm_treat)) |> 
-  kableExtra::kable(digits = 3, 
+  dplyr::arrange(desc(b_arm_treat)) |>
+  kableExtra::kable(digits = 3,
                     format = "html")
 ```
 
 ## Run Time
 
-```{r}
-#| code-fold: true
-
-
+```{r, code_fold=TRUE}
 n_runs <- nrow(power@conditions@conditions_grid) * power@n_sims
 cat("Total run time:", round(power@elapsed_time,1), "minutes for", n_runs, "total simulation repetitions using", power@n_cores, "cores.\n")
 ```
@@ -193,4 +187,3 @@ cat("Total run time:", round(power@elapsed_time,1), "minutes for", n_runs, "tota
 ```{r session_info}
 sessionInfo()
 ```
-
