@@ -28,11 +28,12 @@ options(repos = c(CRAN = "https://cloud.r-project.org/"))
 packages <- c("dplyr", "kableExtra")
 install.packages(setdiff(packages, rownames(installed.packages())))
 invisible(lapply(packages, require, character.only = TRUE))
-library(rctbayespower)
+
 
 
 # Set number of cores and simulations:
 n_cores <- parallel::detectCores() - 2
+# low number of simulations for vignette
 n_sims <- 100
 ```
 

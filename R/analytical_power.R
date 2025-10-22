@@ -39,13 +39,13 @@
 #' @details
 #' The function calculates power for testing the group effect in a linear model:
 #' \itemize{
-#'   \item The outcome y is modeled as: y = β₀ + β₁·covariate + β₂·group + ε
-#'   \item The null hypothesis is H₀: β₂ = 0
-#'   \item For two-sided tests: H₁: β₂ ≠ 0
-#'   \item For one-sided tests: H₁: β₂ > 0 (if alternative = "greater") or β₂ < 0 (if alternative = "less")
+#'   \item The outcome y is modeled as: y = \eqn{\beta_0 + \beta_1} covariate + \eqn{\beta_2} group + \eqn{\epsilon}
+#'   \item The null hypothesis is \eqn{H_0}: \eqn{\beta_2 = 0}
+#'   \item For two-sided tests: \eqn{H_1}: \eqn{\beta_2 \neq 0}
+#'   \item For one-sided tests: \eqn{H_1}: \eqn{\beta_2 > 0} (if alternative = "greater") or \eqn{\beta_2 < 0} (if alternative = "less")
 #'   \item The covariate follows N(0,1)
 #'   \item Group is coded as 0 or 1
-#'   \item Residuals ε follow N(0, σ²)
+#'   \item Residuals \eqn{\epsilon} follow \eqn{N(0, \sigma^2)}
 #' }
 #'
 #' Method options:
