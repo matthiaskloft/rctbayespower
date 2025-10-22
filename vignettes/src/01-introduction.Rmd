@@ -28,7 +28,8 @@ options(repos = c(CRAN = "https://cloud.r-project.org/"))
 packages <- c("dplyr", "kableExtra")
 install.packages(setdiff(packages, rownames(installed.packages())))
 invisible(lapply(packages, require, character.only = TRUE))
-
+# Load rctbayespower package
+library(rctbayespower)
 
 
 # Set number of cores and simulations:
