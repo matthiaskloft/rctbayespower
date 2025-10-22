@@ -22,7 +22,7 @@ knitr::opts_chunk$set(
 options(repos = c(CRAN = "https://cloud.r-project.org/"))
 
 # Check and install required packages
-packages <- c("kableExtra")
+packages <- c("dplyr", "kableExtra")
 install.packages(setdiff(packages, rownames(installed.packages())))
 invisible(lapply(packages, require, character.only = TRUE))
 
@@ -33,9 +33,9 @@ library(rctbayespower)
 Setup:
 ```{r}
 # Set number of cores and simulations:
-n_cores <- parallel::detectCores() - 2
+n_cores <- min(4, parallel::detectCores())
 # low number of simulations for vignette
-n_sims <- 100
+n_sims <- 1
 ```
 
 

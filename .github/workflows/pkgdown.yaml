@@ -38,10 +38,10 @@ jobs:
 
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
-          extra-packages: any::pkgdown, local::.
+          extra-packages: any::pkgdown, any::BH, any::RcppEigen, local::.
           needs: website
 
-      - name: Run Makefile
+      - name: Run Makefile: build vignettes
         run: |
           make vignettes
 
@@ -49,7 +49,7 @@ jobs:
         run: pkgdown::build_site_github_pages(new_process = FALSE, install = FALSE)
         shell: Rscript {0}
 
-      - name: Run Makefile
+      - name: Run Makefile: delete claude
         run: |
           make delete_claude
 
