@@ -1,6 +1,5 @@
 #!/usr/bin/env Rscript
 library(rmarkdown)
-library(here)
 
 rmf <- function(f)
 {
@@ -42,4 +41,4 @@ build_vignette <- function(f)
 
 clean()
 
-build_vignette(here("vignettes", "src", "01-introduction.Rmd"))
+build_vignette("./src/01-introduction.Rmd")
