@@ -80,9 +80,11 @@ rctbp_model <- S7::new_class(
 #' @param predefined_model Optional character string specifying a predefined model
 #'   to use instead of creating a custom model. Currently supported values:
 #'   \itemize{
-#'     \item "ancova_cont" - ANCOVA model for continuous outcomes with baseline covariate
+#'     \item "ancova_cont_2arms" - ANCOVA model for continuous outcomes with baseline covariate and 2 arms
+#'     \item "ancova_cont_3arms" - ANCOVA model for continuous outcomes with baseline covariate and 3 arms
 #'   }
 #'   When specified, other parameters are ignored and the predefined model is returned.
+#'   Use [list_predefined_models()] to see all available models.
 #'
 #' @details
 #' The build_model class encapsulates all components needed for power
