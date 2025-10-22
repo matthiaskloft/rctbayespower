@@ -32,7 +32,7 @@ library(rctbayespower)
 
 
 # Set number of cores and simulations:
-n_cores <- 8
+n_cores <- parallel::detectCores() - 2
 n_sims <- 100
 ```
 
