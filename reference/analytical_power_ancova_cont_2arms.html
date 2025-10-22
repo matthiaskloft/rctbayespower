@@ -147,13 +147,13 @@ If both n and d are vectors, returns a vector with length equal to the maximum o
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
-    <p>The function calculates power for testing the group effect in a linear model:</p><ul><li><p>The outcome y is modeled as: y = β₀ + β₁·covariate + β₂·group + ε</p></li>
-<li><p>The null hypothesis is H₀: β₂ = 0</p></li>
-<li><p>For two-sided tests: H₁: β₂ ≠ 0</p></li>
-<li><p>For one-sided tests: H₁: β₂ &gt; 0 (if alternative = "greater") or β₂ &lt; 0 (if alternative = "less")</p></li>
+    <p>The function calculates power for testing the group effect in a linear model:</p><ul><li><p>The outcome y is modeled as: y = \(\beta_0 + \beta_1\) covariate + \(\beta_2\) group + \(\epsilon\)</p></li>
+<li><p>The null hypothesis is \(H_0\): \(\beta_2 = 0\)</p></li>
+<li><p>For two-sided tests: \(H_1\): \(\beta_2 \neq 0\)</p></li>
+<li><p>For one-sided tests: \(H_1\): \(\beta_2 &gt; 0\) (if alternative = "greater") or \(\beta_2 &lt; 0\) (if alternative = "less")</p></li>
 <li><p>The covariate follows N(0,1)</p></li>
 <li><p>Group is coded as 0 or 1</p></li>
-<li><p>Residuals ε follow N(0, σ²)</p></li>
+<li><p>Residuals \(\epsilon\) follow \(N(0, \sigma^2)\)</p></li>
 </ul><p>Method options:</p><ul><li><p>"cohen": Uses Cohen's convention matching pwr.f2.test</p></li>
 <li><p>"theory": Uses classical statistical theory</p></li>
 </ul><p>Covariate method options:</p><ul><li><p>"fixed": Conditional power given fixed covariate values</p></li>

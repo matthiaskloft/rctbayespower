@@ -80,8 +80,10 @@ This object serves as the foundation for Bayesian power analysis in RCTs.</p>
 
 <dl><dt id="arg-predefined-model">predefined_model<a class="anchor" aria-label="anchor" href="#arg-predefined-model"></a></dt>
 <dd><p>Optional character string specifying a predefined model
-to use instead of creating a custom model. Currently supported values:</p><ul><li><p>"ancova_cont" - ANCOVA model for continuous outcomes with baseline covariate</p></li>
-</ul><p>When specified, other parameters are ignored and the predefined model is returned.</p></dd>
+to use instead of creating a custom model. Currently supported values:</p><ul><li><p>"ancova_cont_2arms" - ANCOVA model for continuous outcomes with baseline covariate and 2 arms</p></li>
+<li><p>"ancova_cont_3arms" - ANCOVA model for continuous outcomes with baseline covariate and 3 arms</p></li>
+</ul><p>When specified, other parameters are ignored and the predefined model is returned.
+Use <code><a href="list_predefined_models.html">list_predefined_models()</a></code> to see all available models.</p></dd>
 
 
 <dt id="arg-data-simulation-fn">data_simulation_fn<a class="anchor" aria-label="anchor" href="#arg-data-simulation-fn"></a></dt>
