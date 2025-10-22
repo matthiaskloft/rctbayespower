@@ -7,7 +7,7 @@ date: "`r Sys.Date()`"
 always_allow_html: true
 ---
 
-```{r include = FALSE}
+```{r setup, include=FALSE, message=FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
@@ -17,26 +17,27 @@ knitr::opts_chunk$set(
   fig.height = 7,
   message = FALSE
 )
-```
 
-Setup:
-```{r setup, message=FALSE}
 # Set CRAN mirror
 options(repos = c(CRAN = "https://cloud.r-project.org/"))
 
 # Check and install required packages
-packages <- c("dplyr", "kableExtra")
+packages <- c("kableExtra")
 install.packages(setdiff(packages, rownames(installed.packages())))
 invisible(lapply(packages, require, character.only = TRUE))
+
 # Load rctbayespower package
 library(rctbayespower)
+```
 
-
+Setup:
+```{r}
 # Set number of cores and simulations:
 n_cores <- parallel::detectCores() - 2
 # low number of simulations for vignette
 n_sims <- 100
 ```
+
 
 ***
 
