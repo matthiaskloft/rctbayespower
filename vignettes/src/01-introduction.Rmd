@@ -123,6 +123,7 @@ power <- power_analysis(
   verbose = TRUE,
   brms_args = list(
     chains = 4,
+    # reduced number of iterations for vignette
     iter = 300,
     warmup = 100
   )
@@ -134,7 +135,7 @@ power <- power_analysis(
 ```{r power_success}
 power@summarized_results |>
   dplyr::filter(b_arm_treat != 0) |>
-  select(
+  dplyr::select(
     n_total,
     b_arm_treat,
     prob_success,
@@ -158,7 +159,7 @@ The power for success indicates the alpha error rate for the null effect (b_arm_
 ```{r power_null}
 power@summarized_results |>
   dplyr::filter(b_arm_treat == 0) |>
-  select(
+  dplyr::select(
     n_total,
     b_arm_treat,
     prob_success,
