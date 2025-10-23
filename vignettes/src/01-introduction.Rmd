@@ -15,7 +15,7 @@ knitr::opts_chunk$set(
   out.width = "90%",
   fig.width = 10,
   fig.height = 7,
-  message = FALSE
+  message = TRUE
 )
 
 # Set CRAN mirror
@@ -35,7 +35,7 @@ Setup:
 # Set number of cores and simulations:
 n_cores <- min(4, parallel::detectCores())
 # low number of simulations for vignette
-n_sims <- 200
+n_sims <- 400
 ```
 
 
@@ -120,9 +120,13 @@ power <- power_analysis(
   run = T,
   conditions = conditions,
   n_cores = n_cores,
-  n_sims = n_sims
+  n_sims = n_sims,
+  brms_args = list(
+    iter = 300,
+    warmup = 100,
+    chains = 3
+  )
 )
-
 ```
 
 
@@ -145,7 +149,6 @@ power@summarized_results |>
   dplyr::arrange(desc(b_arm_treat)) |>
   kableExtra::kable(digits = 3, format = "html")
 ```
-
 
 ## Alpha Error Rate for Null Effect
 

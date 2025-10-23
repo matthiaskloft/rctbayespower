@@ -7,15 +7,7 @@ rctbp_power_analysis <- S7::new_class(
     n_sims = S7::new_property(S7::class_numeric, default = 1),
     n_cores = S7::new_property(S7::class_numeric, default = 1),
     verbose = S7::new_property(class = S7::class_logical, default = TRUE),
-    brms_args = S7::new_property(
-      S7::class_list,
-      default = list(
-        chains = 4,
-        iter = 450,
-        warmup = 200,
-        cores = 1
-      )
-    ),
+    brms_args = S7::class_list | NULL,
     design_prior = S7::new_property(S7::class_character |
                                       S7::class_function | NULL, default = NULL),
     conditions = S7::class_any,
@@ -236,7 +228,17 @@ S7::method(run, rctbp_power_analysis) <- function(x, ...) {
   }
   
   # update model with brms_args ------------
-  # brms_args come from the object, no need to check for external variable
+  # set default brms args
+  default_brms_args<- list(
+    chains = 4,
+    iter = 450,
+    warmup = 200,
+    cores = 1
+  )
+  # merge with user-provided brms_args
+  final_brms_args <- utils::modifyList(default_brms_args, x@brms_args)
+  # assign back to object for later use
+  x@brms_args <- final_brms_args
   
   # warn if cores > 1
   if (x@brms_args$cores > 1) {
@@ -353,15 +355,15 @@ S7::method(run, rctbp_power_analysis) <- function(x, ...) {
           parallel::clusterExport(cl, varlist = functions_to_export, envir = ns)
           export_success <- TRUE
           if (verbose)
-            cat("Functions exported from package namespace\n")
+            cat("Functions exported from package namespace\n\n")
         }
       }, error = function(e) {
         if (verbose)
-          cat("Namespace export failed:", e$message, "\n")
+          cat("Namespace export failed:", e$message, "\n\n")
       })
       
       if (!export_success && verbose) {
-        cat("Warning: Could not export all required functions to workers\n")
+        cat("Warning: Could not export all required functions to workers\n\n")
       }
     }
     
@@ -439,6 +441,7 @@ S7::method(run, rctbp_power_analysis) <- function(x, ...) {
     
   } else {
     # fallback on lapply() if pbapply is not available
+    message("Package 'pbapply' not found. Running simulations without progress bar.")
     results_raw_list <- lapply(seq_along(condition_args_list), function(i) {
       # Simulate single run and compute measures
       df_measures <- simulate_single_run(
