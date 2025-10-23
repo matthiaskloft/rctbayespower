@@ -38,7 +38,7 @@ jobs:
 
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
-          extra-packages: any::pkgdown, any::BH, any::RcppEigen, local::.
+          extra-packages: any::pkgdown, any::BH, any::RcppEigen, any::pbapply, local::.
           needs: website
 
       - name: Run Makefile build vignettes

@@ -4,7 +4,7 @@
 \alias{simulate_single_run}
 \title{Single Run Simulation for RCT Bayesian Power Analysis}
 \usage{
-simulate_single_run(condition_arguments, id_sim, design, brms_args = list())
+simulate_single_run(condition_arguments, id_sim, design)
 }
 \arguments{
 \item{condition_arguments}{A single entry from the condition_arguments list
@@ -14,8 +14,6 @@ and 'true_parameter_values', plus optional 'interim_args'.}
 \item{id_sim}{Simulation identifier for tracking individual simulation runs}
 
 \item{design}{A rctbp_design or rctbp_power_analysis object containing the simulation and model specifications}
-
-\item{brms_args}{Arguments passed to brms for model fitting. Default includes 'algorithm' = "sampling", 'iter' = 500, 'warmup' = 250, 'chains' = 4, 'cores' = 1. User can override any of these or add additional arguments.}
 }
 \value{
 A fitted brms model object on success, NULL on failure
@@ -61,8 +59,7 @@ result <- simulate_single_run(
 # Or with custom brms arguments
 result_custom <- simulate_single_run(
   condition_arguments = conditions$condition_arguments[[1]],
-  design = conditions$design,
-  brms_args = list(algorithm = "meanfield", iter = 1000)
+  design = conditions$design
 )
 }
 }
