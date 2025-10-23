@@ -4,20 +4,21 @@
 rctbp_power_analysis <- S7::new_class(
   "rctbp_power_analysis",
   properties = list(
-    n_sims = S7::class_numeric,
-    n_cores = S7::class_numeric,
+    n_sims = S7::new_property(S7::class_numeric, default = 1),
+    n_cores = S7::new_property(S7::class_numeric, default = 1),
     verbose = S7::new_property(class = S7::class_logical, default = TRUE),
-    brms_args = S7::class_list,
-    design_prior = S7::class_character | S7::class_function | NULL,
+    brms_args = S7::new_property(
+      S7::class_list,
+      default = list(
+        chains = 4,
+        iter = 450,
+        warmup = 200,
+        cores = 1
+      )
+    ),
+    design_prior = S7::new_property(S7::class_character |
+                                      S7::class_function | NULL, default = NULL),
     conditions = S7::class_any,
-    design = S7::new_property(
-      getter = function(self)
-        self@conditions@design
-    ),
-    model = S7::new_property(
-      getter = function(self)
-        self@conditions@model
-    ),
     summarized_results = S7::class_data.frame,
     raw_results = S7::class_data.frame,
     elapsed_time = S7::new_property(class = S7::class_numeric, default = NA_real_)
@@ -137,10 +138,19 @@ rctbp_power_analysis <- S7::new_class(
 #' }
 power_analysis <- function(run = TRUE, ...) {
   power_object <- rctbp_power_analysis(...)
+  
+  # Overwrite object parameters with dots if provided and run = FALSE
+  # Avoids updating twice, since run() also updates S7 object with dots
+  if (!run){
+    if (length(list(...)) > 0) {
+      # Recreate the S7 object with updated parameters
+      power_object <- update_S7_with_dots(power_object, ...)
+    }
+  }
 
+  # Run the power analysis immediately if requested)
   if (run) {
-    # Run the power analysis immediately if requested)
-    power_object <- run(object = power_object)
+    power_object <- run(x = power_object)
   }
   
   return(power_object)
@@ -152,7 +162,7 @@ power_analysis <- function(run = TRUE, ...) {
 #' Generic function for executing analysis objects. This function provides a
 #' unified interface for running different types of analysis configurations.
 #'
-#' @param object An S7 object to run (e.g., rctbp_power_analysis)
+#' @param x An S7 object to run (e.g., rctbp_power_analysis)
 #' @param ... Additional arguments passed to specific methods
 #'
 #' @details
@@ -174,7 +184,7 @@ power_analysis <- function(run = TRUE, ...) {
 #' power_config <- rctbp_power_analysis(conditions = conditions, n_sims = 100)
 #' power_config <- run(power_config)
 #' }
-run <- S7::new_generic("run", "object")
+run <- S7::new_generic("run", "x")
 
 #' Run Power Analysis
 #'
@@ -182,7 +192,7 @@ run <- S7::new_generic("run", "object")
 #' the rctbp_power_analysis object. This method contains the core simulation
 #' logic and returns comprehensive results.
 #'
-#' @param object An S7 object of class "rctbp_power_analysis"
+#' @param x An S7 object of class "rctbp_power_analysis"
 #' @param ... Additional arguments (currently unused)
 #'
 #' @details
@@ -214,24 +224,39 @@ run <- S7::new_generic("run", "object")
 #' @importFrom parallel detectCores makeCluster stopCluster parLapply clusterEvalQ clusterExport
 #' @importFrom utils modifyList
 #' @name run.rctbp_power_analysis
-S7::method(run, rctbp_power_analysis) <- function(object, ...) {
+S7::method(run, rctbp_power_analysis) <- function(x, ...) {
   # Time start
   start_time <- Sys.time()
   
   # Overwrite object parameters with dots if provided
   if (length(list(...)) > 0) {
     # Recreate the S7 object with updated parameters
-    object <- update_S7_with_dots(object, ...)
+    x <- update_S7_with_dots(x, ...)
   }
   
+  # update model with brms_args ------------
+  # brms_args come from the object, no need to check for external variable
+  
+  # warn if cores > 1
+  if (x@brms_args$cores > 1) {
+    warning("Do not use multiple cores for brms when running simulations in parallel!")
+  }
+  # update brms_args in the object
+  x@conditions@design@model@brms_model <- do.call(function(...) {
+    stats::update(object = x@conditions@design@model@brms_model, ...)
+  }, x@brms_args)
+  
+  
+  
+  # Extract variables from object
+  n_cores <- x@n_cores
+  n_sims <- x@n_sims
+  verbose <- x@verbose
+  
   # Extract parameters from the object
-  conditions <- object@conditions
-  design <- object@design
-  design_prior <- object@design_prior
-  n_sims <- object@n_sims
-  n_cores <- object@n_cores
-  verbose <- object@verbose
-  brms_args <- object@brms_args
+  conditions <- x@conditions
+  design <- x@conditions@design
+  design_prior <- x@design_prior
   
   # Extract design components for parallel workers (S7 objects don't serialize well)
   design_components <- list(
@@ -243,21 +268,13 @@ S7::method(run, rctbp_power_analysis) <- function(object, ...) {
     n_interim_analyses = design@n_interim_analyses,
     interim_function = design@interim_function,
     design_name = design@design_name,
-    model_data_simulation_fn = object@model@data_simulation_fn,
-    model_brms_model = object@model@brms_model
+    model_data_simulation_fn = x@conditions@design@model@data_simulation_fn,
+    model_brms_model = x@conditions@design@model@brms_model
   )
   
-  # Validate n_cores, must be a positive integer
-  if (!is.numeric(n_cores) || n_cores <= 0) {
-    n_cores <- 1
-    warning("Invalid n_cores value. Using n_cores = 1.")
-  }
   
   # Expand condition_arguments_list to match n_sims
   condition_args_list <- rep(conditions@condition_arguments, each = n_sims)
-  
-  # Extract design from power analysis object
-  design <- object@design
   
   # Set up parallelization
   total_runs <- length(condition_args_list)
@@ -273,12 +290,6 @@ S7::method(run, rctbp_power_analysis) <- function(object, ...) {
         "\n")
     cat("Simulations per condition:", n_sims, "\n")
     cat("Total simulations:", total_runs, "\n\n")
-    
-    if (n_cores > 1) {
-      cat("Parallel execution using", n_cores, "cores:", "\n")
-    } else {
-      cat("Sequential execution:\n")
-    }
   }
   
   # Execute simulations
@@ -286,6 +297,7 @@ S7::method(run, rctbp_power_analysis) <- function(object, ...) {
     # set cl to NULL for default sequential execution
     cl <- NULL
     if (n_cores > 1) {
+      message("Setting up parallel cluster with ", n_cores, " cores ...")
       # Set up cluster
       cl <- parallel::makeCluster(n_cores, type = "PSOCK")
       # Ensure cleanup on exit
@@ -315,11 +327,7 @@ S7::method(run, rctbp_power_analysis) <- function(object, ...) {
       # Export required objects to cluster
       parallel::clusterExport(
         cl,
-        varlist = c(
-          "condition_args_list",
-          "design_components",
-          "brms_args"
-        ),
+        varlist = c("condition_args_list", "design_components"),
         envir = environment()
       )
       
@@ -351,59 +359,6 @@ S7::method(run, rctbp_power_analysis) <- function(object, ...) {
           cat("Namespace export failed:", e$message, "\n")
       })
       
-      # Method 2: Try getting functions from current environment (for devtools/pkgload)
-      # if (!export_success) {
-      #   # Get function objects directly and assign them on workers
-      #   function_objects <- list()
-      #   for (fn_name in functions_to_export) {
-      #     # Try multiple locations to find the function
-      #     fn_obj <- NULL
-      #     
-      #     # Try namespace first
-      #     tryCatch({
-      #       ns <- asNamespace("rctbayespower")
-      #       if (exists(fn_name, envir = ns)) {
-      #         fn_obj <- get(fn_name, envir = ns)
-      #       }
-      #     }, error = function(e) {
-      #       
-      #     })
-      #     
-      #     # Try global environment if not found in namespace
-      #     if (is.null(fn_obj) &&
-      #         exists(fn_name, envir = .GlobalEnv)) {
-      #       fn_obj <- get(fn_name, envir = .GlobalEnv)
-      #     }
-      #     
-      #     # Try current environment if still not found
-      #     if (is.null(fn_obj) &&
-      #         exists(fn_name, envir = environment())) {
-      #       fn_obj <- get(fn_name, envir = environment())
-      #     }
-      #     
-      #     if (!is.null(fn_obj)) {
-      #       function_objects[[fn_name]] <- fn_obj
-      #     }
-      #   }
-      #   
-      #   # Export the function objects we found
-      #   if (length(function_objects) > 0) {
-      #     for (fn_name in names(function_objects)) {
-      #       parallel::clusterCall(cl, function(name, obj) {
-      #         # NOTE: Assignment to .GlobalEnv is required for R parallel processing
-      #         # This is the standard R idiom for making functions available to worker processes
-      #         # The assignment occurs within the worker environment, not the main session
-      #         assign(name, obj, envir = .GlobalEnv)
-      #       }, fn_name, function_objects[[fn_name]])
-      #     }
-      #     export_success <- TRUE
-      #     if (verbose)
-      #       cat("Functions exported as objects:",
-      #           paste(names(function_objects), collapse = ", "),
-      #           "\n")
-      #   }
-      # }
-      
       if (!export_success && verbose) {
         cat("Warning: Could not export all required functions to workers\n")
       }
@@ -430,24 +385,6 @@ S7::method(run, rctbp_power_analysis) <- function(object, ...) {
           )
           
           missing_functions <- c()
-          # for (fn_name in required_functions) {
-          #   if (!exists(fn_name)) {
-          #     # Try to get from package namespace
-          #     tryCatch({
-          #       if (requireNamespace("rctbayespower", quietly = TRUE)) {
-          #         # NOTE: Assignment to .GlobalEnv is required for R parallel processing
-          #         # This makes package functions available within the worker process environment
-          #         assign(fn_name,
-          #                get(fn_name, envir = asNamespace("rctbayespower")),
-          #                envir = .GlobalEnv)
-          #       } else {
-          #         missing_functions <- c(missing_functions, fn_name)
-          #       }
-          #     }, error = function(e) {
-          #       missing_functions <- c(missing_functions, fn_name)
-          #     })
-          #   }
-          # }
           
           if (length(missing_functions) > 0) {
             stop(
@@ -464,8 +401,7 @@ S7::method(run, rctbp_power_analysis) <- function(object, ...) {
           df_measures <- simulate_single_run(
             condition_arguments = condition_args_list[[i]],
             id_sim = i,
-            design = design_components,
-            brms_args = brms_args
+            design = design_components
           )
           
           return(df_measures)
@@ -507,8 +443,7 @@ S7::method(run, rctbp_power_analysis) <- function(object, ...) {
       df_measures <- simulate_single_run(
         condition_arguments = condition_args_list[[i]],
         id_sim = i,
-        design = design_components,
-        brms_args = brms_args
+        design = design_components
       )
       
       return(df_measures)
@@ -561,12 +496,12 @@ S7::method(run, rctbp_power_analysis) <- function(object, ...) {
   }
   
   # Update the S7 object with results
-  object@summarized_results <- results_df
-  object@raw_results <- results_df_raw
-  object@elapsed_time <- as.numeric(elapsed_time)
+  x@summarized_results <- results_df
+  x@raw_results <- results_df_raw
+  x@elapsed_time <- as.numeric(elapsed_time)
   
   # Return the updated object
-  return(object)
+  return(x)
   
 }
 
@@ -590,7 +525,7 @@ S7::method(print, rctbp_power_analysis) <- function(x, ...) {
   cat("==================================================\n")
   
   cat("\n=== Design Summary ===\n")
-  design <- x@design
+  design <- x@conditions@design
   cat("Target parameters:",
       paste(design@target_params, collapse = ", "),
       "\n")

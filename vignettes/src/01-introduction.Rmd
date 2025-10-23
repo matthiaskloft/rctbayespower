@@ -35,7 +35,7 @@ Setup:
 # Set number of cores and simulations:
 n_cores <- min(4, parallel::detectCores())
 # low number of simulations for vignette
-n_sims <- 200
+n_sims <- 400
 ```
 
 
@@ -117,16 +117,10 @@ print(conditions, n = 100)
 Run the analysis using the `power_analysis` function. This will run the model for each condition and return the results.
 ```{r run_sim}
 power <- power_analysis(
+  run = TRUE,
   conditions = conditions,
   n_cores = n_cores,
-  n_sims = n_sims,
-  verbose = TRUE,
-  brms_args = list(
-    chains = 4,
-    # reduced number of iterations for vignette
-    iter = 300,
-    warmup = 100
-  )
+  n_sims = n_sims
 )
 ```
 

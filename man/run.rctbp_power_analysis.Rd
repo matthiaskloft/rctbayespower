@@ -4,7 +4,7 @@
 \alias{run.rctbp_power_analysis}
 \title{Run Power Analysis}
 \arguments{
-\item{object}{An S7 object of class "rctbp_power_analysis"}
+\item{x}{An S7 object of class "rctbp_power_analysis"}
 
 \item{...}{Additional arguments (currently unused)}
 }

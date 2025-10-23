@@ -4,10 +4,10 @@
 \alias{run}
 \title{Run Analysis Objects}
 \usage{
-run(object, ...)
+run(x, ...)
 }
 \arguments{
-\item{object}{An S7 object to run (e.g., rctbp_power_analysis)}
+\item{x}{An S7 object to run (e.g., rctbp_power_analysis)}
 
 \item{...}{Additional arguments passed to specific methods}
 }

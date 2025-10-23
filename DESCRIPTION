@@ -37,3 +37,4 @@ Suggests:
 Config/testthat/edition: 3
 URL: https://matthiaskloft.github.io/rctbayespower/, https://github.com/matthiaskloft/rctbayespower
 Config/Needs/website: quarto
+LazyData: true

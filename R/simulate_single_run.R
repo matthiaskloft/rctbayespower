@@ -8,7 +8,6 @@
 #'   and 'true_parameter_values', plus optional 'interim_args'.
 #' @param id_sim Simulation identifier for tracking individual simulation runs
 #' @param design A rctbp_design or rctbp_power_analysis object containing the simulation and model specifications
-#' @param brms_args Arguments passed to brms for model fitting. Default includes 'algorithm' = "sampling", 'iter' = 500, 'warmup' = 250, 'chains' = 4, 'cores' = 1. User can override any of these or add additional arguments.
 #'
 #' @return A fitted brms model object on success, NULL on failure
 #'
@@ -49,15 +48,13 @@
 #' # Or with custom brms arguments
 #' result_custom <- simulate_single_run(
 #'   condition_arguments = conditions$condition_arguments[[1]],
-#'   design = conditions$design,
-#'   brms_args = list(algorithm = "meanfield", iter = 1000)
+#'   design = conditions$design
 #' )
 #' }
 #' @export
 simulate_single_run <- function(condition_arguments,
                                 id_sim,
-                                design,
-                                brms_args = list()) {
+                                design) {
   # no validations since this is the lowest level function
 
   # Handle S7 design objects, power analysis objects, and regular list design components (for parallel workers)
@@ -112,40 +109,18 @@ simulate_single_run <- function(condition_arguments,
     ))
   }
 
-  # default brms arguments
-  brms_args_default <- list(
-    algorithm = "sampling",
-    iter = 750,
-    warmup = 250,
-    chains = 4,
-    cores = 1,
-    init = 0.1,
-    refresh = 0,
-    silent = 2
-  )
-
-  # Merge arguments: defaults < brms_args
-  brms_args_final <- utils::modifyList(brms_args_default, brms_args)
-
-  # warn if cores > 1
-  if (brms_args_final$cores > 1) {
-    warning("Do not use multiple cores for brms when running simulations in parallel!")
-  }
-
   # Fit the model to the simulated data with error handling
   fitted_model <- tryCatch({
-    do.call(function(...) {
-      stats::update(object = brms_model, newdata = simulated_data, ...)
-    }, brms_args_final)
+    stats::update(object = brms_model, newdata = simulated_data)
   }, error = function(e) {
-    n_total <- if(is.null(condition_arguments$sim_args$n_total)) "unknown" else condition_arguments$sim_args$n_total
-    warning("Model fitting failed for 'n_total'=",
-            n_total,
-            ": ",
-            e$message)
+    n_total <- if (is.null(condition_arguments$sim_args$n_total))
+      "unknown"
+    else
+      condition_arguments$sim_args$n_total
+    warning("Model fitting failed for 'n_total'=", n_total, ": ", e$message)
     return(NULL)
   })
-
+  
   # Check if model fitting was successful
   if (is.null(fitted_model)) {
     return(data.frame(

@@ -1,6 +1,6 @@
 # Load package - try devtools first, then pkgload, then library
-devtools::load_all()
-#library(rctbayespower)
+#devtools::load_all()
+library(rctbayespower)
 #-------------------------------------------------------------------------------
 # 1. Create model
 
@@ -34,7 +34,7 @@ conditions <- build_conditions(
   design = design,
   condition_values = list(
     # two sample sizes
-    n_total = seq(100,200, 20),
+    n_total = 200,
     # two effect sizes
     b_arm_treat = c(0,seq(.3,.5,.1))
   ),
@@ -47,18 +47,24 @@ conditions <- build_conditions(
   )
 )
 
+print(conditions)
 #-------------------------------------------------------------------------------
 # 4. Run analysis
 
-n_cores <- parallel::detectCores() - 1
-n_sims <- 300
 
-power <- power_analysis(
+
+n_cores <- parallel::detectCores() - 2
+
+n_sims <- 30
+
+power_config <- power_analysis(
+  run = TRUE,
   conditions = conditions,
-  n_sims = n_sims,
   n_cores = n_cores,
-  verbose = T
+  n_sims = n_sims
 )
+print(power)
+
 
 res<- power@summarized_results
 

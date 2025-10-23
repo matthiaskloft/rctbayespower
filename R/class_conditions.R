@@ -5,10 +5,6 @@ rctbp_conditions <- S7::new_class("rctbp_conditions",
     conditions_grid = S7::class_data.frame,
     condition_arguments = S7::class_list,
     design = S7::class_any,  # rctbp_design objects
-    model = S7::new_property(
-      getter = function(self)
-        self@design@model
-    ),
     condition_values = S7::class_list,
     static_values = S7::class_list
   ),
