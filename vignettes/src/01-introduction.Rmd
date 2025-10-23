@@ -35,7 +35,7 @@ Setup:
 # Set number of cores and simulations:
 n_cores <- min(4, parallel::detectCores())
 # low number of simulations for vignette
-n_sims <- 400
+n_sims <- 200
 ```
 
 
@@ -99,7 +99,7 @@ conditions <- build_conditions(
   design = design,
   condition_values = list(
     # two sample sizes
-    n_total = seq(80, 160, by = 40),
+    n_total = c(80, 160),
     # two effect sizes
     b_arm_treat = c(0, 0.3)
   ),
@@ -108,7 +108,7 @@ conditions <- build_conditions(
     b_covariate = 0
   )
 )
-print(conditions, n = 100)
+print(conditions)
 ```
 
 
@@ -117,11 +117,12 @@ print(conditions, n = 100)
 Run the analysis using the `power_analysis` function. This will run the model for each condition and return the results.
 ```{r run_sim}
 power <- power_analysis(
-  run = TRUE,
+  run = T,
   conditions = conditions,
   n_cores = n_cores,
   n_sims = n_sims
 )
+
 ```
 
 

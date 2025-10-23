@@ -19,6 +19,7 @@ rctbp_power_analysis <- S7::new_class(
     design_prior = S7::new_property(S7::class_character |
                                       S7::class_function | NULL, default = NULL),
     conditions = S7::class_any,
+    design = S7::new_property(getter = function(self) self@conditions@design),
     summarized_results = S7::class_data.frame,
     raw_results = S7::class_data.frame,
     elapsed_time = S7::new_property(class = S7::class_numeric, default = NA_real_)
