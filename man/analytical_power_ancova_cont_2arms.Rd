@@ -45,8 +45,8 @@ tests if group 1 > group 0, "less" tests if group 1 < group 0.}
 
 \item{method}{Character. Specifies the lambda calculation method. Must be one of:
 \itemize{
-\item "cohen" (default): Uses Cohen's convention where lambda = f² * (u + v + 1)
-\item "theory": Uses statistical theory where lambda = n * f²
+\item "cohen" (default): Uses Cohen's convention where \eqn{\lambda = f^{2}(u + v + 1)}
+\item "theory": Uses statistical theory where \eqn{\lambda = n \cdot f^{2}}
 }}
 
 \item{covariate_method}{Character. Specifies how to handle the covariate. Must be one of:
@@ -70,13 +70,13 @@ This function is vectorized and can handle multiple values for n and/or d parame
 \details{
 The function calculates power for testing the group effect in a linear model:
 \itemize{
-\item The outcome y is modeled as: y = \eqn{\beta_0 + \beta_1} covariate + \eqn{\beta_2} group + \eqn{\epsilon}
-\item The null hypothesis is \eqn{H_0}: \eqn{\beta_2 = 0}
-\item For two-sided tests: \eqn{H_1}: \eqn{\beta_2 \neq 0}
-\item For one-sided tests: \eqn{H_1}: \eqn{\beta_2 > 0} (if alternative = "greater") or \eqn{\beta_2 < 0} (if alternative = "less")
-\item The covariate follows N(0,1)
+\item The outcome y is modeled as: \eqn{y = \beta_0 + \beta_1 \cdot \text{covariate} + \beta_2 \cdot \text{group} + \epsilon}
+\item The null hypothesis is \eqn{H_0: \beta_2 = 0}
+\item For two-sided tests: \eqn{H_1: \beta_2 \neq 0}
+\item For one-sided tests: \eqn{H_1: \beta_2 > 0} (if alternative = "greater") or \eqn{H_1: \beta_2 < 0} (if alternative = "less")
+\item The covariate follows \eqn{N(0,1)}
 \item Group is coded as 0 or 1
-\item Residuals \eqn{\epsilon} follow \eqn{N(0, \sigma^2)}
+\item Residuals \eqn{\epsilon} follow \eqn{N(0, \sigma^{2})}
 }
 
 Method options:

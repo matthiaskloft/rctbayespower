@@ -35,7 +35,7 @@ Setup:
 # Set number of cores and simulations:
 n_cores <- min(4, parallel::detectCores())
 # low number of simulations for vignette
-n_sims <- 1
+n_sims <- 200
 ```
 
 

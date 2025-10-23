@@ -28,7 +28,9 @@
       "Bash(done)",
       "WebFetch(domain:rconsortium.github.io)",
       "Bash(cat:*)",
-      "WebFetch(domain:plotly.com)"
+      "WebFetch(domain:plotly.com)",
+      "Read(//mnt/c/Users/Matze/AppData/Local/Temp/RtmpIXEL2g/file59b047ae3be1/rctbayespower.Rcheck/**)",
+      "Read(//mnt/c/Users/Matze/AppData/Local/Temp/RtmpIXEL2g/file59b028042317/rctbayespower.Rcheck/**)"
     ],
     "deny": []
   }

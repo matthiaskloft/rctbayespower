@@ -23,8 +23,8 @@
 #'   tests if group 1 > group 0, "less" tests if group 1 < group 0.
 #' @param method Character. Specifies the lambda calculation method. Must be one of:
 #'   \itemize{
-#'     \item "cohen" (default): Uses Cohen's convention where lambda = f² * (u + v + 1)
-#'     \item "theory": Uses statistical theory where lambda = n * f²
+#'     \item "cohen" (default): Uses Cohen's convention where \eqn{\lambda = f^{2}(u + v + 1)}
+#'     \item "theory": Uses statistical theory where \eqn{\lambda = n \cdot f^{2}}
 #'   }
 #' @param covariate_method Character. Specifies how to handle the covariate. Must be one of:
 #'   \itemize{
@@ -39,13 +39,13 @@
 #' @details
 #' The function calculates power for testing the group effect in a linear model:
 #' \itemize{
-#'   \item The outcome y is modeled as: y = \eqn{\beta_0 + \beta_1} covariate + \eqn{\beta_2} group + \eqn{\epsilon}
-#'   \item The null hypothesis is \eqn{H_0}: \eqn{\beta_2 = 0}
-#'   \item For two-sided tests: \eqn{H_1}: \eqn{\beta_2 \neq 0}
-#'   \item For one-sided tests: \eqn{H_1}: \eqn{\beta_2 > 0} (if alternative = "greater") or \eqn{\beta_2 < 0} (if alternative = "less")
-#'   \item The covariate follows N(0,1)
+#'   \item The outcome y is modeled as: \eqn{y = \beta_0 + \beta_1 \cdot \text{covariate} + \beta_2 \cdot \text{group} + \epsilon}
+#'   \item The null hypothesis is \eqn{H_0: \beta_2 = 0}
+#'   \item For two-sided tests: \eqn{H_1: \beta_2 \neq 0}
+#'   \item For one-sided tests: \eqn{H_1: \beta_2 > 0} (if alternative = "greater") or \eqn{H_1: \beta_2 < 0} (if alternative = "less")
+#'   \item The covariate follows \eqn{N(0,1)}
 #'   \item Group is coded as 0 or 1
-#'   \item Residuals \eqn{\epsilon} follow \eqn{N(0, \sigma^2)}
+#'   \item Residuals \eqn{\epsilon} follow \eqn{N(0, \sigma^{2})}
 #' }
 #'
 #' Method options:
@@ -190,7 +190,7 @@ analytical_power_ancova_cont_2arms <- function(n,
   # Convert Cohen's d to regression coefficient (vectorized)
   beta_group <- d * sigma
   
-  # Calculate f² (vectorized)
+  # Calculate f^2 (vectorized)
   f2 <- (beta_group^2 * var_group) / sigma^2
   
   # For expected method, need to handle one-at-a-time
@@ -227,12 +227,12 @@ analytical_power_ancova_cont_2arms <- function(n,
     
     # Non-centrality parameter based on method
     if (method == "cohen") {
-      # Cohen's convention: lambda = f² * (u + v + 1)
+      # Cohen's convention: lambda = f^2 * (u + v + 1)
       u <- 1  # numerator df
       lambda <- f2 * (u + df + 1)
     } else {
       # method == "theory"
-      # Statistical theory: lambda = n * f²
+      # Statistical theory: lambda = n * f^2
       lambda <- n * f2
     }
     
@@ -315,11 +315,11 @@ power_ancova_expected_single <- function(n,
     
     # Non-centrality parameter at each integration point
     if (lambda_method == "theory") {
-      # Statistical theory: λ = n × f²
+      # Statistical theory: lambda = n * f^2
       ncp_vec <- n * f2 / (1 + b * tvec^2)
     } else {
       # lambda_method == "cohen"
-      # Cohen's convention: λ = f² × (u + v + 1)
+      # Cohen's convention: lambda = f^2 * (u + v + 1)
       ncp_vec <- f2 * (df1 + df2 + 1) / (1 + b * tvec^2)
     }
     
@@ -427,10 +427,10 @@ compare_power_methods <- function(n, d, beta_cov, sigma, alpha = 0.05) {
   return(methods[, c("description", "power", "method", "covariate_method")])
 }
 
-#' Compute Cohen's f² for Group Effect in Linear Model
+#' Compute Cohen's f-squared for Group Effect in Linear Model
 #'
-#' Calculates Cohen's f² for the group effect in a linear regression model of the form
-#' \code{y ~ covariate + group}. Cohen's f² represents the proportion of variance
+#' Calculates Cohen's f-squared for the group effect in a linear regression model of the form
+#' \code{y ~ covariate + group}. Cohen's f-squared represents the proportion of variance
 #' uniquely explained by the group variable relative to the unexplained variance.
 #' This function is vectorized and can handle multiple values for the d parameter.
 #'
@@ -443,14 +443,14 @@ compare_power_methods <- function(n, d, beta_cov, sigma, alpha = 0.05) {
 #'   If FALSE, requires p_group to be specified.
 #' @param p_group Numeric. Proportion in group 1 (only used if equal_groups = FALSE).
 #'
-#' @return Numeric vector. Cohen's f² for the group effect(s).
+#' @return Numeric vector. Cohen's f-squared for the group effect(s).
 #'
 #' @details
-#' Cohen's f² is calculated as the ratio of variance uniquely explained by the group
+#' Cohen's f-squared is calculated as the ratio of variance uniquely explained by the group
 #' to the unexplained variance:
-#' \deqn{f² = \frac{R²_{full} - R²_{reduced}}{1 - R²_{full}}}
+#' \deqn{f^{2} = \frac{R^{2}_{\text{full}} - R^{2}_{\text{reduced}}}{1 - R^{2}_{\text{full}}}}
 #'
-#' where R²_full includes both predictors and R²_reduced includes only the covariate.
+#' where \eqn{R^{2}_{\text{full}}} includes both predictors and \eqn{R^{2}_{\text{reduced}}} includes only the covariate.
 #'
 #' @examples
 #' \donttest{
@@ -500,10 +500,10 @@ f2_from_params_ancova_cont_2arms <- function(d,
     var_group <- p_group * (1 - p_group)
   }
   
-  # Direct calculation of Cohen's f² (vectorized for d/beta_group)
-  # f² = (beta_group² * var_group) / sigma²
+  # Direct calculation of Cohen's f^2 (vectorized for d/beta_group)
+  # f^2 = (beta_group^2 * var_group) / sigma^2
   # Since beta_group = d * sigma, this becomes:
-  # f² = (d² * sigma² * var_group) / sigma² = d² * var_group
+  # f^2 = (d^2 * sigma^2 * var_group) / sigma^2 = d^2 * var_group
   f2 <- d^2 * var_group
   
   return(f2)

@@ -2,7 +2,7 @@
 % Please edit documentation in R/analytical_power.R
 \name{f2_from_params_ancova_cont_2arms}
 \alias{f2_from_params_ancova_cont_2arms}
-\title{Compute Cohen's f² for Group Effect in Linear Model}
+\title{Compute Cohen's f-squared for Group Effect in Linear Model}
 \usage{
 f2_from_params_ancova_cont_2arms(
   d,
@@ -27,20 +27,20 @@ If FALSE, requires p_group to be specified.}
 \item{p_group}{Numeric. Proportion in group 1 (only used if equal_groups = FALSE).}
 }
 \value{
-Numeric vector. Cohen's f² for the group effect(s).
+Numeric vector. Cohen's f-squared for the group effect(s).
 }
 \description{
-Calculates Cohen's f² for the group effect in a linear regression model of the form
-\code{y ~ covariate + group}. Cohen's f² represents the proportion of variance
+Calculates Cohen's f-squared for the group effect in a linear regression model of the form
+\code{y ~ covariate + group}. Cohen's f-squared represents the proportion of variance
 uniquely explained by the group variable relative to the unexplained variance.
 This function is vectorized and can handle multiple values for the d parameter.
 }
 \details{
-Cohen's f² is calculated as the ratio of variance uniquely explained by the group
+Cohen's f-squared is calculated as the ratio of variance uniquely explained by the group
 to the unexplained variance:
-\deqn{f² = \frac{R²_{full} - R²_{reduced}}{1 - R²_{full}}}
+\deqn{f^{2} = \frac{R^{2}_{\text{full}} - R^{2}_{\text{reduced}}}{1 - R^{2}_{\text{full}}}}
 
-where R²_full includes both predictors and R²_reduced includes only the covariate.
+where \eqn{R^{2}_{\text{full}}} includes both predictors and \eqn{R^{2}_{\text{reduced}}} includes only the covariate.
 }
 \examples{
 \donttest{
