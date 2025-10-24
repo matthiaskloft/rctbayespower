@@ -1,6 +1,6 @@
 .PHONY: all docs articles vignettes clean delete_claude
 
-all: clean vignettes docs delete_claude
+all: clean docs delete_claude
 
 docs:
 	( Rscript -e "pkgdown::build_site('.', install=FALSE)" )
@@ -16,5 +16,8 @@ clean:
 
 delete_claude:
 	rm -f docs/CLAUDE.html
+	
+deploy:
+	( Rscript -e "pkgdown::deploy_to_branch('.')" )
 
 
