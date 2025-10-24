@@ -31,7 +31,6 @@ This function is vectorized and can handle multiple values for n and/or d parame
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/01-introduction.html">Getting Started with 'rctbayespower'</a></li>
-    <li><a class="dropdown-item" href="../articles/src/01-introduction.html">Getting Started with 'rctbayespower'</a></li>
   </ul></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
@@ -52,7 +51,7 @@ This function is vectorized and can handle multiple values for n and/or d parame
   <main id="main" class="col-md-9"><div class="page-header">
 
       <h1>Power Calculation for ANCOVA with Continuous Covariate and Two Groups</h1>
-      <small class="dont-index">Source: <a href="https://github.com/matthiaskloft/rctbayespower/blob/main/R/analytical_power.R" class="external-link"><code>R/analytical_power.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/matthiaskloft/rctbayespower/blob/HEAD/R/analytical_power.R" class="external-link"><code>R/analytical_power.R</code></a></small>
       <div class="d-none name"><code>analytical_power_ancova_cont_2arms.Rd</code></div>
     </div>
 
@@ -125,8 +124,8 @@ tests if group 1 &gt; group 0, "less" tests if group 1 &lt; group 0.</p></dd>
 
 
 <dt id="arg-method">method<a class="anchor" aria-label="anchor" href="#arg-method"></a></dt>
-<dd><p>Character. Specifies the lambda calculation method. Must be one of:</p><ul><li><p>"cohen" (default): Uses Cohen's convention where lambda = f² * (u + v + 1)</p></li>
-<li><p>"theory": Uses statistical theory where lambda = n * f²</p></li>
+<dd><p>Character. Specifies the lambda calculation method. Must be one of:</p><ul><li><p>"cohen" (default): Uses Cohen's convention where \(\lambda = f^{2}(u + v + 1)\)</p></li>
+<li><p>"theory": Uses statistical theory where \(\lambda = n \cdot f^{2}\)</p></li>
 </ul></dd>
 
 
@@ -147,13 +146,13 @@ If both n and d are vectors, returns a vector with length equal to the maximum o
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
-    <p>The function calculates power for testing the group effect in a linear model:</p><ul><li><p>The outcome y is modeled as: y = \(\beta_0 + \beta_1\) covariate + \(\beta_2\) group + \(\epsilon\)</p></li>
-<li><p>The null hypothesis is \(H_0\): \(\beta_2 = 0\)</p></li>
-<li><p>For two-sided tests: \(H_1\): \(\beta_2 \neq 0\)</p></li>
-<li><p>For one-sided tests: \(H_1\): \(\beta_2 &gt; 0\) (if alternative = "greater") or \(\beta_2 &lt; 0\) (if alternative = "less")</p></li>
-<li><p>The covariate follows N(0,1)</p></li>
+    <p>The function calculates power for testing the group effect in a linear model:</p><ul><li><p>The outcome y is modeled as: \(y = \beta_0 + \beta_1 \cdot \text{covariate} + \beta_2 \cdot \text{group} + \epsilon\)</p></li>
+<li><p>The null hypothesis is \(H_0: \beta_2 = 0\)</p></li>
+<li><p>For two-sided tests: \(H_1: \beta_2 \neq 0\)</p></li>
+<li><p>For one-sided tests: \(H_1: \beta_2 &gt; 0\) (if alternative = "greater") or \(H_1: \beta_2 &lt; 0\) (if alternative = "less")</p></li>
+<li><p>The covariate follows \(N(0,1)\)</p></li>
 <li><p>Group is coded as 0 or 1</p></li>
-<li><p>Residuals \(\epsilon\) follow \(N(0, \sigma^2)\)</p></li>
+<li><p>Residuals \(\epsilon\) follow \(N(0, \sigma^{2})\)</p></li>
 </ul><p>Method options:</p><ul><li><p>"cohen": Uses Cohen's convention matching pwr.f2.test</p></li>
 <li><p>"theory": Uses classical statistical theory</p></li>
 </ul><p>Covariate method options:</p><ul><li><p>"fixed": Conditional power given fixed covariate values</p></li>

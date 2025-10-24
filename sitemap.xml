@@ -1,11 +1,10 @@
 <urlset xmlns = 'http://www.sitemaps.org/schemas/sitemap/0.9'>
 <url><loc>https://matthiaskloft.github.io/rctbayespower/404.html</loc></url>
-<url><loc>https://matthiaskloft.github.io/rctbayespower/CLAUDE.html</loc></url>
-<url><loc>https://matthiaskloft.github.io/rctbayespower/CLAUDE.local.html</loc></url>
 <url><loc>https://matthiaskloft.github.io/rctbayespower/articles/01-introduction.html</loc></url>
 <url><loc>https://matthiaskloft.github.io/rctbayespower/articles/index.html</loc></url>
-<url><loc>https://matthiaskloft.github.io/rctbayespower/articles/src/01-introduction.html</loc></url>
 <url><loc>https://matthiaskloft.github.io/rctbayespower/authors.html</loc></url>
+<url><loc>https://matthiaskloft.github.io/rctbayespower/CLAUDE.html</loc></url>
+<url><loc>https://matthiaskloft.github.io/rctbayespower/CLAUDE.local.html</loc></url>
 <url><loc>https://matthiaskloft.github.io/rctbayespower/index.html</loc></url>
 <url><loc>https://matthiaskloft.github.io/rctbayespower/news/index.html</loc></url>
 <url><loc>https://matthiaskloft.github.io/rctbayespower/reference/analytical_power_ancova_cont_2arms.html</loc></url>
@@ -22,8 +21,8 @@
 <url><loc>https://matthiaskloft.github.io/rctbayespower/reference/compare_power_methods.html</loc></url>
 <url><loc>https://matthiaskloft.github.io/rctbayespower/reference/compute_measures_brmsfit.html</loc></url>
 <url><loc>https://matthiaskloft.github.io/rctbayespower/reference/f2_from_params_ancova_cont_2arms.html</loc></url>
-<url><loc>https://matthiaskloft.github.io/rctbayespower/reference/get_arg_defaults.html</loc></url>
 <url><loc>https://matthiaskloft.github.io/rctbayespower/reference/get_args_without_defaults.html</loc></url>
+<url><loc>https://matthiaskloft.github.io/rctbayespower/reference/get_arg_defaults.html</loc></url>
 <url><loc>https://matthiaskloft.github.io/rctbayespower/reference/get_predefined_model.html</loc></url>
 <url><loc>https://matthiaskloft.github.io/rctbayespower/reference/index.html</loc></url>
 <url><loc>https://matthiaskloft.github.io/rctbayespower/reference/list_predefined_models.html</loc></url>
@@ -42,7 +41,7 @@
 <url><loc>https://matthiaskloft.github.io/rctbayespower/reference/run.rctbp_power_analysis.html</loc></url>
 <url><loc>https://matthiaskloft.github.io/rctbayespower/reference/simulate_single_run.html</loc></url>
 <url><loc>https://matthiaskloft.github.io/rctbayespower/reference/summarize_sims.html</loc></url>
-<url><loc>https://matthiaskloft.github.io/rctbayespower/reference/update_s7_with_dots.html</loc></url>
+<url><loc>https://matthiaskloft.github.io/rctbayespower/reference/update_S7_with_dots.html</loc></url>
 <url><loc>https://matthiaskloft.github.io/rctbayespower/reference/validate_weighting_function.html</loc></url>
 </urlset>
 

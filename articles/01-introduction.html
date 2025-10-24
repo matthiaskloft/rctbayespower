@@ -5,7 +5,7 @@
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<title>Getting Started with 'rctbayespower' • rctbayespower</title>
+<title>Getting Started with ‘rctbayespower’ • rctbayespower</title>
 <!-- mathjax math --><script src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.js" integrity="sha256-MASABpB4tYktI2Oitl4t+78w/lyA+D7b/s9GEP0JOGI=" crossorigin="anonymous"></script><script>
   window.MathJax = {
     chtml: {
@@ -16,7 +16,9 @@
 <link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
 <script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
-<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Getting Started with 'rctbayespower'">
+<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><script src="01-introduction_files/libs/quarto-html/popper.min.js"></script><script src="01-introduction_files/libs/quarto-html/tippy.umd.min.js"></script><link href="01-introduction_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="01-introduction_files/libs/quarto-html/light-border.css" rel="stylesheet">
+<!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Getting Started with ‘rctbayespower’">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
@@ -40,7 +42,6 @@
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
 <li><a class="dropdown-item" href="../articles/01-introduction.html">Getting Started with 'rctbayespower'</a></li>
-    <li><a class="dropdown-item" href="../articles/src/01-introduction.html">Getting Started with 'rctbayespower'</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -63,68 +64,83 @@
 
 
   </div>
-</nav><div class="container template-article">
-
-
-
-
+</nav><div class="container template-quarto">
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
 
-      <h1>Getting Started with 'rctbayespower'</h1>
-                        <h4 data-toc-skip class="author">Matthias
-Kloft</h4>
-                        
-            <h4 data-toc-skip class="date">2025-10-22</h4>
-      
-      <small class="dont-index">Source: <a href="https://github.com/matthiaskloft/rctbayespower/blob/main/vignettes/01-introduction.Rmd" class="external-link"><code>vignettes/01-introduction.Rmd</code></a></small>
-      <div class="d-none name"><code>01-introduction.Rmd</code></div>
+      <h1>Getting Started with ‘rctbayespower’</h1>
+
+      <p class="author">Matthias Kloft</p>
+      <p class="date">2025-10-24</p>
+
+      <small class="dont-index">Source: <a href="https://github.com/matthiaskloft/rctbayespower/blob/HEAD/vignettes/articles/01-introduction.qmd" class="external-link"><code>vignettes/articles/01-introduction.qmd</code></a></small>
+      <div class="d-none name"><code></code></div>
     </div>
 
-    
-    
-<p>Setup:</p>
-<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Set number of cores and simulations:</span></span>
-<span><span class="va">n_cores</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">min</a></span><span class="op">(</span><span class="fl">4</span>, <span class="fu">parallel</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/parallel/detectCores.html" class="external-link">detectCores</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co"># low number of simulations for vignette</span></span>
-<span><span class="va">n_sims</span> <span class="op">&lt;-</span> <span class="fl">1</span></span></code></pre></div>
-<hr>
-<div class="section level2">
-<h2 id="introduction">Introduction<a class="anchor" aria-label="anchor" href="#introduction"></a>
-</h2>
-<p>The <code>rctbayespower</code> package provides tools for conducting
-Bayesian power analysis for randomized controlled trials (RCTs) using
-the <code>brms</code> package and Stan.</p>
+
+
+
+
+
+    <p>Setup:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb1"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Set CRAN mirror</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">options</a></span><span class="op">(</span>repos <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>CRAN <span class="op">=</span> <span class="st">"https://cloud.r-project.org/"</span><span class="op">)</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Check and install required packages</span></span>
+<span><span class="va">packages</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"dplyr"</span>, <span class="st">"kableExtra"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/sets.html" class="external-link">setdiff</a></span><span class="op">(</span><span class="va">packages</span>, <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/utils/installed.packages.html" class="external-link">installed.packages</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/invisible.html" class="external-link">invisible</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="va">packages</span>, <span class="va">require</span>, character.only <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://matthiaskloft.github.io/rctbayespower/">rctbayespower</a></span><span class="op">)</span></span>
+<span></span>
+<span></span>
+<span><span class="co"># Set number of cores and simulations:</span></span>
+<span><span class="va">n_cores</span> <span class="op">&lt;-</span> <span class="fu">parallel</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/parallel/detectCores.html" class="external-link">detectCores</a></span><span class="op">(</span><span class="op">)</span> <span class="op">-</span> <span class="fl">2</span></span>
+<span><span class="va">n_sims</span> <span class="op">&lt;-</span> <span class="fl">500</span></span></code></pre></div>
 </div>
-<div class="section level2">
-<h2 id="basic-power-analysis-using-ancova-design">Basic Power Analysis Using ANCOVA Design<a class="anchor" aria-label="anchor" href="#basic-power-analysis-using-ancova-design"></a>
+<hr>
+<section class="section level2" data-number="1"><h2 data-number="1" id="introduction">
+<span class="header-section-number">1</span> Introduction<a class="anchor" aria-label="anchor" href="#introduction"></a>
 </h2>
-<div class="section level3">
-<h3 id="model">Model<a class="anchor" aria-label="anchor" href="#model"></a>
+<p>The <code>rctbayespower</code> package provides tools for conducting Bayesian power analysis for randomized controlled trials (RCTs) using the <code>brms</code> package and Stan.</p>
+</section><section class="section level2" data-number="2"><h2 data-number="2" id="basic-power-analysis-using-ancova-design">
+<span class="header-section-number">2</span> Basic Power Analysis Using ANCOVA Design<a class="anchor" aria-label="anchor" href="#basic-power-analysis-using-ancova-design"></a>
+</h2>
+<section class="level2" data-number="2.1"><h3 data-number="2.1" id="model">
+<span class="header-section-number">2.1</span> Model<a class="anchor" aria-label="anchor" href="#model"></a>
 </h3>
 <p>Show predefined models available in the package:</p>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/list_predefined_models.html">list_predefined_models</a></span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1] "ancova_cont_2arms" "ancova_cont_3arms"</span></span></code></pre></div>
-<p>Get the predefined ANCOVA model for continuous outcomes with two
-arms:</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">model_ancova</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/build_model.html">build_model</a></span><span class="op">(</span>predefined_model <span class="op">=</span> <span class="st">"ancova_cont_2arms"</span><span class="op">)</span></span>
-<span><span class="va">model_ancova</span><span class="op">@</span><span class="va">parameter_names_brms</span></span>
-<span><span class="co">#&gt; [1] "b_Intercept" "b_covariate" "b_arm2"</span></span></code></pre></div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/list_predefined_models.html">list_predefined_models</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "ancova_cont_2arms" "ancova_cont_3arms"</code></pre>
 </div>
-<div class="section level3">
-<h3 id="design">Design<a class="anchor" aria-label="anchor" href="#design"></a>
+</div>
+<p>Get the predefined ANCOVA model for continuous outcomes with two arms:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">model_ancova</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/build_model.html">build_model</a></span><span class="op">(</span>predefined_model <span class="op">=</span> <span class="st">"ancova_cont_2arms"</span><span class="op">)</span></span>
+<span><span class="va">model_ancova</span><span class="op">@</span><span class="va">parameter_names_brms</span></span></code></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "b_Intercept" "b_covariate" "b_arm2"     </code></pre>
+</div>
+</div>
+</section><section class="level2" data-number="2.2"><h3 data-number="2.2" id="design">
+<span class="header-section-number">2.2</span> Design<a class="anchor" aria-label="anchor" href="#design"></a>
 </h3>
 <p>Find possible target parameters in the model.</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">model_ancova</span><span class="op">@</span><span class="va">parameter_names_brms</span></span>
-<span><span class="co">#&gt; [1] "b_Intercept" "b_covariate" "b_arm2"</span></span></code></pre></div>
-<p>Specify the study design with target parameter, thresholds for
-success and futility, and significance levels for frequentist-like
-power.</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="cell">
+<div class="sourceCode cell-code" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">model_ancova</span><span class="op">@</span><span class="va">parameter_names_brms</span></span></code></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "b_Intercept" "b_covariate" "b_arm2"     </code></pre>
+</div>
+</div>
+<p>Specify the study design with target parameter, thresholds for success and futility, and significance levels for frequentist-like power.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/build_design.html">build_design</a></span><span class="op">(</span></span>
 <span>  model <span class="op">=</span> <span class="va">model_ancova</span>,</span>
 <span>  target_params <span class="op">=</span> <span class="st">"b_arm2"</span>,</span>
@@ -133,69 +149,77 @@ power.</p>
 <span>  p_sig_success <span class="op">=</span> <span class="fl">0.9</span>,</span>
 <span>  p_sig_futility <span class="op">=</span> <span class="fl">0.5</span></span>
 <span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">design</span><span class="op">)</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; S7 Object of class: 'rctbp_design'</span></span>
-<span><span class="co">#&gt; --------------------------------------------------</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; === Model Specifications ===</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Number of endpoints: 1 </span></span>
-<span><span class="co">#&gt; Endpoint types: continuous </span></span>
-<span><span class="co">#&gt; Number of arms: 2 </span></span>
-<span><span class="co">#&gt; Number of repeated measures: 0 </span></span>
-<span><span class="co">#&gt; Parameter names - simulation function: n_total, n_arms, contrasts, p_alloc, intercept, b_arm_treat, b_covariate, sigma </span></span>
-<span><span class="co">#&gt; Parameter names - brms model: b_Intercept, b_covariate, b_arm2 </span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; === Design Specifications ===</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Design name: NULL </span></span>
-<span><span class="co">#&gt; Target parameters: b_arm2 </span></span>
-<span><span class="co">#&gt; Number of interim analyses: 0 </span></span>
-<span><span class="co">#&gt; Thresholds for success: 0.1 </span></span>
-<span><span class="co">#&gt; Thresholds for futility: 0 </span></span>
-<span><span class="co">#&gt; Probability of success significance: 0.9 </span></span>
-<span><span class="co">#&gt; Probability of futility significance: 0.5 </span></span>
-<span><span class="co">#&gt; Parameter names - interim function: NULL </span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; === 'brms' Model ===</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt;  Family: gaussian </span></span>
-<span><span class="co">#&gt;   Links: mu = identity </span></span>
-<span><span class="co">#&gt; Formula: outcome ~ 1 + covariate + arm </span></span>
-<span><span class="co">#&gt;    Data: mock_data_ancova (Number of observations: 20) </span></span>
-<span><span class="co">#&gt;   Draws: 1 chains, each with iter = 500; warmup = 250; thin = 1;</span></span>
-<span><span class="co">#&gt;          total post-warmup draws = 250</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Regression Coefficients:</span></span>
-<span><span class="co">#&gt;           Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS</span></span>
-<span><span class="co">#&gt; Intercept    -0.27      0.35    -0.94     0.36 1.00      269      140</span></span>
-<span><span class="co">#&gt; covariate     0.07      0.26    -0.43     0.56 1.00      257      237</span></span>
-<span><span class="co">#&gt; arm2          0.84      0.49    -0.13     1.75 1.00      314      202</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Further Distributional Parameters:</span></span>
-<span><span class="co">#&gt;       Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS</span></span>
-<span><span class="co">#&gt; sigma     1.15      0.22     0.82     1.69 1.00      216      194</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS</span></span>
-<span><span class="co">#&gt; and Tail_ESS are effective sample size measures, and Rhat is the potential</span></span>
-<span><span class="co">#&gt; scale reduction factor on split chains (at convergence, Rhat = 1).</span></span></code></pre></div>
-<div class="section level4">
-<h4 id="conditions">Conditions<a class="anchor" aria-label="anchor" href="#conditions"></a>
+<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">design</span><span class="op">)</span></span></code></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+S7 Object of class: 'rctbp_design'
+--------------------------------------------------
+
+=== Model Specifications ===
+
+Number of endpoints: 1
+Endpoint types: continuous
+Number of arms: 2
+Number of repeated measures: 0
+Parameter names - simulation function: n_total, n_arms, contrasts, p_alloc, intercept, b_arm_treat, b_covariate, sigma
+Parameter names - brms model: b_Intercept, b_covariate, b_arm2
+
+=== Design Specifications ===
+
+Design name: NULL
+Target parameters: b_arm2
+Number of interim analyses: 0
+Thresholds for success: 0.1
+Thresholds for futility: 0
+Probability of success significance: 0.9
+Probability of futility significance: 0.5
+Parameter names - interim function: NULL
+
+=== 'brms' Model ===
+
+ Family: gaussian
+  Links: mu = identity
+Formula: outcome ~ 1 + covariate + arm
+   Data: mock_data_ancova (Number of observations: 20)
+  Draws: 1 chains, each with iter = 500; warmup = 250; thin = 1;
+         total post-warmup draws = 250
+
+Regression Coefficients:
+          Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
+Intercept     0.09      0.29    -0.47     0.64 1.03      317      151
+covariate     0.02      0.33    -0.57     0.69 1.01      177      147
+arm2         -0.24      0.36    -1.00     0.49 1.00      418      276
+
+Further Distributional Parameters:
+      Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
+sigma     1.08      0.19     0.83     1.50 1.00      148      173
+
+Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
+and Tail_ESS are effective sample size measures, and Rhat is the potential
+scale reduction factor on split chains (at convergence, Rhat = 1).</code></pre>
+</div>
+</div>
+<section class="level3" data-number="2.2.1"><h4 data-number="2.2.1" id="conditions">
+<span class="header-section-number">2.2.1</span> Conditions<a class="anchor" aria-label="anchor" href="#conditions"></a>
 </h4>
 <p>Find parameters that need user specification for the design.</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/required_fn_args.html">required_fn_args</a></span><span class="op">(</span><span class="va">design</span><span class="op">)</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Arguments that need user specification.</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Simulation function:</span></span>
-<span><span class="co">#&gt; n_total, b_arm_treat, b_covariate </span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Interim function:</span></span>
-<span><span class="co">#&gt; </span></span></code></pre></div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb10"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/required_fn_args.html">required_fn_args</a></span><span class="op">(</span><span class="va">design</span><span class="op">)</span></span></code></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+Arguments that need user specification.
+
+Simulation function:
+n_total, b_arm_treat, b_covariate
+
+Interim function:
+ </code></pre>
+</div>
+</div>
 <p>Specify conditions.</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="cell">
+<div class="sourceCode cell-code" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">conditions</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/build_conditions.html">build_conditions</a></span><span class="op">(</span></span>
 <span>  design <span class="op">=</span> <span class="va">design</span>,</span>
 <span>  condition_values <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
@@ -209,33 +233,34 @@ power.</p>
 <span>    b_covariate <span class="op">=</span> <span class="fl">0</span></span>
 <span>  <span class="op">)</span></span>
 <span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">conditions</span>, n <span class="op">=</span> <span class="fl">100</span><span class="op">)</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; S7 Object of class: 'rctbp_conditions'</span></span>
-<span><span class="co">#&gt; --------------------------------------------------</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Number of conditions: 6 </span></span>
-<span><span class="co">#&gt; Number of varying parameters: 2 </span></span>
-<span><span class="co">#&gt; Number of static parameters: 1 </span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Condition Grid:</span></span>
-<span><span class="co">#&gt; # A tibble: 6 × 3</span></span>
-<span><span class="co">#&gt;   id_cond n_total b_arm_treat</span></span>
-<span><span class="co">#&gt;     &lt;int&gt;   &lt;dbl&gt;       &lt;dbl&gt;</span></span>
-<span><span class="co">#&gt; 1       1      80         0  </span></span>
-<span><span class="co">#&gt; 2       2      80         0.3</span></span>
-<span><span class="co">#&gt; 3       3     120         0  </span></span>
-<span><span class="co">#&gt; 4       4     120         0.3</span></span>
-<span><span class="co">#&gt; 5       5     160         0  </span></span>
-<span><span class="co">#&gt; 6       6     160         0.3</span></span></code></pre></div>
+<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">conditions</span>, n <span class="op">=</span> <span class="fl">100</span><span class="op">)</span></span></code></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+S7 Object of class: 'rctbp_conditions'
+--------------------------------------------------
+
+Number of conditions: 6
+Number of varying parameters: 2
+Number of static parameters: 1
+
+Condition Grid:
+# A tibble: 6 × 3
+  id_cond n_total b_arm_treat
+    &lt;int&gt;   &lt;dbl&gt;       &lt;dbl&gt;
+1       1      80         0
+2       2      80         0.3
+3       3     120         0
+4       4     120         0.3
+5       5     160         0
+6       6     160         0.3</code></pre>
 </div>
 </div>
-<div class="section level3">
-<h3 id="run-power-analysis">Run Power Analysis<a class="anchor" aria-label="anchor" href="#run-power-analysis"></a>
+</section></section><section class="level2" data-number="2.3"><h3 data-number="2.3" id="run-power-analysis">
+<span class="header-section-number">2.3</span> Run Power Analysis<a class="anchor" aria-label="anchor" href="#run-power-analysis"></a>
 </h3>
-<p>Run the analysis using the <code>power_analysis</code> function. This
-will run the model for each condition and return the results.</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<p>Run the analysis using the <code>power_analysis</code> function. This will run the model for each condition and return the results.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">power</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/power_analysis.html">power_analysis</a></span><span class="op">(</span></span>
 <span>  conditions <span class="op">=</span> <span class="va">conditions</span>,</span>
 <span>  n_cores <span class="op">=</span> <span class="va">n_cores</span>,</span>
@@ -243,59 +268,45 @@ will run the model for each condition and return the results.</p>
 <span>  verbose <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  brms_args <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
 <span>    chains <span class="op">=</span> <span class="fl">4</span>,</span>
-<span>    <span class="co"># reduced number of iterations for vignette</span></span>
 <span>    iter <span class="op">=</span> <span class="fl">300</span>,</span>
 <span>    warmup <span class="op">=</span> <span class="fl">100</span></span>
 <span>  <span class="op">)</span></span>
-<span><span class="op">)</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; === Power Analysis ===</span></span>
-<span><span class="co">#&gt; Conditions:</span></span>
-<span><span class="co">#&gt; # A tibble: 6 × 3</span></span>
-<span><span class="co">#&gt;   id_cond n_total b_arm_treat</span></span>
-<span><span class="co">#&gt;     &lt;int&gt;   &lt;dbl&gt;       &lt;dbl&gt;</span></span>
-<span><span class="co">#&gt; 1       1      80         0  </span></span>
-<span><span class="co">#&gt; 2       2      80         0.3</span></span>
-<span><span class="co">#&gt; 3       3     120         0  </span></span>
-<span><span class="co">#&gt; 4       4     120         0.3</span></span>
-<span><span class="co">#&gt; 5       5     160         0  </span></span>
-<span><span class="co">#&gt; 6       6     160         0.3</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Conditions to test: 6 </span></span>
-<span><span class="co">#&gt; Simulations per condition: 1 </span></span>
-<span><span class="co">#&gt; Total simulations: 6 </span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Parallel execution using 4 cores:</span></span>
-<span><span class="co">#&gt; Warning: Bulk Effective Samples Size (ESS) is too low, indicating posterior means and medians may be unreliable.</span></span>
-<span><span class="co">#&gt; Running the chains for more iterations may help. See</span></span>
-<span><span class="co">#&gt; https://mc-stan.org/misc/warnings.html#bulk-ess</span></span>
-<span><span class="co">#&gt; Warning: Tail Effective Samples Size (ESS) is too low, indicating posterior variances and tail quantiles may be unreliable.</span></span>
-<span><span class="co">#&gt; Running the chains for more iterations may help. See</span></span>
-<span><span class="co">#&gt; https://mc-stan.org/misc/warnings.html#tail-ess</span></span>
-<span><span class="co">#&gt; Warning: Bulk Effective Samples Size (ESS) is too low, indicating posterior means and medians may be unreliable.</span></span>
-<span><span class="co">#&gt; Running the chains for more iterations may help. See</span></span>
-<span><span class="co">#&gt; https://mc-stan.org/misc/warnings.html#bulk-ess</span></span>
-<span><span class="co">#&gt; Warning: Bulk Effective Samples Size (ESS) is too low, indicating posterior means and medians may be unreliable.</span></span>
-<span><span class="co">#&gt; Running the chains for more iterations may help. See</span></span>
-<span><span class="co">#&gt; https://mc-stan.org/misc/warnings.html#bulk-ess</span></span>
-<span><span class="co">#&gt; Warning: Bulk Effective Samples Size (ESS) is too low, indicating posterior means and medians may be unreliable.</span></span>
-<span><span class="co">#&gt; Running the chains for more iterations may help. See</span></span>
-<span><span class="co">#&gt; https://mc-stan.org/misc/warnings.html#bulk-ess</span></span>
-<span><span class="co">#&gt; Warning: Bulk Effective Samples Size (ESS) is too low, indicating posterior means and medians may be unreliable.</span></span>
-<span><span class="co">#&gt; Running the chains for more iterations may help. See</span></span>
-<span><span class="co">#&gt; https://mc-stan.org/misc/warnings.html#bulk-ess</span></span>
-<span><span class="co">#&gt; Combined results dimensions: 6 18 </span></span>
-<span><span class="co">#&gt; Column names: parameter, threshold_success, threshold_futility, success_prob, futility_prob, power_success, power_futility, median, mad, mean, sd, rhat, ess_bulk, ess_tail, id_sim, id_cond, converged, error </span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Total analysis time: 5.88 minutes</span></span></code></pre></div>
+<span><span class="op">)</span></span></code></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+=== Power Analysis ===
+Conditions:
+# A tibble: 6 × 3
+  id_cond n_total b_arm_treat
+    &lt;int&gt;   &lt;dbl&gt;       &lt;dbl&gt;
+1       1      80         0
+2       2      80         0.3
+3       3     120         0
+4       4     120         0.3
+5       5     160         0
+6       6     160         0.3
+
+Conditions to test: 6
+Simulations per condition: 500
+Total simulations: 3000 </code></pre>
 </div>
-<div class="section level3">
-<h3 id="power-for-effect-of-0-3">Power for Effect of 0.3<a class="anchor" aria-label="anchor" href="#power-for-effect-of-0-3"></a>
+<div class="cell-output cell-output-stdout">
+<pre><code>Functions exported from package namespace
+
+Combined results dimensions: 3000 18
+Column names: parameter, threshold_success, threshold_futility, success_prob, futility_prob, power_success, power_futility, median, mad, mean, sd, rhat, ess_bulk, ess_tail, id_sim, id_cond, converged, error
+
+Total analysis time: 2.96 minutes</code></pre>
+</div>
+</div>
+</section><section class="level2" data-number="2.4"><h3 data-number="2.4" id="power-for-effect-of-0-3">
+<span class="header-section-number">2.4</span> Power for Effect of 0.3<a class="anchor" aria-label="anchor" href="#power-for-effect-of-0-3"></a>
 </h3>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<div class="cell">
+<div class="sourceCode cell-code" id="cb17"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">power</span><span class="op">@</span><span class="va">summarized_results</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">b_arm_treat</span> <span class="op">!=</span> <span class="fl">0</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/select.html" class="external-link">select</a></span><span class="op">(</span></span>
+<span>  <span class="fu">select</span><span class="op">(</span></span>
 <span>    <span class="va">n_total</span>,</span>
 <span>    <span class="va">b_arm_treat</span>,</span>
 <span>    <span class="va">prob_success</span>,</span>
@@ -309,150 +320,70 @@ will run the model for each condition and return the results.</p>
 <span>  <span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/arrange.html" class="external-link">arrange</a></span><span class="op">(</span><span class="fu">desc</span><span class="op">(</span><span class="va">b_arm_treat</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu">kableExtra</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span>digits <span class="op">=</span> <span class="fl">3</span>, format <span class="op">=</span> <span class="st">"html"</span><span class="op">)</span></span></code></pre></div>
-<table class="table">
-<thead><tr>
-<th style="text-align:right;">
-n_total
-</th>
-<th style="text-align:right;">
-b_arm_treat
-</th>
-<th style="text-align:right;">
-prob_success
-</th>
-<th style="text-align:right;">
-prob_success_se
-</th>
-<th style="text-align:right;">
-power_success
-</th>
-<th style="text-align:right;">
-power_success_se
-</th>
-<th style="text-align:right;">
-prob_futility
-</th>
-<th style="text-align:right;">
-prob_futility_se
-</th>
-<th style="text-align:right;">
-power_futility
-</th>
-<th style="text-align:right;">
-power_futility_se
-</th>
+<div class="cell-output-display">
+<table class="table caption-top" data-quarto-postprocess="true">
+<thead><tr class="header">
+<th style="text-align: right;" data-quarto-table-cell-role="th">n_total</th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">b_arm_treat</th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">prob_success</th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">prob_success_se</th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">power_success</th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">power_success_se</th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">prob_futility</th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">prob_futility_se</th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">power_futility</th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">power_futility_se</th>
 </tr></thead>
 <tbody>
-<tr>
-<td style="text-align:right;">
-80
-</td>
-<td style="text-align:right;">
-0.3
-</td>
-<td style="text-align:right;">
-0.807
-</td>
-<td style="text-align:right;">
-NA
-</td>
-<td style="text-align:right;">
-0
-</td>
-<td style="text-align:right;">
-0
-</td>
-<td style="text-align:right;">
-0.104
-</td>
-<td style="text-align:right;">
-NA
-</td>
-<td style="text-align:right;">
-0
-</td>
-<td style="text-align:right;">
-0
-</td>
+<tr class="odd">
+<td style="text-align: right;">80</td>
+<td style="text-align: right;">0.3</td>
+<td style="text-align: right;">0.725</td>
+<td style="text-align: right;">0.011</td>
+<td style="text-align: right;">0.312</td>
+<td style="text-align: right;">0.021</td>
+<td style="text-align: right;">0.178</td>
+<td style="text-align: right;">0.009</td>
+<td style="text-align: right;">0.088</td>
+<td style="text-align: right;">0.013</td>
 </tr>
-<tr>
-<td style="text-align:right;">
-120
-</td>
-<td style="text-align:right;">
-0.3
-</td>
-<td style="text-align:right;">
-1.000
-</td>
-<td style="text-align:right;">
-NA
-</td>
-<td style="text-align:right;">
-1
-</td>
-<td style="text-align:right;">
-0
-</td>
-<td style="text-align:right;">
-0.000
-</td>
-<td style="text-align:right;">
-NA
-</td>
-<td style="text-align:right;">
-0
-</td>
-<td style="text-align:right;">
-0
-</td>
+<tr class="even">
+<td style="text-align: right;">120</td>
+<td style="text-align: right;">0.3</td>
+<td style="text-align: right;">0.784</td>
+<td style="text-align: right;">0.010</td>
+<td style="text-align: right;">0.462</td>
+<td style="text-align: right;">0.022</td>
+<td style="text-align: right;">0.122</td>
+<td style="text-align: right;">0.008</td>
+<td style="text-align: right;">0.044</td>
+<td style="text-align: right;">0.009</td>
 </tr>
-<tr>
-<td style="text-align:right;">
-160
-</td>
-<td style="text-align:right;">
-0.3
-</td>
-<td style="text-align:right;">
-0.985
-</td>
-<td style="text-align:right;">
-NA
-</td>
-<td style="text-align:right;">
-1
-</td>
-<td style="text-align:right;">
-0
-</td>
-<td style="text-align:right;">
-0.004
-</td>
-<td style="text-align:right;">
-NA
-</td>
-<td style="text-align:right;">
-0
-</td>
-<td style="text-align:right;">
-0
-</td>
+<tr class="odd">
+<td style="text-align: right;">160</td>
+<td style="text-align: right;">0.3</td>
+<td style="text-align: right;">0.789</td>
+<td style="text-align: right;">0.010</td>
+<td style="text-align: right;">0.436</td>
+<td style="text-align: right;">0.022</td>
+<td style="text-align: right;">0.104</td>
+<td style="text-align: right;">0.007</td>
+<td style="text-align: right;">0.036</td>
+<td style="text-align: right;">0.008</td>
 </tr>
 </tbody>
 </table>
 </div>
-<div class="section level3">
-<h3 id="alpha-error-rate-for-null-effect">Alpha Error Rate for Null Effect<a class="anchor" aria-label="anchor" href="#alpha-error-rate-for-null-effect"></a>
+</div>
+</section><section class="level2" data-number="2.5"><h3 data-number="2.5" id="alpha-error-rate-for-null-effect">
+<span class="header-section-number">2.5</span> Alpha Error Rate for Null Effect<a class="anchor" aria-label="anchor" href="#alpha-error-rate-for-null-effect"></a>
 </h3>
-<p>The power for success indicates the alpha error rate for the null
-effect (b_arm_treat = 0). This is the probability of rejecting the null
-hypothesis when it is true, which should be close to the significance
-level (0.05) if the design is well specified.</p>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">power</span><span class="op">@</span><span class="va">summarized_results</span> <span class="op">|&gt;</span></span>
+<p>The power for success indicates the alpha error rate for the null effect (b_arm_treat = 0). This is the probability of rejecting the null hypothesis when it is true, which should be close to the significance level (0.05) if the design is well specified.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb18"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">power</span><span class="op">@</span><span class="va">summarized_results</span> <span class="op">|&gt;</span> </span>
 <span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">b_arm_treat</span> <span class="op">==</span> <span class="fl">0</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/select.html" class="external-link">select</a></span><span class="op">(</span></span>
+<span>  <span class="fu">select</span><span class="op">(</span></span>
 <span>    <span class="va">n_total</span>,</span>
 <span>    <span class="va">b_arm_treat</span>,</span>
 <span>    <span class="va">prob_success</span>,</span>
@@ -461,217 +392,222 @@ level (0.05) if the design is well specified.</p>
 <span>    <span class="va">power_success_se</span>,</span>
 <span>    <span class="va">power_futility</span>,</span>
 <span>    <span class="va">power_futility_se</span>,</span>
-<span>    <span class="va">prob_futility</span>,</span>
-<span>    <span class="va">prob_futility_se</span></span>
+<span>    <span class="va">prob_futility</span>, </span>
+<span>    <span class="va">prob_futility_se</span> </span>
 <span>  <span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/arrange.html" class="external-link">arrange</a></span><span class="op">(</span><span class="fu">desc</span><span class="op">(</span><span class="va">b_arm_treat</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu">kableExtra</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span>digits <span class="op">=</span> <span class="fl">3</span>,</span>
+<span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/arrange.html" class="external-link">arrange</a></span><span class="op">(</span><span class="fu">desc</span><span class="op">(</span><span class="va">b_arm_treat</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span> </span>
+<span>  <span class="fu">kableExtra</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/knitr/man/kable.html" class="external-link">kable</a></span><span class="op">(</span>digits <span class="op">=</span> <span class="fl">3</span>, </span>
 <span>                    format <span class="op">=</span> <span class="st">"html"</span><span class="op">)</span></span></code></pre></div>
-<table class="table">
-<thead><tr>
-<th style="text-align:right;">
-n_total
-</th>
-<th style="text-align:right;">
-b_arm_treat
-</th>
-<th style="text-align:right;">
-prob_success
-</th>
-<th style="text-align:right;">
-prob_success_se
-</th>
-<th style="text-align:right;">
-power_success
-</th>
-<th style="text-align:right;">
-power_success_se
-</th>
-<th style="text-align:right;">
-power_futility
-</th>
-<th style="text-align:right;">
-power_futility_se
-</th>
-<th style="text-align:right;">
-prob_futility
-</th>
-<th style="text-align:right;">
-prob_futility_se
-</th>
+<div class="cell-output-display">
+<table class="table caption-top" data-quarto-postprocess="true">
+<thead><tr class="header">
+<th style="text-align: right;" data-quarto-table-cell-role="th">n_total</th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">b_arm_treat</th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">prob_success</th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">prob_success_se</th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">power_success</th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">power_success_se</th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">power_futility</th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">power_futility_se</th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">prob_futility</th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">prob_futility_se</th>
 </tr></thead>
 <tbody>
-<tr>
-<td style="text-align:right;">
-80
-</td>
-<td style="text-align:right;">
-0
-</td>
-<td style="text-align:right;">
-0.501
-</td>
-<td style="text-align:right;">
-NA
-</td>
-<td style="text-align:right;">
-0
-</td>
-<td style="text-align:right;">
-0
-</td>
-<td style="text-align:right;">
-0
-</td>
-<td style="text-align:right;">
-0
-</td>
-<td style="text-align:right;">
-0.336
-</td>
-<td style="text-align:right;">
-NA
-</td>
+<tr class="odd">
+<td style="text-align: right;">80</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0.371</td>
+<td style="text-align: right;">0.012</td>
+<td style="text-align: right;">0.034</td>
+<td style="text-align: right;">0.008</td>
+<td style="text-align: right;">0.498</td>
+<td style="text-align: right;">0.022</td>
+<td style="text-align: right;">0.502</td>
+<td style="text-align: right;">0.013</td>
 </tr>
-<tr>
-<td style="text-align:right;">
-120
-</td>
-<td style="text-align:right;">
-0
-</td>
-<td style="text-align:right;">
-0.131
-</td>
-<td style="text-align:right;">
-NA
-</td>
-<td style="text-align:right;">
-0
-</td>
-<td style="text-align:right;">
-0
-</td>
-<td style="text-align:right;">
-1
-</td>
-<td style="text-align:right;">
-0
-</td>
-<td style="text-align:right;">
-0.734
-</td>
-<td style="text-align:right;">
-NA
-</td>
+<tr class="even">
+<td style="text-align: right;">120</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0.354</td>
+<td style="text-align: right;">0.012</td>
+<td style="text-align: right;">0.032</td>
+<td style="text-align: right;">0.008</td>
+<td style="text-align: right;">0.474</td>
+<td style="text-align: right;">0.022</td>
+<td style="text-align: right;">0.488</td>
+<td style="text-align: right;">0.012</td>
 </tr>
-<tr>
-<td style="text-align:right;">
-160
-</td>
-<td style="text-align:right;">
-0
-</td>
-<td style="text-align:right;">
-0.341
-</td>
-<td style="text-align:right;">
-NA
-</td>
-<td style="text-align:right;">
-0
-</td>
-<td style="text-align:right;">
-0
-</td>
-<td style="text-align:right;">
-0
-</td>
-<td style="text-align:right;">
-0
-</td>
-<td style="text-align:right;">
-0.456
-</td>
-<td style="text-align:right;">
-NA
-</td>
+<tr class="odd">
+<td style="text-align: right;">160</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0.317</td>
+<td style="text-align: right;">0.012</td>
+<td style="text-align: right;">0.024</td>
+<td style="text-align: right;">0.007</td>
+<td style="text-align: right;">0.528</td>
+<td style="text-align: right;">0.022</td>
+<td style="text-align: right;">0.506</td>
+<td style="text-align: right;">0.013</td>
 </tr>
 </tbody>
 </table>
 </div>
-<div class="section level3">
-<h3 id="run-time">Run Time<a class="anchor" aria-label="anchor" href="#run-time"></a>
+</div>
+</section><section class="level2" data-number="2.6"><h3 data-number="2.6" id="run-time">
+<span class="header-section-number">2.6</span> Run Time<a class="anchor" aria-label="anchor" href="#run-time"></a>
 </h3>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<div class="cell">
+<details class="code-fold"><summary>Show the code</summary><div class="sourceCode cell-code" id="cb19"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">n_runs</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">power</span><span class="op">@</span><span class="va">conditions</span><span class="op">@</span><span class="va">conditions_grid</span><span class="op">)</span> <span class="op">*</span> <span class="va">power</span><span class="op">@</span><span class="va">n_sims</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Total run time:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">power</span><span class="op">@</span><span class="va">elapsed_time</span>,<span class="fl">1</span><span class="op">)</span>, <span class="st">"minutes for"</span>, <span class="va">n_runs</span>, <span class="st">"total simulation repetitions using"</span>, <span class="va">power</span><span class="op">@</span><span class="va">n_cores</span>, <span class="st">"cores.\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Total run time: 5.9 minutes for 6 total simulation repetitions using 4 cores.</span></span></code></pre></div>
-<hr>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Total run time:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">power</span><span class="op">@</span><span class="va">elapsed_time</span>,<span class="fl">1</span><span class="op">)</span>, <span class="st">"minutes for"</span>, <span class="va">n_runs</span>, <span class="st">"total simulation repetitions using"</span>, <span class="va">power</span><span class="op">@</span><span class="va">n_cores</span>, <span class="st">"cores.\n"</span><span class="op">)</span></span></code></pre></div>
+</details><div class="cell-output cell-output-stdout">
+<pre><code>Total run time: 3 minutes for 3000 total simulation repetitions using 14 cores.</code></pre>
 </div>
 </div>
-<div class="section level2">
-<h2 id="session-information">Session Information<a class="anchor" aria-label="anchor" href="#session-information"></a>
+<hr></section></section><section class="section level2" data-number="3"><h2 data-number="3" id="session-information">
+<span class="header-section-number">3</span> Session Information<a class="anchor" aria-label="anchor" href="#session-information"></a>
 </h2>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/sessionInfo.html" class="external-link">sessionInfo</a></span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="co">#&gt; R version 4.5.1 (2025-06-13)</span></span>
-<span><span class="co">#&gt; Platform: x86_64-pc-linux-gnu</span></span>
-<span><span class="co">#&gt; Running under: Ubuntu 24.04.3 LTS</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Matrix products: default</span></span>
-<span><span class="co">#&gt; BLAS:   /usr/lib/x86_64-linux-gnu/openblas-pthread/libblas.so.3 </span></span>
-<span><span class="co">#&gt; LAPACK: /usr/lib/x86_64-linux-gnu/openblas-pthread/libopenblasp-r0.3.26.so;  LAPACK version 3.12.0</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; locale:</span></span>
-<span><span class="co">#&gt;  [1] LC_CTYPE=C.UTF-8       LC_NUMERIC=C           LC_TIME=C.UTF-8       </span></span>
-<span><span class="co">#&gt;  [4] LC_COLLATE=C.UTF-8     LC_MONETARY=C.UTF-8    LC_MESSAGES=C.UTF-8   </span></span>
-<span><span class="co">#&gt;  [7] LC_PAPER=C.UTF-8       LC_NAME=C              LC_ADDRESS=C          </span></span>
-<span><span class="co">#&gt; [10] LC_TELEPHONE=C         LC_MEASUREMENT=C.UTF-8 LC_IDENTIFICATION=C   </span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; time zone: UTC</span></span>
-<span><span class="co">#&gt; tzcode source: system (glibc)</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; attached base packages:</span></span>
-<span><span class="co">#&gt; [1] stats     graphics  grDevices utils     datasets  methods   base     </span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; other attached packages:</span></span>
-<span><span class="co">#&gt; [1] rctbayespower_0.0.0.9000 kableExtra_1.4.0         dplyr_1.1.4             </span></span>
-<span><span class="co">#&gt; [4] rmarkdown_2.30          </span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; loaded via a namespace (and not attached):</span></span>
-<span><span class="co">#&gt;  [1] gtable_0.3.6          tensorA_0.36.2.1      QuickJSR_1.8.1       </span></span>
-<span><span class="co">#&gt;  [4] xfun_0.53             ggplot2_4.0.0         htmlwidgets_1.6.4    </span></span>
-<span><span class="co">#&gt;  [7] processx_3.8.6        inline_0.3.21         lattice_0.22-7       </span></span>
-<span><span class="co">#&gt; [10] callr_3.7.6           ps_1.9.1              vctrs_0.6.5          </span></span>
-<span><span class="co">#&gt; [13] tools_4.5.1           generics_0.1.4        stats4_4.5.1         </span></span>
-<span><span class="co">#&gt; [16] parallel_4.5.1        tibble_3.3.0          pkgconfig_2.0.3      </span></span>
-<span><span class="co">#&gt; [19] brms_2.23.0           Matrix_1.7-3          data.table_1.17.8    </span></span>
-<span><span class="co">#&gt; [22] checkmate_2.3.3       RColorBrewer_1.1-3    S7_0.2.0             </span></span>
-<span><span class="co">#&gt; [25] distributional_0.5.0  RcppParallel_5.1.11-1 lifecycle_1.0.4      </span></span>
-<span><span class="co">#&gt; [28] compiler_4.5.1        farver_2.1.2          stringr_1.5.2        </span></span>
-<span><span class="co">#&gt; [31] textshaping_1.0.4     Brobdingnag_1.2-9     codetools_0.2-20     </span></span>
-<span><span class="co">#&gt; [34] htmltools_0.5.8.1     bayesplot_1.14.0      yaml_2.3.10          </span></span>
-<span><span class="co">#&gt; [37] lazyeval_0.2.2        plotly_4.11.0         pillar_1.11.1        </span></span>
-<span><span class="co">#&gt; [40] tidyr_1.3.1           StanHeaders_2.32.10   bridgesampling_1.1-2 </span></span>
-<span><span class="co">#&gt; [43] abind_1.4-8           nlme_3.1-168          posterior_1.6.1      </span></span>
-<span><span class="co">#&gt; [46] rstan_2.32.7          tidyselect_1.2.1      digest_0.6.37        </span></span>
-<span><span class="co">#&gt; [49] mvtnorm_1.3-3         stringi_1.8.7         reshape2_1.4.4       </span></span>
-<span><span class="co">#&gt; [52] purrr_1.1.0           fastmap_1.2.0         grid_4.5.1           </span></span>
-<span><span class="co">#&gt; [55] cli_3.6.5             magrittr_2.0.4        loo_2.8.0            </span></span>
-<span><span class="co">#&gt; [58] pkgbuild_1.4.8        withr_3.0.2           scales_1.4.0         </span></span>
-<span><span class="co">#&gt; [61] backports_1.5.0       httr_1.4.7            matrixStats_1.5.0    </span></span>
-<span><span class="co">#&gt; [64] gridExtra_2.3         coda_0.19-4.1         evaluate_1.0.5       </span></span>
-<span><span class="co">#&gt; [67] knitr_1.50            pwr_1.3-0             viridisLite_0.4.2    </span></span>
-<span><span class="co">#&gt; [70] rstantools_2.5.0      rlang_1.1.6           Rcpp_1.1.0           </span></span>
-<span><span class="co">#&gt; [73] glue_1.8.0            xml2_1.4.0            svglite_2.2.2        </span></span>
-<span><span class="co">#&gt; [76] rstudioapi_0.17.1     jsonlite_2.0.0        plyr_1.8.9           </span></span>
-<span><span class="co">#&gt; [79] R6_2.6.1              systemfonts_1.3.1</span></span></code></pre></div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb21"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/sessionInfo.html" class="external-link">sessionInfo</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>R version 4.5.1 (2025-06-13 ucrt)
+Platform: x86_64-w64-mingw32/x64
+Running under: Windows 11 x64 (build 26200)
+
+Matrix products: default
+  LAPACK version 3.12.1
+
+locale:
+[1] LC_COLLATE=German_Germany.utf8  LC_CTYPE=German_Germany.utf8
+[3] LC_MONETARY=German_Germany.utf8 LC_NUMERIC=C
+[5] LC_TIME=German_Germany.utf8
+
+time zone: Europe/Berlin
+tzcode source: internal
+
+attached base packages:
+[1] stats     graphics  grDevices utils     datasets  methods   base
+
+other attached packages:
+[1] rctbayespower_0.0.0.9000 kableExtra_1.4.0         dplyr_1.1.4
+
+loaded via a namespace (and not attached):
+ [1] gtable_0.3.6          tensorA_0.36.2.1      QuickJSR_1.8.1
+ [4] xfun_0.53             ggplot2_4.0.0         htmlwidgets_1.6.4
+ [7] inline_0.3.21         lattice_0.22-7        vctrs_0.6.5
+[10] tools_4.5.1           generics_0.1.4        stats4_4.5.1
+[13] parallel_4.5.1        tibble_3.3.0          pkgconfig_2.0.3
+[16] brms_2.23.0           Matrix_1.7-4          data.table_1.17.8
+[19] checkmate_2.3.3       RColorBrewer_1.1-3    S7_0.2.0
+[22] distributional_0.5.0  RcppParallel_5.1.11-1 lifecycle_1.0.4
+[25] compiler_4.5.1        farver_2.1.2          stringr_1.5.2
+[28] textshaping_1.0.4     Brobdingnag_1.2-9     codetools_0.2-20
+[31] htmltools_0.5.8.1     bayesplot_1.14.0      yaml_2.3.10
+[34] lazyeval_0.2.2        plotly_4.11.0         pillar_1.11.1
+[37] tidyr_1.3.1           StanHeaders_2.32.10   bridgesampling_1.1-2
+[40] abind_1.4-8           nlme_3.1-168          posterior_1.6.1
+[43] rstan_2.32.7          tidyselect_1.2.1      digest_0.6.37
+[46] mvtnorm_1.3-3         stringi_1.8.7         reshape2_1.4.4
+[49] purrr_1.0.4           fastmap_1.2.0         grid_4.5.1
+[52] cli_3.6.5             magrittr_2.0.3        loo_2.8.0
+[55] pkgbuild_1.4.8        withr_3.0.2           scales_1.4.0
+[58] backports_1.5.0       rmarkdown_2.30        httr_1.4.7
+[61] matrixStats_1.5.0     gridExtra_2.3         pbapply_1.7-4
+[64] coda_0.19-4.1         evaluate_1.0.5        knitr_1.50
+[67] pwr_1.3-0             viridisLite_0.4.2     rstantools_2.5.0
+[70] rlang_1.1.6           Rcpp_1.1.0            glue_1.8.0
+[73] xml2_1.4.0            svglite_2.2.2         rstudioapi_0.17.1
+[76] jsonlite_2.0.0        plyr_1.8.9            R6_2.6.1
+[79] systemfonts_1.3.1    </code></pre>
 </div>
-  </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
+</div>
+</section><script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'light-border',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config);
+    }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script></main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>
 </div>
-
 
 
     <footer><div class="pkgdown-footer-left">
