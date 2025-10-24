@@ -1,0 +1,557 @@
+<html lang="en"><head>
+<script src="01-introduction_files/libs/quarto-html/popper.min.js"></script>
+<script src="01-introduction_files/libs/quarto-html/tippy.umd.min.js"></script>
+<link href="01-introduction_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="01-introduction_files/libs/quarto-html/light-border.css" rel="stylesheet"><title>Getting Started with ‘rctbayespower’</title>
+  <!-- Needed for testing but not used in final output -->
+  <style>
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    ul.task-list{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+      vertical-align: middle;
+    }
+    /* CSS for syntax highlighting */
+    html { -webkit-text-size-adjust: 100%; }
+    pre > code.sourceCode { white-space: pre; position: relative; }
+    pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+    pre > code.sourceCode > span:empty { height: 1.2em; }
+    .sourceCode { overflow: visible; }
+    code.sourceCode > span { color: inherit; text-decoration: inherit; }
+    div.sourceCode { margin: 1em 0; }
+    pre.sourceCode { margin: 0; }
+    @media screen {
+    div.sourceCode { overflow: auto; }
+    }
+    @media print {
+    pre > code.sourceCode { white-space: pre-wrap; }
+    pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+    }
+    pre.numberSource code
+      { counter-reset: source-line 0; }
+    pre.numberSource code > span
+      { position: relative; left: -4em; counter-increment: source-line; }
+    pre.numberSource code > span > a:first-child::before
+      { content: counter(source-line);
+        position: relative; left: -1em; text-align: right; vertical-align: baseline;
+        border: none; display: inline-block;
+        -webkit-touch-callout: none; -webkit-user-select: none;
+        -khtml-user-select: none; -moz-user-select: none;
+        -ms-user-select: none; user-select: none;
+        padding: 0 4px; width: 4em;
+      }
+    pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+    div.sourceCode
+      {   }
+    @media screen {
+    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="includes-before">
+</div>
+
+<div class="meta">
+  <h1>Getting Started with ‘rctbayespower’</h1>
+
+
+  <p class="author">Matthias Kloft</p>
+
+  <p class="date">2025-10-24</p>
+
+
+</div>
+
+<main>
+<p>Setup:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Set CRAN mirror</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">options</span>(<span class="at">repos =</span> <span class="fu">c</span>(<span class="at">CRAN =</span> <span class="st">"https://cloud.r-project.org/"</span>))</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Check and install required packages</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>packages <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"dplyr"</span>, <span class="st">"kableExtra"</span>, <span class="st">"pander"</span>)</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="fu">install.packages</span>(<span class="fu">setdiff</span>(packages, <span class="fu">rownames</span>(<span class="fu">installed.packages</span>())))</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="fu">invisible</span>(<span class="fu">lapply</span>(packages, require, <span class="at">character.only =</span> <span class="cn">TRUE</span>))</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(rctbayespower)</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="co"># Set number of cores and simulations:</span></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>n_cores <span class="ot">&lt;-</span> parallel<span class="sc">::</span><span class="fu">detectCores</span>() <span class="sc">-</span> <span class="dv">2</span></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>n_sims <span class="ot">&lt;-</span> <span class="dv">500</span></span></code></pre></div>
+</div>
+<hr>
+<section id="introduction" class="level1" data-number="1">
+<h1 data-number="1"><span class="header-section-number">1</span> Introduction</h1>
+<p>The <code>rctbayespower</code> package provides tools for conducting Bayesian power analysis for randomized controlled trials (RCTs) using the <code>brms</code> package and Stan.</p>
+</section>
+<section id="basic-power-analysis-using-ancova-design" class="level1" data-number="2">
+<h1 data-number="2"><span class="header-section-number">2</span> Basic Power Analysis Using ANCOVA Design</h1>
+<section id="model" class="level2" data-number="2.1">
+<h2 data-number="2.1"><span class="header-section-number">2.1</span> Model</h2>
+<p>Show predefined models available in the package:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">list_predefined_models</span>()</span></code></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "ancova_cont_2arms" "ancova_cont_3arms"</code></pre>
+</div>
+</div>
+<p>Get the predefined ANCOVA model for continuous outcomes with two arms:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>model_ancova <span class="ot">&lt;-</span> <span class="fu">build_model</span>(<span class="at">predefined_model =</span> <span class="st">"ancova_cont_2arms"</span>)</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>model_ancova<span class="sc">@</span>parameter_names_brms</span></code></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "b_Intercept" "b_covariate" "b_arm2"     </code></pre>
+</div>
+</div>
+</section>
+<section id="design" class="level2" data-number="2.2">
+<h2 data-number="2.2"><span class="header-section-number">2.2</span> Design</h2>
+<p>Find possible target parameters in the model.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>model_ancova<span class="sc">@</span>parameter_names_brms</span></code></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "b_Intercept" "b_covariate" "b_arm2"     </code></pre>
+</div>
+</div>
+<p>Specify the study design with target parameter, thresholds for success and futility, and significance levels for frequentist-like power.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>design <span class="ot">&lt;-</span> <span class="fu">build_design</span>(</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">model =</span> model_ancova,</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">target_params =</span> <span class="st">"b_arm2"</span>,</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">thresholds_success =</span> <span class="fl">0.1</span>,</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">thresholds_futility =</span> <span class="dv">0</span>,</span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">p_sig_success =</span> <span class="fl">0.9</span>,</span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">p_sig_futility =</span> <span class="fl">0.5</span></span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(design)</span></code></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+S7 Object of class: 'rctbp_design'
+--------------------------------------------------
+
+=== Model Specifications ===
+
+Number of endpoints: 1 
+Endpoint types: continuous 
+Number of arms: 2 
+Number of repeated measures: 0 
+Parameter names - simulation function: n_total, n_arms, contrasts, p_alloc, intercept, b_arm_treat, b_covariate, sigma 
+Parameter names - brms model: b_Intercept, b_covariate, b_arm2 
+
+=== Design Specifications ===
+
+Design name: NULL 
+Target parameters: b_arm2 
+Number of interim analyses: 0 
+Thresholds for success: 0.1 
+Thresholds for futility: 0 
+Probability of success significance: 0.9 
+Probability of futility significance: 0.5 
+Parameter names - interim function: NULL 
+
+=== 'brms' Model ===
+
+ Family: gaussian 
+  Links: mu = identity 
+Formula: outcome ~ 1 + covariate + arm 
+   Data: mock_data_ancova (Number of observations: 20) 
+  Draws: 1 chains, each with iter = 500; warmup = 250; thin = 1;
+         total post-warmup draws = 250
+
+Regression Coefficients:
+          Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
+Intercept     0.09      0.29    -0.47     0.64 1.03      317      151
+covariate     0.02      0.33    -0.57     0.69 1.01      177      147
+arm2         -0.24      0.36    -1.00     0.49 1.00      418      276
+
+Further Distributional Parameters:
+      Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
+sigma     1.08      0.19     0.83     1.50 1.00      148      173
+
+Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
+and Tail_ESS are effective sample size measures, and Rhat is the potential
+scale reduction factor on split chains (at convergence, Rhat = 1).</code></pre>
+</div>
+</div>
+<section id="conditions" class="level3" data-number="2.2.1">
+<h3 data-number="2.2.1"><span class="header-section-number">2.2.1</span> Conditions</h3>
+<p>Find parameters that need user specification for the design.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="fu">required_fn_args</span>(design)</span></code></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+Arguments that need user specification.
+
+Simulation function:
+n_total, b_arm_treat, b_covariate 
+
+Interim function:
+ </code></pre>
+</div>
+</div>
+<p>Specify conditions.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>conditions <span class="ot">&lt;-</span> <span class="fu">build_conditions</span>(</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">design =</span> design,</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">condition_values =</span> <span class="fu">list</span>(</span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>    <span class="co"># two sample sizes</span></span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">n_total =</span> <span class="fu">seq</span>(<span class="dv">80</span>, <span class="dv">160</span>, <span class="at">by =</span> <span class="dv">40</span>),</span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>    <span class="co"># two effect sizes</span></span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">b_arm_treat =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="fl">0.3</span>)</span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>  ),</span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">static_values =</span> <span class="fu">list</span>(</span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a>    <span class="co"># baseline effect</span></span>
+<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a>    <span class="at">b_covariate =</span> <span class="dv">0</span></span>
+<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb12-14"><a href="#cb12-14" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(conditions, <span class="at">n =</span> <span class="dv">100</span>)</span></code></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+S7 Object of class: 'rctbp_conditions'
+--------------------------------------------------
+
+Number of conditions: 6 
+Number of varying parameters: 2 
+Number of static parameters: 1 
+
+Condition Grid:
+# A tibble: 6 × 3
+  id_cond n_total b_arm_treat
+    &lt;int&gt;   &lt;dbl&gt;       &lt;dbl&gt;
+1       1      80         0  
+2       2      80         0.3
+3       3     120         0  
+4       4     120         0.3
+5       5     160         0  
+6       6     160         0.3</code></pre>
+</div>
+</div>
+</section>
+</section>
+<section id="run-power-analysis" class="level2" data-number="2.3">
+<h2 data-number="2.3"><span class="header-section-number">2.3</span> Run Power Analysis</h2>
+<p>Run the analysis using the <code>power_analysis</code> function. This will run the model for each condition and return the results.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>power <span class="ot">&lt;-</span> <span class="fu">power_analysis</span>(</span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">conditions =</span> conditions,</span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">n_cores =</span> n_cores,</span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">n_sims =</span> n_sims,</span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">verbose =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">brms_args =</span> <span class="fu">list</span>(</span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">chains =</span> <span class="dv">4</span>,</span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">iter =</span> <span class="dv">300</span>,</span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">warmup =</span> <span class="dv">100</span></span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+=== Power Analysis ===
+Conditions:
+# A tibble: 6 × 3
+  id_cond n_total b_arm_treat
+    &lt;int&gt;   &lt;dbl&gt;       &lt;dbl&gt;
+1       1      80         0  
+2       2      80         0.3
+3       3     120         0  
+4       4     120         0.3
+5       5     160         0  
+6       6     160         0.3
+
+Conditions to test: 6 
+Simulations per condition: 500 
+Total simulations: 3000 </code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Functions exported from package namespace
+
+Combined results dimensions: 3000 18 
+Column names: parameter, threshold_success, threshold_futility, success_prob, futility_prob, power_success, power_futility, median, mad, mean, sd, rhat, ess_bulk, ess_tail, id_sim, id_cond, converged, error 
+
+Total analysis time: 2.95 minutes</code></pre>
+</div>
+</div>
+</section>
+<section id="power-for-effect-of-0.3" class="level2" data-number="2.4">
+<h2 data-number="2.4"><span class="header-section-number">2.4</span> Power for Effect of 0.3</h2>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>power<span class="sc">@</span>summarized_results <span class="sc">|&gt;</span></span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">filter</span>(b_arm_treat <span class="sc">!=</span> <span class="dv">0</span>) <span class="sc">|&gt;</span></span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(</span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>    n_total,</span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a>    b_arm_treat,</span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a>    prob_success,</span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a>    prob_success_se,</span>
+<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a>    power_success,</span>
+<span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a>    power_success_se,</span>
+<span id="cb17-10"><a href="#cb17-10" aria-hidden="true" tabindex="-1"></a>    prob_futility,</span>
+<span id="cb17-11"><a href="#cb17-11" aria-hidden="true" tabindex="-1"></a>    prob_futility_se,</span>
+<span id="cb17-12"><a href="#cb17-12" aria-hidden="true" tabindex="-1"></a>    power_futility,</span>
+<span id="cb17-13"><a href="#cb17-13" aria-hidden="true" tabindex="-1"></a>    power_futility_se</span>
+<span id="cb17-14"><a href="#cb17-14" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">|&gt;</span></span>
+<span id="cb17-15"><a href="#cb17-15" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">arrange</span>(<span class="fu">desc</span>(b_arm_treat)) <span class="sc">|&gt;</span></span>
+<span id="cb17-16"><a href="#cb17-16" aria-hidden="true" tabindex="-1"></a>  kableExtra<span class="sc">::</span><span class="fu">kable</span>(<span class="at">digits =</span> <span class="dv">3</span>, <span class="at">format =</span> <span class="st">"html"</span>)</span></code></pre></div>
+<div class="cell-output-display">
+<table class="caption-top" data-quarto-postprocess="true">
+<thead>
+<tr class="header">
+<th style="text-align: right;" data-quarto-table-cell-role="th">n_total</th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">b_arm_treat</th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">prob_success</th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">prob_success_se</th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">power_success</th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">power_success_se</th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">prob_futility</th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">prob_futility_se</th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">power_futility</th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">power_futility_se</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: right;">80</td>
+<td style="text-align: right;">0.3</td>
+<td style="text-align: right;">0.734</td>
+<td style="text-align: right;">0.011</td>
+<td style="text-align: right;">0.326</td>
+<td style="text-align: right;">0.021</td>
+<td style="text-align: right;">0.172</td>
+<td style="text-align: right;">0.009</td>
+<td style="text-align: right;">0.092</td>
+<td style="text-align: right;">0.013</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">120</td>
+<td style="text-align: right;">0.3</td>
+<td style="text-align: right;">0.770</td>
+<td style="text-align: right;">0.010</td>
+<td style="text-align: right;">0.400</td>
+<td style="text-align: right;">0.022</td>
+<td style="text-align: right;">0.128</td>
+<td style="text-align: right;">0.007</td>
+<td style="text-align: right;">0.044</td>
+<td style="text-align: right;">0.009</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">160</td>
+<td style="text-align: right;">0.3</td>
+<td style="text-align: right;">0.808</td>
+<td style="text-align: right;">0.010</td>
+<td style="text-align: right;">0.482</td>
+<td style="text-align: right;">0.022</td>
+<td style="text-align: right;">0.095</td>
+<td style="text-align: right;">0.007</td>
+<td style="text-align: right;">0.034</td>
+<td style="text-align: right;">0.008</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</section>
+<section id="alpha-error-rate-for-null-effect" class="level2" data-number="2.5">
+<h2 data-number="2.5"><span class="header-section-number">2.5</span> Alpha Error Rate for Null Effect</h2>
+<p>The power for success indicates the alpha error rate for the null effect (b_arm_treat = 0). This is the probability of rejecting the null hypothesis when it is true, which should be close to the significance level (0.05) if the design is well specified.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>power<span class="sc">@</span>summarized_results <span class="sc">|&gt;</span> </span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">filter</span>(b_arm_treat <span class="sc">==</span> <span class="dv">0</span>) <span class="sc">|&gt;</span></span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(</span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>    n_total,</span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a>    b_arm_treat,</span>
+<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a>    prob_success,</span>
+<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a>    prob_success_se,</span>
+<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a>    power_success,</span>
+<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a>    power_success_se,</span>
+<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a>    power_futility,</span>
+<span id="cb18-11"><a href="#cb18-11" aria-hidden="true" tabindex="-1"></a>    power_futility_se,</span>
+<span id="cb18-12"><a href="#cb18-12" aria-hidden="true" tabindex="-1"></a>    prob_futility, </span>
+<span id="cb18-13"><a href="#cb18-13" aria-hidden="true" tabindex="-1"></a>    prob_futility_se </span>
+<span id="cb18-14"><a href="#cb18-14" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">|&gt;</span></span>
+<span id="cb18-15"><a href="#cb18-15" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">arrange</span>(<span class="fu">desc</span>(b_arm_treat)) <span class="sc">|&gt;</span> </span>
+<span id="cb18-16"><a href="#cb18-16" aria-hidden="true" tabindex="-1"></a>  kableExtra<span class="sc">::</span><span class="fu">kable</span>(<span class="at">digits =</span> <span class="dv">3</span>, </span>
+<span id="cb18-17"><a href="#cb18-17" aria-hidden="true" tabindex="-1"></a>                    <span class="at">format =</span> <span class="st">"html"</span>)</span></code></pre></div>
+<div class="cell-output-display">
+<table class="caption-top" data-quarto-postprocess="true">
+<thead>
+<tr class="header">
+<th style="text-align: right;" data-quarto-table-cell-role="th">n_total</th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">b_arm_treat</th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">prob_success</th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">prob_success_se</th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">power_success</th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">power_success_se</th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">power_futility</th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">power_futility_se</th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">prob_futility</th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">prob_futility_se</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: right;">80</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0.363</td>
+<td style="text-align: right;">0.012</td>
+<td style="text-align: right;">0.042</td>
+<td style="text-align: right;">0.009</td>
+<td style="text-align: right;">0.514</td>
+<td style="text-align: right;">0.022</td>
+<td style="text-align: right;">0.510</td>
+<td style="text-align: right;">0.013</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">120</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0.340</td>
+<td style="text-align: right;">0.012</td>
+<td style="text-align: right;">0.036</td>
+<td style="text-align: right;">0.008</td>
+<td style="text-align: right;">0.506</td>
+<td style="text-align: right;">0.022</td>
+<td style="text-align: right;">0.508</td>
+<td style="text-align: right;">0.013</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">160</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0.337</td>
+<td style="text-align: right;">0.012</td>
+<td style="text-align: right;">0.032</td>
+<td style="text-align: right;">0.008</td>
+<td style="text-align: right;">0.464</td>
+<td style="text-align: right;">0.022</td>
+<td style="text-align: right;">0.487</td>
+<td style="text-align: right;">0.013</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</section>
+<section id="run-time" class="level2" data-number="2.6">
+<h2 data-number="2.6"><span class="header-section-number">2.6</span> Run Time</h2>
+<div class="cell">
+<details class="code-fold">
+<summary>Show the code</summary>
+<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a>n_runs <span class="ot">&lt;-</span> <span class="fu">nrow</span>(power<span class="sc">@</span>conditions<span class="sc">@</span>conditions_grid) <span class="sc">*</span> power<span class="sc">@</span>n_sims</span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"Total run time:"</span>, <span class="fu">round</span>(power<span class="sc">@</span>elapsed_time,<span class="dv">1</span>), <span class="st">"minutes for"</span>, n_runs, <span class="st">"total simulation repetitions using"</span>, power<span class="sc">@</span>n_cores, <span class="st">"cores.</span><span class="sc">\n</span><span class="st">"</span>)</span></code></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>Total run time: 3 minutes for 3000 total simulation repetitions using 14 cores.</code></pre>
+</div>
+</div>
+<hr>
+</section>
+</section>
+<section id="session-information" class="level1" data-number="3">
+<h1 data-number="3"><span class="header-section-number">3</span> Session Information</h1>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb21"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a>pander<span class="sc">::</span><span class="fu">pander</span>(<span class="fu">sessionInfo</span>())</span></code></pre></div>
+<div class="cell-output-display">
+<p><strong>R version 4.5.1 (2025-06-13 ucrt)</strong></p>
+<p><strong>Platform:</strong> x86_64-w64-mingw32/x64</p>
+<p><strong>locale:</strong> <em>LC_COLLATE=German_Germany.utf8</em>, <em>LC_CTYPE=German_Germany.utf8</em>, <em>LC_MONETARY=German_Germany.utf8</em>, <em>LC_NUMERIC=C</em> and <em>LC_TIME=German_Germany.utf8</em></p>
+<p><strong>attached base packages:</strong> <em>stats</em>, <em>graphics</em>, <em>grDevices</em>, <em>utils</em>, <em>datasets</em>, <em>methods</em> and <em>base</em></p>
+<p><strong>other attached packages:</strong> <em>rctbayespower(v.0.0.0.9000)</em>, <em>pander(v.0.6.6)</em>, <em>kableExtra(v.1.4.0)</em> and <em>dplyr(v.1.1.4)</em></p>
+<p><strong>loaded via a namespace (and not attached):</strong> <em>gtable(v.0.3.6)</em>, <em>tensorA(v.0.36.2.1)</em>, <em>QuickJSR(v.1.8.1)</em>, <em>xfun(v.0.53)</em>, <em>ggplot2(v.4.0.0)</em>, <em>htmlwidgets(v.1.6.4)</em>, <em>inline(v.0.3.21)</em>, <em>lattice(v.0.22-7)</em>, <em>vctrs(v.0.6.5)</em>, <em>tools(v.4.5.1)</em>, <em>generics(v.0.1.4)</em>, <em>stats4(v.4.5.1)</em>, <em>parallel(v.4.5.1)</em>, <em>tibble(v.3.3.0)</em>, <em>pkgconfig(v.2.0.3)</em>, <em>brms(v.2.23.0)</em>, <em>Matrix(v.1.7-4)</em>, <em>data.table(v.1.17.8)</em>, <em>checkmate(v.2.3.3)</em>, <em>RColorBrewer(v.1.1-3)</em>, <em>S7(v.0.2.0)</em>, <em>distributional(v.0.5.0)</em>, <em>RcppParallel(v.5.1.11-1)</em>, <em>lifecycle(v.1.0.4)</em>, <em>compiler(v.4.5.1)</em>, <em>farver(v.2.1.2)</em>, <em>stringr(v.1.5.2)</em>, <em>textshaping(v.1.0.4)</em>, <em>Brobdingnag(v.1.2-9)</em>, <em>codetools(v.0.2-20)</em>, <em>htmltools(v.0.5.8.1)</em>, <em>bayesplot(v.1.14.0)</em>, <em>yaml(v.2.3.10)</em>, <em>lazyeval(v.0.2.2)</em>, <em>plotly(v.4.11.0)</em>, <em>pillar(v.1.11.1)</em>, <em>tidyr(v.1.3.1)</em>, <em>StanHeaders(v.2.32.10)</em>, <em>bridgesampling(v.1.1-2)</em>, <em>abind(v.1.4-8)</em>, <em>nlme(v.3.1-168)</em>, <em>posterior(v.1.6.1)</em>, <em>rstan(v.2.32.7)</em>, <em>tidyselect(v.1.2.1)</em>, <em>digest(v.0.6.37)</em>, <em>mvtnorm(v.1.3-3)</em>, <em>stringi(v.1.8.7)</em>, <em>reshape2(v.1.4.4)</em>, <em>purrr(v.1.0.4)</em>, <em>fastmap(v.1.2.0)</em>, <em>grid(v.4.5.1)</em>, <em>cli(v.3.6.5)</em>, <em>magrittr(v.2.0.3)</em>, <em>loo(v.2.8.0)</em>, <em>pkgbuild(v.1.4.8)</em>, <em>withr(v.3.0.2)</em>, <em>scales(v.1.4.0)</em>, <em>backports(v.1.5.0)</em>, <em>rmarkdown(v.2.30)</em>, <em>httr(v.1.4.7)</em>, <em>matrixStats(v.1.5.0)</em>, <em>gridExtra(v.2.3)</em>, <em>pbapply(v.1.7-4)</em>, <em>coda(v.0.19-4.1)</em>, <em>evaluate(v.1.0.5)</em>, <em>knitr(v.1.50)</em>, <em>pwr(v.1.3-0)</em>, <em>viridisLite(v.0.4.2)</em>, <em>rstantools(v.2.5.0)</em>, <em>rlang(v.1.1.6)</em>, <em>Rcpp(v.1.1.0)</em>, <em>glue(v.1.8.0)</em>, <em>xml2(v.1.4.0)</em>, <em>svglite(v.2.2.2)</em>, <em>rstudioapi(v.0.17.1)</em>, <em>jsonlite(v.2.0.0)</em>, <em>plyr(v.1.8.9)</em>, <em>R6(v.2.6.1)</em> and <em>systemfonts(v.1.3.1)</em></p>
+</div>
+</div>
+</section>
+</main>
+
+<div class="includes-after">
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'light-border',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+</div>
+
+
+
+</body></html>
