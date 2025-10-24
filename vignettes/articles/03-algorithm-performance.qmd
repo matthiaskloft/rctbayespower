@@ -1,0 +1,234 @@
+---
+title: "Comparative Algorithm Performance in 'rctbayespower'"
+author: 
+ - name: Matthias Kloft
+   orcid: 0000-0003-1845-6957
+date: "`r Sys.Date()`"
+format:
+  html:
+    toc: true
+    number-sections: true
+    theme: cosmo
+    code-fold: false
+    code-tools: true
+    code-summary: "Show the code"
+    fig-width: 7
+    fig-height: 4.5
+    embed-resources: true
+execute:
+  message: false
+  warning: false
+---
+
+Setup:
+```{r setup}
+# Set CRAN mirror
+options(repos = c(CRAN = "https://cloud.r-project.org/"))
+
+# Check and install required packages
+packages <- c("dplyr", "kableExtra", "pander")
+install.packages(setdiff(packages, rownames(installed.packages())))
+invisible(lapply(packages, require, character.only = TRUE))
+
+# Load the package
+library(rctbayespower)
+
+# Set number of cores and simulations:
+n_cores <- parallel::detectCores() - 2
+n_sims <- 500
+```
+
+***
+
+# Algorithm Performance and Computational Considerations
+
+This vignette provides guidance on algorithm selection, performance optimization, and computational considerations when using the `rctbayespower` package for Bayesian power analysis.
+
+
+## Algorithm Overview
+
+The `rctbayespower` package supports multiple algorithms via `brms` / `Stan`:
+
+- `meanfield` (variational inference)
+- `fullrank`  (variational inference)
+- `sampling` (MCMC)
+
+
+
+# Performance Comparison
+
+## Setup
+### Model
+
+Show predefined models available in the package:
+```{r}
+list_predefined_models()
+```
+
+
+Get the predefined ANCOVA model for continuous outcomes with two arms:
+```{r build_model_ancova}
+model_ancova <- build_model(predefined_model = "ancova_cont_2arms")
+model_ancova@parameter_names_brms
+```
+
+### Design
+
+```{r build_design}
+design <- build_design(
+  model = model_ancova,
+  target_params = "b_arm2",
+  thresholds_success = 0.1,
+  thresholds_futility = 0,
+  p_sig_success = 0.975,
+  p_sig_futility = 0.5
+)
+# check the required parameters for the design
+required_fn_args(design)
+
+```
+
+
+### Conditions
+
+```{r build_conditions}
+conditions <- build_conditions(
+  design = design,
+  condition_values = list(
+    # two sample sizes
+    n_total = 400,
+      # two effect sizes
+    b_arm_treat = c(0,0.3)
+  ),
+  static_values = list(
+    # equal allocation
+    p_alloc = c(0.5, 0.5),
+          # baseline effect
+    b_covariate = 0
+  )
+)
+```
+
+
+## Run Simulations
+
+```{r run_power_analyses}
+# Meanfield
+  power_result_meanfield <-
+    power_analysis(
+      conditions = conditions,
+      n_cores = n_cores,
+      n_sims = n_sims,
+      verbose = FALSE,
+      brms_args = list(
+        algorithm = "meanfield",
+        importance_resampling = TRUE,
+        iter = 1e4,
+        output_samples = 2e3
+      )
+    )
+
+# Fullrank
+  power_result_fullrank <-
+    power_analysis(
+      conditions = conditions,
+      n_cores = n_cores,
+      n_sims = n_sims,
+      verbose = FALSE,
+      brms_args = list(
+        algorithm = "fullrank",
+        importance_resampling = TRUE,
+        iter = 1e4,
+        output_samples = 2e3
+      )
+    )
+
+# Sampling
+power_result_sampling <- power_analysis(
+  conditions = conditions,
+  n_cores = n_cores,
+  n_sims = n_sims,
+  verbose = FALSE,
+  brms_args = list(
+    chains = 4,
+    iter = 700,
+    warmup = 200
+  )
+)
+```
+
+
+Extract the summarized results from each power analysis:
+```{r}
+results_summary<- rbind(
+  power_result_meanfield@summarized_results |> 
+    mutate(Algorithm = "Meanfield"),
+  power_result_fullrank@summarized_results |> 
+    mutate(Algorithm = "Fullrank"),
+  power_result_sampling@summarized_results |> 
+    mutate(Algorithm = "Sampling")
+)
+```
+
+## Comparison of Results
+
+### Probability of Success and Futility and Power
+```{r}
+results_summary |> 
+  select(
+    Algorithm,
+    n_total,
+    b_arm_treat,
+    prob_success,
+    prob_futility,
+    power_success,
+    power_futility
+  ) |>
+  dplyr::arrange(desc(b_arm_treat)) |> 
+  kableExtra::kable(digits = 2)
+```
+
+
+### Convergence
+```{r}
+results_summary |> 
+  select(
+    Algorithm,
+    n_total,
+    b_arm_treat,
+    rhat,
+    ess_bulk,
+    ess_tail,
+    conv_rate
+  ) |>
+  kableExtra::kable(digits = 3)
+```
+
+
+### Run Time
+```{r}
+# extract elapsed time
+data.frame(
+  Alorithm = c(
+    "Meanfield",
+    "Fullrank",
+    "Sampling"
+  ),
+    "Elapsed Time" = c(
+      power_result_meanfield@elapsed_time,
+      power_result_fullrank@elapsed_time,
+      power_result_sampling@elapsed_time
+    )
+  ) |> 
+  kableExtra::kable(digits = 2)
+```
+
+
+***
+
+
+# Session Information
+
+```{r session_info}
+pander::pander(sessionInfo())
+```
