@@ -1,6 +1,9 @@
 <urlset xmlns = 'http://www.sitemaps.org/schemas/sitemap/0.9'>
 <url><loc>https://matthiaskloft.github.io/rctbayespower/404.html</loc></url>
 <url><loc>https://matthiaskloft.github.io/rctbayespower/articles/01-introduction.html</loc></url>
+<url><loc>https://matthiaskloft.github.io/rctbayespower/articles/02-prior-specification.html</loc></url>
+<url><loc>https://matthiaskloft.github.io/rctbayespower/articles/03-algorithm-performance.html</loc></url>
+<url><loc>https://matthiaskloft.github.io/rctbayespower/articles/99-model-validation.html</loc></url>
 <url><loc>https://matthiaskloft.github.io/rctbayespower/articles/index.html</loc></url>
 <url><loc>https://matthiaskloft.github.io/rctbayespower/authors.html</loc></url>
 <url><loc>https://matthiaskloft.github.io/rctbayespower/CLAUDE.html</loc></url>
@@ -41,7 +44,7 @@
 <url><loc>https://matthiaskloft.github.io/rctbayespower/reference/run.rctbp_power_analysis.html</loc></url>
 <url><loc>https://matthiaskloft.github.io/rctbayespower/reference/simulate_single_run.html</loc></url>
 <url><loc>https://matthiaskloft.github.io/rctbayespower/reference/summarize_sims.html</loc></url>
-<url><loc>https://matthiaskloft.github.io/rctbayespower/reference/update_S7_with_dots.html</loc></url>
+<url><loc>https://matthiaskloft.github.io/rctbayespower/reference/update_s7_with_dots.html</loc></url>
 <url><loc>https://matthiaskloft.github.io/rctbayespower/reference/validate_weighting_function.html</loc></url>
 </urlset>
 
