@@ -33,7 +33,14 @@ Suggests:
     rmarkdown,
     quarto,
     kableExtra,
-    colorspace
+    colorspace,
+    pbapply
 Config/testthat/edition: 3
 URL: https://matthiaskloft.github.io/rctbayespower/, https://github.com/matthiaskloft/rctbayespower
-Config/Needs/website: quarto
+Config/Needs/website: 
+    quarto-dev/quarto-r,
+    r-lib/pkgdown,
+    dplyr,
+    kableExtra,
+    pander
+LazyData: true

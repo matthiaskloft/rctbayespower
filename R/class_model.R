@@ -142,16 +142,7 @@ build_model <- function(predefined_model = NULL,
     model <- get_predefined_model(predefined_model)
     # return invisibly
     return(model)
-  } else {
-    stop(
-      cat(
-        "Pre-defined model",
-        paste0("\"", predefined_model, "\""),
-        "was not found! The 'predefined_model' must be one of the predefined models (see documentation)."
-      )
-    )
   }
-
   # custom model ---------------------------------------------------------------
 
   # Early validation before S7 object creation

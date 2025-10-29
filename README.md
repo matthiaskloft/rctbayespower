@@ -42,7 +42,7 @@ introductory vignette:
   - [Introduction](https://matthiaskloft.github.io/rctbayespower/articles/01-introduction.html):
     Basic usage and concepts
 
-<!--  - [Prior
+  - [Prior
     Specifications](https://matthiaskloft.github.io/rctbayespower/articles/02-prior-specifications.html):
     Working with priors
 
@@ -52,6 +52,6 @@ introductory vignette:
 
   - [Model
     Validation](https://matthiaskloft.github.io/rctbayespower/articles/99-model-validation.html):
-    Validation of implemented predefined models -->
+    Validation of implemented predefined models
 
 - [Open an Issue](https://github.com/matthiaskloft/rctbayespower/issues)
