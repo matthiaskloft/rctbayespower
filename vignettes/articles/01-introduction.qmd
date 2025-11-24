@@ -77,8 +77,6 @@ Specify the study design with target parameter, thresholds for success and futil
 design <- build_design(
   model = model_ancova,
   target_params = "b_arm2",
-  thresholds_success = 0.1,
-  thresholds_futility = 0,
   p_sig_success = 0.9,
   p_sig_futility = 0.5
 )
@@ -105,7 +103,9 @@ conditions <- build_conditions(
   ),
   static_values = list(
     # baseline effect
-    b_covariate = 0
+    b_covariate = 0,
+      thresholds_success = 0.1,
+  thresholds_futility = 0
   )
 )
 print(conditions, n = 100)
