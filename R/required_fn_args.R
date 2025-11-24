@@ -1,10 +1,10 @@
 #' Identify Required Parameters for Design or Model Objects
 #'
 #' Generic wrapper function that identifies required parameters for either
-#' rctbp_design or rctbayespower_model objects by dispatching to the
+#' rctbp_design or rctbp_model objects by dispatching to the
 #' appropriate specific function.
 #'
-#' @param object Either an rctbp_design or rctbayespower_model object
+#' @param object Either an rctbp_design or rctbp_model object
 #' @param print Logical. If TRUE (default), prints the required parameters to console
 #'
 #' @return For design objects: a list with simulation, interim, and all parameters.
@@ -103,15 +103,11 @@ required_fn_args_design <- function(design, print = TRUE) {
   # get args without defaults for the data simulation function
   params_sim <- get_args_without_defaults(design@model@data_simulation_fn)
 
-  # if interim analysis function is not NULL, get args without defaults
-  if (!is.null(design@interim_function)) {
-    params_interim <-
-      get_args_without_defaults(design@interim_function)
-    params <- c(params_sim, params_interim)
-  } else {
-    params_interim <- NULL
-    params <- params_sim
-  }
+  # Decision parameters (per-condition): thresholds, analysis_at, interim_function, adaptive
+  params_decision <- c("thresholds_success", "thresholds_futility", "analysis_at",
+                       "interim_function", "adaptive")
+
+  params_all <- c(params_sim, params_decision)
 
   # print the parameters if requested
   if (print) {
@@ -119,15 +115,15 @@ required_fn_args_design <- function(design, print = TRUE) {
     cat("\nArguments that need user specification.\n")
     cat("\nSimulation function:\n")
     cat(paste(params_sim, collapse = ", "), "\n")
-    cat("\nInterim function:\n")
-    cat(paste(params_interim, collapse = ", "), "\n")
+    cat("\nDecision parameters (per-condition):\n")
+    cat(paste(params_decision, collapse = ", "), "\n")
   }
 
   # return the parameters needed for the design
   invisible(list(
     params_sim = params_sim,
-    params_interim = params_interim,
-    params_all = params
+    params_decision = params_decision,
+    params_all = params_all
   ))
 }
 

@@ -1,0 +1,161 @@
+================================================================================
+ROXYGEN DOCUMENTATION AUDIT SUMMARY
+rctbayespower Package - November 24, 2025
+================================================================================
+
+AUDIT SCOPE:
+- Examined all R files in /R directory (main package, excluding legacy)
+- Checked roxygen documentation comments against function signatures
+- Verified S7 class properties match documentation references
+- Reviewed examples for API correctness
+- Cross-referenced with generated .Rd files
+
+TOTAL ISSUES FOUND: 8
+- CRITICAL: 3
+- MEDIUM: 3  
+- LOW: 2
+
+================================================================================
+CRITICAL ISSUES (Runtime Errors - Block Package Usage)
+================================================================================
+
+1. print.rctbp_power_analysis() Crashes on Non-existent Properties
+   Location: R/class_power_analysis.R lines 599, 602
+   Issue: References design@thresholds_success and design@thresholds_futility
+   Impact: CRASH when printing power_analysis object
+   Root Cause: Design class has p_sig_success/p_sig_futility, not thresholds
+   Fix: Remove lines referencing non-existent properties
+
+2. build_model() Example References Non-existent Model
+   Location: R/class_model.R line 166
+   Issue: Example uses "ancova_cont" which doesn't exist
+   Impact: Example code will fail with Model not found error
+   Root Cause: Model is named "ancova_cont_2arms" not "ancova_cont"
+   Fix: Change to correct model name
+
+3. build_design() Example Has Invalid Syntax
+   Location: R/class_design.R line 70
+   Issue: Example calls build_model()() - trying to call S7 object as function
+   Impact: Example code will fail with type error
+   Root Cause: Trailing () on S7 object return value
+   Fix: Remove the trailing parentheses
+
+================================================================================
+MEDIUM PRIORITY ISSUES (Confusing Documentation/Incomplete)
+================================================================================
+
+4. Incorrect Class Name in Parameter Documentation
+   Location: R/required_fn_args.R line 7
+   Issue: Says "rctbayespower_model" but class is "rctbp_model"
+   Impact: User confusion
+   Fix: Update class name reference
+
+5. Incomplete Documentation of Property Usage
+   Location: R/class_design.R lines 54-71
+   Issue: Documentation mentions thresholds that aren't class properties
+   Impact: User confusion about where thresholds go
+   Fix: Clarify separation between design parameters and condition parameters
+
+6. Print Method Documentation Not Updated After API Changes
+   Location: R/class_power_analysis.R lines 598-607
+   Issue: Code tries to show non-existent properties
+   Impact: Code will crash; documentation doesn't reflect actual behavior
+   Fix: Update method to show actual available properties
+
+================================================================================
+LOW PRIORITY ISSUES (Style/Guidelines)
+================================================================================
+
+7. Vignette API References (RESOLVED)
+   Location: vignettes/articles/*.qmd
+   Status: ✅ RESOLVED - Vignettes correctly use current API
+   Note: All vignettes properly use build_model(), build_design(),
+         build_conditions(), and power_analysis() functions
+
+8. Documentation Link Format Inconsistent
+   Location: Multiple .Rd files
+   Issue: Uses \code{\link{}} instead of [] format per CLAUDE.md guidelines
+   Impact: Style inconsistency
+   Status: These are auto-generated; fix source roxygen comments
+
+================================================================================
+ANALYSIS OF ROOT CAUSES
+================================================================================
+
+1. Documentation Lag After Refactoring (Primary Cause)
+   - Design changed from thresholds_success/thresholds_futility properties
+   - To per-condition parameters passed in conditions object
+   - Documentation and code not updated consistently
+
+2. Examples Not Tested Against Current API
+   - Example code uses outdated function/method calls
+   - Suggests examples may not have been run recently
+
+3. Class Naming Inconsistencies
+   - Class names not consistent across documentation
+   - Example uses abbreviated model names that don't exist
+
+================================================================================
+DOCUMENTATION STATUS BY FILE
+================================================================================
+
+class_model.R          - 1 CRITICAL, 0 MEDIUM issues
+class_design.R         - 1 CRITICAL, 2 MEDIUM issues  
+class_power_analysis.R - 1 CRITICAL, 1 MEDIUM issue
+required_fn_args.R     - 0 CRITICAL, 1 MEDIUM issue
+compute_measures.R     - CLEAN
+simulate_single_run.R  - CLEAN
+models_ancova.R        - CLEAN
+Other backend files    - CLEAN
+
+================================================================================
+RECOMMENDATIONS FOR IMMEDIATE ACTION
+================================================================================
+
+BEFORE NEXT RELEASE:
+1. Apply all 3 CRITICAL fixes (lines 166, 70, 599/602)
+2. Fix MEDIUM priority issues #4-6 (class name, documentation clarity)
+3. Run devtools::document() to regenerate .Rd files
+4. Run devtools::check() to verify package integrity
+5. Manually test all example code
+
+MEDIUM TERM:
+6. Audit and update vignette examples
+7. Create test suite for documentation examples
+8. Establish documentation review process
+
+================================================================================
+FILES WITH UPDATES NEEDED
+================================================================================
+
+Must Edit (roxygen source):
+- R/class_power_analysis.R
+- R/class_model.R
+- R/class_design.R
+- R/required_fn_args.R
+
+After Editing:
+- Run: devtools::document()
+- This regenerates /man/*.Rd files automatically
+
+Separate Review:
+- vignettes/articles/*.qmd (content review needed)
+
+================================================================================
+DETAILED REPORTS GENERATED
+================================================================================
+
+Two detailed reports have been created in /dev/:
+
+1. roxygen_documentation_audit.md
+   - Complete documentation of all issues
+   - Code snippets showing problems
+   - Detailed explanations
+
+2. roxygen_fixes_action_plan.md
+   - Step-by-step fix instructions
+   - Testing procedures
+   - Verification checklist
+   - Implementation guide
+
+================================================================================

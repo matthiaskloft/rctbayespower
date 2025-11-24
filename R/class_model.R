@@ -4,7 +4,9 @@ rctbp_model <- S7::new_class(
   "rctbp_model",
   properties = list(
     data_simulation_fn = S7::class_function,
-    brms_model = S7::class_any,
+    brms_model = S7::class_any | NULL,
+    bayesflow_model = S7::class_any | NULL,
+    backend_args = S7::new_property(S7::class_list, default = list()),
     # brmsfit objects don't have S7 class
     predefined_model = S7::new_union(S7::class_character, NULL),
     model_name = S7::class_character,
@@ -12,6 +14,17 @@ rctbp_model <- S7::new_class(
     endpoint_types = S7::class_character,
     n_arms = S7::class_numeric,
     n_repeated_measures = S7::class_numeric | NULL,
+    backend = S7::new_property(
+      getter = function(self) {
+        if (!is.null(self@brms_model)) {
+          return("brms")
+        } else if (!is.null(self@bayesflow_model)) {
+          return("npe")
+        } else {
+          return(NA_character_)
+        }
+      }
+    ),
     parameter_names_sim_fn = S7::new_property(
       getter = function(self) {
         names(formals(self@data_simulation_fn))
@@ -19,11 +32,37 @@ rctbp_model <- S7::new_class(
     ),
     parameter_names_brms = S7::new_property(
       getter = function(self) {
-        stringr::str_subset(brms::variables(self@brms_model), pattern = "^b_")
+        if (!is.null(self@brms_model)) {
+          stringr::str_subset(brms::variables(self@brms_model), pattern = "^b_")
+        } else {
+          character(0)
+        }
       }
     )
   ),
   validator = function(self) {
+    # Validate exactly one model is provided
+    has_brms <- !is.null(self@brms_model)
+    has_bayesflow <- !is.null(self@bayesflow_model)
+
+    if (!has_brms && !has_bayesflow) {
+      return("Either 'brms_model' or 'bayesflow_model' must be provided.")
+    }
+
+    if (has_brms && has_bayesflow) {
+      return("Only one of 'brms_model' or 'bayesflow_model' can be provided, not both.")
+    }
+
+    # Validate model type matches backend
+    if (has_brms && !inherits(self@brms_model, "brmsfit")) {
+      return("'brms_model' must be a valid brmsfit object.")
+    }
+
+    # Validate backend_args
+    if (!is.list(self@backend_args)) {
+      return("'backend_args' must be a list.")
+    }
+
     # Validate n_endpoints
     if (length(self@n_endpoints) != 1 || self@n_endpoints <= 0) {
       return("'n_endpoints' must be a positive numeric value.")
@@ -45,10 +84,6 @@ rctbp_model <- S7::new_class(
          self@n_repeated_measures < 0)) {
       return("'n_repeated_measures' must be a non-negative numeric value.")
     }
-    # Validate brms_model
-    if (!inherits(self@brms_model, "brmsfit")) {
-      return("'brms_model' must be a valid brmsfit object.")
-    }
     # Validate data_simulation_fn parameters
     required_params <- c("n_total", "p_alloc")
     if (!all(required_params %in% self@parameter_names_sim_fn)) {
@@ -62,14 +97,21 @@ rctbp_model <- S7::new_class(
 #' Create a Build Model Object
 #'
 #' Constructs a build_model object that encapsulates a data simulation
-#' function, a compiled brms model, and associated metadata for power analysis.
-#' This object serves as the foundation for Bayesian power analysis in RCTs.
+#' function, a posterior estimation model (brms or Bayesflow/NPE), and associated
+#' metadata for power analysis. This object serves as the foundation for Bayesian
+#' power analysis in RCTs with support for multiple backends.
 #'
 #' @param data_simulation_fn A function that simulates data for the RCT. Must take
 #'   parameters n_total, p_alloc, and further parameters needed for
 #'   data simulation.
 #' @param brms_model A fitted brmsfit object that serves as the template model.
 #'   This should be compiled without posterior draws (chains = 0) for efficiency.
+#'   Provide either brms_model or bayesflow_model, not both.
+#' @param bayesflow_model A trained neural posterior estimation model (keras/tensorflow).
+#'   Use this for NPE backend instead of brms. Provide either brms_model or
+#'   bayesflow_model, not both.
+#' @param backend_args Named list of backend-specific arguments. For brms: chains,
+#'   iter, cores, etc. For NPE: batch_size, n_posterior_samples, etc.
 #' @param n_endpoints Number of endpoints in the study (must be positive integer)
 #' @param endpoint_types Character vector specifying the type of each endpoint.
 #'   Valid types are "continuous", "binary", "count". Length must match n_endpoints.
@@ -121,11 +163,13 @@ rctbp_model <- S7::new_class(
 #' @examples
 #' \dontrun{
 #' # Method 1: Use predefined model (recommended)
-#' ancova_model <- build_model(predefined_model = "ancova_cont")
+#' ancova_model <- build_model(predefined_model = "ancova_cont_2arms")
 #' }
 build_model <- function(predefined_model = NULL,
                         data_simulation_fn,
-                        brms_model,
+                        brms_model = NULL,
+                        bayesflow_model = NULL,
+                        backend_args = list(),
                         n_endpoints = NULL,
                         endpoint_types = NULL,
                         n_arms = NULL,
@@ -153,13 +197,23 @@ build_model <- function(predefined_model = NULL,
     stop("'model_name' must be a character string or NULL.")
   }
 
+  # Validate that exactly one model is provided
+  if (is.null(brms_model) && is.null(bayesflow_model)) {
+    stop("Either 'brms_model' or 'bayesflow_model' must be provided.")
+  }
+  if (!is.null(brms_model) && !is.null(bayesflow_model)) {
+    stop("Only one of 'brms_model' or 'bayesflow_model' can be provided, not both.")
+  }
 
-  # strip brms model from posterior draws
-  brms_model <- suppressMessages(stats::update(brms_model, chains = 0, silent = 2))
+  # Strip brms model from posterior draws if brms
+  if (!is.null(brms_model)) {
+    brms_model <- suppressMessages(stats::update(brms_model, chains = 0, silent = 2))
+  }
 
   # Set default model_name if NULL
   if (is.null(model_name)) {
-    model_name <- "Custom Model"
+    backend_type <- if (!is.null(brms_model)) "brms" else "NPE"
+    model_name <- paste0("Custom Model (", backend_type, ")")
   }
 
   # Create S7 object - validation happens automatically
@@ -167,6 +221,8 @@ build_model <- function(predefined_model = NULL,
     predefined_model = predefined_model,
     data_simulation_fn = data_simulation_fn,
     brms_model = brms_model,
+    bayesflow_model = bayesflow_model,
+    backend_args = backend_args,
     model_name = model_name,
     n_endpoints = n_endpoints,
     endpoint_types = endpoint_types,
@@ -197,6 +253,7 @@ S7::method(print, rctbp_model) <- function(x, ...) {
   cat("--------------------------------------------------\n\n")
 
   cat("Model name:", x@model_name, "\n")
+  cat("Backend:", x@backend, "\n")
   cat("Predefined model:", if (is.null(x@predefined_model))
     "None"
     else
@@ -217,11 +274,22 @@ S7::method(print, rctbp_model) <- function(x, ...) {
     paste(x@parameter_names_sim_fn, collapse = ", "),
     "\n"
   )
-  cat("Parameter names - brms model:",
-      paste(x@parameter_names_brms, collapse = ", "),
-      "\n")
-  cat("\nBrms model:\n")
-  print(x@brms_model)
+
+  if (x@backend == "brms") {
+    cat("Parameter names - brms model:",
+        paste(x@parameter_names_brms, collapse = ", "),
+        "\n")
+    cat("\nBrms model:\n")
+    print(x@brms_model)
+  } else if (x@backend == "npe") {
+    cat("\nBayesflow/NPE model:\n")
+    print(x@bayesflow_model)
+  }
+
+  if (length(x@backend_args) > 0) {
+    cat("\nBackend arguments:\n")
+    print(x@backend_args)
+  }
 
   invisible(x)
 }

@@ -7,12 +7,8 @@
 build_design(
   model,
   target_params,
-  thresholds_success,
-  thresholds_futility,
   p_sig_success,
   p_sig_futility,
-  n_interim_analyses = 0,
-  interim_function = NULL,
   design_name = NULL
 )
 }
@@ -23,14 +19,6 @@ build_design(
 analyze for power. Must be valid parameter names from the brms model
 (e.g., "b_arms_treat" for treatment effect). Required.}
 
-\item{thresholds_success}{Numeric vector of success thresholds for each target
-parameter. Length must match target_params. These represent the minimum
-clinically meaningful effect sizes. Required.}
-
-\item{thresholds_futility}{Numeric vector of futility thresholds for each target
-parameter. Length must match target_params. These represent effect sizes
-below which the treatment is considered ineffective. Required.}
-
 \item{p_sig_success}{Probability threshold for declaring success. The posterior
 probability that the effect exceeds the success threshold must be greater
 than this value to declare success (typically 0.975 or 0.95). Required.}
@@ -39,27 +27,17 @@ than this value to declare success (typically 0.975 or 0.95). Required.}
 probability that the effect is below the futility threshold must be greater
 than this value to declare futility (typically 0.5). Required.}
 
-\item{n_interim_analyses}{Number of interim analyses planned during the study.
-Defaults to 0 for studies with only final analysis. Must be non-negative integer.}
-
-\item{interim_function}{Optional function for adaptive interim analyses. If provided,
-must accept an interim_parameters argument defined as a call to list().
-Currently not fully implemented. Defaults to NULL.}
-
 \item{design_name}{Optional character string providing a descriptive name for the
 design. Defaults to NULL.}
 }
 \value{
-An S7 object of class "rctbp_design" containing all elements from
-the model plus the analysis configuration. Key components include:
+An S7 object of class "rctbp_design" containing:
 \describe{
-\item{data_simulation_fn}{Data simulation function from the model}
-\item{brms_model}{Compiled brms model template}
+\item{model}{The rctbp_model object}
 \item{target_params}{Target parameters for analysis}
-\item{thresholds_success}{Success thresholds}
-\item{thresholds_futility}{Futility thresholds}
 \item{p_sig_success}{Success probability threshold}
 \item{p_sig_futility}{Futility probability threshold}
+\item{design_name}{Optional descriptive name}
 }
 }
 \description{
@@ -68,36 +46,38 @@ configuration parameters for Bayesian power analysis. This constructor function
 provides a user-friendly interface to the S7 class constructor.
 }
 \details{
-The rctbp_design class combines model specifications with analysis
-decision criteria:
+The rctbp_design class combines model specifications with global analysis
+configuration parameters. It defines WHICH parameters to analyze and WHAT
+probability thresholds to use for decision-making.
 
-\strong{Model Integration:} Inherits the data simulation function, compiled brms
-model, and metadata from the model object.
+\strong{Important:} The actual success and futility thresholds (e.g., 0.2 for
+treatment effect) are NOT stored in the design object. They are specified
+per-condition when creating the conditions object using build_conditions().
+The design only stores the probability thresholds (p_sig_success, p_sig_futility)
+that determine how certain we need to be about exceeding those thresholds.
 
-\strong{Decision Thresholds:} Success and futility thresholds define the
-regions of practical equivalence (ROPE) for decision making. Effects above
-the success threshold are considered clinically meaningful, while effects
-below the futility threshold suggest treatment ineffectiveness.
+\strong{Model Integration:} Links to the rctbp_model object containing data
+simulation function and compiled brms model.
+
+\strong{Target Parameters:} Specifies which model parameters to analyze for power
+(e.g., "b_arms_treat" for treatment effect).
 
 \strong{Probability Thresholds:} The p_sig_success and p_sig_futility parameters
-control the certainty required for decisions. Higher values require stronger
-evidence.
+control the certainty required for success/futility decisions. Higher values require
+stronger evidence.
 
 \strong{Validation:} All parameters are validated for consistency with the
-underlying model structure and each other.
+underlying model structure.
 }
 \examples{
 \dontrun{
 # Create an ANCOVA model
-ancova_model <- build_model_ancova_cont()
+ancova_model <- build_model("ancova_cont_2arms")
 
 # Create a design for analyzing treatment effect
 my_design <- build_design(
   model = ancova_model,
   target_params = "b_arms_treat",
-  n_interim_analyses = 0,
-  thresholds_success = 0.2,
-  thresholds_futility = 0,
   p_sig_success = 0.975,
   p_sig_futility = 0.5,
   design_name = "ANCOVA Treatment Effect Analysis"

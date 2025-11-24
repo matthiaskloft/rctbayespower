@@ -57,10 +57,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **⚠️ INCOMPLETE FEATURES:**
 
-**Documentation Inconsistencies (Critical):**
-- **Vignettes**: Still reference non-existent `power_analysis_ancova()` function - need complete rewriting
-- **Manual pages**: Some still reference old function names
-- **All vignettes need updating** for new API
+**Documentation (Recently Fixed - November 24, 2025):**
+- **Vignettes**: ✅ Already using correct API (build_model, build_design, build_conditions, power_analysis)
+- **Manual pages**: ✅ Fixed all references to use correct class names (rctbp_*)
+- **API documentation**: ✅ All examples and references now match current implementation
 
 **Test Suite (0% Complete):**
 - **Status**: All test files contain only TODO comments
@@ -74,7 +74,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 **Current Production-Ready Workflow:**
 ```r
 # 1. Create model → 2. Create design → 3. Create conditions → 4. Run analysis
-model_ancova <- build_model("ancova_cont_2arms")()
+model_ancova <- build_model("ancova_cont_2arms")
 design <- build_design(
   model = model_ancova,
   target_params = "b_arms_treat",

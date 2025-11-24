@@ -227,27 +227,43 @@ S7::method(run, rctbp_power_analysis) <- function(x, ...) {
     x <- update_S7_with_dots(x, ...)
   }
   
-  # update model with brms_args ------------
-  # set default brms args
-  default_brms_args<- list(
-    chains = 4,
-    iter = 450,
-    warmup = 200,
-    cores = 1
-  )
-  # merge with user-provided brms_args
-  final_brms_args <- utils::modifyList(default_brms_args, x@brms_args)
-  # assign back to object for later use
-  x@brms_args <- final_brms_args
-  
-  # warn if cores > 1
-  if (x@brms_args$cores > 1) {
-    warning("Do not use multiple cores for brms when running simulations in parallel!")
+  # update model with brms_args (only for brms backend) ------------
+  design <- x@conditions@design
+  backend <- design@model@backend
+
+  if (backend == "brms") {
+    # set default brms args
+    default_brms_args <- list(
+      chains = 4,
+      iter = 450,
+      warmup = 200,
+      cores = 1
+    )
+    # merge with user-provided brms_args
+    final_brms_args <- utils::modifyList(default_brms_args, x@brms_args)
+    # assign back to object for later use
+    x@brms_args <- final_brms_args
+
+    # warn if cores > 1
+    if (x@brms_args$cores > 1) {
+      warning("Do not use multiple cores for brms when running simulations in parallel!")
+    }
+    # update brms_args in the object
+    x@conditions@design@model@brms_model <- do.call(function(...) {
+      stats::update(object = x@conditions@design@model@brms_model, ...)
+    }, x@brms_args)
+  } else if (backend == "npe") {
+    # For NPE backend, backend_args are already in model@backend_args
+    if (verbose) {
+      cat("Using NPE backend with configuration:\n")
+      cat("  Batch size:",
+          if (!is.null(design@model@backend_args$batch_size))
+            design@model@backend_args$batch_size
+          else
+            1,
+          "\n")
+    }
   }
-  # update brms_args in the object
-  x@conditions@design@model@brms_model <- do.call(function(...) {
-    stats::update(object = x@conditions@design@model@brms_model, ...)
-  }, x@brms_args)
   
   
   
@@ -261,38 +277,50 @@ S7::method(run, rctbp_power_analysis) <- function(x, ...) {
   design <- x@conditions@design
   design_prior <- x@design_prior
   
-  # Extract design components for parallel workers (S7 objects don't serialize well)
-  design_components <- list(
-    target_params = design@target_params,
-    thresholds_success = design@thresholds_success,
-    thresholds_futility = design@thresholds_futility,
-    p_sig_success = design@p_sig_success,
-    p_sig_futility = design@p_sig_futility,
-    n_interim_analyses = design@n_interim_analyses,
-    interim_function = design@interim_function,
-    design_name = design@design_name,
-    model_data_simulation_fn = x@conditions@design@model@data_simulation_fn,
-    model_brms_model = x@conditions@design@model@brms_model
-  )
-  
-  
-  # Expand condition_arguments_list to match n_sims
-  condition_args_list <- rep(conditions@condition_arguments, each = n_sims)
-  
+  # Prepare design for parallel workers (S7 objects don't serialize well)
+  design_serialized <- prepare_design_for_workers(design)
+
+  # Detect backend and batching strategy
+  backend <- design@model@backend
+  batch_size <- if (backend == "npe" && !is.null(design@model@backend_args$batch_size)) {
+    design@model@backend_args$batch_size
+  } else {
+    1L  # No batching for brms or when batch_size not specified
+  }
+
+  # Create work units: conditions × iterations (NOT interims!)
+  # Work units are (id_cond, id_iter) pairs
+  n_conditions <- length(conditions@condition_arguments)
+  work_units <- lapply(seq_len(n_conditions), function(id_cond) {
+    lapply(seq_len(n_sims), function(id_iter) {
+      list(
+        id_cond = id_cond,
+        id_iter = id_iter,
+        condition_args = conditions@condition_arguments[[id_cond]]
+      )
+    })
+  })
+  work_units <- unlist(work_units, recursive = FALSE)
+
   # Set up parallelization
-  total_runs <- length(condition_args_list)
-  
+  total_work_units <- length(work_units)
+
   # Optional logging
   if (verbose) {
     cat("\n=== Power Analysis ===\n")
     cat("Conditions:\n")
     print(conditions@conditions_grid)
     cat("\n")
-    cat("Conditions to test:",
-        nrow(conditions@conditions_grid),
-        "\n")
+    cat("Backend:", backend, "\n")
+    cat("Batch size:", batch_size, "\n")
+    cat("Conditions to test:", nrow(conditions@conditions_grid), "\n")
     cat("Simulations per condition:", n_sims, "\n")
-    cat("Total simulations:", total_runs, "\n\n")
+    cat("Total work units:", total_work_units, "\n")
+    if (!is.null(design@analysis_at) && length(design@analysis_at) > 0) {
+      cat("Interim analyses at: n =", paste(design@analysis_at, collapse = ", "), "\n")
+      cat("Adaptive design:", design@adaptive, "\n")
+    }
+    cat("\n")
   }
   
   # Execute simulations
@@ -330,13 +358,27 @@ S7::method(run, rctbp_power_analysis) <- function(x, ...) {
       # Export required objects to cluster
       parallel::clusterExport(
         cl,
-        varlist = c("condition_args_list", "design_components"),
+        varlist = c("work_units", "design_serialized", "batch_size", "backend"),
         envir = environment()
       )
-      
+
       # Export package functions - try multiple approaches for robustness
       functions_to_export <- c(
-        "simulate_single_run",
+        "worker_process_single",
+        "worker_process_batch",
+        "prepare_design_for_workers",
+        "estimate_single_brms",
+        "estimate_single_npe",
+        "estimate_sequential_brms",
+        "estimate_sequential_npe",
+        "create_error_result",
+        "estimate_posterior",
+        "estimate_posterior_brms",
+        "estimate_posterior_npe",
+        "extract_posterior_rvars",
+        "extract_posterior_rvars_brms",
+        "extract_posterior_rvars_npe",
+        "compute_measures",
         "compute_measures_brmsfit",
         "calculate_mcse_power",
         "calculate_mcse_mean",
@@ -368,71 +410,53 @@ S7::method(run, rctbp_power_analysis) <- function(x, ...) {
     }
     
     # Parallel execution
-    results_raw_list <-
-      pbapply::pblapply(cl = cl, seq_along(condition_args_list), function(i) {
-        # Top-level error capture for any issues in parallel worker
-        tryCatch({
-          # Test basic functionality first
-          if (!exists("condition_args_list") ||
-              !exists("design_components")) {
-            stop("Required objects not found in worker environment")
-          }
-          
-          # Check and load required functions if they don't exist
-          required_functions <- c(
-            "simulate_single_run",
-            "compute_measures_brmsfit",
-            "calculate_mcse_power",
-            "calculate_mcse_mean",
-            "calculate_mcse_integrated_power"
-          )
-          
-          missing_functions <- c()
-          
-          if (length(missing_functions) > 0) {
-            stop(
-              "Required functions not found in worker environment: ",
-              paste(missing_functions, collapse = ", ")
+    # Choose between single and batch processing
+    if (batch_size == 1L) {
+      # Single processing: one work unit per worker call
+      results_raw_list <-
+        pbapply::pblapply(cl = cl, seq_along(work_units), function(i) {
+          tryCatch({
+            wu <- work_units[[i]]
+            worker_process_single(
+              id_cond = wu$id_cond,
+              id_iter = wu$id_iter,
+              condition_args = wu$condition_args,
+              design = design_serialized
             )
-          }
-          
-          if (i > length(condition_args_list)) {
-            stop("Index out of bounds for condition_args_list")
-          }
-          
-          # Simulate single run and compute measures with detailed error capture
-          df_measures <- simulate_single_run(
-            condition_arguments = condition_args_list[[i]],
-            id_sim = i,
-            design = design_components
-          )
-          
-          return(df_measures)
-          
-        }, error = function(e) {
-          # Top-level worker error
-          data.frame(
-            parameter = "ERROR",
-            threshold_success = NA_real_,
-            threshold_futility = NA_real_,
-            success_prob = NA_real_,
-            futility_prob = NA_real_,
-            power_success = NA_real_,
-            power_futility = NA_real_,
-            median = NA_real_,
-            mad = NA_real_,
-            mean = NA_real_,
-            sd = NA_real_,
-            rhat = NA_real_,
-            ess_bulk = NA_real_,
-            ess_tail = NA_real_,
-            id_sim = i,
-            id_cond = NA_integer_,
-            converged = 0L,
-            error = paste("Worker error:", e$message)
-          )
+          }, error = function(e) {
+            create_error_result(
+              id_iter = work_units[[i]]$id_iter,
+              id_cond = work_units[[i]]$id_cond,
+              id_analysis = 0L,
+              error_msg = paste("Worker error:", e$message)
+            )
+          })
         })
-      })
+    } else {
+      # Batch processing: group work units into batches
+      n_batches <- ceiling(total_work_units / batch_size)
+      batches <- split(work_units, ceiling(seq_along(work_units) / batch_size))
+
+      results_raw_list <-
+        pbapply::pblapply(cl = cl, batches, function(batch) {
+          tryCatch({
+            worker_process_batch(
+              work_units = batch,
+              design = design_serialized
+            )
+          }, error = function(e) {
+            # Return errors for all work units in failed batch
+            lapply(batch, function(wu) {
+              create_error_result(
+                id_iter = wu$id_iter,
+                id_cond = wu$id_cond,
+                id_analysis = 0L,
+                error_msg = paste("Batch worker error:", e$message)
+              )
+            }) |> dplyr::bind_rows()
+          })
+        })
+    }
     
     if (n_cores > 1) {
       # Stop cluster after use
@@ -442,16 +466,47 @@ S7::method(run, rctbp_power_analysis) <- function(x, ...) {
   } else {
     # fallback on lapply() if pbapply is not available
     message("Package 'pbapply' not found. Running simulations without progress bar.")
-    results_raw_list <- lapply(seq_along(condition_args_list), function(i) {
-      # Simulate single run and compute measures
-      df_measures <- simulate_single_run(
-        condition_arguments = condition_args_list[[i]],
-        id_sim = i,
-        design = design_components
-      )
-      
-      return(df_measures)
-    })
+
+    if (batch_size == 1L) {
+      # Single processing
+      results_raw_list <- lapply(work_units, function(wu) {
+        tryCatch({
+          worker_process_single(
+            id_cond = wu$id_cond,
+            id_iter = wu$id_iter,
+            condition_args = wu$condition_args,
+            design = design_serialized
+          )
+        }, error = function(e) {
+          create_error_result(
+            id_iter = wu$id_iter,
+            id_cond = wu$id_cond,
+            id_analysis = 0L,
+            error_msg = paste("Worker error:", e$message)
+          )
+        })
+      })
+    } else {
+      # Batch processing
+      batches <- split(work_units, ceiling(seq_along(work_units) / batch_size))
+      results_raw_list <- lapply(batches, function(batch) {
+        tryCatch({
+          worker_process_batch(
+            work_units = batch,
+            design = design_serialized
+          )
+        }, error = function(e) {
+          lapply(batch, function(wu) {
+            create_error_result(
+              id_iter = wu$id_iter,
+              id_cond = wu$id_cond,
+              id_analysis = 0L,
+              error_msg = paste("Batch worker error:", e$message)
+            )
+          }) |> dplyr::bind_rows()
+        })
+      })
+    }
   }
   
   # Filter out NULL results before combining
@@ -464,28 +519,35 @@ S7::method(run, rctbp_power_analysis) <- function(x, ...) {
   # Check for and report any error messages
   if (verbose || TRUE) {
     # Always show errors for debugging
-    error_results <- do.call(rbind, results_raw_list)
-    error_rows <- !is.na(error_results$parameter) &
-      error_results$parameter == "ERROR" &
-      !is.na(error_results$error)
+    error_results <- dplyr::bind_rows(results_raw_list)
+    error_rows <- !is.na(error_results$error)
     if (any(error_rows)) {
       error_msgs <- error_results[error_rows, "error"]
       cat("Simulation errors found:\n")
       cat(paste(unique(error_msgs), collapse = "\n"), "\n")
+      cat("Number of errors:", sum(error_rows), "\n")
     }
   }
   
-  # Combine results - bind_rows is faster than do.call(rbind, ...)
-  results_df_raw <- do.call(rbind, results_raw_list)
-  
+  # Combine results - use bind_rows for robustness
+  results_df_raw <- dplyr::bind_rows(results_raw_list)
+
   # Debug: Check combined results
   if (verbose) {
+    cat("\n=== Raw Results Summary ===\n")
     cat("Combined results dimensions:", dim(results_df_raw), "\n")
     if (!is.null(results_df_raw) && nrow(results_df_raw) > 0) {
       cat("Column names:", paste(colnames(results_df_raw), collapse = ", "), "\n")
+      cat("Unique conditions:", length(unique(results_df_raw$id_cond)), "\n")
+      cat("Unique iterations per condition:", n_sims, "\n")
+      if ("id_analysis" %in% colnames(results_df_raw)) {
+        cat("Analyses per iteration:",
+            paste(sort(unique(results_df_raw$id_analysis)), collapse = ", "), "\n")
+      }
     }
+    cat("\n")
   }
-  
+
   # Average across simulation runs
   results_df <- summarize_sims(results_df_raw, n_sims)
   # Add condition IDs and arguments to results
@@ -532,12 +594,6 @@ S7::method(print, rctbp_power_analysis) <- function(x, ...) {
   design <- x@conditions@design
   cat("Target parameters:",
       paste(design@target_params, collapse = ", "),
-      "\n")
-  cat("Success thresholds:",
-      paste(design@thresholds_success, collapse = ", "),
-      "\n")
-  cat("Futility thresholds:",
-      paste(design@thresholds_futility, collapse = ", "),
       "\n")
   cat("Success probability threshold:", design@p_sig_success, "\n")
   cat("Futility probability threshold:",

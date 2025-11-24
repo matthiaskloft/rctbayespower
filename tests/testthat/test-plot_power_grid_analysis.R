@@ -135,7 +135,7 @@
 #     design_prior_type = if (with_design_prior) "brms" else "none",
 #     analysis_type = analysis_type,
 #     percent_group_treat = 50,
-#     power_analysis_fn = "power_analysis_ancova",
+#     power_analysis_fn = "power_analysis",
 #     analysis_time_minutes = 8.5,
 #     power_surface = power_surface,
 #     integrated_power = integrated_power,

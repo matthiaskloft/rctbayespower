@@ -7,7 +7,9 @@
 build_model(
   predefined_model = NULL,
   data_simulation_fn,
-  brms_model,
+  brms_model = NULL,
+  bayesflow_model = NULL,
+  backend_args = list(),
   n_endpoints = NULL,
   endpoint_types = NULL,
   n_arms = NULL,
@@ -30,7 +32,15 @@ parameters n_total, p_alloc, and further parameters needed for
 data simulation.}
 
 \item{brms_model}{A fitted brmsfit object that serves as the template model.
-This should be compiled without posterior draws (chains = 0) for efficiency.}
+This should be compiled without posterior draws (chains = 0) for efficiency.
+Provide either brms_model or bayesflow_model, not both.}
+
+\item{bayesflow_model}{A trained neural posterior estimation model (keras/tensorflow).
+Use this for NPE backend instead of brms. Provide either brms_model or
+bayesflow_model, not both.}
+
+\item{backend_args}{Named list of backend-specific arguments. For brms: chains,
+iter, cores, etc. For NPE: batch_size, n_posterior_samples, etc.}
 
 \item{n_endpoints}{Number of endpoints in the study (must be positive integer)}
 
@@ -49,8 +59,9 @@ An S7 object of class "rctbp_model" containing the specified properties
 }
 \description{
 Constructs a build_model object that encapsulates a data simulation
-function, a compiled brms model, and associated metadata for power analysis.
-This object serves as the foundation for Bayesian power analysis in RCTs.
+function, a posterior estimation model (brms or Bayesflow/NPE), and associated
+metadata for power analysis. This object serves as the foundation for Bayesian
+power analysis in RCTs with support for multiple backends.
 }
 \details{
 The build_model class encapsulates all components needed for power
@@ -78,7 +89,7 @@ has the required parameter structure and that the brms model is properly fitted.
 \examples{
 \dontrun{
 # Method 1: Use predefined model (recommended)
-ancova_model <- build_model(predefined_model = "ancova_cont")
+ancova_model <- build_model(predefined_model = "ancova_cont_2arms")
 }
 }
 \seealso{

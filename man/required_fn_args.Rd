@@ -7,7 +7,7 @@
 required_fn_args(object, print = TRUE)
 }
 \arguments{
-\item{object}{Either an rctbp_design or rctbayespower_model object}
+\item{object}{Either an rctbp_design or rctbp_model object}
 
 \item{print}{Logical. If TRUE (default), prints the required parameters to console}
 }
@@ -18,7 +18,7 @@ Both returned invisibly.
 }
 \description{
 Generic wrapper function that identifies required parameters for either
-rctbp_design or rctbayespower_model objects by dispatching to the
+rctbp_design or rctbp_model objects by dispatching to the
 appropriate specific function.
 }
 \examples{

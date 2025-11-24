@@ -4,56 +4,17 @@
 #' This function is the core simulation engine used by power analysis functions.
 #'
 #' @param condition_arguments A single entry from the condition_arguments list
-#'   created by [build_conditions()]. Contains 'sim_args' with 'n_total', 'p_alloc',
-#'   and 'true_parameter_values', plus optional 'interim_args'.
-#' @param id_sim Simulation identifier for tracking individual simulation runs
-#' @param design A rctbp_design or rctbp_power_analysis object containing the simulation and model specifications
+#'   created by [build_conditions()]. Contains 'sim_args' with data simulation
+#'   parameters and 'decision_args' with decision thresholds and criteria.
+#' @param id_iter Iteration identifier for tracking individual simulation runs
+#' @param design A rctbp_design or rctbp_power_analysis object containing the
+#'   simulation and model specifications
 #'
-#' @return A fitted brms model object on success, NULL on failure
+#' @return A data frame with power analysis measures for the simulation
 #'
-#' @examples
-#' \dontrun{
-#' # Create model, design, and conditions
-#' ancova_model <- build_model("ancova_cont_2arms")()
-#' design <- build_design(
-#'   model = ancova_model,
-#'   target_params = "b_arms_treat",
-#'   n_interim_analyses = 0,
-#'   thresholds_success = 0.2,
-#'   thresholds_futility = 0,
-#'   p_sig_success = 0.975,
-#'   p_sig_futility = 0.5
-#' )
-#'
-#' conditions <- build_conditions(
-#'   design = design,
-#'   condition_values = list(n_total = c(100, 200)),
-#'   static_values = list(
-#'     p_alloc = list(c(0.5, 0.5)),
-#'     true_parameter_values = list(
-#'       intercept = 0,
-#'       sigma = 1,
-#'       b_arms_treat = 0.5,
-#'       b_covariate = 0.2
-#'     )
-#'   )
-#' )
-#'
-#' # Simulate single condition with default brms settings
-#' result <- simulate_single_run(
-#'   condition_arguments = conditions$condition_arguments[[1]],
-#'   design = conditions$design
-#' )
-#'
-#' # Or with custom brms arguments
-#' result_custom <- simulate_single_run(
-#'   condition_arguments = conditions$condition_arguments[[1]],
-#'   design = conditions$design
-#' )
-#' }
-#' @export
+#' @keywords internal
 simulate_single_run <- function(condition_arguments,
-                                id_sim,
+                                id_iter,
                                 design) {
   # no validations since this is the lowest level function
 
@@ -61,15 +22,34 @@ simulate_single_run <- function(condition_arguments,
   if (inherits(design, "rctbayespower::rctbp_design") || inherits(design, "rctbp_design")) {
     # S7 design object
     data_simulation_fn <- design@model@data_simulation_fn
-    brms_model <- design@model@brms_model
+    backend <- design@model@backend
+    estimation_model <- if (backend == "brms") design@model@brms_model else design@model@bayesflow_model
+    backend_args <- design@model@backend_args
+    target_params <- design@target_params
+    p_sig_success <- design@p_sig_success
+    p_sig_futility <- design@p_sig_futility
   } else if (inherits(design, "rctbayespower::rctbp_power_analysis") || inherits(design, "rctbp_power_analysis")) {
     # S7 power analysis object - use promoted model access
     data_simulation_fn <- design@model@data_simulation_fn
-    brms_model <- design@model@brms_model
+    backend <- design@model@backend
+    estimation_model <- if (backend == "brms") design@model@brms_model else design@model@bayesflow_model
+    backend_args <- design@model@backend_args
+    target_params <- design@target_params
+    p_sig_success <- design@p_sig_success
+    p_sig_futility <- design@p_sig_futility
   } else if (is.list(design)) {
     # Regular list with design components (from parallel workers)
     data_simulation_fn <- design$model_data_simulation_fn
-    brms_model <- design$model_brms_model
+    backend <- design$model_backend %||% "brms"  # Default for backward compatibility
+    estimation_model <- if (backend == "brms") {
+      design$model_brms_model
+    } else {
+      design$model_bayesflow_model
+    }
+    backend_args <- design$model_backend_args %||% list()
+    target_params <- design$target_params
+    p_sig_success <- design$p_sig_success
+    p_sig_futility <- design$p_sig_futility
   } else {
     stop("Invalid design object")
   }
@@ -102,27 +82,32 @@ simulate_single_run <- function(condition_arguments,
       rhat = NA_real_,
       ess_bulk = NA_real_,
       ess_tail = NA_real_,
-      id_sim = id_sim,
+      id_iter = id_iter,
       id_cond = condition_arguments$id_cond,
       converged = 0L,
       error = "Data simulation failed"
     ))
   }
 
-  # Fit the model to the simulated data with error handling
-  fitted_model <- tryCatch({
-    stats::update(object = brms_model, newdata = simulated_data)
+  # Estimate posterior using backend-specific method
+  estimation_result <- tryCatch({
+    estimate_posterior(
+      data = simulated_data,
+      model = estimation_model,
+      backend = backend,
+      backend_args = backend_args
+    )
   }, error = function(e) {
     n_total <- if (is.null(condition_arguments$sim_args$n_total))
       "unknown"
     else
       condition_arguments$sim_args$n_total
-    warning("Model fitting failed for 'n_total'=", n_total, ": ", e$message)
+    warning("Posterior estimation failed for 'n_total'=", n_total, ": ", e$message)
     return(NULL)
   })
-  
-  # Check if model fitting was successful
-  if (is.null(fitted_model)) {
+
+  # Check if estimation was successful
+  if (is.null(estimation_result)) {
     return(data.frame(
       parameter = NA_character_,
       threshold_success = NA_real_,
@@ -138,24 +123,67 @@ simulate_single_run <- function(condition_arguments,
       rhat = NA_real_,
       ess_bulk = NA_real_,
       ess_tail = NA_real_,
-      id_sim = id_sim,
+      id_iter = id_iter,
       id_cond = condition_arguments$id_cond,
       converged = 0L,
-      error = "Model fitting failed"
+      error = "Posterior estimation failed"
     ))
   }
 
-  # compute measures
+  # Extract posterior as rvars
+  posterior_rvars <- tryCatch({
+    extract_posterior_rvars(
+      estimation_result = estimation_result,
+      backend = backend,
+      target_params = target_params
+    )
+  }, error = function(e) {
+    warning("Posterior extraction failed: ", e$message)
+    return(NULL)
+  })
+
+  if (is.null(posterior_rvars)) {
+    return(data.frame(
+      parameter = NA_character_,
+      threshold_success = NA_real_,
+      threshold_futility = NA_real_,
+      success_prob = NA_real_,
+      futility_prob = NA_real_,
+      power_success = NA_real_,
+      power_futility = NA_real_,
+      median = NA_real_,
+      mad = NA_real_,
+      mean = NA_real_,
+      sd = NA_real_,
+      rhat = NA_real_,
+      ess_bulk = NA_real_,
+      ess_tail = NA_real_,
+      id_iter = id_iter,
+      id_cond = condition_arguments$id_cond,
+      converged = 0L,
+      error = "Posterior extraction failed"
+    ))
+  }
+
+  # Extract decision parameters from condition_arguments
+  decision_args <- condition_arguments$decision_args
+
+  # Compute measures (backend-agnostic)
   result <- tryCatch({
-    df <- compute_measures_brmsfit(fitted_model, design) |>
+    df <- compute_measures(posterior_rvars,
+                          target_params,
+                          decision_args$thresholds_success,
+                          decision_args$thresholds_futility,
+                          p_sig_success,
+                          p_sig_futility) |>
       dplyr::mutate(dplyr::across(-parameter, as.numeric))
     df |> dplyr::mutate(
-      id_sim = id_sim,
+      id_iter = id_iter,
       id_cond = condition_arguments$id_cond,
+      id_analysis = 0L,  # Single analysis (no interims)
       converged = 1L,
       error = NA_character_
     )
-    # error handling for compute_measures_brmsfit
   }, error = function(e) {
     data.frame(
       parameter = NA_character_,
@@ -172,8 +200,9 @@ simulate_single_run <- function(condition_arguments,
       rhat = NA_real_,
       ess_bulk = NA_real_,
       ess_tail = NA_real_,
-      id_sim = id_sim,
+      id_iter = id_iter,
       id_cond = condition_arguments$id_cond,
+      id_analysis = 0L,
       converged = 0L,
       error = as.character(e)
     )

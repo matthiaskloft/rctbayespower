@@ -150,7 +150,7 @@ build_conditions <- function(design, condition_values, static_values) {
   # Convert each row into a list of named values
   condition_arguments_flat <- apply(df_grid, 1, as.list)
 
-  # Combine simulation and interim arguments per condition
+  # Combine simulation and decision arguments per condition
   condition_arguments <- lapply(condition_arguments_flat, function(condition) {
     # --- Simulation arguments ---
     sim_args <- list()
@@ -168,30 +168,29 @@ build_conditions <- function(design, condition_values, static_values) {
         )
       }
     }
-    # --- Interim arguments ---
-    interim_args <- NULL
-    if (!is.null(params_needed$params_interim)) {
-      interim_args <- list()
-      for (param in params_needed$params_interim) {
-        if (param %in% names(condition)) {
-          interim_args[[param]] <- condition[[param]]
-        } else if (param %in% names(static_values)) {
-          interim_args[[param]] <- static_values[[param]]
-        } else {
-          stop(
-            sprintf(
-              "Parameter '%s' is missing in condition_values or static_values.",
-              param
-            )
+
+    # --- Decision arguments (per-condition) ---
+    decision_args <- list()
+    for (param in params_needed$params_decision) {
+      if (param %in% names(condition)) {
+        decision_args[[param]] <- condition[[param]]
+      } else if (param %in% names(static_values)) {
+        decision_args[[param]] <- static_values[[param]]
+      } else {
+        stop(
+          sprintf(
+            "Decision parameter '%s' is missing in condition_values or static_values.",
+            param
           )
-        }
+        )
       }
     }
+
     # Return both sets of args
     list(
       id_cond = condition$id_cond,
       sim_args = sim_args,
-      interim_args = interim_args
+      decision_args = decision_args
     )
   })
 

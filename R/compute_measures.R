@@ -1,91 +1,26 @@
-#' Compute Power Measures from brms Model Fit
+#' Compute Power Measures from Posterior rvars (Backend-Agnostic)
 #'
-#' This function extracts posterior samples from a fitted brms model and computes
-#' various power analysis measures including success/futility probabilities,
-#' significance indicators, parameter estimates, and convergence diagnostics.
-#' For multiple target parameters, it also computes combined (union) measures.
+#' This function computes power analysis measures from posterior samples in rvar format.
+#' It works with posteriors from any backend (brms, NPE, etc.) as long as they are
+#' converted to rvar format first.
 #'
-#' @param brmsfit A fitted brms model object containing posterior samples
-#' @param design A list containing the experimental design specification with the following components:
-#'   \itemize{
-#'     \item \code{target_params}: Character vector of parameter names to analyze
-#'     \item \code{thresholds_success}: Numeric vector of success thresholds for each parameter
-#'     \item \code{thresholds_futility}: Numeric vector of futility thresholds for each parameter
-#'     \item \code{p_sig_success}: Probability threshold for declaring success significance
-#'     \item \code{p_sig_futility}: Probability threshold for declaring futility significance
-#'   }
+#' @param posterior_rvars A draws_rvars object containing posterior samples for target parameters
+#' @param target_params Character vector of parameter names to analyze
+#' @param thresholds_success Numeric vector of success thresholds (one per parameter)
+#' @param thresholds_futility Numeric vector of futility thresholds (one per parameter)
+#' @param p_sig_success Probability threshold for declaring success
+#' @param p_sig_futility Probability threshold for declaring futility
 #'
-#' @return A data frame containing power analysis measures with the following columns:
-#'   \itemize{
-#'     \item `parameter`: Parameter name or "union" for combined measures
-#'     \item `threshold_success`: Success threshold used for the parameter
-#'     \item `threshold_futility`: Futility threshold used for the parameter
-#'     \item `success_prob`: Probability that parameter exceeds success threshold
-#'     \item `futility_prob`: Probability that parameter falls below futility threshold
-#'     \item `power_success`: Binary indicator (1/0) if success probability meets significance threshold
-#'     \item `power_futility`: Binary indicator (1/0) if futility probability meets significance threshold
-#'     \item `median`: Posterior median estimate of the parameter
-#'     \item `mad`: Posterior median absolute deviation of the parameter
-#'     \item `mean`: Posterior mean estimate of the parameter
-#'     \item `sd`: Posterior standard deviation of the parameter
-#'     \item `rhat`: R-hat convergence diagnostic
-#'     \item `ess_bulk`: Effective sample size for bulk estimates
-#'     \item `ess_tail`: Effective sample size for tail estimates
-#'   }
-#'
-#' @details
-#' For single parameters, the function computes individual measures. For multiple target
-#' parameters, it additionally computes combined (union) measures where success requires
-#' ALL parameters to exceed their respective success thresholds simultaneously, and
-#' futility requires ALL parameters to fall below their respective futility thresholds.
-#'
-#' If threshold vectors are shorter than the number of target parameters, the first
-#' threshold value is recycled for additional parameters.
-#'
-#' @examples
-#' \dontrun{
-#' # Assume you have a fitted brms model and design specification
-#' design <- list(
-#'   target_params = c("b_arms_treat", "b_Intercept"),
-#'   thresholds_success = c(0.2, 0.0),
-#'   thresholds_futility = c(0.0, 0.0),
-#'   p_sig_success = 0.975,
-#'   p_sig_futility = 0.95
-#' )
-#' measures <- compute_measures_brmsfit(fitted_model, design)
-#' }
-#'
+#' @return A data frame containing power analysis measures
 #' @importFrom stats median
 #' @keywords internal
-compute_measures_brmsfit <- function(brmsfit, design) {
-  # Validate inputs
-  if (!inherits(brmsfit, "brmsfit")) {
-    stop("brmsfit must be a fitted brms model object")
-  }
+compute_measures <- function(posterior_rvars, target_params, thresholds_success,
+                             thresholds_futility, p_sig_success, p_sig_futility) {
 
-  # Handle both S7 design objects and regular list design components (for parallel workers)
-  if (inherits(design, "rctbayespower::rctbp_design") || inherits(design, "rctbp_design")) {
-    # S7 design object
-    target_params <- design@target_params
-    thresholds_success <- design@thresholds_success
-    thresholds_futility <- design@thresholds_futility
-    p_sig_success <- design@p_sig_success
-    p_sig_futility <- design@p_sig_futility
-  } else if (is.list(design)) {
-    # Regular list with design components (from parallel workers)
-    target_params <- design$target_params
-    thresholds_success <- design$thresholds_success
-    thresholds_futility <- design$thresholds_futility
-    p_sig_success <- design$p_sig_success
-    p_sig_futility <- design$p_sig_futility
-  } else {
-    stop("Invalid design object")
-  }
-
-  # Compute measures
+  # Compute measures for each parameter
   measures_list <- purrr::map(target_params, function(param) {
-    # extract posterior samples and compute power metrics
-    posterior_samples <- brms::as_draws_rvars(brmsfit, variable = param)
+    # Extract rvar for this parameter
+    param_rvar <- posterior_rvars[[param]]
 
     # extract thresholds
     if (length(target_params) > 1) {
@@ -104,20 +39,20 @@ compute_measures_brmsfit <- function(brmsfit, design) {
       threshold_futility <- thresholds_futility
     }
     # calculate the probability of success / futility
-    success_prob <- posterior::Pr(posterior_samples[[param]] > threshold_success)
-    futility_prob <- posterior::Pr(posterior_samples[[param]] < threshold_futility)
+    success_prob <- posterior::Pr(param_rvar > threshold_success)
+    futility_prob <- posterior::Pr(param_rvar < threshold_futility)
     # significance
     sig_success <- as.numeric(success_prob >= p_sig_success, na.rm = TRUE)
     sig_futility <- as.numeric(futility_prob >= p_sig_futility, na.rm = TRUE)
     # parameter estimates
-    est_median <- stats::median(posterior_samples[[param]])
-    est_mad <- posterior::mad(posterior_samples[[param]])
-    est_mean <- mean(posterior_samples[[param]])
-    est_sd <- posterior::sd(posterior_samples[[param]])
+    est_median <- stats::median(param_rvar)
+    est_mad <- posterior::mad(param_rvar)
+    est_mean <- mean(param_rvar)
+    est_sd <- posterior::sd(param_rvar)
     # convergence metrics
-    rhat <- posterior::rhat(posterior_samples[[param]])
-    ess_bulk <- posterior::ess_bulk(posterior_samples[[param]])
-    ess_tail <- posterior::ess_tail(posterior_samples[[param]])
+    rhat <- posterior::rhat(param_rvar)
+    ess_bulk <- posterior::ess_bulk(param_rvar)
+    ess_tail <- posterior::ess_tail(param_rvar)
 
     # combine results into a list
     out_list <- list(
@@ -142,8 +77,13 @@ compute_measures_brmsfit <- function(brmsfit, design) {
 
   # compute combined probabilities and powers
   if (length(target_params) > 1) {
-    # extract posterior samples and compute power metrics
-    posterior_samples <- brms::as_draws_matrix(brmsfit, variable = target_params)
+    # Convert rvars to matrix for combined calculations
+    # Extract draws as matrix: each column is a parameter
+    posterior_matrix_list <- lapply(target_params, function(param) {
+      as.vector(posterior::draws_of(posterior_rvars[[param]]))
+    })
+    posterior_samples <- do.call(cbind, posterior_matrix_list)
+
     # extract thresholds and broadcast if necessary
     if (length(target_params) > length(thresholds_success)) {
       thresholds_success_combined <- rep(thresholds_success[1], length(target_params))
@@ -209,6 +149,41 @@ compute_measures_brmsfit <- function(brmsfit, design) {
   }
 
   return(measures_df)
+}
+
+
+#' Compute Power Measures from brms Model Fit (Wrapper for Backward Compatibility)
+#'
+#' This function extracts posterior samples from a fitted brms model and computes
+#' various power analysis measures. It is a wrapper around compute_measures() that
+#' first extracts rvars from the brmsfit object.
+#'
+#' @param brmsfit A fitted brms model object containing posterior samples
+#' @param design A list or S7 design object containing the experimental design specification
+#'
+#' @return A data frame containing power analysis measures
+#' @seealso [compute_measures()]
+#' @keywords internal
+compute_measures_brmsfit <- function(brmsfit, design) {
+  # Validate inputs
+  if (!inherits(brmsfit, "brmsfit")) {
+    stop("'brmsfit' must be a fitted brms model object")
+  }
+
+  # Extract target parameters from design
+  if (inherits(design, "rctbayespower::rctbp_design") || inherits(design, "rctbp_design")) {
+    target_params <- design@target_params
+  } else if (is.list(design)) {
+    target_params <- design$target_params
+  } else {
+    stop("Invalid design object")
+  }
+
+  # Extract posterior rvars from brms model
+  posterior_rvars <- brms::as_draws_rvars(brmsfit, variable = target_params)
+
+  # Call backend-agnostic compute_measures
+  compute_measures(posterior_rvars, design)
 }
 
 

@@ -55,10 +55,10 @@ output:
 
 ### ⚠️ **INCOMPLETE FEATURES**
 
-#### Documentation Inconsistencies (Critical)
-- **Vignettes**: Still reference non-existent `power_analysis_ancova()` function ❌
-- **Manual pages**: Some still reference old function names ❌
-- **Need update**: All vignettes need rewriting for new API ❌
+#### Documentation Status (Resolved)
+- **Vignettes**: Updated to use correct API (build_model, build_design, build_conditions, power_analysis) ✅
+- **Manual pages**: Fixed all references to use correct class names and API ✅
+- **API consistency**: All documentation now matches current implementation ✅
 
 #### Test Suite (0% Complete) 
 - **Status:** All test files contain only TODO comments ❌

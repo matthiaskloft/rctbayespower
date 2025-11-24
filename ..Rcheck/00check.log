@@ -6,14 +6,10 @@
     GNU Fortran (Ubuntu 13.3.0-6ubuntu2~24.04) 13.3.0
 * running under: Ubuntu 24.04.2 LTS
 * using session charset: UTF-8
-* using options ‘--no-tests --no-manual --no-vignettes’
+* using options ‘--no-install --no-tests --no-manual --no-vignettes’
 * checking for file ‘./DESCRIPTION’ ... OK
 * this is package ‘rctbayespower’ version ‘0.0.0.9000’
 * package encoding: UTF-8
-* checking package namespace information ... OK
-* checking package dependencies ... INFO
-Packages suggested but not available for checking:
-  'quarto', 'kableExtra', 'colorspace'
 * checking if this is a source package ... OK
 * checking if there is a namespace ... OK
 * checking for executable files ... OK
@@ -75,8 +71,6 @@ store those of more than 256 bytes, with restrictions including to 100
 bytes for the final component.
 See section ‘Package structure’ in the ‘Writing R Extensions’ manual.
 * checking for sufficient/correct file permissions ... OK
-* checking whether package ‘rctbayespower’ can be installed ... OK
-* checking installed package size ... OK
 * checking package directory ... OK
 * checking DESCRIPTION meta-information ... NOTE
 Checking should be performed on sources prepared by ‘R CMD build’.
@@ -90,13 +84,6 @@ Most likely, these were included erroneously.
 Subdirectory ‘data’ contains no data sets.
 * checking code files for non-ASCII characters ... OK
 * checking R files for syntax errors ... OK
-* checking whether the package can be loaded ... OK
-* checking whether the package can be loaded with stated dependencies ... OK
-* checking whether the package can be unloaded cleanly ... OK
-* checking whether the namespace can be loaded with stated dependencies ... OK
-* checking whether the namespace can be unloaded cleanly ... OK
-* checking loading without being on the library search path ... OK
-* checking whether startup messages can be suppressed ... OK
 * checking dependencies in R code ... OK
 * checking S3 generic/method consistency ... OK
 * checking replacement functions ... OK
@@ -109,7 +96,6 @@ Subdirectory ‘data’ contains no data sets.
 * checking for code/documentation mismatches ... OK
 * checking Rd \usage sections ... OK
 * checking Rd contents ... OK
-* checking for unstated dependencies in examples ... OK
 * checking contents of ‘data’ directory ... OK
 * checking data for non-ASCII characters ... OK
 * checking LazyData ... OK
@@ -125,7 +111,7 @@ Files in the 'vignettes' directory but no files in 'inst/doc':
   ‘articles/03-algorithm-performance.qmd’
   ‘articles/99-model-validation.qmd’ ‘rebuild.R’
 Package has no Sweave vignette sources and no VignetteBuilder field.
-* checking examples ... OK
+* checking examples ... SKIPPED
 * checking for unstated dependencies in ‘tests’ ... OK
 * checking tests ... SKIPPED
 * checking package vignettes ... NOTE

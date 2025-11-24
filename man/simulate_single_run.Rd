@@ -4,62 +4,23 @@
 \alias{simulate_single_run}
 \title{Single Run Simulation for RCT Bayesian Power Analysis}
 \usage{
-simulate_single_run(condition_arguments, id_sim, design)
+simulate_single_run(condition_arguments, id_iter, design)
 }
 \arguments{
 \item{condition_arguments}{A single entry from the condition_arguments list
-created by \code{\link[=build_conditions]{build_conditions()}}. Contains 'sim_args' with 'n_total', 'p_alloc',
-and 'true_parameter_values', plus optional 'interim_args'.}
+created by \code{\link[=build_conditions]{build_conditions()}}. Contains 'sim_args' with data simulation
+parameters and 'decision_args' with decision thresholds and criteria.}
 
-\item{id_sim}{Simulation identifier for tracking individual simulation runs}
+\item{id_iter}{Iteration identifier for tracking individual simulation runs}
 
-\item{design}{A rctbp_design or rctbp_power_analysis object containing the simulation and model specifications}
+\item{design}{A rctbp_design or rctbp_power_analysis object containing the
+simulation and model specifications}
 }
 \value{
-A fitted brms model object on success, NULL on failure
+A data frame with power analysis measures for the simulation
 }
 \description{
 Executes a single simulation run using pre-validated condition arguments.
 This function is the core simulation engine used by power analysis functions.
 }
-\examples{
-\dontrun{
-# Create model, design, and conditions
-ancova_model <- build_model("ancova_cont_2arms")()
-design <- build_design(
-  model = ancova_model,
-  target_params = "b_arms_treat",
-  n_interim_analyses = 0,
-  thresholds_success = 0.2,
-  thresholds_futility = 0,
-  p_sig_success = 0.975,
-  p_sig_futility = 0.5
-)
-
-conditions <- build_conditions(
-  design = design,
-  condition_values = list(n_total = c(100, 200)),
-  static_values = list(
-    p_alloc = list(c(0.5, 0.5)),
-    true_parameter_values = list(
-      intercept = 0,
-      sigma = 1,
-      b_arms_treat = 0.5,
-      b_covariate = 0.2
-    )
-  )
-)
-
-# Simulate single condition with default brms settings
-result <- simulate_single_run(
-  condition_arguments = conditions$condition_arguments[[1]],
-  design = conditions$design
-)
-
-# Or with custom brms arguments
-result_custom <- simulate_single_run(
-  condition_arguments = conditions$condition_arguments[[1]],
-  design = conditions$design
-)
-}
-}
+\keyword{internal}
