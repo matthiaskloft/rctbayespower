@@ -16,4 +16,121 @@ Packages suggested but not available for checking:
   'quarto', 'kableExtra', 'colorspace'
 * checking if this is a source package ... OK
 * checking if there is a namespace ... OK
-* checking for executable files ...
+* checking for executable files ... OK
+* checking for hidden files and directories ... NOTE
+Found the following hidden files and directories:
+  .Renviron
+  .gitattributes
+  .github/.gitignore
+  .gitignore
+  vignettes/.gitignore
+  ..Rcheck
+  .Rproj.user
+  .claude
+  .git
+  .github
+  vignettes/.quarto
+  vignettes/articles/.quarto
+These were most likely included in error. See section ‘Package
+structure’ in the ‘Writing R Extensions’ manual.
+* checking for portable file names ... NOTE
+Found the following non-portable file paths:
+  rctbayespower/.Rproj.user/shared/notebooks/34F51C84-02-prior-specification/1/0C02CFDCbabef74e/chunks.json
+  rctbayespower/.Rproj.user/shared/notebooks/4B7021AB-02-prior-specification/1/0C02CFDC7e5c3241/chunks.json
+  rctbayespower/.Rproj.user/shared/notebooks/4B7021AB-02-prior-specification/1/s/c6i1lge70q18y/00000f.csv
+  rctbayespower/.Rproj.user/shared/notebooks/4B7021AB-02-prior-specification/1/s/c6i1lge70q18y/000010.html
+  rctbayespower/.Rproj.user/shared/notebooks/4B7021AB-02-prior-specification/1/s/c6i1lge70q18y/000010.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/4B7021AB-02-prior-specification/1/s/ca9v3a810nlqp/00000f.csv
+  rctbayespower/.Rproj.user/shared/notebooks/4B7021AB-02-prior-specification/1/s/cbt51ubgn81yc/00000f.csv
+  rctbayespower/.Rproj.user/shared/notebooks/4B7021AB-02-prior-specification/1/s/cfjmrldnyup84/00000f.csv
+  rctbayespower/.Rproj.user/shared/notebooks/4B7021AB-02-prior-specification/1/s/cfjmrldnyup84/000010.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/4B7021AB-02-prior-specification/1/s/cfjmrldnyup84/000010.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/4B7021AB-02-prior-specification/1/s/cfjmrldnyup84/000011.csv
+  rctbayespower/.Rproj.user/shared/notebooks/4B7021AB-02-prior-specification/1/s/chy8b1savkj37/00000f.csv
+  rctbayespower/.Rproj.user/shared/notebooks/4B7021AB-02-prior-specification/1/s/cj94a0y364mmj/00000f.csv
+  rctbayespower/.Rproj.user/shared/notebooks/4B7021AB-02-prior-specification/1/s/cj94a0y364mmj/000010.html
+  rctbayespower/.Rproj.user/shared/notebooks/4B7021AB-02-prior-specification/1/s/cj94a0y364mmj/000010.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/4B7021AB-02-prior-specification/1/s/cowkjizzlmagt/00000f.csv
+  rctbayespower/.Rproj.user/shared/notebooks/4B7021AB-02-prior-specification/1/s/csbwuhvxm9slh/00000f.csv
+  rctbayespower/.Rproj.user/shared/notebooks/4B7021AB-02-prior-specification/1/s/csbwuhvxm9slh/000010.html
+  rctbayespower/.Rproj.user/shared/notebooks/4B7021AB-02-prior-specification/1/s/csbwuhvxm9slh/000010.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/4B7021AB-02-prior-specification/1/s/csetup_chunk/00000f.csv
+  rctbayespower/.Rproj.user/shared/notebooks/4B7021AB-02-prior-specification/1/s/cylhzqqigny5n/00000f.csv
+  rctbayespower/.Rproj.user/shared/notebooks/4B7021AB-02-prior-specification/1/s/cylhzqqigny5n/000010.html
+  rctbayespower/.Rproj.user/shared/notebooks/4B7021AB-02-prior-specification/1/s/cylhzqqigny5n/000010.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/4B7021AB-02-prior-specification/1/s/cz9r1bdg2bow6/00000f.csv
+  rctbayespower/.Rproj.user/shared/notebooks/8B91AF45-99-model-validation/1/0C02CFDCbabef74e/chunks.json
+  rctbayespower/.Rproj.user/shared/notebooks/E174AE75-03-algorithm-performance/1/0C02CFDCbabef74e/chunks.json
+  rctbayespower/vignettes/.quarto/_freeze/articles/02-prior-specification/libs/quarto-html/light-border.css
+  rctbayespower/vignettes/.quarto/_freeze/articles/02-prior-specification/libs/quarto-html/popper.min.js
+  rctbayespower/vignettes/.quarto/_freeze/articles/02-prior-specification/libs/quarto-html/tippy.umd.min.js
+  rctbayespower/vignettes/.quarto/_freeze/articles/03-algorithm-performance/libs/quarto-html/light-border.css
+  rctbayespower/vignettes/.quarto/_freeze/articles/03-algorithm-performance/libs/quarto-html/popper.min.js
+  rctbayespower/vignettes/.quarto/_freeze/articles/03-algorithm-performance/libs/quarto-html/tippy.umd.min.js
+  rctbayespower/vignettes/.quarto/_freeze/articles/99-model-validation/libs/quarto-html/light-border.css
+  rctbayespower/vignettes/.quarto/_freeze/articles/99-model-validation/libs/quarto-html/tippy.umd.min.js
+
+Tarballs are only required to store paths of up to 100 bytes and cannot
+store those of more than 256 bytes, with restrictions including to 100
+bytes for the final component.
+See section ‘Package structure’ in the ‘Writing R Extensions’ manual.
+* checking for sufficient/correct file permissions ... OK
+* checking whether package ‘rctbayespower’ can be installed ... OK
+* checking installed package size ... OK
+* checking package directory ... OK
+* checking DESCRIPTION meta-information ... NOTE
+Checking should be performed on sources prepared by ‘R CMD build’.
+* checking top-level files ... OK
+* checking for left-over files ... OK
+* checking index information ... OK
+* checking package subdirectories ... WARNING
+Found the following directory with the name of a check directory:
+  ./..Rcheck
+Most likely, these were included erroneously.
+Subdirectory ‘data’ contains no data sets.
+* checking code files for non-ASCII characters ... OK
+* checking R files for syntax errors ... OK
+* checking whether the package can be loaded ... OK
+* checking whether the package can be loaded with stated dependencies ... OK
+* checking whether the package can be unloaded cleanly ... OK
+* checking whether the namespace can be loaded with stated dependencies ... OK
+* checking whether the namespace can be unloaded cleanly ... OK
+* checking loading without being on the library search path ... OK
+* checking whether startup messages can be suppressed ... OK
+* checking dependencies in R code ... OK
+* checking S3 generic/method consistency ... OK
+* checking replacement functions ... OK
+* checking foreign function calls ... OK
+* checking R code for possible problems ... OK
+* checking Rd files ... OK
+* checking Rd metadata ... OK
+* checking Rd cross-references ... OK
+* checking for missing documentation entries ... OK
+* checking for code/documentation mismatches ... OK
+* checking Rd \usage sections ... OK
+* checking Rd contents ... OK
+* checking for unstated dependencies in examples ... OK
+* checking contents of ‘data’ directory ... OK
+* checking data for non-ASCII characters ... OK
+* checking LazyData ... OK
+* checking data for ASCII and uncompressed saves ... OK
+* checking R/sysdata.rda ... OK
+* checking line endings in Makefiles ... OK
+* checking for GNU extensions in Makefiles ... OK
+* checking include directives in Makefiles ... OK
+* checking files in ‘vignettes’ ... WARNING
+Files in the 'vignettes' directory but no files in 'inst/doc':
+  ‘_quarto.yaml’ ‘articles/01-introduction.qmd’
+  ‘articles/02-prior-specification.qmd’
+  ‘articles/03-algorithm-performance.qmd’
+  ‘articles/99-model-validation.qmd’ ‘rebuild.R’
+Package has no Sweave vignette sources and no VignetteBuilder field.
+* checking examples ... OK
+* checking for unstated dependencies in ‘tests’ ... OK
+* checking tests ... SKIPPED
+* checking package vignettes ... NOTE
+Package has ‘vignettes’ subdirectory but apparently no vignettes.
+Perhaps the ‘VignetteBuilder’ information is missing from the
+DESCRIPTION file?
+* DONE
+Status: 2 WARNINGs, 4 NOTEs

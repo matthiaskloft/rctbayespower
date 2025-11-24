@@ -1,6 +1,8 @@
 ^.*\.Rproj$
 ^\.Rproj\.user$
+^\.Rproj.user/
 ^\.Rbuildignore$
+^\.Renviron$
 ^\.git$
 ^\.gitignore$
 ^.*\.o$
@@ -29,6 +31,9 @@
 ^Makefile$
 ^\.gitattributes$
 ^\..*Rcheck$
+^\.\./.*Rcheck$
+^vignettes/\.quarto$
+^vignettes/articles/\.quarto$
 ^test_model_ancova.rds$
 ^R/archive/
 ^vignettes/articles/\.quarto$

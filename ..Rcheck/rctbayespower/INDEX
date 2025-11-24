@@ -1,0 +1,37 @@
+analytical_power_ancova_cont_2arms
+                        Power Calculation for ANCOVA with Continuous
+                        Covariate and Two Groups
+build_conditions        Build Conditions for Power Analysis
+build_design            Constructor for rctbp_design Objects
+build_model             Create a Build Model Object
+build_model_ancova      Create General ANCOVA Model with Flexible
+                        Specifications
+build_model_ancova_cont_2arms
+                        Create 2-Arm ANCOVA Model for Continuous
+                        Outcomes
+build_model_ancova_cont_3arms
+                        Create 3-Arm ANCOVA Model for Continuous
+                        Outcomes
+compare_power_methods   Compare Power Calculation Methods
+f2_from_params_ancova_cont_2arms
+                        Compute Cohen's f-squared for Group Effect in
+                        Linear Model
+get_predefined_model    Get a predefined model by name
+list_predefined_models
+                        List available predefined models
+plot.rctbp_power_analysis
+                        Plot Power Analysis Results
+power_analysis          Build Power Analysis Configuration
+print.rctbp_conditions
+                        Print Method for rctbp_conditions Objects
+print.rctbp_design      Print Method for rctbp_design Objects
+print.rctbp_model       Print Method for rctbp_model Objects
+print.rctbp_power_analysis
+                        Print Method for rctbp_power_analysis Objects
+required_fn_args        Identify Required Parameters for Design or
+                        Model Objects
+run                     Run Analysis Objects
+run.rctbp_power_analysis
+                        Run Power Analysis
+simulate_single_run     Single Run Simulation for RCT Bayesian Power
+                        Analysis
