@@ -27,8 +27,9 @@ Imports:
     purrr,
     S7,
     pwr
-Suggests: 
+Suggests:
     testthat (>= 3.0.0),
+    withr,
     knitr,
     rmarkdown,
     quarto,

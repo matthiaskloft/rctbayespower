@@ -106,6 +106,11 @@ power_config@raw_results
 
 ## Development Practices and R CMD Check Guidelines
 
+### Documentation
+
+Save new development documents into "/dev".
+
+
 ### Documentation Guidelines
 - **Always update documentations directly in the .R file's roxygen documentation**
 - **CRITICAL**: After updating roxygen comments, run `devtools::document()` to regenerate .Rd files
