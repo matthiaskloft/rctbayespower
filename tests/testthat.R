@@ -16,9 +16,7 @@ if (tolower(parallel_tests) == "true") {
   ))
 
   # Run tests with parallel execution
-  test_check("rctbayespower", reporter = testthat::ParallelProgressReporter$new(
-    max_workers = n_cores
-  ))
+  test_check("rctbayespower", reporter = testthat::ParallelProgressReporter$new())
 } else {
   # Run tests sequentially (default)
   message("Running tests in sequential mode")

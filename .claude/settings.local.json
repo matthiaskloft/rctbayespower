@@ -34,7 +34,8 @@
       "WebSearch",
       "WebFetch(domain:github.com)",
       "Bash(Rscript:*)",
-      "Bash(PARALLEL_TESTS=false Rscript:*)"
+      "Bash(PARALLEL_TESTS=false Rscript:*)",
+      "Bash(_R_CHECK_FORCE_SUGGESTS_=false R CMD check:*)"
     ],
     "deny": []
   }

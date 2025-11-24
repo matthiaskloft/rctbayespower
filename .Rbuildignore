@@ -25,6 +25,7 @@
 ^pkgdown$
 ^vignettes/
 ^development/
+^dev$
 ^Makefile$
 ^\.gitattributes$
 ^\..*Rcheck$

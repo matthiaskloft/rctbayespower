@@ -6,20 +6,14 @@
     GNU Fortran (Ubuntu 13.3.0-6ubuntu2~24.04) 13.3.0
 * running under: Ubuntu 24.04.2 LTS
 * using session charset: UTF-8
-* using options ‘--no-tests --no-manual’
+* using options ‘--no-tests --no-manual --no-vignettes’
 * checking for file ‘./DESCRIPTION’ ... OK
 * this is package ‘rctbayespower’ version ‘0.0.0.9000’
 * package encoding: UTF-8
 * checking package namespace information ... OK
-* checking package dependencies ... ERROR
-Packages required but not available:
-  'brms', 'posterior', 'plotly', 'dplyr', 'tidyr', 'tibble', 'S7',
-  'pwr'
-
+* checking package dependencies ... INFO
 Packages suggested but not available for checking:
-  'testthat', 'rmarkdown', 'quarto', 'kableExtra', 'colorspace'
-
-See section ‘The DESCRIPTION file’ in the ‘Writing R Extensions’
-manual.
-* DONE
-Status: 1 ERROR
+  'quarto', 'kableExtra', 'colorspace'
+* checking if this is a source package ... OK
+* checking if there is a namespace ... OK
+* checking for executable files ...
