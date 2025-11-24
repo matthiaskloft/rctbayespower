@@ -5,7 +5,7 @@ rctbp_design <- S7::new_class(
   properties = list(
     model = S7::class_any,
     # Inherits from rctbp_model
-    interim1 = S7::class_function | NULL,
+    interim_function = S7::new_union(S7::class_function, NULL),
     parameter_names_interim_fn =  S7::new_property(
       getter = function(self) {
         # Extract parameter names from the interim function if it exists
