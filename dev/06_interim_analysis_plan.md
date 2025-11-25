@@ -1,6 +1,41 @@
 # Interim Analysis Implementation Plan
 **Created:** 2025-10-29
-**Status:** Planning Phase
+**Updated:** 2025-11-25
+**Status:** Partially Implemented
+
+## Implementation Progress
+
+| Component | Status | Notes |
+|-----------|--------|-------|
+| `rctbp_design` class properties | ✅ Done | Added `analysis_at`, `interim_function`, `adaptive` |
+| `build_design()` constructor | ✅ Done | Accepts interim parameters |
+| `build_conditions()` inheritance | ✅ Done | Inherits interim defaults from design |
+| `prepare_design_for_workers()` | ✅ Done | Serializes interim properties |
+| Sequential estimation (`estimation_sequential.R`) | ✅ Done | Handles brms and NPE backends |
+| Worker strategy detection | ✅ Done | Detects single/sequential/adaptive |
+| Interim helper functions | ✅ Done | `interim_continue()`, `interim_futility_only()`, `interim_success_futility()` |
+| Result summarization for interim | ❌ Pending | `summarize_sims_with_interim()` |
+| Interim-specific plotting | ❌ Pending | Stopping probability, expected N plots |
+| Adaptive strategy implementation | ❌ Pending | Parameter modification between looks |
+
+### Naming Conventions (Updated)
+
+The codebase uses these standardized short names:
+
+| Full Name | Short Name | Usage |
+|-----------|------------|-------|
+| `p_sig_success` | `p_sig_scs` | Probability threshold for success |
+| `p_sig_futility` | `p_sig_ftl` | Probability threshold for futility |
+| `summarized_results` | `results_summ` | Aggregated results property |
+| `raw_results` | `results_raw` | Individual simulation results |
+| `threshold_success` | `thr_scs` | Effect size threshold for success |
+| `threshold_futility` | `thr_ftl` | Effect size threshold for futility |
+| `probability_success` | `pr_scs` | Posterior P(effect > threshold) |
+| `probability_futility` | `pr_ftl` | Posterior P(effect < threshold) |
+| `decision_success` | `dec_scs` | Binary decision indicator |
+| `decision_futility` | `dec_ftl` | Binary decision indicator |
+
+Result data frame columns: `sim_iter`, `sim_cond`, `sim_anlys` (analysis index, 0=final only).
 
 ## Overview
 Design and implement an S7 class system for specifying interim analyses in sequential trial designs, integrated into the existing `rctbp_design` class architecture.
@@ -28,16 +63,32 @@ Design and implement an S7 class system for specifying interim analyses in seque
   - Calculate expected sample size accounting for early stops
   - Post-hoc analysis of alternative stopping rules
 
+### 5. Conflicting Stopping Decisions ✅ IMPLEMENTED
+- **Problem**: If both `dec_scs = 1` AND `dec_ftl = 1` at the same interim analysis, the thresholds are misconfigured
+- **Detection**: In `interim_success_futility()` and similar functions, check if both stopping conditions are met
+- **Action**: Raise an informative error explaining that thresholds and/or `p_sig_scs`/`p_sig_ftl` are set inappropriately
+- **Rationale**:
+  - Success decision: P(effect > threshold_success) >= p_sig_scs
+  - Futility decision: P(effect < threshold_futility) >= p_sig_ftl
+  - If both are true simultaneously, the ROPE (region between thresholds) is too narrow or probability thresholds are too permissive
+- **Error message should suggest**:
+  - Widen the gap between `thresholds_success` and `thresholds_futility`
+  - Increase `p_sig_scs` and/or `p_sig_ftl` to require stronger evidence
+  - Review the prior and likelihood to ensure posteriors aren't unreasonably wide
+
+**Implementation location**: `R/interim_functions.R` in the decision functions
+
 ## Implementation Plan
 
-### Phase 1: Update `rctbp_design` Class
+### Phase 1: Update `rctbp_design` Class ✅ IMPLEMENTED
 
 **File:** `R/class_design.R`
 
-**Add new properties:**
+**Added properties:**
 ```r
-analysis_at = S7::class_numeric | NULL,  # Vector of interim sample sizes
-adaptive = S7::class_logical             # Default FALSE
+analysis_at = S7::new_property(class = S7::class_numeric | NULL, default = NULL)
+interim_function = S7::new_property(class = S7::class_function | NULL, default = NULL)
+adaptive = S7::new_property(class = S7::class_logical, default = FALSE)
 ```
 
 **Update validator:**
@@ -531,7 +582,7 @@ plot_decision_consistency <- function(power_result) {
 **Update `plot.rctbp_power_analysis()` to auto-detect interim plots:**
 ```r
 S7::method(plot, rctbp_power_analysis) <- function(x, type = "auto", ...) {
-  has_interim <- "interim_look" %in% names(x@raw_results)
+  has_interim <- "interim_look" %in% names(x@results_raw)
 
   if (type == "auto") {
     if (has_interim) {
@@ -672,8 +723,8 @@ design <- build_design(
   target_params = "b_arms_treat",
   thresholds_success = 0.2,
   thresholds_futility = 0,
-  p_sig_success = 0.975,
-  p_sig_futility = 0.5,
+  p_sig_scs = 0.975,
+  p_sig_ftl = 0.5,
   analysis_at = c(100, 150),  # Interim at 100, 150; final at n_total
   adaptive = FALSE,
   interim_function = interim_futility_only(futility_threshold = 0.90)
@@ -716,8 +767,8 @@ design <- build_design(
   target_params = "b_arms_treat",
   thresholds_success = 0.2,
   thresholds_futility = 0,
-  p_sig_success = 0.975,
-  p_sig_futility = 0.5,
+  p_sig_scs = 0.975,
+  p_sig_ftl = 0.5,
   analysis_at = c(50, 100),
   adaptive = TRUE,  # Must be TRUE for parameter modification
   interim_function = my_adaptive_fn

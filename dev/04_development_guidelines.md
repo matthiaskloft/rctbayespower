@@ -65,12 +65,12 @@ Use `[function_name()]` not `\code{\link{function_name}}`
 1. **Documentation mismatch**: Ensure roxygen `@param` defaults match code defaults
    ```r
    # BAD: Code has 0.975 but docs say 0.95
-   #' @param p_sig_success Threshold (default 0.95)
-   my_fn <- function(p_sig_success = 0.975) { ... }
+   #' @param p_sig_scs Threshold (default 0.95)
+   my_fn <- function(p_sig_scs = 0.975) { ... }
 
    # GOOD: Match them
-   #' @param p_sig_success Threshold (default 0.975)
-   my_fn <- function(p_sig_success = 0.975) { ... }
+   #' @param p_sig_scs Threshold (default 0.975)
+   my_fn <- function(p_sig_scs = 0.975) { ... }
    ```
 
 2. **Undeclared global variables**: Add to `globalVariables()` or use `.data$var`

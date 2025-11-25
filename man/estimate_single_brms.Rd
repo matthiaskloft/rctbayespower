@@ -11,8 +11,8 @@ estimate_single_brms(
   target_params,
   thresholds_success,
   thresholds_futility,
-  p_sig_success,
-  p_sig_futility,
+  p_sig_scs,
+  p_sig_ftl,
   id_iter,
   id_cond
 )
@@ -30,9 +30,9 @@ estimate_single_brms(
 
 \item{thresholds_futility}{Numeric vector of futility thresholds}
 
-\item{p_sig_success}{Probability threshold for success}
+\item{p_sig_scs}{Probability threshold for success}
 
-\item{p_sig_futility}{Probability threshold for futility}
+\item{p_sig_ftl}{Probability threshold for futility}
 
 \item{id_iter}{Iteration identifier}
 

@@ -14,7 +14,7 @@ run(x, ...)
 \value{
 The result depends on the specific method called. For power analysis
 objects, returns the modified object with results stored in the
-\code{summarized_results} and \code{raw_results} properties.
+\code{results_summ} and \code{results_raw} properties.
 }
 \description{
 Generic function for executing analysis objects. This function provides a

@@ -28,8 +28,8 @@
 #       target_param = "grouparm",
 #       threshold_success = 0.3,
 #       threshold_futility = 0.1,
-#       p_sig_success = 0.95,
-#       p_sig_futility = 0.5
+#       p_sig_scs = 0.95,
+#       p_sig_ftl = 0.5
 #     ),
 #
 #     # Add simulation results for plotting

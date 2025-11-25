@@ -12,8 +12,8 @@
 #' @param target_params Character vector of parameter names
 #' @param thresholds_success Numeric vector of success thresholds
 #' @param thresholds_futility Numeric vector of futility thresholds
-#' @param p_sig_success Probability threshold for success
-#' @param p_sig_futility Probability threshold for futility
+#' @param p_sig_scs Probability threshold for success
+#' @param p_sig_ftl Probability threshold for futility
 #' @param analysis_at Vector of sample sizes for interim analyses
 #' @param interim_function Function to make interim decisions
 #' @param id_iter Iteration identifier
@@ -24,7 +24,7 @@
 #' @keywords internal
 estimate_sequential_brms <- function(full_data, model, backend_args, target_params,
                                      thresholds_success, thresholds_futility,
-                                     p_sig_success, p_sig_futility,
+                                     p_sig_scs, p_sig_ftl,
                                      analysis_at, interim_function,
                                      id_iter, id_cond) {
 
@@ -93,8 +93,8 @@ estimate_sequential_brms <- function(full_data, model, backend_args, target_para
     # Compute measures
     measures <- tryCatch({
       compute_measures(posterior_rvars, target_params, thresholds_success,
-                      thresholds_futility, p_sig_success, p_sig_futility) |>
-        dplyr::mutate(dplyr::across(-parameter, as.numeric))
+                      thresholds_futility, p_sig_scs, p_sig_ftl) |>
+        dplyr::mutate(dplyr::across(-par_name, as.numeric))
     }, error = function(e) {
       results_list[[id_analysis]] <- create_error_result(
         id_iter, id_cond, id_analysis,
@@ -141,15 +141,15 @@ estimate_sequential_brms <- function(full_data, model, backend_args, target_para
     # Add IDs and interim information
     measures <- measures |>
       dplyr::mutate(
-        id_iter = id_iter,
-        id_cond = id_cond,
-        id_analysis = id_analysis,
+        sim_iter = id_iter,
+        sim_cond = id_cond,
+        sim_anlys = id_analysis,
         n_analyzed = current_n,
         stopped = stopped,
         stop_reason = if_else(stopped, stop_reason, NA_character_),
         interim_decision = if (!is.null(interim_decision)) list(interim_decision) else list(NULL),
         converged = 1L,
-        error = NA_character_
+        error_msg = NA_character_
       )
 
     results_list[[id_analysis]] <- measures
@@ -172,8 +172,8 @@ estimate_sequential_brms <- function(full_data, model, backend_args, target_para
 #' @param target_params Character vector of parameter names
 #' @param thresholds_success Numeric vector of success thresholds
 #' @param thresholds_futility Numeric vector of futility thresholds
-#' @param p_sig_success Probability threshold for success
-#' @param p_sig_futility Probability threshold for futility
+#' @param p_sig_scs Probability threshold for success
+#' @param p_sig_ftl Probability threshold for futility
 #' @param analysis_at Vector of sample sizes for interim analyses
 #' @param interim_function Function to make interim decisions
 #' @param id_iter Vector of iteration identifiers (one per sim in batch)
@@ -184,7 +184,7 @@ estimate_sequential_brms <- function(full_data, model, backend_args, target_para
 #' @keywords internal
 estimate_sequential_npe <- function(full_data_list, model, backend_args, target_params,
                                     thresholds_success, thresholds_futility,
-                                    p_sig_success, p_sig_futility,
+                                    p_sig_scs, p_sig_ftl,
                                     analysis_at, interim_function,
                                     id_iter, id_cond) {
 
@@ -270,8 +270,8 @@ estimate_sequential_npe <- function(full_data_list, model, backend_args, target_
       # Compute measures
       measures <- tryCatch({
         compute_measures(posterior_rvars, target_params, thresholds_success,
-                        thresholds_futility, p_sig_success, p_sig_futility) |>
-          dplyr::mutate(dplyr::across(-parameter, as.numeric))
+                        thresholds_futility, p_sig_scs, p_sig_ftl) |>
+          dplyr::mutate(dplyr::across(-par_name, as.numeric))
       }, error = function(e) {
         results_by_sim[[sim_idx]][[id_analysis]] <- create_error_result(
           id_iter[sim_idx], id_cond[sim_idx], id_analysis,
@@ -310,15 +310,15 @@ estimate_sequential_npe <- function(full_data_list, model, backend_args, target_
       # Add IDs and interim information
       measures <- measures |>
         dplyr::mutate(
-          id_iter = id_iter[sim_idx],
-          id_cond = id_cond[sim_idx],
-          id_analysis = id_analysis,
+          sim_iter = id_iter[sim_idx],
+          sim_cond = id_cond[sim_idx],
+          sim_anlys = id_analysis,
           n_analyzed = current_n,
           stopped = stopped[sim_idx],
           stop_reason = if_else(stopped[sim_idx], stop_reason[sim_idx], NA_character_),
           interim_decision = if (!is.null(interim_decision)) list(interim_decision) else list(NULL),
           converged = 1L,
-          error = NA_character_
+          error_msg = NA_character_
         )
 
       results_by_sim[[sim_idx]][[id_analysis]] <- measures

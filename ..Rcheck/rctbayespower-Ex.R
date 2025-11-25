@@ -71,16 +71,22 @@ flush(stderr()); flush(stdout())
 ##D # Create an ANCOVA model
 ##D ancova_model <- build_model("ancova_cont_2arms")
 ##D 
-##D # Discover available parameter names (model-dependent)
-##D ancova_model@parameter_names_brms
-##D 
-##D # Create a design for analyzing treatment effect
-##D my_design <- build_design(
+##D # Simple design (no interim analysis)
+##D simple_design <- build_design(
 ##D   model = ancova_model,
-##D   target_params = ancova_model@parameter_names_brms[1],  # Use actual param name
-##D   p_sig_success = 0.975,
-##D   p_sig_futility = 0.5,
-##D   design_name = "ANCOVA Treatment Effect Analysis"
+##D   target_params = "b_armtreat_1",
+##D   p_sig_scs = 0.975,
+##D   p_sig_ftl = 0.5
+##D )
+##D 
+##D # Design with interim analysis
+##D sequential_design <- build_design(
+##D   model = ancova_model,
+##D   target_params = "b_armtreat_1",
+##D   p_sig_scs = 0.975,
+##D   p_sig_ftl = 0.5,
+##D   analysis_at = c(50, 100),
+##D   interim_function = interim_futility_only(futility_threshold = 0.90)
 ##D )
 ## End(Not run)
 
@@ -257,6 +263,87 @@ flush(stderr()); flush(stdout())
 
 get_verbosity()
 
+
+
+
+cleanEx()
+nameEx("interim_continue")
+### * interim_continue
+
+flush(stderr()); flush(stdout())
+
+### Name: interim_continue
+### Title: Default Interim Function: Always Continue
+### Aliases: interim_continue
+
+### ** Examples
+
+# Create a design with sequential monitoring but no early stopping
+## Not run: 
+##D design <- build_design(
+##D   model = my_model,
+##D   target_params = "b_armtreat_1",
+##D   p_sig_scs = 0.975,
+##D   p_sig_ftl = 0.5,
+##D   analysis_at = c(50, 100, 150),
+##D   interim_function = interim_continue()  # Or omit - this is the default
+##D )
+## End(Not run)
+
+
+
+cleanEx()
+nameEx("interim_futility_only")
+### * interim_futility_only
+
+flush(stderr()); flush(stdout())
+
+### Name: interim_futility_only
+### Title: Interim Function Factory: Futility Stopping Only
+### Aliases: interim_futility_only
+
+### ** Examples
+
+## Not run: 
+##D # Stop if P(futility) > 0.95
+##D design <- build_design(
+##D   model = my_model,
+##D   target_params = "b_armtreat_1",
+##D   p_sig_scs = 0.975,
+##D   p_sig_ftl = 0.5,
+##D   analysis_at = c(50, 100),
+##D   interim_function = interim_futility_only(futility_threshold = 0.95)
+##D )
+## End(Not run)
+
+
+
+cleanEx()
+nameEx("interim_success_futility")
+### * interim_success_futility
+
+flush(stderr()); flush(stdout())
+
+### Name: interim_success_futility
+### Title: Interim Function Factory: Success and Futility Stopping
+### Aliases: interim_success_futility
+
+### ** Examples
+
+## Not run: 
+##D # Stop for overwhelming success or clear futility
+##D design <- build_design(
+##D   model = my_model,
+##D   target_params = "b_armtreat_1",
+##D   p_sig_scs = 0.975,
+##D   p_sig_ftl = 0.5,
+##D   analysis_at = c(50, 100),
+##D   interim_function = interim_success_futility(
+##D     success_threshold = 0.995,
+##D     futility_threshold = 0.90
+##D   )
+##D )
+## End(Not run)
 
 
 

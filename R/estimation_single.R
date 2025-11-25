@@ -12,8 +12,8 @@
 #' @param target_params Character vector of parameter names
 #' @param thresholds_success Numeric vector of success thresholds
 #' @param thresholds_futility Numeric vector of futility thresholds
-#' @param p_sig_success Probability threshold for success
-#' @param p_sig_futility Probability threshold for futility
+#' @param p_sig_scs Probability threshold for success
+#' @param p_sig_ftl Probability threshold for futility
 #' @param id_iter Iteration identifier
 #' @param id_cond Condition identifier
 #'
@@ -21,7 +21,7 @@
 #' @keywords internal
 estimate_single_brms <- function(data, model, backend_args, target_params,
                                  thresholds_success, thresholds_futility,
-                                 p_sig_success, p_sig_futility,
+                                 p_sig_scs, p_sig_ftl,
                                  id_iter, id_cond) {
 
   # Estimate posterior
@@ -67,14 +67,14 @@ estimate_single_brms <- function(data, model, backend_args, target_params,
   # Compute measures
   result <- tryCatch({
     df <- compute_measures(posterior_rvars, target_params, thresholds_success,
-                          thresholds_futility, p_sig_success, p_sig_futility) |>
-      dplyr::mutate(dplyr::across(-parameter, as.numeric))
+                          thresholds_futility, p_sig_scs, p_sig_ftl) |>
+      dplyr::mutate(dplyr::across(-par_name, as.numeric))
     df |> dplyr::mutate(
-      id_iter = id_iter,
-      id_cond = id_cond,
-      id_analysis = 0L,  # Single analysis
+      sim_iter = id_iter,
+      sim_cond = id_cond,
+      sim_anlys = 0L,  # Single analysis
       converged = 1L,
-      error = NA_character_
+      error_msg = NA_character_
     )
   }, error = function(e) {
     return(create_error_result(id_iter, id_cond, id_analysis = 0L, as.character(e)))
@@ -95,8 +95,8 @@ estimate_single_brms <- function(data, model, backend_args, target_params,
 #' @param target_params Character vector of parameter names
 #' @param thresholds_success Numeric vector of success thresholds
 #' @param thresholds_futility Numeric vector of futility thresholds
-#' @param p_sig_success Probability threshold for success
-#' @param p_sig_futility Probability threshold for futility
+#' @param p_sig_scs Probability threshold for success
+#' @param p_sig_ftl Probability threshold for futility
 #' @param id_iter Integer or vector of iteration identifiers
 #' @param id_cond Integer or vector of condition identifiers
 #'
@@ -104,7 +104,7 @@ estimate_single_brms <- function(data, model, backend_args, target_params,
 #' @keywords internal
 estimate_single_npe <- function(data, model, backend_args, target_params,
                                 thresholds_success, thresholds_futility,
-                                p_sig_success, p_sig_futility,
+                                p_sig_scs, p_sig_ftl,
                                 id_iter, id_cond) {
 
   # Batch detection: distinguish data.frame (single) from list of data.frames (batch)
@@ -168,14 +168,14 @@ estimate_single_npe <- function(data, model, backend_args, target_params,
     # Compute measures
     result <- tryCatch({
       df <- compute_measures(posterior_rvars, target_params, thresholds_success,
-                            thresholds_futility, p_sig_success, p_sig_futility) |>
-        dplyr::mutate(dplyr::across(-parameter, as.numeric))
+                            thresholds_futility, p_sig_scs, p_sig_ftl) |>
+        dplyr::mutate(dplyr::across(-par_name, as.numeric))
       df |> dplyr::mutate(
-        id_iter = id_iter[i],
-        id_cond = id_cond[i],
-        id_analysis = 0L,
+        sim_iter = id_iter[i],
+        sim_cond = id_cond[i],
+        sim_anlys = 0L,
         converged = 1L,
-        error = NA_character_
+        error_msg = NA_character_
       )
     }, error = function(e) {
       return(create_error_result(id_iter[i], id_cond[i], id_analysis = 0L, as.character(e)))
@@ -202,24 +202,24 @@ estimate_single_npe <- function(data, model, backend_args, target_params,
 #' @keywords internal
 create_error_result <- function(id_iter, id_cond, id_analysis, error_msg) {
   data.frame(
-    parameter = NA_character_,
-    threshold_success = NA_real_,
-    threshold_futility = NA_real_,
-    success_prob = NA_real_,
-    futility_prob = NA_real_,
-    power_success = NA_real_,
-    power_futility = NA_real_,
-    median = NA_real_,
-    mad = NA_real_,
-    mean = NA_real_,
-    sd = NA_real_,
+    par_name = NA_character_,
+    thr_scs = NA_real_,
+    thr_ftl = NA_real_,
+    pr_scs = NA_real_,
+    pr_ftl = NA_real_,
+    dec_scs = NA_real_,
+    dec_ftl = NA_real_,
+    post_med = NA_real_,
+    post_mad = NA_real_,
+    post_mn = NA_real_,
+    post_sd = NA_real_,
     rhat = NA_real_,
     ess_bulk = NA_real_,
     ess_tail = NA_real_,
-    id_iter = id_iter,
-    id_cond = id_cond,
-    id_analysis = id_analysis,
+    sim_iter = id_iter,
+    sim_cond = id_cond,
+    sim_anlys = id_analysis,
     converged = 0L,
-    error = error_msg
+    error_msg = error_msg
   )
 }

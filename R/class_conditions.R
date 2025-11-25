@@ -72,15 +72,16 @@ rctbp_conditions <- S7::new_class("rctbp_conditions",
 #'   \item Creates expanded grid of all condition combinations
 #' }
 #'
-#' \strong{Non-Sequential Trial Defaults:}
-#' For non-sequential (single-look) trial designs, the following parameters have
-#' sensible defaults and do not need to be specified:
+#' \strong{Interim Analysis Inheritance:}
+#' Interim analysis parameters (`analysis_at`, `interim_function`, `adaptive`) are
+#' inherited from the design object as defaults. This means:
 #' \itemize{
-#'   \item \code{analysis_at = NULL} - Final analysis only (no interim looks)
-#'   \item \code{interim_function = NULL} - No interim decision function
-#'   \item \code{adaptive = FALSE} - Non-adaptive design
+#'   \item If specified in `build_design()`, they apply to all conditions automatically
+#'   \item Users can override per-condition via `condition_values` or `static_values`
+#'   \item If not specified anywhere, defaults to single-look design (no interim analyses)
 #' }
-#' These defaults can be overridden by specifying values in condition_values or static_values.
+#' This allows specifying interim specs once at design level while still permitting
+#' condition-specific overrides when needed.
 #'
 #' @examples
 #' \dontrun{
@@ -220,14 +221,22 @@ build_conditions <- function(design, condition_values, static_values) {
     # --- Decision arguments (per-condition) ---
     decision_args <- list()
 
-    # Apply defaults for non-sequential trial parameters
-    # Rationale: Most trials are single-look designs, so these defaults allow
-    # users to omit interim analysis parameters. When interim analysis is added
-    # in future, users can override these by specifying values explicitly.
+    # Inherit interim parameters from design as defaults
+    # Rationale: Design-level interim specs apply to all conditions unless overridden.
+    # Users can override per-condition via condition_values or static_values.
+    # If design doesn't specify, fall back to single-look defaults (NULL/FALSE).
+    #
+    # Special handling: if analysis_at is set but interim_function is NULL,
+    # use interim_continue() as default (sequential monitoring without stopping)
+    inherited_interim_fn <- design@interim_function
+    if (!is.null(design@analysis_at) && is.null(inherited_interim_fn)) {
+      inherited_interim_fn <- interim_continue()
+    }
+
     decision_defaults <- list(
-      analysis_at = NULL,        # Final analysis only (no interim looks)
-      interim_function = NULL,   # No interim decision function
-      adaptive = FALSE           # Non-adaptive design (fixed parameters)
+      analysis_at = design@analysis_at,           # Inherit from design (NULL = final only)
+      interim_function = inherited_interim_fn,    # Inherit from design or default to continue
+      adaptive = design@adaptive                  # Inherit from design (FALSE = non-adaptive)
     )
 
     for (param in params_needed$params_decision) {
@@ -244,6 +253,12 @@ build_conditions <- function(design, condition_values, static_values) {
           "i" = "Add {.val {param}} to {.arg condition_values} or {.arg static_values}"
         ))
       }
+    }
+
+    # Ensure interim_function is set when analysis_at is specified
+    # (handles case where user specifies analysis_at per-condition/static but not interim_function)
+    if (!is.null(decision_args$analysis_at) && is.null(decision_args$interim_function)) {
+      decision_args$interim_function <- interim_continue()
     }
 
     # Return both sets of args

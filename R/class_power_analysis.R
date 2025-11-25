@@ -22,8 +22,8 @@ rctbp_power_analysis <- S7::new_class(
     design = S7::new_property(getter = function(self) self@conditions@design),
 
     # Results (populated after run())
-    summarized_results = S7::class_data.frame,
-    raw_results = S7::class_data.frame,
+    results_summ = S7::class_data.frame,
+    results_raw = S7::class_data.frame,
     elapsed_time = S7::new_property(class = S7::class_numeric, default = NA_real_)
   ),
   validator = function(self) {
@@ -207,7 +207,7 @@ power_analysis <- function(run = TRUE, ...) {
 #'
 #' @return The result depends on the specific method called. For power analysis
 #'   objects, returns the modified object with results stored in the
-#'   \code{summarized_results} and \code{raw_results} properties.
+#'   \code{results_summ} and \code{results_raw} properties.
 #'
 #' @export
 #' @importFrom S7 method new_generic
@@ -355,7 +355,7 @@ S7::method(run, rctbp_power_analysis) <- function(x, ...) {
     1L  # No batching for brms or when batch_size not specified
   }
 
-  # Create work units: conditions × iterations (NOT interims!)
+  # Create work units: conditions x iterations (NOT interims!)
   # Work units are (id_cond, id_iter) pairs
   n_conditions <- length(conditions@condition_arguments)
   work_units <- lapply(seq_len(n_conditions), function(id_cond) {
@@ -512,12 +512,12 @@ S7::method(run, rctbp_power_analysis) <- function(x, ...) {
     #
     # batch_size = 1 (brms typical):
     #   - Each worker processes one (condition, iteration) pair
-    #   - brms fits are independent → no batching benefit
+    #   - brms fits are independent --> no batching benefit
     #   - Simple parallelization: distribute work units across cores
     #
     # batch_size > 1 (NPE typical):
     #   - Group multiple work units into batches
-    #   - NPE processes batch in single forward pass → efficient
+    #   - NPE processes batch in single forward pass --> efficient
     #   - Trade-off: Larger batches = fewer parallel tasks but faster per-batch
     #
     # Rationale: NPE models can vectorize across multiple simulations (batch
@@ -761,9 +761,9 @@ S7::method(run, rctbp_power_analysis) <- function(x, ...) {
   # Check for and report any error messages
   # Always show errors for debugging
   error_results <- dplyr::bind_rows(results_raw_list)
-  error_rows <- !is.na(error_results$error)
+  error_rows <- !is.na(error_results$error_msg)
   if (any(error_rows)) {
-    error_msgs <- error_results[error_rows, "error"]
+    error_msgs <- error_results[error_rows, "error_msg"]
     cat("Simulation errors found:\n")
     cat(paste(unique(error_msgs), collapse = "\n"), "\n")
     cat("Number of errors:", sum(error_rows), "\n")
@@ -779,18 +779,18 @@ S7::method(run, rctbp_power_analysis) <- function(x, ...) {
     cli::cli_text("")
 
     dims <- dim(results_df_raw)
-    cli::cli_text("{.strong Combined results dimensions:} {dims[1]} rows × {dims[2]} columns")
+    cli::cli_text("{.strong Combined results dimensions:} {dims[1]} rows x {dims[2]} columns")
 
     if (!is.null(results_df_raw) && nrow(results_df_raw) > 0) {
       cli::cli_text("{.strong Column names:} {.val {colnames(results_df_raw)}}")
 
       result_info <- c(
-        "Unique conditions" = length(unique(results_df_raw$id_cond)),
+        "Unique conditions" = length(unique(results_df_raw$sim_cond)),
         "Unique iterations per condition" = n_sims
       )
 
-      if ("id_analysis" %in% colnames(results_df_raw)) {
-        analyses <- paste(sort(unique(results_df_raw$id_analysis)), collapse = ", ")
+      if ("sim_anlys" %in% colnames(results_df_raw)) {
+        analyses <- paste(sort(unique(results_df_raw$sim_anlys)), collapse = ", ")
         result_info <- c(result_info, "Analyses per iteration" = analyses)
       }
 
@@ -802,7 +802,7 @@ S7::method(run, rctbp_power_analysis) <- function(x, ...) {
   # Average across simulation runs
   results_df <- summarize_sims(results_df_raw, n_sims)
   # Add condition IDs and arguments to results
-  results_df <- dplyr::full_join(conditions@conditions_grid, results_df, by = "id_cond")
+  results_df <- dplyr::full_join(conditions@conditions_grid, results_df, by = c("id_cond" = "sim_cond"))
   # End time
   elapsed_time <- difftime(Sys.time(), start_time, units = "mins")
   # Print elapsed time
@@ -811,8 +811,8 @@ S7::method(run, rctbp_power_analysis) <- function(x, ...) {
   }
   
   # Update the S7 object with results
-  x@summarized_results <- results_df
-  x@raw_results <- results_df_raw
+  x@results_summ <- results_df
+  x@results_raw <- results_df_raw
   x@elapsed_time <- as.numeric(elapsed_time)
   
   # Return the updated object

@@ -35,9 +35,9 @@ These were most likely included in error. See section ‘Package
 structure’ in the ‘Writing R Extensions’ manual.
 * checking for portable file names ... NOTE
 Found the following non-portable file paths:
-  rctbayespower/.Rproj.user/shared/notebooks/02D52AB6-01-introduction/1/s/ckw6rfgwxs6po/000010.metadata
-  rctbayespower/.Rproj.user/shared/notebooks/02D52AB6-01-introduction/1/s/ctxwkj5tk2tsh/00002e.metadata
-  rctbayespower/.Rproj.user/shared/notebooks/02D52AB6-01-introduction/1/s/cwnfbljbxv0a4/00002e.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/02D52AB6-01-introduction/1/s/ckw6rfgwxs6po/000012.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/02D52AB6-01-introduction/1/s/ctxwkj5tk2tsh/00004e.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/02D52AB6-01-introduction/1/s/cwnfbljbxv0a4/000032.metadata
   rctbayespower/.Rproj.user/shared/notebooks/02D52AB6-01-introduction/1/s/cxnr5y8edgy07/000010.metadata
   rctbayespower/.Rproj.user/shared/notebooks/34F51C84-02-prior-specification/1/0C02CFDCbabef74e/chunks.json
   rctbayespower/.Rproj.user/shared/notebooks/8B91AF45-99-model-validation/1/0C02CFDCbabef74e/chunks.json
@@ -81,9 +81,7 @@ Subdirectory ‘data’ contains no data sets.
 * checking whether the namespace can be unloaded cleanly ... OK
 * checking loading without being on the library search path ... OK
 * checking whether startup messages can be suppressed ... OK
-* checking dependencies in R code ... NOTE
-Namespace in Imports field not imported from: ‘pbapply’
-  All declared Imports should be used.
+* checking dependencies in R code ... OK
 * checking S3 generic/method consistency ... OK
 * checking replacement functions ... OK
 * checking foreign function calls ... OK
@@ -119,4 +117,4 @@ Package has ‘vignettes’ subdirectory but apparently no vignettes.
 Perhaps the ‘VignetteBuilder’ information is missing from the
 DESCRIPTION file?
 * DONE
-Status: 2 WARNINGs, 5 NOTEs
+Status: 2 WARNINGs, 4 NOTEs

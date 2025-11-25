@@ -80,8 +80,8 @@ design <- build_design(
   target_params = "b_arm2",
   thresholds_success = 0.1,
   thresholds_futility = 0,
-  p_sig_success = 0.975,
-  p_sig_futility = 0.5
+  p_sig_scs = 0.975,
+  p_sig_ftl = 0.5
 )
 # check the required parameters for the design
 required_fn_args(design)
@@ -161,11 +161,11 @@ power_result_sampling <- power_analysis(
 Extract the summarized results from each power analysis:
 ```{r}
 results_summary<- rbind(
-  power_result_meanfield@summarized_results |> 
+  power_result_meanfield@results_summ |> 
     mutate(Algorithm = "Meanfield"),
-  power_result_fullrank@summarized_results |> 
+  power_result_fullrank@results_summ |> 
     mutate(Algorithm = "Fullrank"),
-  power_result_sampling@summarized_results |> 
+  power_result_sampling@results_summ |> 
     mutate(Algorithm = "Sampling")
 )
 ```
@@ -179,10 +179,10 @@ results_summary |>
     Algorithm,
     n_total,
     b_arm_treat,
-    prob_success,
-    prob_futility,
-    power_success,
-    power_futility
+    pr_scs,
+    pr_ftl,
+    pwr_scs,
+    pwr_ftl
   ) |>
   dplyr::arrange(desc(b_arm_treat)) |> 
   kableExtra::kable(digits = 2)

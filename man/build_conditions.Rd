@@ -39,15 +39,16 @@ The function performs several validation steps:
 \item Creates expanded grid of all condition combinations
 }
 
-\strong{Non-Sequential Trial Defaults:}
-For non-sequential (single-look) trial designs, the following parameters have
-sensible defaults and do not need to be specified:
+\strong{Interim Analysis Inheritance:}
+Interim analysis parameters (\code{analysis_at}, \code{interim_function}, \code{adaptive}) are
+inherited from the design object as defaults. This means:
 \itemize{
-\item \code{analysis_at = NULL} - Final analysis only (no interim looks)
-\item \code{interim_function = NULL} - No interim decision function
-\item \code{adaptive = FALSE} - Non-adaptive design
+\item If specified in \code{build_design()}, they apply to all conditions automatically
+\item Users can override per-condition via \code{condition_values} or \code{static_values}
+\item If not specified anywhere, defaults to single-look design (no interim analyses)
 }
-These defaults can be overridden by specifying values in condition_values or static_values.
+This allows specifying interim specs once at design level while still permitting
+condition-specific overrides when needed.
 }
 \examples{
 \dontrun{

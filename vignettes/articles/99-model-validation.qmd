@@ -84,8 +84,8 @@ design <- build_design(
   n_interim_analyses = 0,
   thresholds_success = 0,
   thresholds_futility = 0,
-  p_sig_success = 0.95,
-  p_sig_futility = 0.5
+  p_sig_scs = 0.95,
+  p_sig_ftl = 0.5
 )
 
 # Create conditions
@@ -111,8 +111,8 @@ power <- rctbayespower::power_analysis(
   ),
   verbosity = 2
 )
-power_mc <- power@summarized_results$power_success
-power_mcse <- power@summarized_results$power_success_se
+power_mc <- power@results_summ$pwr_scs_mean
+power_mcse <- power@results_summ$pwr_scs_mcse
 power_ci_95 <- paste0("[", 
                       round(power_mc - 1.96 * power_mcse, 3), ", ", 
                       round(power_mc + 1.96 * power_mcse, 3), "]")

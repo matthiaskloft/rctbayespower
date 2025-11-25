@@ -8,14 +8,14 @@
 #' @param target_params Character vector of parameter names to analyze
 #' @param thresholds_success Numeric vector of success thresholds (one per parameter)
 #' @param thresholds_futility Numeric vector of futility thresholds (one per parameter)
-#' @param p_sig_success Probability threshold for declaring success
-#' @param p_sig_futility Probability threshold for declaring futility
+#' @param p_sig_scs Probability threshold for declaring success
+#' @param p_sig_ftl Probability threshold for declaring futility
 #'
 #' @return A data frame containing power analysis measures
 #' @importFrom stats median
 #' @keywords internal
 compute_measures <- function(posterior_rvars, target_params, thresholds_success,
-                             thresholds_futility, p_sig_success, p_sig_futility) {
+                             thresholds_futility, p_sig_scs, p_sig_ftl) {
 
   # Compute measures for each parameter
   measures_list <- purrr::map(target_params, function(param) {
@@ -42,8 +42,8 @@ compute_measures <- function(posterior_rvars, target_params, thresholds_success,
     success_prob <- posterior::Pr(param_rvar > threshold_success)
     futility_prob <- posterior::Pr(param_rvar < threshold_futility)
     # significance
-    sig_success <- as.numeric(success_prob >= p_sig_success, na.rm = TRUE)
-    sig_futility <- as.numeric(futility_prob >= p_sig_futility, na.rm = TRUE)
+    sig_success <- as.numeric(success_prob >= p_sig_scs, na.rm = TRUE)
+    sig_futility <- as.numeric(futility_prob >= p_sig_ftl, na.rm = TRUE)
     # parameter estimates
     est_median <- stats::median(param_rvar)
     est_mad <- posterior::mad(param_rvar)
@@ -56,17 +56,17 @@ compute_measures <- function(posterior_rvars, target_params, thresholds_success,
 
     # combine results into a list
     out_list <- list(
-      parameter = param,
-      threshold_success = threshold_success,
-      threshold_futility = threshold_futility,
-      success_prob = success_prob,
-      futility_prob = futility_prob,
-      power_success = sig_success,
-      power_futility = sig_futility,
-      median = est_median,
-      mad = est_mad,
-      mean = est_mean,
-      sd = est_sd,
+      par_name = param,
+      thr_scs = threshold_success,
+      thr_ftl = threshold_futility,
+      pr_scs = success_prob,
+      pr_ftl = futility_prob,
+      dec_scs = sig_success,
+      dec_ftl = sig_futility,
+      post_med = est_median,
+      post_mad = est_mad,
+      post_mn = est_mean,
+      post_sd = est_sd,
       rhat = rhat,
       ess_bulk = ess_bulk,
       ess_tail = ess_tail
@@ -113,22 +113,22 @@ compute_measures <- function(posterior_rvars, target_params, thresholds_success,
     ))
 
     # calculate combined significance
-    combined_sig_success <- as.numeric(combined_success_prob >= p_sig_success, na.rm = TRUE)
-    combined_sig_futility <- as.numeric(combined_futility_prob >= p_sig_futility, na.rm = TRUE)
+    combined_sig_success <- as.numeric(combined_success_prob >= p_sig_scs, na.rm = TRUE)
+    combined_sig_futility <- as.numeric(combined_futility_prob >= p_sig_ftl, na.rm = TRUE)
 
     # combine results into a list
     measures_list_combined <- list(
-      parameter = "union",
-      threshold_success = NA,
-      threshold_futility = NA,
-      success_prob = combined_success_prob,
-      futility_prob = combined_futility_prob,
-      power_success = combined_sig_success,
-      power_futility = combined_sig_futility,
-      median = NA,
-      mad = NA,
-      mean = NA,
-      sd = NA,
+      par_name = "union",
+      thr_scs = NA,
+      thr_ftl = NA,
+      pr_scs = combined_success_prob,
+      pr_ftl = combined_futility_prob,
+      dec_scs = combined_sig_success,
+      dec_ftl = combined_sig_futility,
+      post_med = NA,
+      post_mad = NA,
+      post_mn = NA,
+      post_sd = NA,
       rhat = NA,
       ess_bulk = NA,
       ess_tail = NA
@@ -208,35 +208,35 @@ compute_measures_brmsfit <- function(brmsfit, design) {
 #'
 #' @param results_df_raw A data frame containing raw simulation results with columns:
 #'   \itemize{
-#'     \item `id_cond`: Condition identifier
-#'     \item `parameter`: Parameter name
-#'     \item `threshold_success`: Success threshold for the parameter
-#'     \item `threshold_futility`: Futility threshold for the parameter
-#'     \item `success_prob`: Probability of success for each simulation
-#'     \item `futility_prob`: Probability of futility for each simulation
-#'     \item `sig_success`: Binary success significance indicator
-#'     \item `sig_futility`: Binary futility significance indicator
-#'     \item `est_median`: Posterior median estimates
-#'     \item `est_mad`: Posterior median absolute deviation
-#'     \item `est_mean`: Posterior mean estimates
-#'     \item `est_sd`: Posterior standard deviation
+#'     \item `sim_cond`: Condition identifier
+#'     \item `par_name`: Parameter name
+#'     \item `thr_scs`: Success threshold for the parameter
+#'     \item `thr_ftl`: Futility threshold for the parameter
+#'     \item `pr_scs`: Probability of success for each simulation
+#'     \item `pr_ftl`: Probability of futility for each simulation
+#'     \item `dec_scs`: Binary success decision indicator
+#'     \item `dec_ftl`: Binary futility decision indicator
+#'     \item `post_med`: Posterior median estimates
+#'     \item `post_mad`: Posterior median absolute deviation
+#'     \item `post_mn`: Posterior mean estimates
+#'     \item `post_sd`: Posterior standard deviation
 #'     \item `rhat`: R-hat convergence diagnostic
 #'     \item `ess_bulk`: Bulk effective sample size
 #'     \item `ess_tail`: Tail effective sample size
 #'     \item `converged`: Convergence status indicator
-#'     \item `error`: Error messages (if any)
+#'     \item `error_msg`: Error messages (if any)
 #'   }
 #' @param n_sims Integer specifying the total number of simulations run
 #'
 #' @return A data frame with summarized results grouped by condition and parameter,
-#'   containing mean estimates and Monte Carlo standard errors (SE) for all metrics:
+#'   containing mean estimates and Monte Carlo standard errors (MCSE) for all metrics:
 #'   \itemize{
-#'     \item Probability estimates: `prob_success`, `prob_futility`
-#'     \item Power estimates: `power_success`, `power_futility`
-#'     \item Parameter estimates: `median`, `mean`, `mad`, `sd`
-#'     \item Convergence metrics: `rhat`, `ess_bulk`, `ess_tail`, `conv_rate`
+#'     \item Probability estimates: `pr_scs_mean`, `pr_ftl_mean` with `*_mcse`
+#'     \item Power estimates: `pwr_scs_mean`, `pwr_ftl_mean` with `*_mcse`
+#'     \item Parameter estimates: `post_med_mean`, `post_mn_mean`, `post_mad_mean`, `post_sd_mean`
+#'     \item Convergence metrics: `rhat_mean`, `ess_bulk_mean`, `ess_tail_mean`, `conv_rate_mean`
 #'   }
-#'   Each metric includes corresponding `_se` columns with standard errors.
+#'   Each metric includes corresponding `*_mcse` columns with Monte Carlo standard errors.
 #'
 #' @details
 #' The function groups results by condition ID, parameter, and thresholds, then computes:
@@ -259,66 +259,66 @@ summarize_sims <- function(results_df_raw, n_sims) {
       "i" = "This is an internal error - please report"
     ))
   }
-  # remove rows with NA in id_cond or parameter
+  # remove rows with NA in sim_cond or par_name
   results_df_raw <- results_df_raw |>
-    dplyr::filter(!is.na(id_cond) & !is.na(parameter))
+    dplyr::filter(!is.na(sim_cond) & !is.na(par_name))
 
 
   results_summarized <- results_df_raw |>
-    dplyr::group_by(id_cond, parameter, threshold_success, threshold_futility) |>
+    dplyr::group_by(sim_cond, par_name, thr_scs, thr_ftl) |>
     dplyr::summarise(
-      success_prob_mean = mean(success_prob, na.rm = TRUE),
-      success_prob_mcse = calculate_mcse_mean(success_prob, n_sims),
-      futility_prob_mean = mean(futility_prob, na.rm = TRUE),
-      futility_prob_mcse = calculate_mcse_mean(futility_prob, n_sims),
-      success_power_mean = mean(power_success, na.rm = TRUE),
-      success_power_mcse = calculate_mcse_power(power_success, n_sims),
-      futility_power_mean = mean(power_futility, na.rm = TRUE),
-      futility_power_mcse = calculate_mcse_power(power_futility, n_sims),
-      est_median_mean = mean(.data$median, na.rm = TRUE),
-      est_median_mcse = calculate_mcse_mean(.data$median, n_sims),
-      est_mad_mean = mean(.data$mad, na.rm = TRUE),
-      est_mad_mcse = calculate_mcse_mean(.data$mad, n_sims),
-      est_mean_mean = mean(.data$mean, na.rm = TRUE),
-      est_mean_mcse = calculate_mcse_mean(.data$mean, n_sims),
-      est_sd_mean = mean(.data$sd, na.rm = TRUE),
-      est_sd_mcse = calculate_mcse_mean(.data$sd, n_sims),
+      pr_scs_mean = mean(pr_scs, na.rm = TRUE),
+      pr_scs_mcse = calculate_mcse_mean(pr_scs, n_sims),
+      pr_ftl_mean = mean(pr_ftl, na.rm = TRUE),
+      pr_ftl_mcse = calculate_mcse_mean(pr_ftl, n_sims),
+      pwr_scs_mean = mean(dec_scs, na.rm = TRUE),
+      pwr_scs_mcse = calculate_mcse_power(dec_scs, n_sims),
+      pwr_ftl_mean = mean(dec_ftl, na.rm = TRUE),
+      pwr_ftl_mcse = calculate_mcse_power(dec_ftl, n_sims),
+      post_med_mean = mean(.data$post_med, na.rm = TRUE),
+      post_med_mcse = calculate_mcse_mean(.data$post_med, n_sims),
+      post_mad_mean = mean(.data$post_mad, na.rm = TRUE),
+      post_mad_mcse = calculate_mcse_mean(.data$post_mad, n_sims),
+      post_mn_mean = mean(.data$post_mn, na.rm = TRUE),
+      post_mn_mcse = calculate_mcse_mean(.data$post_mn, n_sims),
+      post_sd_mean = mean(.data$post_sd, na.rm = TRUE),
+      post_sd_mcse = calculate_mcse_mean(.data$post_sd, n_sims),
       rhat_mean = mean(rhat, na.rm = TRUE),
       rhat_mcse = calculate_mcse_mean(rhat, n_sims),
       ess_bulk_mean = mean(ess_bulk, na.rm = TRUE),
       ess_bulk_mcse = calculate_mcse_mean(ess_bulk, n_sims),
       ess_tail_mean = mean(ess_tail, na.rm = TRUE),
       ess_tail_mcse = calculate_mcse_mean(ess_tail, n_sims),
-      convergence_rate_mean = mean(converged, na.rm = TRUE),
-      convergence_rate_mcse = calculate_mcse_power(converged, n_sims),
+      conv_rate_mean = mean(converged, na.rm = TRUE),
+      conv_rate_mcse = calculate_mcse_power(converged, n_sims),
       .groups = "drop"
     ) |>
     # make shorter names
     dplyr::rename(
-      prob_success = success_prob_mean,
-      prob_success_se = success_prob_mcse,
-      prob_futility = futility_prob_mean,
-      prob_futility_se = futility_prob_mcse,
-      power_success = success_power_mean,
-      power_success_se = success_power_mcse,
-      power_futility = futility_power_mean,
-      power_futility_se = futility_power_mcse,
-      median = est_median_mean,
-      median_se = est_median_mcse,
-      mad = est_mad_mean,
-      mad_se = est_mad_mcse,
-      mean = est_mean_mean,
-      mean_se = est_mean_mcse,
-      sd = est_sd_mean,
-      sd_se = est_sd_mcse,
+      pr_scs = pr_scs_mean,
+      se_pr_scs = pr_scs_mcse,
+      pr_ftl = pr_ftl_mean,
+      se_pr_ftl = pr_ftl_mcse,
+      pwr_scs = pwr_scs_mean,
+      se_pwr_scs = pwr_scs_mcse,
+      pwr_ftl = pwr_ftl_mean,
+      se_pwr_ftl = pwr_ftl_mcse,
+      post_med = post_med_mean,
+      se_post_med = post_med_mcse,
+      post_mad = post_mad_mean,
+      se_post_mad = post_mad_mcse,
+      post_mn = post_mn_mean,
+      se_post_mn = post_mn_mcse,
+      post_sd = post_sd_mean,
+      se_post_sd = post_sd_mcse,
       rhat = rhat_mean,
-      rhat_se = rhat_mcse,
+      se_rhat = rhat_mcse,
       ess_bulk = ess_bulk_mean,
-      ess_bulk_se = ess_bulk_mcse,
+      se_ess_bulk = ess_bulk_mcse,
       ess_tail = ess_tail_mean,
-      ess_tail_se = ess_tail_mcse,
-      conv_rate = convergence_rate_mean,
-      conv_rate_se = convergence_rate_mcse
+      se_ess_tail = ess_tail_mcse,
+      conv_rate = conv_rate_mean,
+      se_conv_rate = conv_rate_mcse
     )
 
   return(results_summarized)

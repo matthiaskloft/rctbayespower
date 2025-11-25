@@ -20,6 +20,12 @@ f2_from_params_ancova_cont_2arms
 get_output_mode         Get Current Output Mode
 get_predefined_model    Get a predefined model by name
 get_verbosity           Get Current Verbosity Level
+interim_continue        Default Interim Function: Always Continue
+interim_futility_only   Interim Function Factory: Futility Stopping
+                        Only
+interim_success_futility
+                        Interim Function Factory: Success and Futility
+                        Stopping
 list_predefined_models
                         List available predefined models
 plot.rctbp_power_analysis

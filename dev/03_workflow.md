@@ -16,8 +16,8 @@ model@parameter_names_sim_fn  # For simulation args (e.g., "b_arm_treat")
 design <- build_design(
   model = model,
   target_params = "b_armtreat_1",  # Must match model@parameter_names_brms
-  p_sig_success = 0.975,
-  p_sig_futility = 0.5
+  p_sig_scs = 0.975,
+  p_sig_ftl = 0.5
 )
 
 # Step 3: Create conditions grid
@@ -47,8 +47,8 @@ result <- power_analysis(
 
 # Visualize and access results
 plot(result)
-result@summarized_results
-result@raw_results
+result@results_summ
+result@results_raw
 ```
 
 ## Alternative: Build-then-Run
@@ -142,7 +142,7 @@ static_values = list(
 
 ## Results Structure
 
-### `summarized_results` (Aggregated)
+### `results_summ` (Aggregated)
 
 | Column | Description |
 |--------|-------------|
@@ -156,7 +156,7 @@ static_values = list(
 | `rhat`, `ess_bulk` | Convergence diagnostics |
 | `*_se` | Monte Carlo standard errors |
 
-### `raw_results` (Individual Simulations)
+### `results_raw` (Individual Simulations)
 
 One row per simulation × condition × parameter, with all metrics from each individual run.
 

@@ -83,10 +83,19 @@ build_report.rctbp_design <- function(x) {
         items = list(
           "Design name" = if (is.null(x@design_name)) "NULL" else x@design_name,
           "Target parameters" = paste(x@target_params, collapse = ", "),
-          "Probability threshold for success" = x@p_sig_success,
-          "Probability threshold for futility" = x@p_sig_futility
+          "Probability threshold for success" = x@p_sig_scs,
+          "Probability threshold for futility" = x@p_sig_ftl
         ),
-        note = "Decision criteria (thresholds, interim schedules) are specified\nper-condition in the conditions object."
+        note = "Effect size thresholds are specified per-condition in build_conditions()."
+      ),
+      list(
+        name = "Interim Analysis (Design Defaults)",
+        items = list(
+          "Analysis timepoints" = if (is.null(x@analysis_at)) "None (single-look)" else paste(x@analysis_at, collapse = ", "),
+          "Interim function" = if (is.null(x@interim_function)) "None" else "Specified",
+          "Adaptive design" = x@adaptive
+        ),
+        note = if (!is.null(x@analysis_at)) "These defaults apply to all conditions unless overridden." else NULL
       ),
       list(
         name = "brms Model",
@@ -138,7 +147,7 @@ build_report.rctbp_conditions <- function(x) {
 #'
 build_report.rctbp_power_analysis <- function(x) {
   design <- x@conditions@design
-  has_results <- nrow(x@summarized_results) > 0 || nrow(x@raw_results) > 0
+  has_results <- nrow(x@results_summ) > 0 || nrow(x@results_raw) > 0
 
   report <- list(
     title = "S7 Object: rctbp_power_analysis",
@@ -147,8 +156,8 @@ build_report.rctbp_power_analysis <- function(x) {
         name = "Design Summary",
         items = list(
           "Target parameters" = paste(design@target_params, collapse = ", "),
-          "Success probability threshold" = design@p_sig_success,
-          "Futility probability threshold" = design@p_sig_futility
+          "Success probability threshold" = design@p_sig_scs,
+          "Futility probability threshold" = design@p_sig_ftl
         )
       )
     )
@@ -156,7 +165,7 @@ build_report.rctbp_power_analysis <- function(x) {
 
   if (has_results) {
     # Completed analysis
-    results_df <- x@summarized_results
+    results_df <- x@results_summ
     n_conditions <- nrow(x@conditions@conditions_grid)
 
     # Power ranges
@@ -188,8 +197,8 @@ build_report.rctbp_power_analysis <- function(x) {
         name = "Available Actions",
         actions = c(
           "plot() - Create visualizations",
-          "power_config@summarized_results - Access summarized results",
-          "power_config@raw_results - Access raw simulation results"
+          "power_config@results_summ - Access summarized results",
+          "power_config@results_raw - Access raw simulation results"
         )
       )
     ))

@@ -9,37 +9,37 @@ summarize_sims(results_df_raw, n_sims)
 \arguments{
 \item{results_df_raw}{A data frame containing raw simulation results with columns:
 \itemize{
-\item \code{id_cond}: Condition identifier
-\item \code{parameter}: Parameter name
-\item \code{threshold_success}: Success threshold for the parameter
-\item \code{threshold_futility}: Futility threshold for the parameter
-\item \code{success_prob}: Probability of success for each simulation
-\item \code{futility_prob}: Probability of futility for each simulation
-\item \code{sig_success}: Binary success significance indicator
-\item \code{sig_futility}: Binary futility significance indicator
-\item \code{est_median}: Posterior median estimates
-\item \code{est_mad}: Posterior median absolute deviation
-\item \code{est_mean}: Posterior mean estimates
-\item \code{est_sd}: Posterior standard deviation
+\item \code{sim_cond}: Condition identifier
+\item \code{par_name}: Parameter name
+\item \code{thr_scs}: Success threshold for the parameter
+\item \code{thr_ftl}: Futility threshold for the parameter
+\item \code{pr_scs}: Probability of success for each simulation
+\item \code{pr_ftl}: Probability of futility for each simulation
+\item \code{dec_scs}: Binary success decision indicator
+\item \code{dec_ftl}: Binary futility decision indicator
+\item \code{post_med}: Posterior median estimates
+\item \code{post_mad}: Posterior median absolute deviation
+\item \code{post_mn}: Posterior mean estimates
+\item \code{post_sd}: Posterior standard deviation
 \item \code{rhat}: R-hat convergence diagnostic
 \item \code{ess_bulk}: Bulk effective sample size
 \item \code{ess_tail}: Tail effective sample size
 \item \code{converged}: Convergence status indicator
-\item \code{error}: Error messages (if any)
+\item \code{error_msg}: Error messages (if any)
 }}
 
 \item{n_sims}{Integer specifying the total number of simulations run}
 }
 \value{
 A data frame with summarized results grouped by condition and parameter,
-containing mean estimates and Monte Carlo standard errors (SE) for all metrics:
+containing mean estimates and Monte Carlo standard errors (MCSE) for all metrics:
 \itemize{
-\item Probability estimates: \code{prob_success}, \code{prob_futility}
-\item Power estimates: \code{power_success}, \code{power_futility}
-\item Parameter estimates: \code{median}, \code{mean}, \code{mad}, \code{sd}
-\item Convergence metrics: \code{rhat}, \code{ess_bulk}, \code{ess_tail}, \code{conv_rate}
+\item Probability estimates: \code{pr_scs_mean}, \code{pr_ftl_mean} with \verb{*_mcse}
+\item Power estimates: \code{pwr_scs_mean}, \code{pwr_ftl_mean} with \verb{*_mcse}
+\item Parameter estimates: \code{post_med_mean}, \code{post_mn_mean}, \code{post_mad_mean}, \code{post_sd_mean}
+\item Convergence metrics: \code{rhat_mean}, \code{ess_bulk_mean}, \code{ess_tail_mean}, \code{conv_rate_mean}
 }
-Each metric includes corresponding \verb{_se} columns with standard errors.
+Each metric includes corresponding \verb{*_mcse} columns with Monte Carlo standard errors.
 }
 \description{
 This function aggregates raw simulation results across multiple runs to compute

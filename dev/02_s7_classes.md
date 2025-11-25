@@ -41,8 +41,8 @@
 |----------|------|-------------|
 | `model` | rctbp_model | The statistical model |
 | `target_params` | character | Parameters to analyze |
-| `p_sig_success` | numeric | Probability threshold for success (default 0.975) |
-| `p_sig_futility` | numeric | Probability threshold for futility (default 0.5) |
+| `p_sig_scs` | numeric | Probability threshold for success (default 0.975) |
+| `p_sig_ftl` | numeric | Probability threshold for futility (default 0.5) |
 | `design_name` | character/NULL | Optional name |
 
 **Constructor**: `build_design(model, target_params, ...)`
@@ -78,8 +78,8 @@
 | `brms_args` | list/NULL | Arguments passed to brms |
 | `design_prior` | character/function/NULL | Optional design prior |
 | `design` | computed | Convenience access to conditions@design |
-| `summarized_results` | data.frame | Aggregated results (filled after run) |
-| `raw_results` | data.frame | Individual simulation results (filled after run) |
+| `results_summ` | data.frame | Aggregated results (filled after run) |
+| `results_raw` | data.frame | Individual simulation results (filled after run) |
 | `elapsed_time` | numeric | Runtime in minutes (filled after run) |
 
 **Constructor**: `power_analysis(conditions, n_sims, n_cores, ..., run = TRUE)`

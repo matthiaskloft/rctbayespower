@@ -43,8 +43,8 @@ simulate_single_run <- function(condition_arguments,
     estimation_model <- if (backend == "brms") design@model@brms_model else design@model@bayesflow_model
     backend_args <- design@model@backend_args
     target_params <- design@target_params
-    p_sig_success <- design@p_sig_success
-    p_sig_futility <- design@p_sig_futility
+    p_sig_scs <- design@p_sig_scs
+    p_sig_ftl <- design@p_sig_ftl
   } else if (inherits(design, "rctbayespower::rctbp_power_analysis") || inherits(design, "rctbp_power_analysis")) {
     # S7 power analysis object - use promoted model access
     data_simulation_fn <- design@model@data_simulation_fn
@@ -52,8 +52,8 @@ simulate_single_run <- function(condition_arguments,
     estimation_model <- if (backend == "brms") design@model@brms_model else design@model@bayesflow_model
     backend_args <- design@model@backend_args
     target_params <- design@target_params
-    p_sig_success <- design@p_sig_success
-    p_sig_futility <- design@p_sig_futility
+    p_sig_scs <- design@p_sig_scs
+    p_sig_ftl <- design@p_sig_ftl
   } else if (is.list(design)) {
     # Regular list with design components (from parallel workers)
     data_simulation_fn <- design$model_data_simulation_fn
@@ -65,8 +65,8 @@ simulate_single_run <- function(condition_arguments,
     }
     backend_args <- design$model_backend_args %||% list()
     target_params <- design$target_params
-    p_sig_success <- design$p_sig_success
-    p_sig_futility <- design$p_sig_futility
+    p_sig_scs <- design$p_sig_scs
+    p_sig_ftl <- design$p_sig_ftl
   } else {
     cli::cli_abort(c(
       "Invalid design object",
@@ -92,24 +92,24 @@ simulate_single_run <- function(condition_arguments,
   # for result aggregation and debugging
   if (is.null(simulated_data)) {
     return(data.frame(
-      parameter = NA_character_,
-      threshold_success = NA_real_,
-      threshold_futility = NA_real_,
-      success_prob = NA_real_,
-      futility_prob = NA_real_,
-      power_success = NA_real_,
-      power_futility = NA_real_,
-      median = NA_real_,
-      mad = NA_real_,
-      mean = NA_real_,
-      sd = NA_real_,
+      par_name = NA_character_,
+      thr_scs = NA_real_,
+      thr_ftl = NA_real_,
+      pr_scs = NA_real_,
+      pr_ftl = NA_real_,
+      dec_scs = NA_real_,
+      dec_ftl = NA_real_,
+      post_med = NA_real_,
+      post_mad = NA_real_,
+      post_mn = NA_real_,
+      post_sd = NA_real_,
       rhat = NA_real_,
       ess_bulk = NA_real_,
       ess_tail = NA_real_,
-      id_iter = id_iter,
-      id_cond = condition_arguments$id_cond,
+      sim_iter = id_iter,
+      sim_cond = condition_arguments$id_cond,
       converged = 0L,
-      error = "Data simulation failed"
+      error_msg = "Data simulation failed"
     ))
   }
 
@@ -137,24 +137,24 @@ simulate_single_run <- function(condition_arguments,
   # Check if estimation was successful
   if (is.null(estimation_result)) {
     return(data.frame(
-      parameter = NA_character_,
-      threshold_success = NA_real_,
-      threshold_futility = NA_real_,
-      success_prob = NA_real_,
-      futility_prob = NA_real_,
-      power_success = NA_real_,
-      power_futility = NA_real_,
-      median = NA_real_,
-      mad = NA_real_,
-      mean = NA_real_,
-      sd = NA_real_,
+      par_name = NA_character_,
+      thr_scs = NA_real_,
+      thr_ftl = NA_real_,
+      pr_scs = NA_real_,
+      pr_ftl = NA_real_,
+      dec_scs = NA_real_,
+      dec_ftl = NA_real_,
+      post_med = NA_real_,
+      post_mad = NA_real_,
+      post_mn = NA_real_,
+      post_sd = NA_real_,
       rhat = NA_real_,
       ess_bulk = NA_real_,
       ess_tail = NA_real_,
-      id_iter = id_iter,
-      id_cond = condition_arguments$id_cond,
+      sim_iter = id_iter,
+      sim_cond = condition_arguments$id_cond,
       converged = 0L,
-      error = "Posterior estimation failed"
+      error_msg = "Posterior estimation failed"
     ))
   }
 
@@ -175,24 +175,24 @@ simulate_single_run <- function(condition_arguments,
 
   if (is.null(posterior_rvars)) {
     return(data.frame(
-      parameter = NA_character_,
-      threshold_success = NA_real_,
-      threshold_futility = NA_real_,
-      success_prob = NA_real_,
-      futility_prob = NA_real_,
-      power_success = NA_real_,
-      power_futility = NA_real_,
-      median = NA_real_,
-      mad = NA_real_,
-      mean = NA_real_,
-      sd = NA_real_,
+      par_name = NA_character_,
+      thr_scs = NA_real_,
+      thr_ftl = NA_real_,
+      pr_scs = NA_real_,
+      pr_ftl = NA_real_,
+      dec_scs = NA_real_,
+      dec_ftl = NA_real_,
+      post_med = NA_real_,
+      post_mad = NA_real_,
+      post_mn = NA_real_,
+      post_sd = NA_real_,
       rhat = NA_real_,
       ess_bulk = NA_real_,
       ess_tail = NA_real_,
-      id_iter = id_iter,
-      id_cond = condition_arguments$id_cond,
+      sim_iter = id_iter,
+      sim_cond = condition_arguments$id_cond,
       converged = 0L,
-      error = "Posterior extraction failed"
+      error_msg = "Posterior extraction failed"
     ))
   }
 
@@ -205,37 +205,37 @@ simulate_single_run <- function(condition_arguments,
                           target_params,
                           decision_args$thresholds_success,
                           decision_args$thresholds_futility,
-                          p_sig_success,
-                          p_sig_futility) |>
-      dplyr::mutate(dplyr::across(-parameter, as.numeric))
+                          p_sig_scs,
+                          p_sig_ftl) |>
+      dplyr::mutate(dplyr::across(-par_name, as.numeric))
     df |> dplyr::mutate(
-      id_iter = id_iter,
-      id_cond = condition_arguments$id_cond,
-      id_analysis = 0L,  # 0 = single analysis (final only); 1+ = sequential interim numbers
+      sim_iter = id_iter,
+      sim_cond = condition_arguments$id_cond,
+      sim_anlys = 0L,  # 0 = single analysis (final only); 1+ = sequential interim numbers
       converged = 1L,
-      error = NA_character_
+      error_msg = NA_character_
     )
   }, error = function(e) {
     data.frame(
-      parameter = NA_character_,
-      threshold_success = NA_real_,
-      threshold_futility = NA_real_,
-      success_prob = NA_real_,
-      futility_prob = NA_real_,
-      power_success = NA_real_,
-      power_futility = NA_real_,
-      median = NA_real_,
-      mad = NA_real_,
-      mean = NA_real_,
-      sd = NA_real_,
+      par_name = NA_character_,
+      thr_scs = NA_real_,
+      thr_ftl = NA_real_,
+      pr_scs = NA_real_,
+      pr_ftl = NA_real_,
+      dec_scs = NA_real_,
+      dec_ftl = NA_real_,
+      post_med = NA_real_,
+      post_mad = NA_real_,
+      post_mn = NA_real_,
+      post_sd = NA_real_,
       rhat = NA_real_,
       ess_bulk = NA_real_,
       ess_tail = NA_real_,
-      id_iter = id_iter,
-      id_cond = condition_arguments$id_cond,
-      id_analysis = 0L,
+      sim_iter = id_iter,
+      sim_cond = condition_arguments$id_cond,
+      sim_anlys = 0L,
       converged = 0L,
-      error = as.character(e)
+      error_msg = as.character(e)
     )
   })
 

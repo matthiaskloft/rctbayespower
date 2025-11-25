@@ -111,9 +111,9 @@ test_that("power_analysis produces valid results", {
   # Minimal simulation for speed
   result <- power_analysis(conditions, n_sims = 5, n_cores = 1)
 
-  expect_true(nrow(result@summarized_results) > 0)
+  expect_true(nrow(result@results_summ) > 0)
   expect_true(all(c("power_success", "power_futility") %in%
-                  names(result@summarized_results)))
+                  names(result@results_summ)))
 })
 ```
 
@@ -131,8 +131,8 @@ test_that("parallel produces same results as sequential", {
   result_par <- power_analysis(conditions, n_sims = 10, n_cores = 2)
 
   expect_equal(
-    result_seq@summarized_results$power_success,
-    result_par@summarized_results$power_success,
+    result_seq@results_summ$power_success,
+    result_par@results_summ$power_success,
     tolerance = 0.1  # Some variance expected
   )
 })

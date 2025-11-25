@@ -186,8 +186,8 @@ model_binary <- build_model("binary_2arms")
 design <- build_design(
   model = model_binary,
   target_params = "b_treatment",
-  p_sig_success = 0.975,
-  p_sig_futility = 0.90,
+  p_sig_scs = 0.975,
+  p_sig_ftl = 0.90,
   analysis_at = c(50, 100),  # Interim at 50, 100
   interim_function = interim_futility_only(0.90)
 )
@@ -214,7 +214,7 @@ results <- power_analysis(conditions, n_sims = 1000)
 design <- build_design(
   model = model_ancova,
   target_params = "b_arm2",
-  p_sig_success = 0.975,
+  p_sig_scs = 0.975,
   analysis_at = 50,  # Check variance at n=50
   interim_function = ssr_variance_based(
     max_n = 200,

@@ -7,9 +7,12 @@
 build_design(
   model,
   target_params,
-  p_sig_success,
-  p_sig_futility,
-  design_name = NULL
+  p_sig_scs,
+  p_sig_ftl,
+  design_name = NULL,
+  analysis_at = NULL,
+  interim_function = NULL,
+  adaptive = FALSE
 )
 }
 \arguments{
@@ -19,25 +22,43 @@ build_design(
 analyze for power. Must be valid parameter names from the brms model.
 Use \code{model@parameter_names_brms} to discover available names. Required.}
 
-\item{p_sig_success}{Probability threshold for declaring success. The posterior
+\item{p_sig_scs}{Probability threshold for declaring success. The posterior
 probability that the effect exceeds the success threshold must be greater
 than this value to declare success (typically 0.975 or 0.95). Required.}
 
-\item{p_sig_futility}{Probability threshold for declaring futility. The posterior
+\item{p_sig_ftl}{Probability threshold for declaring futility. The posterior
 probability that the effect is below the futility threshold must be greater
 than this value to declare futility (typically 0.5). Required.}
 
 \item{design_name}{Optional character string providing a descriptive name for the
 design. Defaults to NULL.}
+
+\item{analysis_at}{Optional numeric vector of sample sizes at which to perform
+interim analyses. Must be monotonically increasing positive integers. The final
+analysis at \code{n_total} is added automatically. Set to NULL (default) for
+single-look designs with no interim analyses.}
+
+\item{interim_function}{Optional function to make interim decisions. Must accept
+parameters: \code{interim_summaries}, \code{current_n}, \code{analysis_at}, \code{n_total}.
+Should return a list with \code{decision} ("continue", "stop_success", "stop_futility")
+and optionally \code{modified_params} (for adaptive designs). See
+\code{interim_futility_only()} and \code{interim_success_futility()} for helper factories.}
+
+\item{adaptive}{Logical indicating whether the design allows parameter modification
+between interim looks (default FALSE). When TRUE, the \code{interim_function} can return
+modified simulation parameters (e.g., updated allocation ratios).}
 }
 \value{
 An S7 object of class "rctbp_design" containing:
 \describe{
 \item{model}{The rctbp_model object}
 \item{target_params}{Target parameters for analysis}
-\item{p_sig_success}{Success probability threshold}
-\item{p_sig_futility}{Futility probability threshold}
+\item{p_sig_scs}{Success probability threshold}
+\item{p_sig_ftl}{Futility probability threshold}
 \item{design_name}{Optional descriptive name}
+\item{analysis_at}{Interim analysis sample sizes (NULL for single-look)}
+\item{interim_function}{Interim decision function (NULL if none)}
+\item{adaptive}{Whether design allows parameter modification}
 }
 }
 \description{
@@ -53,7 +74,7 @@ probability thresholds to use for decision-making.
 \strong{Important:} The actual success and futility thresholds (e.g., 0.2 for
 treatment effect) are NOT stored in the design object. They are specified
 per-condition when creating the conditions object using build_conditions().
-The design only stores the probability thresholds (p_sig_success, p_sig_futility)
+The design only stores the probability thresholds (p_sig_scs, p_sig_ftl)
 that determine how certain we need to be about exceeding those thresholds.
 
 \strong{Model Integration:} Links to the rctbp_model object containing data
@@ -63,9 +84,13 @@ simulation function and compiled brms model.
 Parameter names are model-dependent. Use \code{model@parameter_names_brms} to discover
 available parameters for your specific model.
 
-\strong{Probability Thresholds:} The p_sig_success and p_sig_futility parameters
+\strong{Probability Thresholds:} The p_sig_scs and p_sig_ftl parameters
 control the certainty required for success/futility decisions. Higher values require
 stronger evidence.
+
+\strong{Interim Analysis:} The \code{analysis_at}, \code{interim_function}, and \code{adaptive} parameters
+specify design-level defaults for group sequential designs. These can be overridden
+per-condition in \code{\link[=build_conditions]{build_conditions()}} via \code{condition_values} or \code{static_values}.
 
 \strong{Validation:} All parameters are validated for consistency with the
 underlying model structure.
@@ -75,19 +100,25 @@ underlying model structure.
 # Create an ANCOVA model
 ancova_model <- build_model("ancova_cont_2arms")
 
-# Discover available parameter names (model-dependent)
-ancova_model@parameter_names_brms
-
-# Create a design for analyzing treatment effect
-my_design <- build_design(
+# Simple design (no interim analysis)
+simple_design <- build_design(
   model = ancova_model,
-  target_params = ancova_model@parameter_names_brms[1],  # Use actual param name
-  p_sig_success = 0.975,
-  p_sig_futility = 0.5,
-  design_name = "ANCOVA Treatment Effect Analysis"
+  target_params = "b_armtreat_1",
+  p_sig_scs = 0.975,
+  p_sig_ftl = 0.5
+)
+
+# Design with interim analysis
+sequential_design <- build_design(
+  model = ancova_model,
+  target_params = "b_armtreat_1",
+  p_sig_scs = 0.975,
+  p_sig_ftl = 0.5,
+  analysis_at = c(50, 100),
+  interim_function = interim_futility_only(futility_threshold = 0.90)
 )
 }
 }
 \seealso{
-\code{\link[=build_model]{build_model()}}, \code{\link[=simulate_single_run]{simulate_single_run()}}
+\code{\link[=build_model]{build_model()}}, \code{\link[=build_conditions]{build_conditions()}}
 }

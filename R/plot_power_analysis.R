@@ -62,7 +62,7 @@ S7::method(plot, rctbp_power_analysis) <- function(x,
                                                    design_prior = NULL,
                                                    ...) {
   # Check if analysis has been run
-  if (is.null(x@summarized_results)) {
+  if (is.null(x@results_summ)) {
     cli::cli_abort(c(
       "No simulation results found",
       "x" = "The power analysis has not been run yet",
@@ -108,8 +108,8 @@ create_power_plot <- function(x,
   }
   
   # Check for valid data
-  if (is.null(x@summarized_results) ||
-      nrow(x@summarized_results) == 0) {
+  if (is.null(x@results_summ) ||
+      nrow(x@results_summ) == 0) {
     cli::cli_abort(c(
       "No power analysis results to plot",
       "x" = "The summarized results are empty or missing",
@@ -118,15 +118,15 @@ create_power_plot <- function(x,
   }
   
   # Use S7 object structure directly
-  plot_data <- x@summarized_results
+  plot_data <- x@results_summ
   design <- x@design
   conditions <- x@conditions
   
   # Check for missing essential columns
-  required_cols <- c("power_success",
-                     "power_futility",
-                     "prob_success",
-                     "prob_futility")
+  required_cols <- c("pwr_scs",
+                     "pwr_ftl",
+                     "pr_scs",
+                     "pr_ftl")
   missing_cols <- setdiff(required_cols, names(plot_data))
   if (length(missing_cols) > 0) {
     cli::cli_abort(c(
@@ -143,11 +143,11 @@ create_power_plot <- function(x,
     1
   # Use design target params to find effect size columns
   target_param <- design@target_params[1]  # Use first target parameter
-  unique_effects <- if (target_param %in% names(plot_data$parameter)) {
-    effect_name <- unique(plot_data$parameter)[1] |> unlist()
+  unique_effects <- if (target_param %in% names(plot_data$par_name)) {
+    effect_name <- unique(plot_data$par_name)[1] |> unlist()
     plot_data |>
-      dplyr::filter(parameter == effect_name) |>
-      dplyr::group_by(parameter) |>
+      dplyr::filter(par_name == effect_name) |>
+      dplyr::group_by(par_name) |>
       # count rows
       dplyr::summarise(n = dplyr::n()) |>
       dplyr::distinct(n) |> unlist()
@@ -313,7 +313,7 @@ create_power_curve_plot <- function(plot_data,
       p <- p |>
         plotly::add_trace(
           x = ~ get(x_var),
-          y = ~ power_success,
+          y = ~ pwr_scs,
           type = "scatter",
           mode = "lines+markers",
           name = "Success Power",
@@ -325,7 +325,7 @@ create_power_curve_plot <- function(plot_data,
         p <- p |>
           plotly::add_trace(
             x = c(min(plot_data[[x_var]]), max(plot_data[[x_var]])),
-            y = c(design@p_sig_success, design@p_sig_success),
+            y = c(design@p_sig_scs, design@p_sig_scs),
             type = "scatter",
             mode = "lines",
             name = "Success Target",
@@ -344,7 +344,7 @@ create_power_curve_plot <- function(plot_data,
       p <- p |>
         plotly::add_trace(
           x = ~ get(x_var),
-          y = ~ prob_success,
+          y = ~ pr_scs,
           type = "scatter",
           mode = "lines+markers",
           name = "Success Probability",
@@ -369,7 +369,7 @@ create_power_curve_plot <- function(plot_data,
       p <- p |>
         plotly::add_trace(
           x = ~ get(x_var),
-          y = ~ power_futility,
+          y = ~ pwr_ftl,
           type = "scatter",
           mode = "lines+markers",
           name = "Futility Power",
@@ -381,7 +381,7 @@ create_power_curve_plot <- function(plot_data,
         p <- p |>
           plotly::add_trace(
             x = c(min(plot_data[[x_var]]), max(plot_data[[x_var]])),
-            y = c(design@p_sig_futility, design@p_sig_futility),
+            y = c(design@p_sig_ftl, design@p_sig_ftl),
             type = "scatter",
             mode = "lines",
             name = "Futility Target",
@@ -400,7 +400,7 @@ create_power_curve_plot <- function(plot_data,
       p <- p |>
         plotly::add_trace(
           x = ~ get(x_var),
-          y = ~ prob_futility,
+          y = ~ pr_ftl,
           type = "scatter",
           mode = "lines+markers",
           name = "Futility Probability",
@@ -505,8 +505,8 @@ create_heatmap_plot <- function(plot_data,
   
   # Remove rows with all NA values for key metrics
   valid_rows <- !(
-    is.na(plot_data$power_success) & is.na(plot_data$power_futility) &
-      is.na(plot_data$prob_success) & is.na(plot_data$prob_futility)
+    is.na(plot_data$pwr_scs) & is.na(plot_data$pwr_ftl) &
+      is.na(plot_data$pr_scs) & is.na(plot_data$pr_ftl)
   )
   plot_data <- plot_data[valid_rows, ]
   
@@ -524,19 +524,19 @@ create_heatmap_plot <- function(plot_data,
   
   # Determine what to plot based on values parameter
   if (values == "power") {
-    fill_var_success <- "power_success"
-    fill_var_futility <- "power_futility"
+    fill_var_success <- "pwr_scs"
+    fill_var_futility <- "pwr_ftl"
     fill_name <- "Power"
     plot_suffix <- "Power"
   } else if (values == "post_prob") {
-    fill_var_success <- "prob_success"
-    fill_var_futility <- "prob_futility"
+    fill_var_success <- "pr_scs"
+    fill_var_futility <- "pr_ftl"
     fill_name <- "Posterior Probability"
     plot_suffix <- "Posterior Probability"
   } else {
     # For "both", default to power but add note in subtitle
-    fill_var_success <- "power_success"
-    fill_var_futility <- "power_futility"
+    fill_var_success <- "pwr_scs"
+    fill_var_futility <- "pwr_ftl"
     fill_name <- "Power"
     plot_suffix <- "Power"
   }
@@ -585,9 +585,9 @@ create_heatmap_plot <- function(plot_data,
         annotations = list(
           list(
             text = if (values == "both")
-              paste("Showing power | Target power:", design@p_sig_success)
+              paste("Showing power | Target power:", design@p_sig_scs)
             else
-              paste("Target:", design@p_sig_success),
+              paste("Target:", design@p_sig_scs),
             x = 0.5,
             y = 1.02,
             xref = "paper",
@@ -644,9 +644,9 @@ create_heatmap_plot <- function(plot_data,
         annotations = list(
           list(
             text = if (values == "both")
-              paste("Showing power | Target power:", design@p_sig_futility)
+              paste("Showing power | Target power:", design@p_sig_ftl)
             else
-              paste("Target:", design@p_sig_futility),
+              paste("Target:", design@p_sig_ftl),
             x = 0.5,
             y = 1.02,
             xref = "paper",
@@ -673,10 +673,10 @@ create_heatmap_plot <- function(plot_data,
           row_match <- which(plot_data$n_total == y_vals[i] &
                                plot_data[[target_param]] == x_vals[j])
           if (length(row_match) > 0) {
-            z_success_power[i, j] <- plot_data$power_success[row_match[1]]
-            z_success_prob[i, j] <- plot_data$prob_success[row_match[1]]
-            z_futility_power[i, j] <- plot_data$power_futility[row_match[1]]
-            z_futility_prob[i, j] <- plot_data$prob_futility[row_match[1]]
+            z_success_power[i, j] <- plot_data$pwr_scs[row_match[1]]
+            z_success_prob[i, j] <- plot_data$pr_scs[row_match[1]]
+            z_futility_power[i, j] <- plot_data$pwr_ftl[row_match[1]]
+            z_futility_prob[i, j] <- plot_data$pr_ftl[row_match[1]]
           }
         }
       }
@@ -742,9 +742,9 @@ create_heatmap_plot <- function(plot_data,
             list(
               text = paste(
                 "Target powers - Success:",
-                design@p_sig_success,
+                design@p_sig_scs,
                 ", Futility:",
-                design@p_sig_futility
+                design@p_sig_ftl
               ),
               x = 0.5,
               y = -0.05,
@@ -819,9 +819,9 @@ create_heatmap_plot <- function(plot_data,
           list(
             text = paste(
               "Target powers - Success:",
-              design@p_sig_success,
+              design@p_sig_scs,
               ", Futility:",
-              design@p_sig_futility
+              design@p_sig_ftl
             ),
             x = 0.5,
             y = -0.05,
@@ -889,7 +889,7 @@ create_comparison_plot <- function(plot_data,
     p <- p |>
       plotly::add_trace(
         x = ~ get(x_var),
-        y = ~ power_success,
+        y = ~ pwr_scs,
         type = "scatter",
         mode = "lines+markers",
         name = "Success Power",
@@ -898,7 +898,7 @@ create_comparison_plot <- function(plot_data,
       ) |>
       plotly::add_trace(
         x = ~ get(x_var),
-        y = ~ prob_success,
+        y = ~ pr_scs,
         type = "scatter",
         mode = "lines+markers",
         name = "Success Probability",
@@ -919,7 +919,7 @@ create_comparison_plot <- function(plot_data,
     p <- p |>
       plotly::add_trace(
         x = ~ get(x_var),
-        y = ~ power_futility,
+        y = ~ pwr_ftl,
         type = "scatter",
         mode = "lines+markers",
         name = "Futility Power",
@@ -928,7 +928,7 @@ create_comparison_plot <- function(plot_data,
       ) |>
       plotly::add_trace(
         x = ~ get(x_var),
-        y = ~ prob_futility,
+        y = ~ pr_ftl,
         type = "scatter",
         mode = "lines+markers",
         name = "Futility Probability",

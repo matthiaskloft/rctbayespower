@@ -90,10 +90,10 @@ Computed by `compute_measures_brmsfit()`:
 
 | Metric | Description |
 |--------|-------------|
-| `success_prob` | P(parameter > threshold_success) |
-| `futility_prob` | P(parameter < threshold_futility) |
-| `power_success` | 1 if success_prob >= p_sig_success, else 0 |
-| `power_futility` | 1 if futility_prob >= p_sig_futility, else 0 |
+| `pr_scs` | P(parameter > thr_scs) |
+| `pr_ftl` | P(parameter < thr_ftl) |
+| `dec_scs` | 1 if pr_scs >= p_sig_scs, else 0 (raw) |
+| `dec_ftl` | 1 if pr_ftl >= p_sig_ftl, else 0 (raw) |
 | `median`, `mad` | Posterior median and MAD |
 | `mean`, `sd` | Posterior mean and SD |
 | `rhat` | Convergence diagnostic |
@@ -117,8 +117,8 @@ Computed by `compute_measures_brmsfit()`:
 ```r
 design_components <- list(
   target_params = design@target_params,
-  p_sig_success = design@p_sig_success,
-  p_sig_futility = design@p_sig_futility,
+  p_sig_scs = design@p_sig_scs,
+  p_sig_ftl = design@p_sig_ftl,
   model_data_simulation_fn = model@data_simulation_fn,
   model_brms_model = model@brms_model
 )

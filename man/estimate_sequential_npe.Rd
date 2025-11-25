@@ -11,8 +11,8 @@ estimate_sequential_npe(
   target_params,
   thresholds_success,
   thresholds_futility,
-  p_sig_success,
-  p_sig_futility,
+  p_sig_scs,
+  p_sig_ftl,
   analysis_at,
   interim_function,
   id_iter,
@@ -32,9 +32,9 @@ estimate_sequential_npe(
 
 \item{thresholds_futility}{Numeric vector of futility thresholds}
 
-\item{p_sig_success}{Probability threshold for success}
+\item{p_sig_scs}{Probability threshold for success}
 
-\item{p_sig_futility}{Probability threshold for futility}
+\item{p_sig_ftl}{Probability threshold for futility}
 
 \item{analysis_at}{Vector of sample sizes for interim analyses}
 

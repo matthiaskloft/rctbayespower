@@ -82,8 +82,8 @@ Specify the study design with target parameter, thresholds for success and futil
 design <- build_design(
   model = model_ancova,
   target_params = "b_arm2",
-  p_sig_success = 0.9,
-  p_sig_futility = 0.5
+  p_sig_scs = 0.9,
+  p_sig_ftl = 0.5
 )
 print(design)
 ```
@@ -137,19 +137,19 @@ power <- power_analysis(
 
 ## Power for Effect of 0.3
 ```{r power_success}
-power@summarized_results |>
+power@results_summ |>
   dplyr::filter(b_arm_treat != 0) |>
   select(
     n_total,
     b_arm_treat,
-    prob_success,
-    prob_success_se,
-    power_success,
-    power_success_se,
-    prob_futility,
-    prob_futility_se,
-    power_futility,
-    power_futility_se
+    pr_scs,
+    se_pr_scs,
+    pwr_scs,
+    se_pwr_scs,
+    pr_ftl,
+    se_pr_ftl,
+    pwr_ftl,
+    se_pwr_ftl
   ) |>
   dplyr::arrange(desc(b_arm_treat)) |>
   kableExtra::kable(digits = 3, format = "html")
@@ -161,18 +161,18 @@ power@summarized_results |>
 The power for success indicates the alpha error rate for the null effect (b_arm_treat = 0). This is the probability of rejecting the null hypothesis when it is true, which should be close to the significance level (0.05) if the design is well specified.
 
 ```{r power_null}
-power@summarized_results |> 
+power@results_summ |>
   dplyr::filter(b_arm_treat == 0) |>
   select(
     n_total,
     b_arm_treat,
-    prob_success,
-    prob_success_se,
-    power_success,
-    power_success_se,
-    power_futility,
-    power_futility_se,
-    prob_futility, 
+    pr_scs,
+    se_pr_scs,
+    pwr_scs,
+    se_pwr_scs,
+    pwr_ftl,
+    se_pwr_ftl,
+    pr_ftl, 
     prob_futility_se 
   ) |>
   dplyr::arrange(desc(b_arm_treat)) |> 

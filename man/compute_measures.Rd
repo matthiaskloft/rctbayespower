@@ -9,8 +9,8 @@ compute_measures(
   target_params,
   thresholds_success,
   thresholds_futility,
-  p_sig_success,
-  p_sig_futility
+  p_sig_scs,
+  p_sig_ftl
 )
 }
 \arguments{
@@ -22,9 +22,9 @@ compute_measures(
 
 \item{thresholds_futility}{Numeric vector of futility thresholds (one per parameter)}
 
-\item{p_sig_success}{Probability threshold for declaring success}
+\item{p_sig_scs}{Probability threshold for declaring success}
 
-\item{p_sig_futility}{Probability threshold for declaring futility}
+\item{p_sig_ftl}{Probability threshold for declaring futility}
 }
 \value{
 A data frame containing power analysis measures

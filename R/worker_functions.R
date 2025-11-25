@@ -22,8 +22,8 @@ worker_process_single <- function(id_cond, id_iter, condition_args, design) {
     estimation_model <- if (backend == "brms") design@model@brms_model else design@model@bayesflow_model
     backend_args <- design@model@backend_args
     target_params <- design@target_params
-    p_sig_success <- design@p_sig_success
-    p_sig_futility <- design@p_sig_futility
+    p_sig_scs <- design@p_sig_scs
+    p_sig_ftl <- design@p_sig_ftl
   } else if (is.list(design)) {
     # Regular list for parallel workers
     data_simulation_fn <- design$model_data_simulation_fn
@@ -35,8 +35,8 @@ worker_process_single <- function(id_cond, id_iter, condition_args, design) {
     }
     backend_args <- design$model_backend_args
     target_params <- design$target_params
-    p_sig_success <- design$p_sig_success
-    p_sig_futility <- design$p_sig_futility
+    p_sig_scs <- design$p_sig_scs
+    p_sig_ftl <- design$p_sig_ftl
   } else {
     cli::cli_abort(c(
       "Invalid design object",
@@ -106,8 +106,8 @@ worker_process_single <- function(id_cond, id_iter, condition_args, design) {
           target_params = target_params,
           thresholds_success = thresholds_success,
           thresholds_futility = thresholds_futility,
-          p_sig_success = p_sig_success,
-          p_sig_futility = p_sig_futility,
+          p_sig_scs = p_sig_scs,
+          p_sig_ftl = p_sig_ftl,
           id_iter = id_iter,
           id_cond = id_cond
         )
@@ -119,8 +119,8 @@ worker_process_single <- function(id_cond, id_iter, condition_args, design) {
           target_params = target_params,
           thresholds_success = thresholds_success,
           thresholds_futility = thresholds_futility,
-          p_sig_success = p_sig_success,
-          p_sig_futility = p_sig_futility,
+          p_sig_scs = p_sig_scs,
+          p_sig_ftl = p_sig_ftl,
           id_iter = id_iter,
           id_cond = id_cond
         )
@@ -135,8 +135,8 @@ worker_process_single <- function(id_cond, id_iter, condition_args, design) {
           target_params = target_params,
           thresholds_success = thresholds_success,
           thresholds_futility = thresholds_futility,
-          p_sig_success = p_sig_success,
-          p_sig_futility = p_sig_futility,
+          p_sig_scs = p_sig_scs,
+          p_sig_ftl = p_sig_ftl,
           analysis_at = analysis_at,
           interim_function = interim_function,
           id_iter = id_iter,
@@ -151,8 +151,8 @@ worker_process_single <- function(id_cond, id_iter, condition_args, design) {
           target_params = target_params,
           thresholds_success = thresholds_success,
           thresholds_futility = thresholds_futility,
-          p_sig_success = p_sig_success,
-          p_sig_futility = p_sig_futility,
+          p_sig_scs = p_sig_scs,
+          p_sig_ftl = p_sig_ftl,
           analysis_at = analysis_at,
           interim_function = interim_function,
           id_iter = id_iter,
@@ -194,16 +194,16 @@ worker_process_batch <- function(work_units, design) {
     estimation_model <- design@model@bayesflow_model  # Must be NPE
     backend_args <- design@model@backend_args
     target_params <- design@target_params
-    p_sig_success <- design@p_sig_success
-    p_sig_futility <- design@p_sig_futility
+    p_sig_scs <- design@p_sig_scs
+    p_sig_ftl <- design@p_sig_ftl
   } else if (is.list(design)) {
     data_simulation_fn <- design$model_data_simulation_fn
     backend <- design$model_backend
     estimation_model <- design$model_bayesflow_model
     backend_args <- design$model_backend_args
     target_params <- design$target_params
-    p_sig_success <- design$p_sig_success
-    p_sig_futility <- design$p_sig_futility
+    p_sig_scs <- design$p_sig_scs
+    p_sig_ftl <- design$p_sig_ftl
   } else {
     cli::cli_abort(c(
       "Invalid design object",
@@ -295,8 +295,8 @@ worker_process_batch <- function(work_units, design) {
         target_params = target_params,
         thresholds_success = thresholds_success,
         thresholds_futility = thresholds_futility,
-        p_sig_success = p_sig_success,
-        p_sig_futility = p_sig_futility,
+        p_sig_scs = p_sig_scs,
+        p_sig_ftl = p_sig_ftl,
         id_iter = id_iter_vec,
         id_cond = id_cond_vec
       )
@@ -309,8 +309,8 @@ worker_process_batch <- function(work_units, design) {
         target_params = target_params,
         thresholds_success = thresholds_success,
         thresholds_futility = thresholds_futility,
-        p_sig_success = p_sig_success,
-        p_sig_futility = p_sig_futility,
+        p_sig_scs = p_sig_scs,
+        p_sig_ftl = p_sig_ftl,
         analysis_at = analysis_at,
         interim_function = interim_function,
         id_iter = id_iter_vec,
@@ -339,13 +339,19 @@ worker_process_batch <- function(work_units, design) {
 #' @keywords internal
 prepare_design_for_workers <- function(design) {
   list(
+    # Model components
     model_data_simulation_fn = design@model@data_simulation_fn,
     model_backend = design@model@backend,
     model_brms_model = design@model@brms_model,
     model_bayesflow_model = design@model@bayesflow_model,
     model_backend_args = design@model@backend_args,
+    # Design parameters
     target_params = design@target_params,
-    p_sig_success = design@p_sig_success,
-    p_sig_futility = design@p_sig_futility
+    p_sig_scs = design@p_sig_scs,
+    p_sig_ftl = design@p_sig_ftl,
+    # Interim analysis parameters (design-level defaults)
+    analysis_at = design@analysis_at,
+    interim_function = design@interim_function,
+    adaptive = design@adaptive
   )
 }

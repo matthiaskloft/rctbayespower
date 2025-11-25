@@ -60,8 +60,8 @@ model@parameter_names_sim_fn  # simulation function parameters
 design <- build_design(
   model = model,
   target_params = "b_armtreat_1",  # Must match model@parameter_names_brms
-  p_sig_success = 0.975,
-  p_sig_futility = 0.5
+  p_sig_scs = 0.975,
+  p_sig_ftl = 0.5
 )
 conditions <- build_conditions(
   design = design,
@@ -77,7 +77,7 @@ conditions <- build_conditions(
 )
 result <- power_analysis(conditions = conditions, n_sims = 100, n_cores = 4)
 plot(result)
-result@summarized_results
+result@results_summ
 ```
 
 **Note**: Parameter names vary by model. Use `model@parameter_names_brms` to discover available `target_params` and `model@parameter_names_sim_fn` for simulation arguments.
@@ -110,15 +110,15 @@ Save new development documents into `dev/`.
 **Example Fix**:
 ```r
 # BAD: Code has default = 0.975 but docs say 0.95
-#' @param p_sig_success Probability threshold for success (default 0.95)
-my_function <- function(p_sig_success = 0.975) { ... }
+#' @param p_sig_scs Probability threshold for success (default 0.95)
+my_function <- function(p_sig_scs = 0.975) { ... }
 
 # GOOD: Documentation matches code
-#' @param p_sig_success Probability threshold for success (default 0.975) 
-my_function <- function(p_sig_success = 0.975) { ... }
+#' @param p_sig_scs Probability threshold for success (default 0.975) 
+my_function <- function(p_sig_scs = 0.975) { ... }
 ```
 
-**Recent fixes applied**: Updated documentation for `p_sig_success` in `power_analysis.R`, and class system fixes throughout package.
+**Recent fixes applied**: Updated documentation for `p_sig_scs` in `power_analysis.R`, and class system fixes throughout package.
 
 ### Documentation Conventions
 - Don't use \code{\link{function_name}} in roxygen docs. Use [functionname()] instead.
