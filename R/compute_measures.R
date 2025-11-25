@@ -96,7 +96,13 @@ compute_measures <- function(posterior_rvars, target_params, thresholds_success,
       thresholds_futility_combined <- thresholds_futility
     }
 
-    # calculate combined probabilities
+    # Combined probability algorithm (AND decision rule for multiple parameters)
+    # All parameters must simultaneously exceed threshold (conjunctive logic)
+    # Algorithm:
+    #   1. Convert each parameter to binary: exceeds threshold? (1/0)
+    #   2. Take minimum across parameters for each draw (AND operation)
+    #   3. Average across draws to get probability
+    # Example: P(param1 > 0.2 AND param2 > 0.3 AND param3 > 0.1)
     combined_success_prob <- mean(apply(ifelse(
       posterior_samples > thresholds_success_combined, 1, 0
     ), 1, min))
@@ -167,7 +173,11 @@ compute_measures <- function(posterior_rvars, target_params, thresholds_success,
 compute_measures_brmsfit <- function(brmsfit, design) {
   # Validate inputs
   if (!inherits(brmsfit, "brmsfit")) {
-    stop("'brmsfit' must be a fitted brms model object")
+    cli::cli_abort(c(
+      "{.arg brmsfit} must be a fitted brms model object",
+      "x" = "You supplied {.cls {class(brmsfit)}}",
+      "i" = "Provide a fitted {.cls brmsfit} object"
+    ))
   }
 
   # Extract target parameters from design
@@ -176,7 +186,10 @@ compute_measures_brmsfit <- function(brmsfit, design) {
   } else if (is.list(design)) {
     target_params <- design$target_params
   } else {
-    stop("Invalid design object")
+    cli::cli_abort(c(
+      "Invalid design object",
+      "i" = "This is an internal error - please report"
+    ))
   }
 
   # Extract posterior rvars from brms model
@@ -240,7 +253,11 @@ compute_measures_brmsfit <- function(brmsfit, design) {
 summarize_sims <- function(results_df_raw, n_sims) {
   # Validate input
   if (!is.data.frame(results_df_raw) || nrow(results_df_raw) == 0) {
-    stop("results_df_raw must be a non-empty data frame")
+    cli::cli_abort(c(
+      "{.arg results_df_raw} must be a non-empty data frame",
+      "x" = "You supplied {.type {results_df_raw}} with {.val {nrow(results_df_raw)}} rows",
+      "i" = "This is an internal error - please report"
+    ))
   }
   # remove rows with NA in id_cond or parameter
   results_df_raw <- results_df_raw |>

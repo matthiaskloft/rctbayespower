@@ -23,7 +23,11 @@ required_fn_args <- function(object, print = TRUE) {
   } else if (inherits(object, "rctbayespower::rctbp_model") || inherits(object, "rctbp_model")) {
     return(required_fn_args_model(object, print))
   } else {
-    stop("'object' must be either an rctbp_design or rctbayespower_model object.")
+    cli::cli_abort(c(
+      "{.arg object} must be either an rctbp_design or rctbp_model object",
+      "x" = "You supplied {.cls {class(object)}}",
+      "i" = "Provide a design or model object created with {.fn build_design} or {.fn build_model}"
+    ))
   }
 }
 
@@ -97,7 +101,11 @@ get_arg_defaults <- function(fn) {
 required_fn_args_design <- function(design, print = TRUE) {
   # check that design is a valid rctbp_design object (allow both namespaced and non-namespaced for testing)
   if (!inherits(design, "rctbayespower::rctbp_design") && !inherits(design, "rctbp_design")) {
-    stop("'design' must be a valid rctbp_design object.")
+    cli::cli_abort(c(
+      "{.arg design} must be a valid rctbp_design object",
+      "x" = "You supplied {.cls {class(design)}}",
+      "i" = "Create a design object using {.fn build_design}"
+    ))
   }
 
   # get args without defaults for the data simulation function
@@ -111,12 +119,27 @@ required_fn_args_design <- function(design, print = TRUE) {
 
   # print the parameters if requested
   if (print) {
-    # print the parameters needed for the design
-    cat("\nArguments that need user specification.\n")
-    cat("\nSimulation function:\n")
-    cat(paste(params_sim, collapse = ", "), "\n")
-    cat("\nDecision parameters (per-condition):\n")
-    cat(paste(params_decision, collapse = ", "), "\n")
+    cli::cli_h3("Arguments that need user specification")
+    cli::cli_text("")
+
+    cli::cli_text("{.strong Simulation function parameters:}")
+    if (length(params_sim) > 0) {
+      param_items <- params_sim
+      names(param_items) <- rep("*", length(param_items))
+      cli::cli_bullets(param_items)
+    } else {
+      cli::cli_text("  {.emph (none)}")
+    }
+    cli::cli_text("")
+
+    cli::cli_text("{.strong Decision parameters (per-condition):}")
+    if (length(params_decision) > 0) {
+      param_items <- params_decision
+      names(param_items) <- rep("*", length(param_items))
+      cli::cli_bullets(param_items)
+    } else {
+      cli::cli_text("  {.emph (none)}")
+    }
   }
 
   # return the parameters needed for the design
@@ -142,7 +165,11 @@ required_fn_args_design <- function(design, print = TRUE) {
 required_fn_args_model <- function(model, print = TRUE) {
   # check that model is a valid rctbayespower_model object (allow both namespaced and non-namespaced for testing)
   if (!inherits(model, "rctbayespower::rctbp_model") && !inherits(model, "rctbp_model")) {
-    stop("'model' must be a valid rctbayespower_model object.")
+    cli::cli_abort(c(
+      "{.arg model} must be a valid rctbp_model object",
+      "x" = "You supplied {.cls {class(model)}}",
+      "i" = "Create a model object using {.fn build_model}"
+    ))
   }
 
   # get args without defaults for the model
@@ -150,9 +177,17 @@ required_fn_args_model <- function(model, print = TRUE) {
 
   # print the parameters if requested
   if (print) {
-    cat("\nArguments that need user specification.\n")
-    cat("\nSimulation function:\n")
-    cat(paste(params, collapse = ", "), "\n")
+    cli::cli_h3("Arguments that need user specification")
+    cli::cli_text("")
+
+    cli::cli_text("{.strong Simulation function parameters:}")
+    if (length(params) > 0) {
+      param_items <- params
+      names(param_items) <- rep("*", length(param_items))
+      cli::cli_bullets(param_items)
+    } else {
+      cli::cli_text("  {.emph (none)}")
+    }
   }
 
   invisible(params)

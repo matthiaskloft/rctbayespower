@@ -1,5 +1,11 @@
-# Backend Abstraction Layer for rctbayespower
-# Provides unified interface for multiple posterior estimation backends
+# =============================================================================
+# BACKEND ABSTRACTION LAYER
+# =============================================================================
+# Provides unified interface for multiple posterior estimation backends:
+# - brms: Fully implemented and production-ready
+# - NPE (Neural Posterior Estimation): Placeholder functions for future implementation
+#
+# Standard output: posterior::as_draws_rvars() format for consistent downstream processing
 
 #' Extract Posterior Samples as rvars from brms Model
 #'
@@ -14,7 +20,11 @@
 #' @keywords internal
 extract_posterior_rvars_brms <- function(brmsfit, target_params) {
   if (!inherits(brmsfit, "brmsfit")) {
-    stop("'brmsfit' must be a fitted brms model object")
+    cli::cli_abort(c(
+      "{.arg brmsfit} must be a fitted brms model object",
+      "x" = "You supplied {.cls {class(brmsfit)}}",
+      "i" = "Provide a fitted {.cls brmsfit} object"
+    ))
   }
 
   # Extract all target parameters as rvars
@@ -59,10 +69,11 @@ extract_posterior_rvars_npe <- function(npe_output, target_params, sim_index = N
   n_params <- length(target_params)
 
   if (ncol(posterior_samples) != n_params) {
-    stop("Number of parameters in 'npe_output' (",
-         ncol(posterior_samples),
-         ") does not match length of 'target_params' (",
-         n_params, ")")
+    cli::cli_abort(c(
+      "Parameter count mismatch in NPE output",
+      "x" = "NPE output has {.val {ncol(posterior_samples)}} parameters but {.arg target_params} has {.val {n_params}}",
+      "i" = "Ensure {.arg target_params} matches the NPE model output"
+    ))
   }
 
   # Create named list of rvars
@@ -93,7 +104,11 @@ extract_posterior_rvars_npe <- function(npe_output, target_params, sim_index = N
 #' @keywords internal
 estimate_posterior_brms <- function(data, brms_model, backend_args = list()) {
   if (!inherits(brms_model, "brmsfit")) {
-    stop("'brms_model' must be a valid brmsfit object")
+    cli::cli_abort(c(
+      "{.arg brms_model} must be a valid brmsfit object",
+      "x" = "You supplied {.cls {class(brms_model)}}",
+      "i" = "Provide a compiled {.cls brmsfit} template model"
+    ))
   }
 
   # Merge with default brms args if not provided
@@ -196,7 +211,10 @@ stack_data_for_npe <- function(data_list) {
   # 2. Pad/truncate to fixed size and stack
   # 3. Use sequence model with variable length
 
-  stop("stack_data_for_npe() must be implemented based on specific NPE model architecture")
+  cli::cli_abort(c(
+    "{.fn stack_data_for_npe} not yet implemented",
+    "i" = "This function must be implemented based on your specific NPE model architecture"
+  ))
 }
 
 
@@ -212,7 +230,10 @@ prepare_data_for_npe <- function(data) {
   # This is a placeholder - actual implementation depends on NPE model architecture
   # Should add batch dimension even for single simulation
 
-  stop("prepare_data_for_npe() must be implemented based on specific NPE model architecture")
+  cli::cli_abort(c(
+    "{.fn prepare_data_for_npe} not yet implemented",
+    "i" = "This function must be implemented based on your specific NPE model architecture"
+  ))
 }
 
 
@@ -235,7 +256,10 @@ sample_from_npe_posterior <- function(posterior_params, n_samples, batch_size) {
   # - Normalizing Flow: Apply inverse flow transformation to base samples
   # - MAF/IAF: Autoregressive sampling
 
-  stop("sample_from_npe_posterior() must be implemented based on specific NPE model architecture")
+  cli::cli_abort(c(
+    "{.fn sample_from_npe_posterior} not yet implemented",
+    "i" = "This function must be implemented based on your specific NPE model architecture"
+  ))
 }
 
 
@@ -254,7 +278,10 @@ estimate_posterior <- function(data, model, backend, backend_args = list()) {
   switch(backend,
     brms = estimate_posterior_brms(data, model, backend_args),
     npe = estimate_posterior_npe(data, model, backend_args),
-    stop("Unknown backend: '", backend, "'. Supported backends: 'brms', 'npe'")
+    cli::cli_abort(c(
+      "Unknown backend: {.val {backend}}",
+      "i" = "Supported backends: {.val brms}, {.val npe}"
+    ))
   )
 }
 
@@ -274,6 +301,9 @@ extract_posterior_rvars <- function(estimation_result, backend, target_params, s
   switch(backend,
     brms = extract_posterior_rvars_brms(estimation_result, target_params),
     npe = extract_posterior_rvars_npe(estimation_result, target_params, sim_index),
-    stop("Unknown backend: '", backend, "'. Supported backends: 'brms', 'npe'")
+    cli::cli_abort(c(
+      "Unknown backend: {.val {backend}}",
+      "i" = "Supported backends: {.val brms}, {.val npe}"
+    ))
   )
 }

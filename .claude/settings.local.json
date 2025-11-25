@@ -37,7 +37,8 @@
       "Bash(PARALLEL_TESTS=false Rscript:*)",
       "Bash(_R_CHECK_FORCE_SUGGESTS_=false R CMD check:*)",
       "Bash(dos2unix:*)",
-      "Bash(Makefile)"
+      "Bash(Makefile)",
+      "WebFetch(domain:cli.r-lib.org)"
     ],
     "deny": []
   }

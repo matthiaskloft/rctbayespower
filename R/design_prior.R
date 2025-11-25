@@ -28,14 +28,19 @@ parse_design_prior <- function(design_prior, effect_sizes, verbose = TRUE) {
     tryCatch(
       {
         if (!requireNamespace("brms", quietly = TRUE)) {
-          stop("Package 'brms' is required for parsing brms design prior syntax.")
+          cli::cli_abort(c(
+            "Package {.pkg brms} is required for parsing brms design prior syntax",
+            "i" = "Install it with {.code install.packages('brms')}"
+          ))
         }
 
         # Validate basic syntax
         if (!grepl("^[a-zA-Z_][a-zA-Z0-9_]*\\(.*\\)$", design_prior)) {
-          stop(
-            "Invalid brms prior syntax. Expected format: 'distribution_name(param1, param2, ...)'"
-          )
+          cli::cli_abort(c(
+            "Invalid brms prior syntax",
+            "x" = "You supplied {.val {design_prior}}",
+            "i" = "Expected format: {.code distribution_name(param1, param2, ...)}"
+          ))
         }
 
         # Extract distribution name
@@ -47,7 +52,16 @@ parse_design_prior <- function(design_prior, effect_sizes, verbose = TRUE) {
         quantile_call <- NULL
         source_package <- NULL
 
-        # Define mapping from brms names to stats names
+        # =============================================================================
+        # PRIORITY HIERARCHY for Prior Evaluation (stats → brms → custom)
+        # =============================================================================
+        # 1. stats package (norm, t, gamma) - Fastest, most stable, no dependencies
+        # 2. brms package (student_t, lognormal) - Specialized distributions
+        # 3. custom functions - Maximum flexibility, user-defined
+        #
+        # Rationale: Attempt lightweight solutions before heavy dependencies.
+        # stats functions are base R and very fast. brms functions add overhead
+        # but support more distributions. Custom functions allow full flexibility.
         brms_to_stats_map <- list(
           "normal" = "norm",
           "student_t" = "t",
@@ -66,7 +80,7 @@ parse_design_prior <- function(design_prior, effect_sizes, verbose = TRUE) {
           "wilcox" = "wilcox"
         )
 
-        # Try stats package first
+        # Try Method 1: stats package first
         stats_name <- brms_to_stats_map[[dist_name]]
         if (!is.null(stats_name)) {
           # Test if stats function exists and works
@@ -118,13 +132,11 @@ parse_design_prior <- function(design_prior, effect_sizes, verbose = TRUE) {
           )
 
           if (!brms_works) {
-            stop(
-              paste0(
-                "Distribution '",
-                dist_name,
-                "' not available in either stats or brms packages"
-              )
-            )
+            cli::cli_abort(c(
+              "Distribution {.val {dist_name}} not available",
+              "x" = "Distribution not found in either {.pkg stats} or {.pkg brms} packages",
+              "i" = "Use a supported distribution or provide a custom function"
+            ))
           }
         }
 
@@ -137,14 +149,11 @@ parse_design_prior <- function(design_prior, effect_sizes, verbose = TRUE) {
               eval(parse(text = modified_call))
             },
             error = function(e) {
-              stop(
-                paste0(
-                  "Error evaluating ",
-                  source_package,
-                  " density function: ",
-                  e$message
-                )
-              )
+              cli::cli_abort(c(
+                "Error evaluating {.pkg {source_package}} density function",
+                "x" = "{e$message}",
+                "i" = "Check your distribution parameters"
+              ))
             }
           )
         }
@@ -165,14 +174,11 @@ parse_design_prior <- function(design_prior, effect_sizes, verbose = TRUE) {
                     eval(parse(text = modified_call))
                   },
                   error = function(e) {
-                    stop(
-                      paste0(
-                        "Error evaluating ",
-                        source_package,
-                        " quantile function: ",
-                        e$message
-                      )
-                    )
+                    cli::cli_abort(c(
+                      "Error evaluating {.pkg {source_package}} quantile function",
+                      "x" = "{e$message}",
+                      "i" = "Check your distribution parameters"
+                    ))
                   }
                 )
               }
@@ -187,13 +193,11 @@ parse_design_prior <- function(design_prior, effect_sizes, verbose = TRUE) {
         )
 
         if (!quantile_available) {
-          warning(
-            paste0(
-              "Quantile function '",
-              quantile_call,
-              "' not available. Coverage checking will be disabled."
-            )
-          )
+          cli::cli_warn(c(
+            "Quantile function not available",
+            "x" = "Function '{quantile_call}' could not be created",
+            "i" = "Coverage checking will be disabled"
+          ))
         }
 
         if (verbose) {
@@ -220,7 +224,11 @@ parse_design_prior <- function(design_prior, effect_sizes, verbose = TRUE) {
         }
       },
       error = function(e) {
-        stop(paste("Error parsing design prior:", e$message))
+        cli::cli_abort(c(
+          "Error parsing design prior",
+          "x" = "{e$message}",
+          "i" = "Check your prior specification syntax"
+        ))
       }
     )
   } else if (is.function(design_prior)) {
@@ -230,7 +238,11 @@ parse_design_prior <- function(design_prior, effect_sizes, verbose = TRUE) {
       {
         test_val <- design_prior(0.5)
         if (!is.numeric(test_val) || length(test_val) != 1) {
-          stop("Design prior function must return a single numeric value")
+          cli::cli_abort(c(
+            "Design prior function must return a single numeric value",
+            "x" = "Your function returned {.type {test_val}} with length {.val {length(test_val)}}",
+            "i" = "Ensure your function returns a single numeric value"
+          ))
         }
         weight_fn <- design_prior
         # For custom functions, we'll estimate quantiles numerically
@@ -248,11 +260,19 @@ parse_design_prior <- function(design_prior, effect_sizes, verbose = TRUE) {
         }
       },
       error = function(e) {
-        stop(paste("Error testing design prior function:", e$message))
+        cli::cli_abort(c(
+          "Error testing design prior function",
+          "x" = "{e$message}",
+          "i" = "Ensure your function accepts a numeric input and returns a numeric output"
+        ))
       }
     )
   } else {
-    stop("'design_prior' must be either a character string (brms syntax) or an R function")
+    cli::cli_abort(c(
+      "{.arg design_prior} must be a character string or R function",
+      "x" = "You supplied {.type {design_prior}}",
+      "i" = "Use brms syntax (e.g., {.val normal(0.5, 0.2)}) or provide a function"
+    ))
   }
 
   # Compute quantiles and check coverage
@@ -267,37 +287,34 @@ parse_design_prior <- function(design_prior, effect_sizes, verbose = TRUE) {
         max_effect <- max(effect_sizes)
 
         if (max_effect < q90) {
-          warning(
-            paste0(
-              "Maximum effect size (",
-              round(max_effect, 3),
-              ") is less than 90th percentile of design prior (",
-              round(q90, 3),
-              "). Consider including larger effect sizes."
-            )
-          )
+          cli::cli_warn(c(
+            "Effect size range may not cover design prior adequately",
+            "x" = "Maximum effect size ({round(max_effect, 3)}) is less than 90th percentile of design prior ({round(q90, 3)})",
+            "i" = "Consider including larger effect sizes in your analysis"
+          ))
         }
 
         if (min_effect > q10) {
-          warning(
-            paste0(
-              "Minimum effect size (",
-              round(min_effect, 3),
-              ") is greater than 10th percentile of design prior (",
-              round(q10, 3),
-              "). Consider including smaller effect sizes."
-            )
-          )
+          cli::cli_warn(c(
+            "Effect size range may not cover design prior adequately",
+            "x" = "Minimum effect size ({round(min_effect, 3)}) is greater than 10th percentile of design prior ({round(q10, 3)})",
+            "i" = "Consider including smaller effect sizes in your analysis"
+          ))
         }
       },
       error = function(e) {
         # If quantile computation fails for custom functions, just warn
         if (weight_type == "function") {
-          warning(
-            "Could not compute quantiles for custom design prior function. Unable to check effect size coverage."
-          )
+          cli::cli_warn(c(
+            "Could not compute quantiles for custom design prior function",
+            "i" = "Unable to check effect size coverage"
+          ))
         } else {
-          stop(paste("Error computing quantiles:", e$message))
+          cli::cli_abort(c(
+            "Error computing quantiles",
+            "x" = "{e$message}",
+            "i" = "Check your distribution parameters"
+          ))
         }
       }
     )
@@ -382,12 +399,18 @@ validate_weighting_function <- function(effect_sizes = seq(0.2, 0.8, 0.1),
 
       # Validate results
       if (!is.numeric(test_weights) || any(is.na(test_weights))) {
-        stop("Weight function produced non-numeric or NA values")
+        cli::cli_abort(c(
+          "Weight function produced non-numeric or NA values",
+          "i" = "Check your distribution parameters"
+        ))
       }
 
       if (!is.numeric(test_quantiles) ||
         any(is.na(test_quantiles))) {
-        stop("Quantile function produced non-numeric or NA values")
+        cli::cli_abort(c(
+          "Quantile function produced non-numeric or NA values",
+          "i" = "Check your distribution parameters"
+        ))
       }
 
       list(
@@ -432,12 +455,18 @@ validate_weighting_function <- function(effect_sizes = seq(0.2, 0.8, 0.1),
 
       # Validate results
       if (!is.numeric(test_weights) || any(is.na(test_weights))) {
-        stop("Weight function produced non-numeric or NA values")
+        cli::cli_abort(c(
+          "Weight function produced non-numeric or NA values",
+          "i" = "Check your distribution parameters"
+        ))
       }
 
       if (!is.numeric(test_quantiles) ||
         any(is.na(test_quantiles))) {
-        stop("Quantile function produced non-numeric or NA values")
+        cli::cli_abort(c(
+          "Quantile function produced non-numeric or NA values",
+          "i" = "Check your distribution parameters"
+        ))
       }
 
       list(
@@ -466,14 +495,20 @@ validate_weighting_function <- function(effect_sizes = seq(0.2, 0.8, 0.1),
       # Test validation logic
       test_val <- custom_fn(0.5)
       if (!is.numeric(test_val) || length(test_val) != 1) {
-        stop("Weighting function must return a single numeric value")
+        cli::cli_abort(c(
+          "Weighting function must return a single numeric value",
+          "i" = "Check your custom function"
+        ))
       }
 
       # Test the function works with effect sizes
       test_weights <- sapply(effect_sizes, custom_fn)
 
       if (!is.numeric(test_weights) || any(is.na(test_weights))) {
-        stop("Custom function produced non-numeric or NA values")
+        cli::cli_abort(c(
+          "Custom function produced non-numeric or NA values",
+          "i" = "Check your custom function"
+        ))
       }
 
       list(passed = TRUE, weights = test_weights)
@@ -500,12 +535,19 @@ validate_weighting_function <- function(effect_sizes = seq(0.2, 0.8, 0.1),
       # Check that weights sum to 1 (within tolerance)
       weight_sum <- sum(normalized_weights)
       if (abs(weight_sum - 1.0) > 1e-10) {
-        stop(paste("Normalized weights do not sum to 1. Sum =", weight_sum))
+        cli::cli_abort(c(
+          "Normalized weights do not sum to 1",
+          "x" = "Sum = {.val {weight_sum}}",
+          "i" = "This is an internal error in weight normalization"
+        ))
       }
 
       # Check all weights are positive
       if (any(normalized_weights <= 0)) {
-        stop("Some normalized weights are non-positive")
+        cli::cli_abort(c(
+          "Some normalized weights are non-positive",
+          "i" = "Check your weighting function"
+        ))
       }
 
       list(
@@ -580,7 +622,7 @@ validate_weighting_function <- function(effect_sizes = seq(0.2, 0.8, 0.1),
           params <- gsub("normal\\(|\\)", "", "normal(0.5)") # Missing second parameter
           params <- as.numeric(strsplit(params, ",")[[1]])
           if (length(params) != 2) {
-            stop("normal() requires 2 parameters")
+            cli::cli_abort("normal() requires 2 parameters")
           }
         },
         error = function(e) {
@@ -597,7 +639,7 @@ validate_weighting_function <- function(effect_sizes = seq(0.2, 0.8, 0.1),
           } # Returns vector instead of single value
           test_val <- invalid_fn(0.5)
           if (!is.numeric(test_val) || length(test_val) != 1) {
-            stop("Weighting function must return a single numeric value")
+            cli::cli_abort("Weighting function must return a single numeric value")
           }
         },
         error = function(e) {

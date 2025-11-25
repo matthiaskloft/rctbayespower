@@ -21,7 +21,11 @@ update_S7_with_dots <- function(object, ...) {
     if (name %in% prop_names) {
       S7::prop(object = object,name =  name) <- dots[[name]]
     } else {
-      warning(sprintf("'%s' is not a property of class '%s'", name, class(object)))
+      cli::cli_warn(c(
+        "Invalid property name",
+        "x" = "'{name}' is not a property of class '{class(object)}'",
+        "i" = "Check valid property names with S7::prop_names()"
+      ))
     }
   }
   # revalidate the object to ensure it meets class requirements
@@ -48,7 +52,11 @@ class_data_frame <- S7::new_class(
   parent = S7::new_S3_class("data.frame"),
   validator = function(self) {
     if (!is.data.frame(self)) {
-      stop("Must be a data.frame")
+      cli::cli_abort(c(
+        "Must be a data.frame",
+        "x" = "You supplied {.cls {class(self)}}",
+        "i" = "Provide a standard data.frame object"
+      ))
     }
     NULL
   }

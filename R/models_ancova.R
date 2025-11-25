@@ -98,23 +98,39 @@ build_model_ancova <- function(prior_intercept = NULL,
   # Validate p_alloc
   if (!is.null(p_alloc) && !is.null(n_arms)) {
     if (length(p_alloc) != n_arms) {
-      stop("'p_alloc' must have length equal to 'n_arms'.")
+      cli::cli_abort(c(
+        "{.arg p_alloc} must have length equal to {.arg n_arms}",
+        "x" = "You supplied {.arg p_alloc} with length {.val {length(p_alloc)}} but {.arg n_arms} = {.val {n_arms}}",
+        "i" = "Provide a probability vector with {.val {n_arms}} elements"
+      ))
     }
     if (abs(sum(p_alloc) - 1) > 1e-6) {
-      stop("'p_alloc' must sum to 1.")
+      cli::cli_abort(c(
+        "{.arg p_alloc} must sum to 1",
+        "x" = "You supplied {.arg p_alloc} that sums to {.val {sum(p_alloc)}}",
+        "i" = "Ensure all probabilities sum to 1.0"
+      ))
     }
   }
 
   # Validate b_arm_treat
   if (!is.null(b_arm_treat) && !is.null(n_arms)) {
     if (length(b_arm_treat) != (n_arms - 1)) {
-      stop("'b_arm_treat' must have length equal to 'n_arms - 1'.")
+      cli::cli_abort(c(
+        "{.arg b_arm_treat} must have length equal to {.code n_arms - 1}",
+        "x" = "You supplied {.arg b_arm_treat} with length {.val {length(b_arm_treat)}} but need {.val {n_arms - 1}} coefficients",
+        "i" = "Provide {.val {n_arms - 1}} treatment effect coefficients for {.val {n_arms}} arms"
+      ))
     }
   }
 
   # Validate sigma
   if (!is.null(sigma) && sigma <= 0) {
-    stop("'sigma' must be positive.")
+    cli::cli_abort(c(
+      "{.arg sigma} must be positive",
+      "x" = "You supplied {.arg sigma} = {.val {sigma}}",
+      "i" = "Use a value > 0"
+    ))
   }
 
   # create the data simulation function
@@ -141,20 +157,30 @@ build_model_ancova <- function(prior_intercept = NULL,
       if (is.null(n_total) ||
           !is.numeric(n_total) || length(n_total) != 1 ||
           n_total <= 0 || n_total != round(n_total)) {
-        stop("'n_total' must be a positive integer value.")
+        cli::cli_abort(c(
+          "{.arg n_total} must be a positive integer value",
+          "x" = "You supplied {.val {n_total}}",
+          "i" = "Use a positive whole number"
+        ))
       }
       # validate n_arms, must be integer > 2
       if (is.null(n_arms) ||
           !is.numeric(n_arms) || length(n_arms) != 1 ||
           n_arms < 2 || n_arms != round(n_arms)) {
-        stop("'n_arms' must be a positive integer greater than or equal to 2.")
+        cli::cli_abort(c(
+          "{.arg n_arms} must be a positive integer >= 2",
+          "x" = "You supplied {.val {n_arms}}",
+          "i" = "Use an integer value of 2 or more"
+        ))
       }
       # validate contrasts, must be a string or matrix for creating contrasts
       if (!is.null(contrasts) &
           !is.character(contrasts) & !is.matrix(contrasts)) {
-        stop(
-          "'contrasts' must be a character string indicating a contrast method (e.g., \"contr.treatment\") or a matrix."
-        )
+        cli::cli_abort(c(
+          "{.arg contrasts} must be a character string or matrix",
+          "x" = "You supplied {.type {contrasts}}",
+          "i" = "Use a contrast method name (e.g., {.val contr.treatment}) or a contrast matrix"
+        ))
       } else{
         # create contrast matrix
         if (!is.null(contrasts) & is.character(contrasts)) {
@@ -167,19 +193,22 @@ build_model_ancova <- function(prior_intercept = NULL,
             "contr.SAS"
           )
           if (!(contrasts %in% valid_contrasts)) {
-            stop(
-              paste0(
-                "'contrasts' must be one of the following valid contrast methods: ",
-                paste(valid_contrasts, collapse = ", ")
-              )
-            )
+            cli::cli_abort(c(
+              "{.arg contrasts} must be a valid contrast method",
+              "x" = "You supplied {.val {contrasts}}",
+              "i" = "Use one of: {.val {valid_contrasts}}"
+            ))
           }
           # create contrast matrix
           tryCatch({
             contrasts_fn <- get(contrasts)
             contrast_matrix <- contrasts_fn(n_arms)
           }, error = function(e) {
-            stop("'contrasts' must be a valid contrast method (e.g., \"contr.treatment\").")
+            cli::cli_abort(c(
+              "Failed to create contrast matrix from {.arg contrasts}",
+              "x" = "Error: {e$message}",
+              "i" = "Use a valid contrast method (e.g., {.val contr.treatment})"
+            ))
           })
         }
       }
@@ -189,15 +218,21 @@ build_model_ancova <- function(prior_intercept = NULL,
         # nrow == n_arms, ncol == n_arms - 1
         if (nrow(contrasts) != n_arms ||
             ncol(contrasts) != n_arms - 1) {
-          stop("'contrasts' matrix must have dimensions n_arms x (n_arms - 1).")
+          cli::cli_abort(c(
+            "{.arg contrasts} matrix must have dimensions {.code n_arms x (n_arms - 1)}",
+            "x" = "You supplied a {.val {nrow(contrasts)}} x {.val {ncol(contrasts)}} matrix but need {.val {n_arms}} x {.val {n_arms - 1}}",
+            "i" = "Ensure the contrast matrix has {.val {n_arms}} rows and {.val {n_arms - 1}} columns"
+          ))
         }
         tryCatch({
           contrasts_fn <- get(contrasts)
           contrast_matrix <- contrasts
         }, error = function(e) {
-          stop(
-            "'contrasts' must be a valid contrast method (e.g., \"contr.treatment\") or matrix."
-          )
+          cli::cli_abort(c(
+            "Invalid {.arg contrasts} specification",
+            "x" = "Error: {e$message}",
+            "i" = "Provide a valid contrast method name or matrix"
+          ))
         })
       }
       # validate p_alloc, must be of length n_arms
@@ -205,23 +240,43 @@ build_model_ancova <- function(prior_intercept = NULL,
       if (is.null(p_alloc) ||
           !is.numeric(p_alloc) || length(p_alloc) != n_arms ||
           sum(p_alloc) != 1) {
-        stop("'p_alloc' must be a numeric vector of probabilities summing to 1.")
+        cli::cli_abort(c(
+          "{.arg p_alloc} must be a numeric vector of probabilities summing to 1",
+          "x" = "You supplied {.val {p_alloc}} with length {.val {length(p_alloc)}} and sum {.val {sum(p_alloc)}}",
+          "i" = "Provide {.val {n_arms}} probabilities that sum to 1.0"
+        ))
       }
       # validate intercept, must be numeric
       if (is.null(intercept) || !is.numeric(intercept)) {
-        stop("'intercept' must be a numeric value.")
+        cli::cli_abort(c(
+          "{.arg intercept} must be a numeric value",
+          "x" = "You supplied {.type {intercept}}",
+          "i" = "Provide a numeric intercept value"
+        ))
       }
       # validate b_arm_treat, must be numeric
       if (is.null(b_arm_treat) || !is.numeric(b_arm_treat)) {
-        stop("'b_arm_treat' must be a numeric value.")
+        cli::cli_abort(c(
+          "{.arg b_arm_treat} must be a numeric value",
+          "x" = "You supplied {.type {b_arm_treat}}",
+          "i" = "Provide numeric treatment effect coefficient(s)"
+        ))
       }
       # validate b_covariate, must be numeric
       if (is.null(b_covariate) || !is.numeric(b_covariate)) {
-        stop("'b_covariate' must be a numeric value.")
+        cli::cli_abort(c(
+          "{.arg b_covariate} must be a numeric value",
+          "x" = "You supplied {.type {b_covariate}}",
+          "i" = "Provide a numeric covariate coefficient"
+        ))
       }
       # validate sigma, must be numeric and positive
       if (is.null(sigma) || !is.numeric(sigma) || sigma <= 0) {
-        stop("'sigma' must be a positive numeric value.")
+        cli::cli_abort(c(
+          "{.arg sigma} must be a positive numeric value",
+          "x" = "You supplied {.val {sigma}}",
+          "i" = "Use a value > 0"
+        ))
       }
 
       # end of validation --------------------------------------------------------
@@ -281,17 +336,29 @@ build_model_ancova <- function(prior_intercept = NULL,
   if (is.null(prior_intercept)) {
     prior_intercept <- brms::set_prior("normal(0, 10)", class = "Intercept")
   } else if (!inherits(prior_intercept, "brmsprior")) {
-    stop("'prior_intercept' must be a valid brmsprior object.")
+    cli::cli_abort(c(
+      "{.arg prior_intercept} must be a valid brmsprior object",
+      "x" = "You supplied {.cls {class(prior_intercept)}}",
+      "i" = "Create priors using {.fn brms::set_prior}"
+    ))
   }
   if (is.null(prior_sigma)) {
     prior_sigma <- brms::set_prior("normal(0, 10)", class = "sigma", lb = 0)
   } else if (!inherits(prior_sigma, "brmsprior")) {
-    stop("'prior_sigma' must be a valid brmsprior object.")
+    cli::cli_abort(c(
+      "{.arg prior_sigma} must be a valid brmsprior object",
+      "x" = "You supplied {.cls {class(prior_sigma)}}",
+      "i" = "Create priors using {.fn brms::set_prior}"
+    ))
   }
   if (is.null(prior_covariate)) {
     prior_covariate <- brms::set_prior("student_t(3, 0, 1)", class = "b", coef = "covariate")
   } else if (!inherits(prior_covariate, "brmsprior")) {
-    stop("'prior_covariate' must be a valid brmsprior object.")
+    cli::cli_abort(c(
+      "{.arg prior_covariate} must be a valid brmsprior object",
+      "x" = "You supplied {.cls {class(prior_covariate)}}",
+      "i" = "Create priors using {.fn brms::set_prior}"
+    ))
   }
   if (is.null(prior_treatment)) {
     for (i in seq_len(n_arms - 1)) {
@@ -301,7 +368,11 @@ build_model_ancova <- function(prior_intercept = NULL,
     }
     prior_treatment <- brms::set_prior("student_t(3, 0, 1)", class = "b")
   } else if (!inherits(prior_treatment, "brmsprior")) {
-    stop("'prior_treatment' must be a valid brmsprior object.")
+    cli::cli_abort(c(
+      "{.arg prior_treatment} must be a valid brmsprior object",
+      "x" = "You supplied {.cls {class(prior_treatment)}}",
+      "i" = "Create priors using {.fn brms::set_prior}"
+    ))
   }
 
   # combine the priors into a single vector
@@ -316,7 +387,9 @@ build_model_ancova <- function(prior_intercept = NULL,
   # compile the brms model -----------------------------------------------------
 
   # fit the brms model
-  cat("Compiling the brms model ...\n")
+  if (should_show(1)) {
+    cli::cli_alert_info("Compiling the brms model")
+  }
 
   # model for retrieving parameter names
   brms_model_ancova <-
@@ -332,7 +405,9 @@ build_model_ancova <- function(prior_intercept = NULL,
         silent = 2
       )
     ))
-  cat("Model compilation done!\n")
+  if (should_show(1)) {
+    cli::cli_alert_success("Model compilation done")
+  }
 
 
 

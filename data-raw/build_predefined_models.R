@@ -1,5 +1,5 @@
 # load package
-devtools::load_all()
+pkgload::load_all()
 
 # ANCOVA
 ancova_cont_2arms <- build_model_ancova_cont_2arms()

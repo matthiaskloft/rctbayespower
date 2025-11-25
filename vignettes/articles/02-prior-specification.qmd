@@ -104,7 +104,7 @@ uninformative_analysis <- rctbayespower::power_analysis(
   conditions = uninformative_conditions,
   n_sims = n_sims,
   n_cores = n_cores,
-  verbose = FALSE
+  verbosity = 0
 )
 ```
 
@@ -168,7 +168,7 @@ informative_analysis <- power_analysis(
   conditions = informative_conditions,
   n_sims = n_sims,
   n_cores = n_cores,
-  verbose = FALSE
+  verbosity = 0
 )
 ```
 
@@ -235,7 +235,7 @@ alpha_uninformative <- power_analysis(
   conditions = alpha_uninformative_conditions,
   n_sims = n_sims,
   n_cores = n_cores,
-  verbose = FALSE
+  verbosity = 0
 )
 ```
 
@@ -263,7 +263,7 @@ alpha_informative <- power_analysis(
   conditions = alpha_informative_conditions,
   n_sims = n_sims,
   n_cores = n_cores,
-  verbose = TRUE
+  verbosity = 2
 )
 ```
 

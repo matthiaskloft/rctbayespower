@@ -1,5 +1,13 @@
-# S3 Method Wrappers for S7 Methods
-# These provide S3 compatibility for the S7 methods defined in the package
+# =============================================================================
+# S3 METHOD WRAPPERS FOR S7 CLASSES
+# =============================================================================
+# These S3 generic wrappers enable standard R methods (print, plot, run) to
+# work with S7 class objects. Without these wrappers, base R wouldn't recognize
+# S7 methods when users call generic functions.
+#
+# How it works: When a user calls plot(power_analysis_object), R's S3 dispatch
+# system looks for plot.rctbp_power_analysis. These wrappers delegate to the
+# actual S7 method implementations.
 
 #' @export
 plot.rctbp_power_analysis <- function(x, ...) {

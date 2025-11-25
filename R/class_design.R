@@ -1,22 +1,30 @@
-# S7 Class Definition for RCT Bayesian Power Design
+# =============================================================================
+# S7 CLASS DEFINITION: rctbp_design
+# =============================================================================
+# Links a rctbp_model with global analysis configuration. Stores WHICH
+# parameters to analyze and WHAT probability thresholds define success/futility.
+# Note: Effect size thresholds (e.g., treatment effect > 0.2) are specified
+# per-condition in build_conditions(), not here.
+
 #' @importFrom S7 new_class class_character class_numeric class_integer class_function class_any new_union
 rctbp_design <- S7::new_class(
   "rctbp_design",
   properties = list(
-    model = S7::class_any,
-    # Inherits from rctbp_model
-    target_params = S7::class_character,
-    p_sig_success = S7::class_numeric,
-    p_sig_futility = S7::class_numeric,
+    model = S7::class_any,                  # rctbp_model object
+    target_params = S7::class_character,    # Parameters to analyze (must match model@parameter_names_brms)
+    p_sig_success = S7::class_numeric,      # Probability threshold for success decision
+    p_sig_futility = S7::class_numeric,     # Probability threshold for futility decision
     design_name = S7::class_character | NULL
   ),
+  # Validator ensures target_params are valid for the model and probability
+  # thresholds are between 0 and 1
   validator = function(self) {
-    # validate model
+    # Validate model object type
     if (!inherits(self@model, "rctbayespower::rctbp_model")) {
       return("'model' must be a valid rctbp_model object.")
     }
 
-    # Check for required parameters
+    # Check required parameters are provided
     if (is.null(self@target_params) ||
         length(self@target_params) == 0) {
       return("'target_params' cannot be NULL or empty.")
@@ -28,7 +36,8 @@ rctbp_design <- S7::new_class(
       return("'p_sig_futility' cannot be NULL.")
     }
 
-    # Check that target_params is a subset of the parameter names in the model
+    # Validate target_params exist in brms model
+    # This ensures we can extract posteriors for these parameters
     if (!all(self@target_params %in% self@model@parameter_names_brms)) {
       return(paste(
         "'target_params' must be a subset of the parameter names in the model:",
@@ -36,7 +45,7 @@ rctbp_design <- S7::new_class(
       ))
     }
 
-    # Validate probability values
+    # Validate probability thresholds are valid probabilities [0, 1]
     if (length(self@p_sig_success) != 1 ||
         self@p_sig_success < 0 || self@p_sig_success > 1) {
       return("'p_sig_success' must be a numeric value between 0 and 1.")
@@ -46,10 +55,14 @@ rctbp_design <- S7::new_class(
       return("'p_sig_futility' must be a numeric value between 0 and 1.")
     }
 
-    # If all validations pass, return NULL
-    NULL
+    NULL  # All validations passed
   }
 )
+
+# =============================================================================
+# CONSTRUCTOR FUNCTION: build_design()
+# =============================================================================
+# User-friendly interface to create rctbp_design objects with validation.
 
 #' Constructor for rctbp_design Objects
 #'
@@ -59,8 +72,8 @@ rctbp_design <- S7::new_class(
 #'
 #' @param model An S7 object of class "rctbp_model" created by [build_model()]
 #' @param target_params Character vector specifying which model parameters to
-#'   analyze for power. Must be valid parameter names from the brms model
-#'   (e.g., "b_arms_treat" for treatment effect). Required.
+#'   analyze for power. Must be valid parameter names from the brms model.
+#'   Use `model@parameter_names_brms` to discover available names. Required.
 #' @param p_sig_success Probability threshold for declaring success. The posterior
 #'   probability that the effect exceeds the success threshold must be greater
 #'   than this value to declare success (typically 0.975 or 0.95). Required.
@@ -84,8 +97,9 @@ rctbp_design <- S7::new_class(
 #' \strong{Model Integration:} Links to the rctbp_model object containing data
 #' simulation function and compiled brms model.
 #'
-#' \strong{Target Parameters:} Specifies which model parameters to analyze for power
-#' (e.g., "b_arms_treat" for treatment effect).
+#' \strong{Target Parameters:} Specifies which model parameters to analyze for power.
+#' Parameter names are model-dependent. Use `model@parameter_names_brms` to discover
+#' available parameters for your specific model.
 #'
 #' \strong{Probability Thresholds:} The p_sig_success and p_sig_futility parameters
 #' control the certainty required for success/futility decisions. Higher values require
@@ -111,10 +125,13 @@ rctbp_design <- S7::new_class(
 #' # Create an ANCOVA model
 #' ancova_model <- build_model("ancova_cont_2arms")
 #'
+#' # Discover available parameter names (model-dependent)
+#' ancova_model@parameter_names_brms
+#'
 #' # Create a design for analyzing treatment effect
 #' my_design <- build_design(
 #'   model = ancova_model,
-#'   target_params = "b_arms_treat",
+#'   target_params = ancova_model@parameter_names_brms[1],  # Use actual param name
 #'   p_sig_success = 0.975,
 #'   p_sig_futility = 0.5,
 #'   design_name = "ANCOVA Treatment Effect Analysis"
@@ -135,8 +152,11 @@ build_design <- function(model,
   )
 }
 
-
-# S7 Method for Print (uses existing base print generic)
+# =============================================================================
+# S7 METHOD: print()
+# =============================================================================
+# Formats rctbp_design objects showing both model specifications and
+# analysis configuration parameters.
 
 #' Print Method for rctbp_design Objects
 #'
@@ -151,48 +171,7 @@ build_design <- function(model,
 #' @name print.rctbp_design
 #' @export
 S7::method(print, rctbp_design) <- function(x, ...) {
-  cat("\nS7 Object of class: 'rctbp_design'\n")
-  cat("--------------------------------------------------\n")
-  # model
-  cat("\n=== Model Specifications ===\n\n")
-  cat("Number of endpoints:", x@model@n_endpoints, "\n")
-  cat("Endpoint types:",
-      paste(x@model@endpoint_types, collapse = ", "),
-      "\n")
-  cat("Number of arms:", x@model@n_arms, "\n")
-  cat("Number of repeated measures:",
-      if (is.null(x@model@n_repeated_measures))
-        "NULL"
-      else
-        x@model@n_repeated_measures,
-      "\n")
-  cat(
-    "Parameter names - simulation function:",
-    paste(x@model@parameter_names_sim_fn, collapse = ", "),
-    "\n"
-  )
-  cat(
-    "Parameter names - brms model:",
-    paste(x@model@parameter_names_brms, collapse = ", "),
-    "\n"
-  )
-
-  # design
-  cat("\n=== Design Specifications ===\n\n")
-  cat("Design name:", if (is.null(x@design_name))
-    "NULL"
-    else
-      x@design_name, "\n")
-  cat("Target parameters:",
-      paste(x@target_params, collapse = ", "),
-      "\n")
-  cat("Probability threshold for success:", x@p_sig_success, "\n")
-  cat("Probability threshold for futility:", x@p_sig_futility, "\n")
-  cat("\nNote: Decision criteria (thresholds, interim schedules) are specified\n")
-  cat("      per-condition in the conditions object.\n")
-
-  cat("\n=== 'brms' Model ===\n\n")
-  print(x@model@brms_model)
-
+  report <- build_report.rctbp_design(x)
+  render_report(report)
   invisible(x)
 }

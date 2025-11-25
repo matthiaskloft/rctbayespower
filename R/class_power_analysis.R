@@ -1,17 +1,27 @@
-# S7 Class Definition for Power Analysis Configuration
+# =============================================================================
+# S7 CLASS DEFINITION: rctbp_power_analysis
+# =============================================================================
+# Main power analysis configuration and results container. Stores simulation
+# parameters (n_sims, n_cores), conditions object, and placeholders for results.
+
 #' @importFrom S7 new_class class_any class_numeric class_logical class_list class_character
 
 rctbp_power_analysis <- S7::new_class(
   "rctbp_power_analysis",
   properties = list(
+    # Simulation control parameters
     n_sims = S7::new_property(S7::class_numeric, default = 1),
     n_cores = S7::new_property(S7::class_numeric, default = 1),
-    verbose = S7::new_property(class = S7::class_logical, default = TRUE),
+    verbosity = S7::new_property(class = S7::class_numeric, default = 1),
     brms_args = S7::class_list | NULL,
     design_prior = S7::new_property(S7::class_character |
                                       S7::class_function | NULL, default = NULL),
-    conditions = S7::class_any,
+
+    # Configuration objects
+    conditions = S7::class_any,  # rctbp_conditions object
     design = S7::new_property(getter = function(self) self@conditions@design),
+
+    # Results (populated after run())
     summarized_results = S7::class_data.frame,
     raw_results = S7::class_data.frame,
     elapsed_time = S7::new_property(class = S7::class_numeric, default = NA_real_)
@@ -20,44 +30,73 @@ rctbp_power_analysis <- S7::new_class(
     # Validate conditions object
     if (!inherits(self@conditions, "rctbayespower::rctbp_conditions") &&
         !inherits(self@conditions, "rctbp_conditions")) {
-      stop("'conditions' must be a valid rctbp_conditions object")
+      cli::cli_abort(c(
+        "{.arg conditions} must be a valid rctbp_conditions object",
+        "x" = "Got object of class {.cls {class(self@conditions)}}",
+        "i" = "Use {.fn build_conditions} to create a valid conditions object"
+      ))
     }
-    
+
     # Validate n_sims, positive whole number
     if (!is.numeric(self@n_sims) ||
         length(self@n_sims) != 1 ||
         self@n_sims <= 0 || self@n_sims != round(self@n_sims)) {
-      stop("'n_sims' must be a positive whole number")
+      cli::cli_abort(c(
+        "{.arg n_sims} must be a positive whole number",
+        "x" = "You supplied {.val {self@n_sims}}",
+        "i" = "Use an integer >= 1"
+      ))
     }
-    
+
     # Validate n_cores, positive whole number, < available cores
     if (!is.numeric(self@n_cores) ||
         length(self@n_cores) != 1 ||
         self@n_cores <= 0 ||
         self@n_cores != round(self@n_cores)) {
-      stop("'n_cores' must be a positive whole number")
+      cli::cli_abort(c(
+        "{.arg n_cores} must be a positive whole number",
+        "x" = "You supplied {.val {self@n_cores}}",
+        "i" = "Use an integer >= 1"
+      ))
     }
     # Validate n_cores <= parallel::detectCores()
     if (self@n_cores > parallel::detectCores()) {
-      stop(
-        "'n_cores' must not exceed available cores. We recommend using at most detectCores() - 1 cores."
-      )
+      cli::cli_abort(c(
+        "{.arg n_cores} must not exceed available cores",
+        "x" = "You requested {self@n_cores} cores, but only {parallel::detectCores()} are available",
+        "i" = "We recommend using at most {.code parallel::detectCores() - 1} cores"
+      ))
     }
-    
-    # Validate verbose
-    if (!is.logical(self@verbose) || length(self@verbose) != 1) {
-      stop("'verbose' must be a logical value")
+
+    # Validate verbosity
+    if (!is.numeric(self@verbosity) ||
+        length(self@verbosity) != 1 ||
+        !self@verbosity %in% c(0, 1, 2)) {
+      cli::cli_abort(c(
+        "{.arg verbosity} must be 0, 1, or 2",
+        "x" = "You supplied {.val {self@verbosity}}",
+        "i" = "Use 0 (quiet), 1 (normal), or 2 (verbose)"
+      ))
     }
-    
+
     # Validate brms_args
     if (!is.list(self@brms_args)) {
-      stop("'brms_args' must be a list")
+      cli::cli_abort(c(
+        "{.arg brms_args} must be a list",
+        "x" = "You supplied {.type {self@brms_args}}"
+      ))
     }
-    
+
     # If all validations pass, return NULL
     NULL
   }
 )
+
+# =============================================================================
+# CONSTRUCTOR FUNCTION: power_analysis()
+# =============================================================================
+# Creates power analysis configuration object and optionally executes it.
+# Validates all parameters and prepares for parallel execution.
 
 #' Build Power Analysis Configuration
 #'
@@ -75,8 +114,9 @@ rctbp_power_analysis <- S7::new_class(
 #'     \item n_sims: Number of simulations to run per condition (default 100)
 #'     \item n_cores: Number of CPU cores to use for parallel execution (default 1).
 #'       Must not exceed the number of available cores
-#'     \item verbose: Logical indicating whether to display progress information
-#'       and analysis details (default TRUE)
+#'     \item verbosity: Verbosity level controlling output detail (default 1).
+#'       0 = quiet (minimal output), 1 = normal (standard output), 2 = verbose (detailed debug output).
+#'       Can also be set globally with options(rctbayespower.verbosity = level).
 #'     \item brms_args: List of additional arguments to pass to [brms::brm()]
 #'       function (default empty list)
 #'     \item design_prior: Prior specification for design parameters. Can be NULL
@@ -217,16 +257,28 @@ run <- S7::new_generic("run", "x")
 #' @importFrom parallel detectCores makeCluster stopCluster parLapply clusterEvalQ clusterExport
 #' @importFrom utils modifyList
 #' @name run.rctbp_power_analysis
+
+# =============================================================================
+# S7 METHOD: run() - Main Power Analysis Execution
+# =============================================================================
+# Executes power analysis simulations across all conditions using parallel
+# processing. Handles S7 serialization, worker setup, batching strategy,
+# and result aggregation.
+
 S7::method(run, rctbp_power_analysis) <- function(x, ...) {
   # Time start
   start_time <- Sys.time()
-  
+
   # Overwrite object parameters with dots if provided
   if (length(list(...)) > 0) {
     # Recreate the S7 object with updated parameters
     x <- update_S7_with_dots(x, ...)
   }
-  
+
+  # Set verbosity for this analysis run
+  old_verbosity <- set_verbosity(x@verbosity)
+  on.exit(set_verbosity(old_verbosity), add = TRUE)
+
   # update model with brms_args (only for brms backend) ------------
   design <- x@conditions@design
   backend <- design@model@backend
@@ -246,7 +298,11 @@ S7::method(run, rctbp_power_analysis) <- function(x, ...) {
 
     # warn if cores > 1
     if (x@brms_args$cores > 1) {
-      warning("Do not use multiple cores for brms when running simulations in parallel!")
+      cli::cli_warn(c(
+        "Parallel configuration issue detected",
+        "x" = "Multiple cores specified for brms when running simulations in parallel",
+        "i" = "Set brms cores to 1 when using parallel simulations to avoid resource conflicts"
+      ))
     }
     # update brms_args in the object
     x@conditions@design@model@brms_model <- do.call(function(...) {
@@ -254,7 +310,7 @@ S7::method(run, rctbp_power_analysis) <- function(x, ...) {
     }, x@brms_args)
   } else if (backend == "npe") {
     # For NPE backend, backend_args are already in model@backend_args
-    if (verbose) {
+    if (should_show(2)) {
       cat("Using NPE backend with configuration:\n")
       cat("  Batch size:",
           if (!is.null(design@model@backend_args$batch_size))
@@ -264,20 +320,31 @@ S7::method(run, rctbp_power_analysis) <- function(x, ...) {
           "\n")
     }
   }
-  
-  
-  
+
+
+
   # Extract variables from object
   n_cores <- x@n_cores
   n_sims <- x@n_sims
-  verbose <- x@verbose
   
   # Extract parameters from the object
   conditions <- x@conditions
   design <- x@conditions@design
   design_prior <- x@design_prior
-  
-  # Prepare design for parallel workers (S7 objects don't serialize well)
+
+  # =============================================================================
+  # S7 SERIALIZATION WORKAROUND
+  # =============================================================================
+  # Problem: S7 objects contain environments that don't serialize across
+  # parallel cluster boundaries (PSOCK clusters). When passed to workers,
+  # S7 objects lose their class information and methods fail.
+  #
+  # Solution: prepare_design_for_workers() flattens S7 objects to nested lists
+  # that serialize correctly. Workers access fields using list syntax ($)
+  # instead of S7 property syntax (@).
+  #
+  # Trade-off: Worker code must handle both S7 and list formats, adding
+  # complexity, but enables parallel execution without serialization failures.
   design_serialized <- prepare_design_for_workers(design)
 
   # Detect backend and batching strategy
@@ -306,21 +373,25 @@ S7::method(run, rctbp_power_analysis) <- function(x, ...) {
   total_work_units <- length(work_units)
 
   # Optional logging
-  if (verbose) {
-    cat("\n=== Power Analysis ===\n")
-    cat("Conditions:\n")
+  # Show if verbosity level is 2 (verbose)
+  if (should_show(2)) {
+    cli::cli_h3("Power Analysis Configuration")
+    cli::cli_text("")
+    cli::cli_text("{.strong Conditions:}")
     print(conditions@conditions_grid)
-    cat("\n")
-    cat("Backend:", backend, "\n")
-    cat("Batch size:", batch_size, "\n")
-    cat("Conditions to test:", nrow(conditions@conditions_grid), "\n")
-    cat("Simulations per condition:", n_sims, "\n")
-    cat("Total work units:", total_work_units, "\n")
-    if (!is.null(design@analysis_at) && length(design@analysis_at) > 0) {
-      cat("Interim analyses at: n =", paste(design@analysis_at, collapse = ", "), "\n")
-      cat("Adaptive design:", design@adaptive, "\n")
-    }
-    cat("\n")
+    cli::cli_text("")
+
+    cli::cli_dl(c(
+      "Backend" = backend,
+      "Batch size" = batch_size,
+      "Conditions to test" = nrow(conditions@conditions_grid),
+      "Simulations per condition" = n_sims,
+      "Total work units" = total_work_units
+    ))
+    cli::cli_text("")
+
+    # Note: analysis_at and adaptive are per-condition parameters
+    # and can be viewed in the conditions grid if needed
   }
   
   # Execute simulations
@@ -328,7 +399,9 @@ S7::method(run, rctbp_power_analysis) <- function(x, ...) {
     # set cl to NULL for default sequential execution
     cl <- NULL
     if (n_cores > 1) {
-      message("Setting up parallel cluster with ", n_cores, " cores ...")
+      if (should_show(1)) {
+        cli::cli_alert_info("Setting up parallel cluster with {n_cores} cores")
+      }
       # Set up cluster
       cl <- parallel::makeCluster(n_cores, type = "PSOCK")
       # Ensure cleanup on exit
@@ -362,7 +435,29 @@ S7::method(run, rctbp_power_analysis) <- function(x, ...) {
         envir = environment()
       )
 
-      # Export package functions - try multiple approaches for robustness
+      # =============================================================================
+      # WORKER EXPORT STRATEGY (Multi-tier fallback)
+      # =============================================================================
+      # Algorithm: Try multiple export methods to handle different package states
+      #
+      # Method 1: Namespace export (installed package mode)
+      #   - Fastest and most reliable
+      #   - Works when package is installed normally (R CMD INSTALL)
+      #   - Functions accessible via asNamespace("rctbayespower")
+      #
+      # Method 2: Environment export (development mode - NOT IMPLEMENTED)
+      #   - Fallback for devtools::load_all() workflow
+      #   - devtools doesn't register namespace, so Method 1 fails
+      #   - Would extract from parent environment
+      #
+      # Method 3: Graceful degradation
+      #   - Proceed with warning if export fails
+      #   - Workers may fail at runtime if functions unavailable
+      #
+      # Rationale: devtools::load_all() doesn't register package namespace like
+      # standard installation, requiring flexible export strategy to support
+      # both development and production modes.
+
       functions_to_export <- c(
         "worker_process_single",
         "worker_process_batch",
@@ -384,33 +479,51 @@ S7::method(run, rctbp_power_analysis) <- function(x, ...) {
         "calculate_mcse_mean",
         "calculate_mcse_integrated_power"
       )
-      
-      # Try multiple approaches to export functions to workers
+
       export_success <- FALSE
-      
-      # Method 1: Try namespace export first (for installed package)
+
+      # Try Method 1: Namespace export
       tryCatch({
         ns <- asNamespace("rctbayespower")
-        # Check if all functions exist in namespace
         all_exist <- all(sapply(functions_to_export, exists, envir = ns))
         if (all_exist) {
           parallel::clusterExport(cl, varlist = functions_to_export, envir = ns)
           export_success <- TRUE
-          if (verbose)
-            cat("Functions exported from package namespace\n\n")
+          if (should_show(2)) {
+            cli::cli_alert_success("Functions exported from package namespace")
+          }
         }
       }, error = function(e) {
-        if (verbose)
-          cat("Namespace export failed:", e$message, "\n\n")
+        if (should_show(2)) {
+          cli::cli_alert_warning("Namespace export failed: {e$message}")
+        }
       })
-      
-      if (!export_success && verbose) {
-        cat("Warning: Could not export all required functions to workers\n\n")
+
+      # Method 3: Graceful degradation
+      if (!export_success && should_show(1)) {
+        cli::cli_alert_warning("Could not export all required functions to workers")
       }
     }
-    
-    # Parallel execution
-    # Choose between single and batch processing
+
+    # =============================================================================
+    # BATCHING STRATEGY
+    # =============================================================================
+    # Algorithm: Choose processing strategy based on backend and batch_size
+    #
+    # batch_size = 1 (brms typical):
+    #   - Each worker processes one (condition, iteration) pair
+    #   - brms fits are independent → no batching benefit
+    #   - Simple parallelization: distribute work units across cores
+    #
+    # batch_size > 1 (NPE typical):
+    #   - Group multiple work units into batches
+    #   - NPE processes batch in single forward pass → efficient
+    #   - Trade-off: Larger batches = fewer parallel tasks but faster per-batch
+    #
+    # Rationale: NPE models can vectorize across multiple simulations (batch
+    # dimension), making batched processing significantly faster. brms fits each
+    # simulation independently, so batching adds no benefit.
+
     if (batch_size == 1L) {
       # Single processing: one work unit per worker call
       results_raw_list <-
@@ -462,50 +575,179 @@ S7::method(run, rctbp_power_analysis) <- function(x, ...) {
       # Stop cluster after use
       parallel::stopCluster(cl)
     }
-    
+
   } else {
-    # fallback on lapply() if pbapply is not available
-    message("Package 'pbapply' not found. Running simulations without progress bar.")
+    # Fallback: no progress bar if pbapply not available
+    if (should_show(1)) {
+      cli::cli_alert_info("Running {length(work_units)} simulations (pbapply not available, no progress bar)")
+    }
+
+    cl <- NULL
+    if (n_cores > 1) {
+      # Set up cluster
+      cl <- parallel::makeCluster(n_cores, type = "PSOCK")
+
+      # Load required packages on workers first
+      parallel::clusterEvalQ(cl, {
+        library(brms)
+        library(dplyr)
+        library(progressr)
+        library(posterior)
+        library(purrr)
+        library(stats)
+        library(utils)
+        library(S7)
+        library(stringr)
+
+        # For development with devtools/pkgload, try to load the package
+        tryCatch({
+          if (requireNamespace("rctbayespower", quietly = TRUE)) {
+            library(rctbayespower)
+          }
+        }, error = function(e) {
+          # Package might not be properly installed, will rely on explicit exports
+        })
+      })
+
+      # Export required objects to cluster
+      parallel::clusterExport(
+        cl,
+        varlist = c("work_units", "design_serialized", "batch_size", "backend"),
+        envir = environment()
+      )
+
+      functions_to_export <- c(
+        "worker_process_single",
+        "worker_process_batch",
+        "prepare_design_for_workers",
+        "estimate_single_brms",
+        "estimate_single_npe",
+        "estimate_sequential_brms",
+        "estimate_sequential_npe",
+        "create_error_result",
+        "estimate_posterior",
+        "estimate_posterior_brms",
+        "estimate_posterior_npe",
+        "extract_posterior_rvars",
+        "extract_posterior_rvars_brms",
+        "extract_posterior_rvars_npe",
+        "compute_measures",
+        "compute_measures_brmsfit",
+        "calculate_mcse_power",
+        "calculate_mcse_mean",
+        "calculate_mcse_integrated_power"
+      )
+
+      export_success <- FALSE
+
+      # Try Method 1: Namespace export
+      tryCatch({
+        ns <- asNamespace("rctbayespower")
+        all_exist <- all(sapply(functions_to_export, exists, envir = ns))
+        if (all_exist) {
+          parallel::clusterExport(cl, varlist = functions_to_export, envir = ns)
+          export_success <- TRUE
+          if (should_show(2)) {
+            cli::cli_alert_success("Functions exported from package namespace")
+          }
+        }
+      }, error = function(e) {
+        if (should_show(2)) {
+          cli::cli_alert_warning("Namespace export failed: {e$message}")
+        }
+      })
+
+      # Method 3: Graceful degradation
+      if (!export_success && should_show(1)) {
+        cli::cli_alert_warning("Could not export all required functions to workers")
+      }
+    }
 
     if (batch_size == 1L) {
       # Single processing
-      results_raw_list <- lapply(work_units, function(wu) {
-        tryCatch({
-          worker_process_single(
-            id_cond = wu$id_cond,
-            id_iter = wu$id_iter,
-            condition_args = wu$condition_args,
-            design = design_serialized
-          )
-        }, error = function(e) {
-          create_error_result(
-            id_iter = wu$id_iter,
-            id_cond = wu$id_cond,
-            id_analysis = 0L,
-            error_msg = paste("Worker error:", e$message)
-          )
+      if (n_cores > 1) {
+        results_raw_list <- parallel::parLapply(cl, seq_along(work_units), function(i) {
+          tryCatch({
+            wu <- work_units[[i]]
+            worker_process_single(
+              id_cond = wu$id_cond,
+              id_iter = wu$id_iter,
+              condition_args = wu$condition_args,
+              design = design_serialized
+            )
+          }, error = function(e) {
+            create_error_result(
+              id_iter = work_units[[i]]$id_iter,
+              id_cond = work_units[[i]]$id_cond,
+              id_analysis = 0L,
+              error_msg = paste("Worker error:", e$message)
+            )
+          })
         })
-      })
-    } else {
-      # Batch processing
-      batches <- split(work_units, ceiling(seq_along(work_units) / batch_size))
-      results_raw_list <- lapply(batches, function(batch) {
-        tryCatch({
-          worker_process_batch(
-            work_units = batch,
-            design = design_serialized
-          )
-        }, error = function(e) {
-          lapply(batch, function(wu) {
+      } else {
+        results_raw_list <- lapply(work_units, function(wu) {
+          tryCatch({
+            worker_process_single(
+              id_cond = wu$id_cond,
+              id_iter = wu$id_iter,
+              condition_args = wu$condition_args,
+              design = design_serialized
+            )
+          }, error = function(e) {
             create_error_result(
               id_iter = wu$id_iter,
               id_cond = wu$id_cond,
               id_analysis = 0L,
-              error_msg = paste("Batch worker error:", e$message)
+              error_msg = paste("Worker error:", e$message)
             )
-          }) |> dplyr::bind_rows()
+          })
         })
-      })
+      }
+    } else {
+      # Batch processing
+      batches <- split(work_units, ceiling(seq_along(work_units) / batch_size))
+      if (n_cores > 1) {
+        results_raw_list <- parallel::parLapply(cl, batches, function(batch) {
+          tryCatch({
+            worker_process_batch(
+              work_units = batch,
+              design = design_serialized
+            )
+          }, error = function(e) {
+            lapply(batch, function(wu) {
+              create_error_result(
+                id_iter = wu$id_iter,
+                id_cond = wu$id_cond,
+                id_analysis = 0L,
+                error_msg = paste("Batch worker error:", e$message)
+              )
+            }) |> dplyr::bind_rows()
+          })
+        })
+      } else {
+        results_raw_list <- lapply(batches, function(batch) {
+          tryCatch({
+            worker_process_batch(
+              work_units = batch,
+              design = design_serialized
+            )
+          }, error = function(e) {
+            lapply(batch, function(wu) {
+              create_error_result(
+                id_iter = wu$id_iter,
+                id_cond = wu$id_cond,
+                id_analysis = 0L,
+                error_msg = paste("Batch worker error:", e$message)
+              )
+            }) |> dplyr::bind_rows()
+          })
+        })
+      }
+    }
+
+    # Clean up cluster
+    if (n_cores > 1) {
+      parallel::stopCluster(cl)
     }
   }
   
@@ -517,35 +759,44 @@ S7::method(run, rctbp_power_analysis) <- function(x, ...) {
   }
   
   # Check for and report any error messages
-  if (verbose || TRUE) {
-    # Always show errors for debugging
-    error_results <- dplyr::bind_rows(results_raw_list)
-    error_rows <- !is.na(error_results$error)
-    if (any(error_rows)) {
-      error_msgs <- error_results[error_rows, "error"]
-      cat("Simulation errors found:\n")
-      cat(paste(unique(error_msgs), collapse = "\n"), "\n")
-      cat("Number of errors:", sum(error_rows), "\n")
-    }
+  # Always show errors for debugging
+  error_results <- dplyr::bind_rows(results_raw_list)
+  error_rows <- !is.na(error_results$error)
+  if (any(error_rows)) {
+    error_msgs <- error_results[error_rows, "error"]
+    cat("Simulation errors found:\n")
+    cat(paste(unique(error_msgs), collapse = "\n"), "\n")
+    cat("Number of errors:", sum(error_rows), "\n")
   }
   
   # Combine results - use bind_rows for robustness
   results_df_raw <- dplyr::bind_rows(results_raw_list)
 
   # Debug: Check combined results
-  if (verbose) {
-    cat("\n=== Raw Results Summary ===\n")
-    cat("Combined results dimensions:", dim(results_df_raw), "\n")
+  # Show if verbosity level is 2 (verbose)
+  if (should_show(2)) {
+    cli::cli_h3("Raw Results Summary")
+    cli::cli_text("")
+
+    dims <- dim(results_df_raw)
+    cli::cli_text("{.strong Combined results dimensions:} {dims[1]} rows × {dims[2]} columns")
+
     if (!is.null(results_df_raw) && nrow(results_df_raw) > 0) {
-      cat("Column names:", paste(colnames(results_df_raw), collapse = ", "), "\n")
-      cat("Unique conditions:", length(unique(results_df_raw$id_cond)), "\n")
-      cat("Unique iterations per condition:", n_sims, "\n")
+      cli::cli_text("{.strong Column names:} {.val {colnames(results_df_raw)}}")
+
+      result_info <- c(
+        "Unique conditions" = length(unique(results_df_raw$id_cond)),
+        "Unique iterations per condition" = n_sims
+      )
+
       if ("id_analysis" %in% colnames(results_df_raw)) {
-        cat("Analyses per iteration:",
-            paste(sort(unique(results_df_raw$id_analysis)), collapse = ", "), "\n")
+        analyses <- paste(sort(unique(results_df_raw$id_analysis)), collapse = ", ")
+        result_info <- c(result_info, "Analyses per iteration" = analyses)
       }
+
+      cli::cli_dl(result_info)
     }
-    cat("\n")
+    cli::cli_text("")
   }
 
   # Average across simulation runs
@@ -555,10 +806,8 @@ S7::method(run, rctbp_power_analysis) <- function(x, ...) {
   # End time
   elapsed_time <- difftime(Sys.time(), start_time, units = "mins")
   # Print elapsed time
-  if (verbose) {
-    cat("\nTotal analysis time:",
-        round(as.numeric(elapsed_time), 2),
-        "minutes\n")
+  if (should_show(1)) {
+    cli::cli_alert_success("Total analysis time: {round(as.numeric(elapsed_time), 2)} minutes")
   }
   
   # Update the S7 object with results
@@ -587,108 +836,7 @@ S7::method(run, rctbp_power_analysis) <- function(x, ...) {
 #' @name print.rctbp_power_analysis
 #' @export
 S7::method(print, rctbp_power_analysis) <- function(x, ...) {
-  cat("\nS7 Object of class: 'rctbp_power_analysis'\n")
-  cat("==================================================\n")
-  
-  cat("\n=== Design Summary ===\n")
-  design <- x@conditions@design
-  cat("Target parameters:",
-      paste(design@target_params, collapse = ", "),
-      "\n")
-  cat("Success probability threshold:", design@p_sig_success, "\n")
-  cat("Futility probability threshold:",
-      design@p_sig_futility,
-      "\n")
-  
-  
-  # Check if analysis has been run
-  has_results <- nrow(x@summarized_results) > 0 ||
-    nrow(x@raw_results) > 0
-  
-  if (has_results) {
-    cat("STATUS: [COMPLETED] Analysis completed\n\n")
-    
-    # Results Summary
-    cat("=== Results Summary ===\n")
-    results_df <- x@summarized_results
-    cat("Analysis runtime:",
-        if (!is.null(x@elapsed_time))
-          paste0(round(x@elapsed_time, 2), " minutes")
-        else
-          "Not available",
-        "\n")
-    cat("Conditions analyzed:",
-        nrow(x@conditions@conditions_grid),
-        "\n")
-    cat("Simulations per condition:", x@n_sims, "\n")
-    cat("Total simulations:",
-        nrow(x@conditions@conditions_grid) * x@n_sims,
-        "\n")
-    
-    # Quick power overview
-    if (!is.null(results_df)) {
-      power_cols <- intersect(names(results_df),
-                              c("power_success", "power_futility"))
-      if (length(power_cols) > 0) {
-        cat("\nPower ranges:\n")
-        for (col in power_cols) {
-          power_range <- range(results_df[[col]], na.rm = TRUE)
-          cat("  ",
-              gsub("power_", "", col),
-              ":",
-              paste0(
-                round(power_range[1] * 100, 1),
-                "% - ",
-                round(power_range[2] * 100, 1),
-                "%"
-              ),
-              "\n")
-        }
-      }
-    }
-    
-    cat("\n=== Available Actions ===\n")
-    cat("- plot() - Create visualizations\n")
-    cat("- power_config@summarized_results - Access summarized results\n")
-    cat("- power_config@raw_results - Access raw simulation results\n")
-    
-  } else {
-    cat("STATUS: [PENDING] Analysis not yet run\n\n")
-    
-    # Analysis Configuration
-    cat("=== Analysis Configuration ===\n")
-    cat("Number of simulations per condition:", x@n_sims, "\n")
-    cat("Number of cores for parallel execution:", x@n_cores, "\n")
-    cat("Verbose output:", x@verbose, "\n")
-    cat(
-      "Design prior:",
-      if (is.null(x@design_prior))
-        "None"
-      else
-        if (is.function(x@design_prior))
-          "Custom function"
-      else
-        as.character(x@design_prior),
-      "\n"
-    )
-    
-    if (length(x@brms_args) > 0) {
-      cat("BRMS arguments:\n")
-      for (arg_name in names(x@brms_args)) {
-        cat("  ", arg_name, ":", x@brms_args[[arg_name]], "\n")
-      }
-    }
-    
-    cat("\n=== Analysis Preview ===\n")
-    n_conditions <- nrow(x@conditions@conditions_grid)
-    total_sims <- n_conditions * x@n_sims
-    cat("Total conditions:", n_conditions, "\n")
-    cat("Total simulations:", total_sims, "\n")
-    
-    cat("\n=== Available Actions ===\n")
-    cat("- run() - Execute the analysis\n")
-    cat("- power_config@conditions - View condition details\n")
-  }
-  
+  report <- build_report.rctbp_power_analysis(x)
+  render_report(report)
   invisible(x)
 }

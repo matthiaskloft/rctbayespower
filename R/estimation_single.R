@@ -33,7 +33,11 @@ estimate_single_brms <- function(data, model, backend_args, target_params,
       backend_args = backend_args
     )
   }, error = function(e) {
-    warning("brms estimation failed for iter=", id_iter, ", cond=", id_cond, ": ", e$message)
+    cli::cli_warn(c(
+      "brms estimation failed",
+      "x" = "Condition {id_cond}, iteration {id_iter}",
+      "i" = "Error: {e$message}"
+    ))
     return(NULL)
   })
 
@@ -49,7 +53,10 @@ estimate_single_brms <- function(data, model, backend_args, target_params,
       target_params = target_params
     )
   }, error = function(e) {
-    warning("Posterior extraction failed: ", e$message)
+    cli::cli_warn(c(
+      "Posterior extraction failed",
+      "i" = "Error: {e$message}"
+    ))
     return(NULL)
   })
 
@@ -100,7 +107,10 @@ estimate_single_npe <- function(data, model, backend_args, target_params,
                                 p_sig_success, p_sig_futility,
                                 id_iter, id_cond) {
 
-  # Determine if batch or single
+  # Batch detection: distinguish data.frame (single) from list of data.frames (batch)
+  # Rationale: data.frame objects are also lists in R, so we explicitly exclude them.
+  # Single sim: data.frame → is_batch = FALSE
+  # Batch: list of data.frames → is_batch = TRUE
   is_batch <- is.list(data) && !is.data.frame(data)
   batch_size <- if (is_batch) length(data) else 1
 
@@ -113,7 +123,10 @@ estimate_single_npe <- function(data, model, backend_args, target_params,
       backend_args = backend_args
     )
   }, error = function(e) {
-    warning("NPE estimation failed: ", e$message)
+    cli::cli_warn(c(
+      "NPE estimation failed",
+      "i" = "Error: {e$message}"
+    ))
     return(NULL)
   })
 
@@ -140,7 +153,11 @@ estimate_single_npe <- function(data, model, backend_args, target_params,
         sim_index = if (is_batch) i else NULL
       )
     }, error = function(e) {
-      warning("Posterior extraction failed for sim ", i, ": ", e$message)
+      cli::cli_warn(c(
+        "Posterior extraction failed",
+        "x" = "Simulation {i}",
+        "i" = "Error: {e$message}"
+      ))
       return(NULL)
     })
 

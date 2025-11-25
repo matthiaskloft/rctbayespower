@@ -38,7 +38,10 @@ worker_process_single <- function(id_cond, id_iter, condition_args, design) {
     p_sig_success <- design$p_sig_success
     p_sig_futility <- design$p_sig_futility
   } else {
-    stop("Invalid design object")
+    cli::cli_abort(c(
+      "Invalid design object",
+      "i" = "This is an internal error - please report"
+    ))
   }
 
   # Extract decision parameters from condition_args
@@ -49,7 +52,22 @@ worker_process_single <- function(id_cond, id_iter, condition_args, design) {
   interim_function <- decision_args$interim_function
   adaptive <- decision_args$adaptive %||% FALSE
 
-  # Detect strategy
+  # =============================================================================
+  # STRATEGY DETECTION (Single vs Sequential vs Adaptive)
+  # =============================================================================
+  # Determines analysis strategy based on decision parameters:
+  #
+  # "single" - No interim analyses (analysis_at = NULL or empty)
+  #   - One analysis at n_total only
+  #   - Most common scenario
+  #
+  # "sequential" - Has interim timepoints, non-adaptive
+  #   - Fixed interim analyses at predefined sample sizes
+  #   - Early stopping possible but parameters don't change
+  #
+  # "adaptive" - Has interim timepoints, adaptive = TRUE
+  #   - Parameters can be modified between looks
+  #   - Not yet implemented (planned feature)
   has_interims <- !is.null(analysis_at) && length(analysis_at) > 0
   strategy <- if (!has_interims) {
     "single"
@@ -64,7 +82,11 @@ worker_process_single <- function(id_cond, id_iter, condition_args, design) {
     full_data <- tryCatch({
       do.call(data_simulation_fn, condition_args$sim_args)
     }, error = function(e) {
-      warning("Data simulation failed for cond=", id_cond, ", iter=", id_iter, ": ", e$message)
+      cli::cli_warn(c(
+        "Data simulation failed",
+        "x" = "Condition {id_cond}, iteration {id_iter}",
+        "i" = "Error: {e$message}"
+      ))
       return(NULL)
     })
 
@@ -139,7 +161,10 @@ worker_process_single <- function(id_cond, id_iter, condition_args, design) {
       }
     },
     adaptive = {
-      stop("Adaptive strategy not yet implemented. Use Opus model for planning.")
+      cli::cli_abort(c(
+        "Adaptive strategy not yet implemented",
+        "i" = "This feature is planned for future releases"
+      ))
     }
   )
 
@@ -180,12 +205,19 @@ worker_process_batch <- function(work_units, design) {
     p_sig_success <- design$p_sig_success
     p_sig_futility <- design$p_sig_futility
   } else {
-    stop("Invalid design object")
+    cli::cli_abort(c(
+      "Invalid design object",
+      "i" = "This is an internal error - please report"
+    ))
   }
 
   # Validate this is NPE
   if (backend != "npe") {
-    stop("worker_process_batch should only be called for NPE backend")
+    cli::cli_abort(c(
+      "{.fn worker_process_batch} should only be called for NPE backend",
+      "x" = "Backend is {.val {backend}}",
+      "i" = "This is an internal error - please report"
+    ))
   }
 
   # Extract IDs
@@ -202,7 +234,10 @@ worker_process_batch <- function(work_units, design) {
   adaptive <- decision_args$adaptive %||% FALSE
 
   if (adaptive) {
-    stop("Adaptive strategy with batching not yet implemented")
+    cli::cli_abort(c(
+      "Adaptive strategy with batching not yet implemented",
+      "i" = "This feature is planned for future releases"
+    ))
   }
 
   # Detect strategy
@@ -214,7 +249,11 @@ worker_process_batch <- function(work_units, design) {
     tryCatch({
       do.call(data_simulation_fn, wu$condition_args$sim_args)
     }, error = function(e) {
-      warning("Data simulation failed for cond=", wu$id_cond, ", iter=", wu$id_iter, ": ", e$message)
+      cli::cli_warn(c(
+        "Data simulation failed",
+        "x" = "Condition {wu$id_cond}, iteration {wu$id_iter}",
+        "i" = "Error: {e$message}"
+      ))
       return(NULL)
     })
   })

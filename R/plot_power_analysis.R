@@ -63,9 +63,11 @@ S7::method(plot, rctbp_power_analysis) <- function(x,
                                                    ...) {
   # Check if analysis has been run
   if (is.null(x@summarized_results)) {
-    stop(
-      "No simulation results found. Please run the analysis first using run(power_config)."
-    )
+    cli::cli_abort(c(
+      "No simulation results found",
+      "x" = "The power analysis has not been run yet",
+      "i" = "Run the analysis first using {.fn run}"
+    ))
   }
   
   # Call the internal plotting function
@@ -99,15 +101,20 @@ create_power_plot <- function(x,
   # }
   
   if (!requireNamespace("plotly", quietly = TRUE)) {
-    stop("Package 'plotly' is required for interactive plotting.")
+    cli::cli_abort(c(
+      "Package {.pkg plotly} is required for interactive plotting",
+      "i" = "Install it with {.code install.packages('plotly')}"
+    ))
   }
   
   # Check for valid data
   if (is.null(x@summarized_results) ||
       nrow(x@summarized_results) == 0) {
-    stop(
-      "No power analysis results to plot. Check that the rctbp_power_analysis object was run successfully."
-    )
+    cli::cli_abort(c(
+      "No power analysis results to plot",
+      "x" = "The summarized results are empty or missing",
+      "i" = "Check that the power analysis object was run successfully"
+    ))
   }
   
   # Use S7 object structure directly
@@ -122,8 +129,11 @@ create_power_plot <- function(x,
                      "prob_futility")
   missing_cols <- setdiff(required_cols, names(plot_data))
   if (length(missing_cols) > 0) {
-    stop("Missing required columns in results_df: ",
-         paste(missing_cols, collapse = ", "))
+    cli::cli_abort(c(
+      "Missing required columns in results",
+      "x" = "Missing: {.val {missing_cols}}",
+      "i" = "Check that the power analysis completed successfully"
+    ))
   }
   
   # Determine analysis type from data dimensions
@@ -166,22 +176,34 @@ create_power_plot <- function(x,
     } else if (analysis_type == "both") {
       type <- "heatmap"
     } else {
-      stop("Cannot auto-detect plot type for analysis type: ",
-           analysis_type)
+      cli::cli_abort(c(
+        "Cannot auto-detect plot type",
+        "x" = "Analysis type: {.val {analysis_type}}",
+        "i" = "Specify {.arg type} explicitly"
+      ))
     }
   }
   
   # Validate parameters
   if (!metric %in% c("success", "futility", "both")) {
-    stop("'metric' must be 'success', 'futility', or 'both'")
+    cli::cli_abort(c(
+      "{.arg metric} must be {.val success}, {.val futility}, or {.val both}",
+      "x" = "You supplied {.val {metric}}"
+    ))
   }
-  
+
   if (!values %in% c("power", "post_prob", "both")) {
-    stop("'values' must be 'power', 'post_prob', or 'both'")
+    cli::cli_abort(c(
+      "{.arg values} must be {.val power}, {.val post_prob}, or {.val both}",
+      "x" = "You supplied {.val {values}}"
+    ))
   }
-  
+
   if (!facet_by %in% c("effect_size", "sample_size")) {
-    stop("'facet_by' must be 'effect_size' or 'sample_size'")
+    cli::cli_abort(c(
+      "{.arg facet_by} must be {.val effect_size} or {.val sample_size}",
+      "x" = "You supplied {.val {facet_by}}"
+    ))
   }
   
   # Create plot based on type
@@ -225,11 +247,10 @@ create_power_plot <- function(x,
                            values,
                            ...)
   } else {
-    stop(
-      "Unknown plot type: ",
-      type,
-      ". Use 'power_curve', 'heatmap', 'integrated', or 'comparison'."
-    )
+    cli::cli_abort(c(
+      "Unknown plot type: {.val {type}}",
+      "i" = "Use {.val power_curve}, {.val heatmap}, {.val integrated}, or {.val comparison}"
+    ))
   }
 }
 
@@ -275,7 +296,11 @@ create_power_curve_plot <- function(plot_data,
       subtitle <- paste("Effect sizes:", paste(range(plot_data[[target_param]]), collapse = "-"))
     }
   } else {
-    stop("Unknown analysis type")
+    cli::cli_abort(c(
+      "Unknown analysis type",
+      "x" = "Analysis type: {.val {analysis_type}}",
+      "i" = "This is an internal error - please report"
+    ))
   }
   
   # Initialize plotly figure
@@ -462,14 +487,20 @@ create_heatmap_plot <- function(plot_data,
                                 show_target,
                                 ...) {
   if (analysis_type != "both") {
-    stop("Heatmap plot requires both sample sizes and effect sizes to vary")
+    cli::cli_abort(c(
+      "Heatmap plot requires both sample sizes and effect sizes to vary",
+      "x" = "Your analysis only varies one dimension",
+      "i" = "Use {.code type = 'power_curve'} instead"
+    ))
   }
   
   # Check for sufficient data points
   if (nrow(plot_data) < 4) {
-    stop(
-      "Heatmap requires at least 4 data points (2x2 grid). Consider using type='power_curve' instead."
-    )
+    cli::cli_abort(c(
+      "Heatmap requires at least 4 data points (2x2 grid)",
+      "x" = "You have {.val {nrow(plot_data)}} data points",
+      "i" = "Use {.code type = 'power_curve'} instead"
+    ))
   }
   
   # Remove rows with all NA values for key metrics
@@ -480,7 +511,11 @@ create_heatmap_plot <- function(plot_data,
   plot_data <- plot_data[valid_rows, ]
   
   if (nrow(plot_data) == 0) {
-    stop("No valid data points for heatmap. All power analysis results contain NA values.")
+    cli::cli_abort(c(
+      "No valid data points for heatmap",
+      "x" = "All power analysis results contain NA values",
+      "i" = "Check your analysis for errors or convergence issues"
+    ))
   }
   
   # Get unique values for axes
@@ -815,9 +850,10 @@ create_integrated_plot <- function(plot_data,
                                    show_target,
                                    ...) {
   # For now, integrated power functionality is not implemented in the new API
-  stop(
-    "Integrated power plots are not yet implemented in the new API. Please use type='power_curve' or type='heatmap' instead."
-  )
+  cli::cli_abort(c(
+    "Integrated power plots are not yet implemented",
+    "i" = "Use {.code type = 'power_curve'} or {.code type = 'heatmap'} instead"
+  ))
   
 }
 
@@ -839,7 +875,11 @@ create_comparison_plot <- function(plot_data,
     x_label <- "Effect Size"
     title_base <- "Power vs Posterior Probability (Effect Size Analysis)"
   } else {
-    stop("Comparison plot requires single varying dimension (sample_only or effect_only)")
+    cli::cli_abort(c(
+      "Comparison plot requires single varying dimension",
+      "x" = "Your analysis varies multiple dimensions",
+      "i" = "Use {.code type = 'heatmap'} for multi-dimensional analysis"
+    ))
   }
   
   # Initialize plotly figure

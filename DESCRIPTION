@@ -26,7 +26,9 @@ Imports:
     stringr,
     purrr,
     S7,
-    pwr
+    pwr,
+    cli (>= 3.6.0),
+    pbapply
 Suggests:
     testthat (>= 3.0.0),
     withr,
@@ -34,8 +36,7 @@ Suggests:
     rmarkdown,
     quarto,
     kableExtra,
-    colorspace,
-    pbapply
+    colorspace
 Config/testthat/edition: 3
 URL: https://matthiaskloft.github.io/rctbayespower/, https://github.com/matthiaskloft/rctbayespower
 Config/Needs/website: 

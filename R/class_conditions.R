@@ -1,30 +1,47 @@
-# S7 Class Definition for RCT Bayesian Power Conditions
+# =============================================================================
+# S7 CLASS DEFINITION: rctbp_conditions
+# =============================================================================
+# Stores parameter combinations for power analysis simulations. Creates an
+# expanded grid of varying parameters combined with static values, then
+# organizes arguments into simulation args (for data generation) and
+# decision args (for analysis criteria).
+
 #' @importFrom S7 new_class class_list class_any class_data.frame
 rctbp_conditions <- S7::new_class("rctbp_conditions",
   properties = list(
-    conditions_grid = S7::class_data.frame,
-    condition_arguments = S7::class_list,
-    design = S7::class_any,  # rctbp_design objects
-    condition_values = S7::class_list,
-    static_values = S7::class_list
+    conditions_grid = S7::class_data.frame,      # All parameter combinations
+    condition_arguments = S7::class_list,         # Structured args per condition
+    design = S7::class_any,                       # rctbp_design object
+    condition_values = S7::class_list,            # User-specified varying params
+    static_values = S7::class_list                # User-specified constant params
   ),
+  # Validator ensures grid and arguments are consistent
   validator = function(self) {
-    # Validate conditions_grid
+    # Validate conditions_grid has rows
     if (nrow(self@conditions_grid) == 0) {
       return("'conditions_grid' must have at least one row.")
     }
-    # Validate condition_arguments length matches conditions_grid
+
+    # Validate one argument set per condition row
     if (length(self@condition_arguments) != nrow(self@conditions_grid)) {
       return("'condition_arguments' length must match 'conditions_grid' rows.")
     }
-    # Validate design object (allow both namespaced and non-namespaced for testing)
+
+    # Validate design object
     if (!inherits(self@design, "rctbayespower::rctbp_design") && !inherits(self@design, "rctbp_design")) {
       return("'design' must be a valid rctbp_design object.")
     }
-    # If all validations pass, return NULL
-    NULL
+
+    NULL  # All validations passed
   }
 )
+
+# =============================================================================
+# CONSTRUCTOR FUNCTION: build_conditions()
+# =============================================================================
+# Creates all parameter combinations from condition_values using expand_grid,
+# combines with static_values, and separates into simulation and decision
+# argument sets per condition.
 
 #' Build Conditions for Power Analysis
 #'
@@ -55,6 +72,16 @@ rctbp_conditions <- S7::new_class("rctbp_conditions",
 #'   \item Creates expanded grid of all condition combinations
 #' }
 #'
+#' \strong{Non-Sequential Trial Defaults:}
+#' For non-sequential (single-look) trial designs, the following parameters have
+#' sensible defaults and do not need to be specified:
+#' \itemize{
+#'   \item \code{analysis_at = NULL} - Final analysis only (no interim looks)
+#'   \item \code{interim_function = NULL} - No interim decision function
+#'   \item \code{adaptive = FALSE} - Non-adaptive design
+#' }
+#' These defaults can be overridden by specifying values in condition_values or static_values.
+#'
 #' @examples
 #' \dontrun{
 #' # Create conditions for sample size and effect size analysis
@@ -78,15 +105,25 @@ rctbp_conditions <- S7::new_class("rctbp_conditions",
 build_conditions <- function(design, condition_values, static_values) {
   # validate design (allow both namespaced and non-namespaced class for testing)
   if (!inherits(design, "rctbayespower::rctbp_design") && !inherits(design, "rctbp_design")) {
-    stop("'design' must be a valid rctbp_design object.")
+    cli::cli_abort(c(
+      "{.arg design} must be a valid rctbp_design object",
+      "x" = "Got object of class {.cls {class(design)}}",
+      "i" = "Use {.fn build_design} to create a valid design object"
+    ))
   }
 
   # validate inputs
   if (!is.list(condition_values)) {
-    stop("'condition_values' must be a list.")
+    cli::cli_abort(c(
+      "{.arg condition_values} must be a list",
+      "x" = "You supplied {.type {condition_values}}"
+    ))
   }
   if (!is.list(static_values)) {
-    stop("'static_values' must be a list.")
+    cli::cli_abort(c(
+      "{.arg static_values} must be a list",
+      "x" = "You supplied {.type {static_values}}"
+    ))
   }
 
   # gather provided parameter names
@@ -95,42 +132,48 @@ build_conditions <- function(design, condition_values, static_values) {
   # check for overlapping names between condition_values and static_values
   params_overlap <- intersect(names(condition_values), names(static_values))
   if (length(params_overlap) > 0) {
-    stop(
-      paste0(
-        "Redundant parameter(s) found in both 'condition_values' and 'static_values': ",
-        paste(params_overlap, collapse = ", ")
-      )
-    )
+    cli::cli_abort(c(
+      "Redundant parameters found in both {.arg condition_values} and {.arg static_values}",
+      "x" = "Overlapping parameters: {.val {params_overlap}}",
+      "i" = "Each parameter must appear in only one list"
+    ))
   }
   # check for duplicated parameter names overall (within or across lists)
   params_redundant <- unique(params_given[duplicated(params_given)])
   if (length(params_redundant) > 0) {
-    stop(
-      paste0(
-        "Duplicated parameter names detected (possibly within the same list): ",
-        paste(params_redundant, collapse = ", ")
-      )
-    )
+    cli::cli_abort(c(
+      "Duplicated parameter names detected",
+      "x" = "Duplicated parameters: {.val {params_redundant}}",
+      "i" = "Each parameter name must be unique"
+    ))
   }
 
   # required parameters
   params_needed <- required_fn_args(design, print = FALSE)
 
-  # check for missing param values
-  if (!all(params_needed$params_all %in% params_given)) {
-    stop(paste(
-      "The following parameters are missing and must be specified:",
-      paste(
-        setdiff(params_needed$params_all, params_given),
-        collapse = ", "
-      )
+  # Sensible defaults for non-sequential trial design
+  # Parameters that have defaults and don't need to be specified by user
+  params_with_defaults <- c("analysis_at", "interim_function", "adaptive")
+
+  # Exclude parameters with defaults from required validation
+  params_required <- setdiff(params_needed$params_all, params_with_defaults)
+
+  # check for missing param values (excluding those with defaults)
+  if (!all(params_required %in% params_given)) {
+    missing_params <- setdiff(params_required, params_given)
+    cli::cli_abort(c(
+      "Missing required parameters",
+      "x" = "The following parameters must be specified: {.val {missing_params}}",
+      "i" = "Add these to {.arg condition_values} or {.arg static_values}"
     ))
   }
 
-  # merge inputs
+  # Merge inputs
   all_values <- c(condition_values, static_values)
 
-  # check p_alloc
+  # Ensure p_alloc is wrapped in a list for proper grid expansion
+  # Rationale: p_alloc is a vector (e.g., c(0.5, 0.5)), but expand_grid treats
+  # vectors as multiple conditions. Wrapping as list(c(0.5, 0.5)) keeps it intact.
   if ("p_alloc" %in% names(condition_values) &&
       !is.list(all_values[["p_alloc"]])) {
     condition_values$p_alloc <- list(condition_values$p_alloc)
@@ -140,14 +183,21 @@ build_conditions <- function(design, condition_values, static_values) {
     static_values$p_alloc <- list(static_values$p_alloc)
   }
 
-  # expansion of conditions ----------------------------------------------------
+  # =============================================================================
+  # GRID EXPANSION & ARGUMENT ORGANIZATION
+  # =============================================================================
+  # Algorithm:
+  # 1. Create all combinations of condition_values (Cartesian product)
+  # 2. Add condition IDs for tracking
+  # 3. For each condition row, extract varying params and merge with static
+  # 4. Separate params into sim_args (data generation) and decision_args (analysis)
+  # 5. Apply defaults for optional decision parameters
 
-  # create condition grid (data frame of combinations)
+  # Create condition grid (Cartesian product of all condition_values)
   df_grid <- do.call(tidyr::expand_grid, condition_values)
-  # add id per condition
   df_grid <- tibble::rowid_to_column(df_grid, var = "id_cond")
 
-  # Convert each row into a list of named values
+  # Convert each row to a list for processing
   condition_arguments_flat <- apply(df_grid, 1, as.list)
 
   # Combine simulation and decision arguments per condition
@@ -160,29 +210,39 @@ build_conditions <- function(design, condition_values, static_values) {
       } else if (param %in% names(static_values)) {
         sim_args[[param]] <- static_values[[param]]
       } else {
-        stop(
-          sprintf(
-            "Parameter '%s' is missing in condition_values or static_values.",
-            param
-          )
-        )
+        cli::cli_abort(c(
+          "Missing simulation parameter: {.val {param}}",
+          "i" = "Add {.val {param}} to {.arg condition_values} or {.arg static_values}"
+        ))
       }
     }
 
     # --- Decision arguments (per-condition) ---
     decision_args <- list()
+
+    # Apply defaults for non-sequential trial parameters
+    # Rationale: Most trials are single-look designs, so these defaults allow
+    # users to omit interim analysis parameters. When interim analysis is added
+    # in future, users can override these by specifying values explicitly.
+    decision_defaults <- list(
+      analysis_at = NULL,        # Final analysis only (no interim looks)
+      interim_function = NULL,   # No interim decision function
+      adaptive = FALSE           # Non-adaptive design (fixed parameters)
+    )
+
     for (param in params_needed$params_decision) {
       if (param %in% names(condition)) {
         decision_args[[param]] <- condition[[param]]
       } else if (param %in% names(static_values)) {
         decision_args[[param]] <- static_values[[param]]
+      } else if (param %in% names(decision_defaults)) {
+        # Apply default for non-sequential parameters
+        decision_args[[param]] <- decision_defaults[[param]]
       } else {
-        stop(
-          sprintf(
-            "Decision parameter '%s' is missing in condition_values or static_values.",
-            param
-          )
-        )
+        cli::cli_abort(c(
+          "Missing decision parameter: {.val {param}}",
+          "i" = "Add {.val {param}} to {.arg condition_values} or {.arg static_values}"
+        ))
       }
     }
 
@@ -207,8 +267,10 @@ build_conditions <- function(design, condition_values, static_values) {
   return(conditions_obj)
 }
 
-
-# S7 Method for Print (uses existing base print generic)
+# =============================================================================
+# S7 METHOD: print()
+# =============================================================================
+# Displays conditions grid showing all parameter combinations and summary info.
 
 #' Print Method for rctbp_conditions Objects
 #'
@@ -232,21 +294,7 @@ build_conditions <- function(design, condition_values, static_values) {
 #'
 #' @export
 S7::method(print, rctbp_conditions) <- function(x, ...) {
-  cat("\nS7 Object of class: 'rctbp_conditions'\n")
-  cat("--------------------------------------------------\n\n")
-
-  # Print basic info
-  n_conditions <- nrow(x@conditions_grid)
-  n_params <- ncol(x@conditions_grid) - 1  # Subtract 1 for id_cond column
-  n_static_params <- length(x@static_values)
-
-  cat("Number of conditions:", n_conditions, "\n")
-  cat("Number of varying parameters:", n_params, "\n")
-  cat("Number of static parameters:", n_static_params, "\n\n")
-
-  # Print the conditions grid
-  cat("Condition Grid:\n")
-  print(x@conditions_grid, ...)
-
+  report <- build_report.rctbp_conditions(x)
+  render_report(report)
   invisible(x)
 }

@@ -51,7 +51,11 @@ estimate_sequential_brms <- function(full_data, model, backend_args, target_para
         backend_args = backend_args
       )
     }, error = function(e) {
-      warning("brms estimation failed at analysis ", id_analysis, ": ", e$message)
+      cli::cli_warn(c(
+        "brms estimation failed",
+        "x" = "Analysis {id_analysis}",
+        "i" = "Error: {e$message}"
+      ))
       return(NULL)
     })
 
@@ -71,7 +75,10 @@ estimate_sequential_brms <- function(full_data, model, backend_args, target_para
         target_params = target_params
       )
     }, error = function(e) {
-      warning("Posterior extraction failed: ", e$message)
+      cli::cli_warn(c(
+        "Posterior extraction failed",
+        "i" = "Error: {e$message}"
+      ))
       return(NULL)
     })
 
@@ -98,7 +105,15 @@ estimate_sequential_brms <- function(full_data, model, backend_args, target_para
 
     if (is.null(measures)) next
 
-    # Make interim decision (if not final and not already stopped)
+    # =============================================================================
+    # STOPPING MECHANISM (Sequential Trial Early Stopping)
+    # =============================================================================
+    # Once stopped=TRUE, no further interim decisions are made, BUT analysis
+    # continues to n_total to collect full data for safety/consistency metrics.
+    # This design allows reporting: "would have stopped at n=100, final at n=200"
+    #
+    # Rationale: Complete data collection provides better understanding of trial
+    # behavior even when stopping rule would have terminated early.
     interim_decision <- NULL
     if (!is_final && !stopped) {
       interim_decision <- tryCatch({
@@ -109,11 +124,14 @@ estimate_sequential_brms <- function(full_data, model, backend_args, target_para
           n_total = n_total
         )
       }, error = function(e) {
-        warning("Interim function failed: ", e$message)
+        cli::cli_warn(c(
+          "Interim function failed",
+          "i" = "Error: {e$message}"
+        ))
         list(decision = "continue", modified_params = NULL)
       })
 
-      # Record stopping
+      # Record stopping decision (loop continues but no more decisions made)
       if (interim_decision$decision %in% c("stop_success", "stop_futility")) {
         stopped <- TRUE
         stop_reason <- interim_decision$decision
@@ -203,7 +221,11 @@ estimate_sequential_npe <- function(full_data_list, model, backend_args, target_
         backend_args = backend_args
       )
     }, error = function(e) {
-      warning("NPE batch estimation failed at analysis ", id_analysis, ": ", e$message)
+      cli::cli_warn(c(
+        "NPE batch estimation failed",
+        "x" = "Analysis {id_analysis}",
+        "i" = "Error: {e$message}"
+      ))
       return(NULL)
     })
 
@@ -229,7 +251,11 @@ estimate_sequential_npe <- function(full_data_list, model, backend_args, target_
           sim_index = sim_idx
         )
       }, error = function(e) {
-        warning("Posterior extraction failed for sim ", sim_idx, ": ", e$message)
+        cli::cli_warn(c(
+          "Posterior extraction failed",
+          "x" = "Simulation {sim_idx}",
+          "i" = "Error: {e$message}"
+        ))
         return(NULL)
       })
 
@@ -267,7 +293,10 @@ estimate_sequential_npe <- function(full_data_list, model, backend_args, target_
             n_total = n_total
           )
         }, error = function(e) {
-          warning("Interim function failed: ", e$message)
+          cli::cli_warn(c(
+            "Interim function failed",
+            "i" = "Error: {e$message}"
+          ))
           list(decision = "continue", modified_params = NULL)
         })
 

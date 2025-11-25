@@ -17,8 +17,9 @@ conditions and design parameters for the power analysis
 \item n_sims: Number of simulations to run per condition (default 100)
 \item n_cores: Number of CPU cores to use for parallel execution (default 1).
 Must not exceed the number of available cores
-\item verbose: Logical indicating whether to display progress information
-and analysis details (default TRUE)
+\item verbosity: Verbosity level controlling output detail (default 1).
+0 = quiet (minimal output), 1 = normal (standard output), 2 = verbose (detailed debug output).
+Can also be set globally with options(rctbayespower.verbosity = level).
 \item brms_args: List of additional arguments to pass to \code{\link[brms:brm]{brms::brm()}}
 function (default empty list)
 \item design_prior: Prior specification for design parameters. Can be NULL

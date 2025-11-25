@@ -16,8 +16,8 @@ build_design(
 \item{model}{An S7 object of class "rctbp_model" created by \code{\link[=build_model]{build_model()}}}
 
 \item{target_params}{Character vector specifying which model parameters to
-analyze for power. Must be valid parameter names from the brms model
-(e.g., "b_arms_treat" for treatment effect). Required.}
+analyze for power. Must be valid parameter names from the brms model.
+Use \code{model@parameter_names_brms} to discover available names. Required.}
 
 \item{p_sig_success}{Probability threshold for declaring success. The posterior
 probability that the effect exceeds the success threshold must be greater
@@ -59,8 +59,9 @@ that determine how certain we need to be about exceeding those thresholds.
 \strong{Model Integration:} Links to the rctbp_model object containing data
 simulation function and compiled brms model.
 
-\strong{Target Parameters:} Specifies which model parameters to analyze for power
-(e.g., "b_arms_treat" for treatment effect).
+\strong{Target Parameters:} Specifies which model parameters to analyze for power.
+Parameter names are model-dependent. Use \code{model@parameter_names_brms} to discover
+available parameters for your specific model.
 
 \strong{Probability Thresholds:} The p_sig_success and p_sig_futility parameters
 control the certainty required for success/futility decisions. Higher values require
@@ -74,10 +75,13 @@ underlying model structure.
 # Create an ANCOVA model
 ancova_model <- build_model("ancova_cont_2arms")
 
+# Discover available parameter names (model-dependent)
+ancova_model@parameter_names_brms
+
 # Create a design for analyzing treatment effect
 my_design <- build_design(
   model = ancova_model,
-  target_params = "b_arms_treat",
+  target_params = ancova_model@parameter_names_brms[1],  # Use actual param name
   p_sig_success = 0.975,
   p_sig_futility = 0.5,
   design_name = "ANCOVA Treatment Effect Analysis"

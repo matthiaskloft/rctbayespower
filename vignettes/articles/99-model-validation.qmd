@@ -109,7 +109,7 @@ power <- rctbayespower::power_analysis(
     warmup = 250,
     init = .5
   ),
-  verbose = TRUE
+  verbosity = 2
 )
 power_mc <- power@summarized_results$power_success
 power_mcse <- power@summarized_results$power_success_se

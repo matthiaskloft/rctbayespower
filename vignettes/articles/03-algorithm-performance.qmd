@@ -119,7 +119,7 @@ conditions <- build_conditions(
       conditions = conditions,
       n_cores = n_cores,
       n_sims = n_sims,
-      verbose = FALSE,
+      verbosity = 0,
       brms_args = list(
         algorithm = "meanfield",
         importance_resampling = TRUE,
@@ -134,7 +134,7 @@ conditions <- build_conditions(
       conditions = conditions,
       n_cores = n_cores,
       n_sims = n_sims,
-      verbose = FALSE,
+      verbosity = 0,
       brms_args = list(
         algorithm = "fullrank",
         importance_resampling = TRUE,

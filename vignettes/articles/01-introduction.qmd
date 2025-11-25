@@ -62,8 +62,13 @@ list_predefined_models()
 Get the predefined ANCOVA model for continuous outcomes with two arms:
 ```{r build_model_ancova}
 model_ancova <- build_model(predefined_model = "ancova_cont_2arms")
+print(model_ancova)
+```
+
+```{r}
 model_ancova@parameter_names_brms
 ```
+
 
 ## Design
 
@@ -119,10 +124,10 @@ Run the analysis using the `power_analysis` function. This will run the model fo
 power <- power_analysis(
   conditions = conditions,
   n_cores = n_cores,
-  n_sims = n_sims,
-  verbose = TRUE,
+  n_sims = n_cores,
+  verbosity = 2,
   brms_args = list(
-    chains = 4,
+    chains = 1,
     iter = 300,
     warmup = 100
   )

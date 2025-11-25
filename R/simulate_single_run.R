@@ -1,3 +1,10 @@
+# =============================================================================
+# CORE SIMULATION FUNCTION: simulate_single_run()
+# =============================================================================
+# Pipeline: Data simulation → Posterior estimation → Posterior extraction →
+# Measures computation. Handles multiple design object formats (S7 vs list)
+# for compatibility with parallel workers.
+
 #' Single Run Simulation for RCT Bayesian Power Analysis
 #'
 #' Executes a single simulation run using pre-validated condition arguments.
@@ -16,9 +23,19 @@
 simulate_single_run <- function(condition_arguments,
                                 id_iter,
                                 design) {
-  # no validations since this is the lowest level function
+  # No validations - lowest level function, arguments pre-validated upstream
 
-  # Handle S7 design objects, power analysis objects, and regular list design components (for parallel workers)
+  # =============================================================================
+  # DESIGN OBJECT FORMAT HANDLING
+  # =============================================================================
+  # Design arrives in different formats depending on execution context:
+  # 1. S7 rctbp_design object (direct calls)
+  # 2. S7 rctbp_power_analysis object (with promoted model access)
+  # 3. List format (parallel workers - S7 doesn't serialize)
+  #
+  # Rationale: Parallel workers receive serialized lists (see
+  # prepare_design_for_workers in class_power_analysis.R). This branching
+  # logic extracts fields using appropriate syntax for each format.
   if (inherits(design, "rctbayespower::rctbp_design") || inherits(design, "rctbp_design")) {
     # S7 design object
     data_simulation_fn <- design@model@data_simulation_fn
@@ -51,7 +68,10 @@ simulate_single_run <- function(condition_arguments,
     p_sig_success <- design$p_sig_success
     p_sig_futility <- design$p_sig_futility
   } else {
-    stop("Invalid design object")
+    cli::cli_abort(c(
+      "Invalid design object",
+      "i" = "This is an internal error - please report"
+    ))
   }
 
   # Simulate data with error handling
@@ -59,13 +79,17 @@ simulate_single_run <- function(condition_arguments,
     do.call(data_simulation_fn, args = condition_arguments$sim_args)
   }, error = function(e) {
     n_total <- if(is.null(condition_arguments$sim_args$n_total)) "unknown" else condition_arguments$sim_args$n_total
-    warning("Data simulation failed for 'n_total'=",
-            n_total,
-            ": ",
-            e$message)
+    cli::cli_warn(c(
+      "Data simulation failed",
+      "x" = "n_total = {n_total}",
+      "i" = "Error: {e$message}"
+    ))
     return(NULL)
   })
 
+  # Return error result if data simulation failed
+  # Error results contain NA for all metrics but preserve iteration/condition IDs
+  # for result aggregation and debugging
   if (is.null(simulated_data)) {
     return(data.frame(
       parameter = NA_character_,
@@ -102,7 +126,11 @@ simulate_single_run <- function(condition_arguments,
       "unknown"
     else
       condition_arguments$sim_args$n_total
-    warning("Posterior estimation failed for 'n_total'=", n_total, ": ", e$message)
+    cli::cli_warn(c(
+      "Posterior estimation failed",
+      "x" = "n_total = {n_total}",
+      "i" = "Error: {e$message}"
+    ))
     return(NULL)
   })
 
@@ -138,7 +166,10 @@ simulate_single_run <- function(condition_arguments,
       target_params = target_params
     )
   }, error = function(e) {
-    warning("Posterior extraction failed: ", e$message)
+    cli::cli_warn(c(
+      "Posterior extraction failed",
+      "i" = "Error: {e$message}"
+    ))
     return(NULL)
   })
 
@@ -180,7 +211,7 @@ simulate_single_run <- function(condition_arguments,
     df |> dplyr::mutate(
       id_iter = id_iter,
       id_cond = condition_arguments$id_cond,
-      id_analysis = 0L,  # Single analysis (no interims)
+      id_analysis = 0L,  # 0 = single analysis (final only); 1+ = sequential interim numbers
       converged = 1L,
       error = NA_character_
     )

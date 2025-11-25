@@ -127,35 +127,67 @@ analytical_power_ancova_cont_2arms <- function(n,
   
   # Input validation for single-valued parameters
   if (!is.numeric(beta_cov) || length(beta_cov) != 1) {
-    stop("beta_cov must be a single numeric value")
+    cli::cli_abort(c(
+      "{.arg beta_cov} must be a single numeric value",
+      "x" = "You supplied {.val {beta_cov}}",
+      "i" = "Provide a single covariate coefficient"
+    ))
   }
   if (!is.numeric(sigma) || length(sigma) != 1 || sigma <= 0) {
-    stop("sigma must be a single positive numeric value")
+    cli::cli_abort(c(
+      "{.arg sigma} must be a single positive numeric value",
+      "x" = "You supplied {.val {sigma}}",
+      "i" = "Use a single value > 0"
+    ))
   }
   if (!is.numeric(alpha) ||
       length(alpha) != 1 || alpha <= 0 || alpha >= 1) {
-    stop("alpha must be a single numeric value between 0 and 1")
+    cli::cli_abort(c(
+      "{.arg alpha} must be a single numeric value between 0 and 1",
+      "x" = "You supplied {.val {alpha}}",
+      "i" = "Use a value like 0.05 or 0.01"
+    ))
   }
   if (!is.logical(equal_groups) || length(equal_groups) != 1) {
-    stop("equal_groups must be a single logical value")
+    cli::cli_abort(c(
+      "{.arg equal_groups} must be a single logical value",
+      "x" = "You supplied {.type {equal_groups}}",
+      "i" = "Use TRUE or FALSE"
+    ))
   }
   if (!equal_groups && (
     is.null(p_group) || !is.numeric(p_group) ||
     length(p_group) != 1 ||
     p_group <= 0 || p_group >= 1
   )) {
-    stop("When equal_groups = FALSE, p_group must be a single numeric value between 0 and 1")
+    cli::cli_abort(c(
+      "When {.arg equal_groups} = FALSE, {.arg p_group} must be a single numeric value between 0 and 1",
+      "x" = "You supplied {.val {p_group}}",
+      "i" = "Use a proportion like 0.5 or 0.7"
+    ))
   }
   if (!is.numeric(numint) || length(numint) != 1 || numint < 10) {
-    stop("numint must be a single numeric value >= 10")
+    cli::cli_abort(c(
+      "{.arg numint} must be a single numeric value >= 10",
+      "x" = "You supplied {.val {numint}}",
+      "i" = "Use a value like 2000 for accurate integration"
+    ))
   }
   
   # Input validation for vectorizable parameters
   if (!is.numeric(n) || any(n <= 0) || any(n != floor(n))) {
-    stop("n must be positive integer(s)")
+    cli::cli_abort(c(
+      "{.arg n} must be positive integer(s)",
+      "x" = "You supplied {.val {n}}",
+      "i" = "Use positive whole numbers"
+    ))
   }
   if (!is.numeric(d)) {
-    stop("d must be numeric")
+    cli::cli_abort(c(
+      "{.arg d} must be numeric",
+      "x" = "You supplied {.type {d}}",
+      "i" = "Provide Cohen's d effect size as a number"
+    ))
   }
   
   # Recycle n and d to the same length
@@ -165,14 +197,18 @@ analytical_power_ancova_cont_2arms <- function(n,
   
   # Check consistency of d and alternative for one-sided tests (vectorized)
   if (alternative == "greater" && any(d < 0)) {
-    warning(
-      "Some d values are negative but alternative is 'greater'. Power will be very low for those values."
-    )
+    cli::cli_warn(c(
+      "Effect size direction inconsistent with alternative hypothesis",
+      "x" = "Some 'd' values are negative but 'alternative' is 'greater'",
+      "i" = "Power will be very low for those values"
+    ))
   }
   if (alternative == "less" && any(d > 0)) {
-    warning(
-      "Some d values are positive but alternative is 'less'. Power will be very low for those values."
-    )
+    cli::cli_warn(c(
+      "Effect size direction inconsistent with alternative hypothesis",
+      "x" = "Some 'd' values are positive but 'alternative' is 'less'",
+      "i" = "Power will be very low for those values"
+    ))
   }
   
   # Sample sizes per group (vectorized)
@@ -472,22 +508,42 @@ f2_from_params_ancova_cont_2arms <- function(d,
                                              p_group = 0.5) {
   # Input validation
   if (!is.numeric(d)) {
-    stop("d must be numeric")
+    cli::cli_abort(c(
+      "{.arg d} must be numeric",
+      "x" = "You supplied {.type {d}}",
+      "i" = "Provide Cohen's d as a number"
+    ))
   }
   if (!is.numeric(beta_cov) || length(beta_cov) != 1) {
-    stop("beta_cov must be a single numeric value")
+    cli::cli_abort(c(
+      "{.arg beta_cov} must be a single numeric value",
+      "x" = "You supplied {.val {beta_cov}}",
+      "i" = "Provide a single covariate coefficient"
+    ))
   }
   if (!is.numeric(sigma) || length(sigma) != 1 || sigma <= 0) {
-    stop("sigma must be a single positive numeric value")
+    cli::cli_abort(c(
+      "{.arg sigma} must be a single positive numeric value",
+      "x" = "You supplied {.val {sigma}}",
+      "i" = "Use a value > 0"
+    ))
   }
   if (!is.logical(equal_groups) || length(equal_groups) != 1) {
-    stop("equal_groups must be a single logical value")
+    cli::cli_abort(c(
+      "{.arg equal_groups} must be a single logical value",
+      "x" = "You supplied {.type {equal_groups}}",
+      "i" = "Use TRUE or FALSE"
+    ))
   }
   if (!equal_groups && (
     is.null(p_group) || !is.numeric(p_group) ||
     length(p_group) != 1 || p_group <= 0 || p_group >= 1
   )) {
-    stop("When equal_groups = FALSE, p_group must be a single numeric value between 0 and 1")
+    cli::cli_abort(c(
+      "When {.arg equal_groups} = FALSE, {.arg p_group} must be a single numeric value between 0 and 1",
+      "x" = "You supplied {.val {p_group}}",
+      "i" = "Use a proportion like 0.5 or 0.7"
+    ))
   }
   
   # Convert Cohen's d to regression coefficient (vectorized)

@@ -1,21 +1,33 @@
-# S7 Class Definition for RCT Bayesian Power Model
+# =============================================================================
+# S7 CLASS DEFINITION: rctbp_model
+# =============================================================================
+# Encapsulates all components needed for power analysis simulation including
+# data simulation function, posterior estimation model (brms or NPE), and
+# trial metadata (endpoints, arms, repeated measures).
+
 #' @importFrom S7 new_class class_character class_numeric class_integer class_function class_any new_union new_property
 rctbp_model <- S7::new_class(
   "rctbp_model",
   properties = list(
-    data_simulation_fn = S7::class_function,
-    brms_model = S7::class_any | NULL,
-    bayesflow_model = S7::class_any | NULL,
+    # Core components
+    data_simulation_fn = S7::class_function,  # Generates trial data
+    brms_model = S7::class_any | NULL,        # Template brmsfit object (backend = "brms")
+    bayesflow_model = S7::class_any | NULL,   # Neural posterior model (backend = "npe")
     backend_args = S7::new_property(S7::class_list, default = list()),
-    # brmsfit objects don't have S7 class
-    predefined_model = S7::new_union(S7::class_character, NULL),
+
+    # Model metadata
+    predefined_model = S7::new_union(S7::class_character, NULL),  # Name if using predefined
     model_name = S7::class_character,
     n_endpoints = S7::class_numeric,
-    endpoint_types = S7::class_character,
+    endpoint_types = S7::class_character,     # "continuous", "binary", or "count"
     n_arms = S7::class_numeric,
     n_repeated_measures = S7::class_numeric | NULL,
+
+    # Computed properties (getters extract information dynamically)
     backend = S7::new_property(
+      class = S7::class_character,
       getter = function(self) {
+        # Backend determined by which model is present
         if (!is.null(self@brms_model)) {
           return("brms")
         } else if (!is.null(self@bayesflow_model)) {
@@ -26,12 +38,16 @@ rctbp_model <- S7::new_class(
       }
     ),
     parameter_names_sim_fn = S7::new_property(
+      class = S7::class_character,
       getter = function(self) {
+        # Extract parameter names from data simulation function signature
         names(formals(self@data_simulation_fn))
       }
     ),
     parameter_names_brms = S7::new_property(
+      class = S7::class_character,
       getter = function(self) {
+        # Extract fixed effects parameter names from brms model (prefix "b_")
         if (!is.null(self@brms_model)) {
           stringr::str_subset(brms::variables(self@brms_model), pattern = "^b_")
         } else {
@@ -40,8 +56,9 @@ rctbp_model <- S7::new_class(
       }
     )
   ),
+  # Validator ensures object consistency and catches configuration errors early
   validator = function(self) {
-    # Validate exactly one model is provided
+    # Validate exactly one backend model is provided (not both, not neither)
     has_brms <- !is.null(self@brms_model)
     has_bayesflow <- !is.null(self@bayesflow_model)
 
@@ -58,41 +75,45 @@ rctbp_model <- S7::new_class(
       return("'brms_model' must be a valid brmsfit object.")
     }
 
-    # Validate backend_args
+    # Validate backend_args is a list
     if (!is.list(self@backend_args)) {
       return("'backend_args' must be a list.")
     }
 
-    # Validate n_endpoints
+    # Validate trial structure parameters
     if (length(self@n_endpoints) != 1 || self@n_endpoints <= 0) {
       return("'n_endpoints' must be a positive numeric value.")
     }
-    # Validate endpoint_types
     if (length(self@endpoint_types) != self@n_endpoints ||
         any(!self@endpoint_types %in% c("continuous", "binary", "count"))) {
       return(
         "'endpoint_types' must be a character vector of length 'n_endpoints' with valid types."
       )
     }
-    # Validate n_arms
     if (length(self@n_arms) != 1 || self@n_arms <= 0) {
       return("'n_arms' must be a positive numeric value.")
     }
-    # Validate n_repeated_measures
     if (!is.null(self@n_repeated_measures) &&
         (length(self@n_repeated_measures) != 1 ||
          self@n_repeated_measures < 0)) {
       return("'n_repeated_measures' must be a non-negative numeric value.")
     }
-    # Validate data_simulation_fn parameters
+
+    # Validate data_simulation_fn has required parameters
     required_params <- c("n_total", "p_alloc")
     if (!all(required_params %in% self@parameter_names_sim_fn)) {
       return("'data_simulation_fn' must have parameters 'n_total' and 'p_alloc'.")
     }
-    # If all validations pass, return NULL
-    NULL
+
+    NULL  # All validations passed
   }
 )
+
+# =============================================================================
+# CONSTRUCTOR FUNCTION: build_model()
+# =============================================================================
+# Creates rctbp_model objects with validation. Supports both predefined models
+# (from internal registry) and custom models with user-specified components.
 
 #' Create a Build Model Object
 #'
@@ -180,7 +201,10 @@ build_model <- function(predefined_model = NULL,
   # validate predefined_model
   if (!is.null(predefined_model)) {
     if (!is.character(predefined_model)) {
-      stop("'predefined_model' must be a character string or NULL.")
+      cli::cli_abort(c(
+        "{.arg predefined_model} must be a character string or NULL",
+        "x" = "You supplied {.type {predefined_model}}"
+      ))
     }
     # get model from internal environment
     model <- get_predefined_model(predefined_model)
@@ -191,21 +215,37 @@ build_model <- function(predefined_model = NULL,
 
   # Early validation before S7 object creation
   if (!is.function(data_simulation_fn)) {
-    stop("'data_simulation_fn' must be a valid function.")
+    cli::cli_abort(c(
+      "{.arg data_simulation_fn} must be a valid function",
+      "x" = "You supplied {.type {data_simulation_fn}}"
+    ))
   }
   if (!is.null(model_name) && !is.character(model_name)) {
-    stop("'model_name' must be a character string or NULL.")
+    cli::cli_abort(c(
+      "{.arg model_name} must be a character string or NULL",
+      "x" = "You supplied {.type {model_name}}"
+    ))
   }
 
   # Validate that exactly one model is provided
   if (is.null(brms_model) && is.null(bayesflow_model)) {
-    stop("Either 'brms_model' or 'bayesflow_model' must be provided.")
+    cli::cli_abort(c(
+      "Either {.arg brms_model} or {.arg bayesflow_model} must be provided",
+      "x" = "Both are NULL",
+      "i" = "Provide one model specification"
+    ))
   }
   if (!is.null(brms_model) && !is.null(bayesflow_model)) {
-    stop("Only one of 'brms_model' or 'bayesflow_model' can be provided, not both.")
+    cli::cli_abort(c(
+      "Only one of {.arg brms_model} or {.arg bayesflow_model} can be provided",
+      "x" = "Both were supplied",
+      "i" = "Choose one model backend"
+    ))
   }
 
-  # Strip brms model from posterior draws if brms
+  # Strip brms model from posterior draws (chains=0 for efficiency)
+  # Rationale: brms_model serves as a compilation template only; posterior
+  # draws are generated fresh in each simulation iteration
   if (!is.null(brms_model)) {
     brms_model <- suppressMessages(stats::update(brms_model, chains = 0, silent = 2))
   }
@@ -233,8 +273,11 @@ build_model <- function(predefined_model = NULL,
   return(model_obj)
 }
 
-
-# S7 Method for Print (uses existing base print generic)
+# =============================================================================
+# S7 METHOD: print()
+# =============================================================================
+# Formats rctbp_model objects for console display showing model specifications
+# and parameter information.
 
 #' Print Method for rctbp_model Objects
 #'
@@ -249,52 +292,17 @@ build_model <- function(predefined_model = NULL,
 #' @name print.rctbp_model
 #' @export
 S7::method(print, rctbp_model) <- function(x, ...) {
-  cat("\nS7 Object of class: 'rctbp_model'\n")
-  cat("--------------------------------------------------\n\n")
-
-  cat("Model name:", x@model_name, "\n")
-  cat("Backend:", x@backend, "\n")
-  cat("Predefined model:", if (is.null(x@predefined_model))
-    "None"
-    else
-      x@predefined_model, "\n")
-  cat("Number of endpoints:", x@n_endpoints, "\n")
-  cat("Endpoint types:",
-      paste(x@endpoint_types, collapse = ", "),
-      "\n")
-  cat("Number of arms:", x@n_arms, "\n")
-  cat("Number of repeated measures:",
-      if (is.null(x@n_repeated_measures))
-        "NULL"
-      else
-        x@n_repeated_measures,
-      "\n")
-  cat(
-    "Parameter names - simulation function:",
-    paste(x@parameter_names_sim_fn, collapse = ", "),
-    "\n"
-  )
-
-  if (x@backend == "brms") {
-    cat("Parameter names - brms model:",
-        paste(x@parameter_names_brms, collapse = ", "),
-        "\n")
-    cat("\nBrms model:\n")
-    print(x@brms_model)
-  } else if (x@backend == "npe") {
-    cat("\nBayesflow/NPE model:\n")
-    print(x@bayesflow_model)
-  }
-
-  if (length(x@backend_args) > 0) {
-    cat("\nBackend arguments:\n")
-    print(x@backend_args)
-  }
-
+  report <- build_report.rctbp_model(x)
+  render_report(report)
   invisible(x)
 }
 
-
+# =============================================================================
+# UTILITY FUNCTIONS: Predefined Model Registry
+# =============================================================================
+# Functions to discover and access models stored in package internal environment
+# (sysdata.rda). Predefined models provide ready-made configurations for
+# common trial designs.
 
 #' List available predefined models
 #'
@@ -363,11 +371,17 @@ list_predefined_models <- function(filter_string = NULL) {
 get_predefined_model <- function(model_name) {
   ns <- asNamespace("rctbayespower")
   if (!model_name %in% ls(envir = ns)) {
-    stop("Model '", model_name, "' not found.", call. = FALSE)
+    cli::cli_abort(c(
+      "Model {.val {model_name}} not found",
+      "i" = "Use {.fn list_predefined_models} to see available models"
+    ), call = FALSE)
   }
   model <- get(model_name, envir = ns)
   if (!inherits(model, "rctbayespower::rctbp_model")) {
-    stop("Object '", model_name, "' is not an rctbp_model.", call. = FALSE)
+    cli::cli_abort(c(
+      "Object {.val {model_name}} is not an rctbp_model",
+      "x" = "Got {.cls {class(model)}}"
+    ), call = FALSE)
   }
   model
 }

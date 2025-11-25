@@ -70,7 +70,11 @@ calculate_mcse_integrated_power <- function(values, weights, n_sims, is_power_me
   }
 
   if (length(values) != length(weights)) {
-    stop("'values' and 'weights' must have the same length")
+    cli::cli_abort(c(
+      "{.arg values} and {.arg weights} must have the same length",
+      "x" = "values has length {.val {length(values)}}, weights has length {.val {length(weights)}}",
+      "i" = "Ensure both vectors have matching lengths"
+    ))
   }
 
   # Remove NA values
