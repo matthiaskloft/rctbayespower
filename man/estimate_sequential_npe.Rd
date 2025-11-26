@@ -36,7 +36,7 @@ estimate_sequential_npe(
 
 \item{p_sig_ftl}{Probability threshold for futility}
 
-\item{analysis_at}{Vector of sample sizes for interim analyses}
+\item{analysis_at}{Vector of sample sizes for all analyses (including final at n_total)}
 
 \item{interim_function}{Function to make interim decisions}
 

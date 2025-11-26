@@ -6,12 +6,17 @@
 \arguments{
 \item{x}{An S7 object of class "rctbp_power_analysis"}
 
-\item{...}{Additional arguments (currently unused)}
+\item{...}{Additional arguments:
+\describe{
+\item{target_pwr}{Target power for finding optimal condition. If NULL
+(default), shows the condition with highest achieved power.}
+}}
 }
 \value{
 Invisibly returns the input object. Used for side effects (printing).
 }
 \description{
-Displays a summary of a power analysis configuration object, including
-analysis parameters, condition information, and design specifications.
+Displays a compact summary of a power analysis object. When results are
+available, shows decision rates, early stopping statistics, and the
+optimal/highest power condition.
 }

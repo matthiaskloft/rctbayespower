@@ -17,7 +17,9 @@ Depends:
 Imports:
     brms (>= 2.20.0),
     posterior,
+    ggplot2,
     plotly,
+    scales,
     dplyr,
     tidyr,
     tibble,

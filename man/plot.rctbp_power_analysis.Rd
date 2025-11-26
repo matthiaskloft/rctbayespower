@@ -11,7 +11,6 @@
 \item "auto" - Automatically detect best plot type based on analysis (default)
 \item "power_curve" - Power curve across single varying dimension
 \item "heatmap" - 2D heatmap when both sample sizes and effect sizes vary
-\item "integrated" - Integrated power results when design prior is used
 \item "comparison" - Compare power vs posterior probabilities
 }}
 
@@ -31,25 +30,20 @@
 
 \item{show_target}{Whether to show target power lines (default: TRUE)}
 
-\item{show_integrated}{Whether to include integrated power when available (default: TRUE)}
+\item{show_mcse}{Whether to show Monte Carlo standard error ribbons for uncertainty
+visualization (default: FALSE). Only applies to power_curve plots.}
 
 \item{facet_by}{For power_curve plots when both sample sizes and effect sizes vary:
 \itemize{
 \item "effect_size" - Facet by effect size, vary sample size on x-axis (default)
 \item "sample_size" - Facet by sample size, vary effect size on x-axis
+\item "look" - For sequential designs, facet by interim analysis look
 }}
 
-\item{design_prior}{Optional design prior for runtime integrated power computation. Can be:
-\itemize{
-\item A string in brms prior syntax (e.g., "normal(0.3, 0.1)", "student_t(6, 0.5, 0.2)")
-\item An R function taking effect size as input (e.g., function(x) dnorm(x, 0.5, 0.2))
-\item NULL for no runtime integration (default)
-}
-If provided, integrated power will be computed using this design prior instead of
-any design prior specified in the original rctbp_power_analysis object.
-Only valid when effect sizes vary (length > 1).}
+\item{target_power}{Optional numeric value (0-1) for drawing contour lines on heatmaps
+at the specified target power level. If NULL (default), uses the design's p_sig_scs.}
 
-\item{...}{Additional arguments passed to plotly functions}
+\item{...}{Additional arguments passed to plotting functions}
 }
 \value{
 A plotly object for all plot types (power curves, heatmaps, and comparison plots)

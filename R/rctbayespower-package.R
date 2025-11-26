@@ -18,9 +18,11 @@ if (getRversion() >= "2.15.1") {
       "par_name",
       "thr_scs",
       "thr_ftl",
-      "sim_cond",
-      "sim_iter",
-      "sim_anlys",
+      "p_sig_scs",
+      "p_sig_ftl",
+      "id_cond",
+      "id_iter",
+      "id_look",
       "pr_scs",
       "pr_ftl",
       "dec_scs",
@@ -72,7 +74,26 @@ if (getRversion() >= "2.15.1") {
       "required_parameters",
       "covariate",
       "x",
-      "n"
+      "n",
+      # Variables from summarize_sims_with_interim function
+      "n_analyzed",
+      "stop_reason",
+      "stop_n",
+      "n_planned",
+      "effective_n",
+      "stopped_early",
+      "n_mn",
+      # Per-look stopping stats
+      "n_stp_look",
+      "n_scs_look",
+      "n_ftl_look",
+      "prop_stp_look",
+      "prop_scs_look",
+      "prop_ftl_look",
+      "cumul_stp",
+      # Overall stopping proportions
+      "prop_stp_scs",
+      "prop_stp_ftl"
     )
   )
 }

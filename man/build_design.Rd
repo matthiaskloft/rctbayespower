@@ -22,31 +22,50 @@ build_design(
 analyze for power. Must be valid parameter names from the brms model.
 Use \code{model@parameter_names_brms} to discover available names. Required.}
 
-\item{p_sig_scs}{Probability threshold for declaring success. The posterior
-probability that the effect exceeds the success threshold must be greater
-than this value to declare success (typically 0.975 or 0.95). Required.}
+\item{p_sig_scs}{Probability threshold for declaring success. Can be:
+\itemize{
+\item A numeric value between 0 and 1 (same threshold at all looks)
+\item A boundary function from \code{\link[=boundary_obf]{boundary_obf()}}, \code{\link[=boundary_linear]{boundary_linear()}},
+\code{\link[=boundary_pocock]{boundary_pocock()}}, or \code{\link[=boundary_power]{boundary_power()}} that takes information
+fraction (current_n / n_total) and returns the threshold
+}
+For sequential designs, function-valued thresholds enable look-dependent
+stopping boundaries (e.g., O'Brien-Fleming-style: stringent early, relaxed late).
+Typically 0.975 or 0.95 for fixed threshold. Required.}
 
-\item{p_sig_ftl}{Probability threshold for declaring futility. The posterior
-probability that the effect is below the futility threshold must be greater
-than this value to declare futility (typically 0.5). Required.}
+\item{p_sig_ftl}{Probability threshold for declaring futility. Can be:
+\itemize{
+\item A numeric value between 0 and 1 (same threshold at all looks)
+\item A boundary function that takes information fraction and returns threshold
+}
+For sequential designs with futility monitoring, consider using
+\code{\link[=boundary_linear]{boundary_linear()}} with increasing thresholds (lenient early, stringent late).
+Typically 0.5 for fixed threshold. Required.}
 
 \item{design_name}{Optional character string providing a descriptive name for the
 design. Defaults to NULL.}
 
-\item{analysis_at}{Optional numeric vector of sample sizes at which to perform
-interim analyses. Must be monotonically increasing positive integers. The final
-analysis at \code{n_total} is added automatically. Set to NULL (default) for
-single-look designs with no interim analyses.}
+\item{analysis_at}{Optional numeric vector of proportions in (0, 1] specifying
+when analyses occur as fractions of n_total. Example: \code{c(0.5, 0.75)} for
+interim analyses at 50\% and 75\% of n_total. The final analysis at 1 (100\%)
+is auto-appended if not included. Must be monotonically increasing.
+Converted to actual sample sizes in \code{\link[=build_conditions]{build_conditions()}} using n_total.
+Set to NULL (default) for single-look designs with no interim analyses.}
 
-\item{interim_function}{Optional function to make interim decisions. Must accept
-parameters: \code{interim_summaries}, \code{current_n}, \code{analysis_at}, \code{n_total}.
-Should return a list with \code{decision} ("continue", "stop_success", "stop_futility")
-and optionally \code{modified_params} (for adaptive designs). See
-\code{interim_futility_only()} and \code{interim_success_futility()} for helper factories.}
+\item{interim_function}{Optional function for custom interim stopping decisions. If NULL
+(default), the default stopping rule is used: stop for success when \code{dec_scs = 1}
+(i.e., \code{pr_scs >= p_sig_scs}) or stop for futility when \code{dec_ftl = 1}
+(i.e., \code{pr_ftl >= p_sig_ftl}).
+If provided, must accept parameters: \code{interim_summaries}, \code{current_n}, \code{analysis_at},
+\code{n_total}. Should return a list with \code{decision} ("continue", "stop_success",
+"stop_futility") and optionally \code{modified_params} (for adaptive designs).
+See \code{\link[=interim_futility_only]{interim_futility_only()}} and \code{\link[=interim_success_futility]{interim_success_futility()}} for helper factories
+that create custom stopping rules (e.g., different thresholds at different looks).}
 
 \item{adaptive}{Logical indicating whether the design allows parameter modification
 between interim looks (default FALSE). When TRUE, the \code{interim_function} can return
-modified simulation parameters (e.g., updated allocation ratios).}
+modified simulation parameters (e.g., updated allocation ratios). Requires
+\code{interim_function} to be specified.}
 }
 \value{
 An S7 object of class "rctbp_design" containing:
@@ -92,6 +111,17 @@ stronger evidence.
 specify design-level defaults for group sequential designs. These can be overridden
 per-condition in \code{\link[=build_conditions]{build_conditions()}} via \code{condition_values} or \code{static_values}.
 
+\strong{Design Types:}
+\itemize{
+\item \emph{Single-look:} \code{analysis_at = NULL} - analyze only at final n_total
+\item \emph{Sequential (default stopping):} \code{analysis_at} specified, \code{interim_function = NULL} -
+stops when \code{dec_scs = 1} or \code{dec_ftl = 1} (based on p_sig thresholds)
+\item \emph{Sequential (custom stopping):} \code{analysis_at} + \code{interim_function} - custom
+stopping rules (e.g., different thresholds at different looks)
+\item \emph{Adaptive:} \code{analysis_at} + \code{interim_function} + \code{adaptive = TRUE} - can
+modify simulation parameters between looks (e.g., response-adaptive randomization)
+}
+
 \strong{Validation:} All parameters are validated for consistency with the
 underlying model structure.
 }
@@ -108,13 +138,13 @@ simple_design <- build_design(
   p_sig_ftl = 0.5
 )
 
-# Design with interim analysis
+# Design with interim analysis (1 is auto-appended for final analysis)
 sequential_design <- build_design(
   model = ancova_model,
   target_params = "b_armtreat_1",
   p_sig_scs = 0.975,
   p_sig_ftl = 0.5,
-  analysis_at = c(50, 100),
+  analysis_at = c(0.5, 0.75),  # Interim at 50\%, 75\%; final at 100\% (auto-appended)
   interim_function = interim_futility_only(futility_threshold = 0.90)
 )
 }

@@ -22,9 +22,15 @@ rctbp_power_analysis <- S7::new_class(
     design = S7::new_property(getter = function(self) self@conditions@design),
 
     # Results (populated after run())
-    results_summ = S7::class_data.frame,
+    results_conditions = S7::class_data.frame,
+    results_interim = S7::class_data.frame,
     results_raw = S7::class_data.frame,
-    elapsed_time = S7::new_property(class = S7::class_numeric, default = NA_real_)
+    elapsed_time = S7::new_property(class = S7::class_numeric, default = NA_real_),
+
+    # Computed property for interim analysis detection
+    has_interim = S7::new_property(
+      getter = function(self) nrow(self@results_interim) > 0
+    )
   ),
   validator = function(self) {
     # Validate conditions object
@@ -207,7 +213,7 @@ power_analysis <- function(run = TRUE, ...) {
 #'
 #' @return The result depends on the specific method called. For power analysis
 #'   objects, returns the modified object with results stored in the
-#'   \code{results_summ} and \code{results_raw} properties.
+#'   \code{results_conditions}, \code{results_interim}, and \code{results_raw} properties.
 #'
 #' @export
 #' @importFrom S7 method new_generic
@@ -279,24 +285,66 @@ S7::method(run, rctbp_power_analysis) <- function(x, ...) {
   old_verbosity <- set_verbosity(x@verbosity)
   on.exit(set_verbosity(old_verbosity), add = TRUE)
 
-  # update model with brms_args (only for brms backend) ------------
+
+  # Early status message - show immediately before any slow operations
   design <- x@conditions@design
   backend <- design@model@backend
+  n_conditions <- nrow(x@conditions@conditions_grid)
+  total_work_units <- x@n_sims * n_conditions
+
+ # Calculate total model fits (including interim analyses)
+  # analysis_at can vary per condition, so check first condition as representative
+  n_analyses <- 1L
+  if (!is.null(design@analysis_at)) {
+    n_analyses <- length(design@analysis_at)
+  }
+  total_model_fits <- total_work_units * n_analyses
+
+  if (should_show(1)) {
+    cli::cli_h3("Power Analysis Configuration")
+    cli::cli_text("")
+    if (should_show(2)) {
+      print(x@conditions@conditions_grid)
+      cli::cli_text("")
+    }
+
+    config_items <- c(
+      "Backend" = backend,
+      "Conditions" = n_conditions,
+      "Simulations per condition" = x@n_sims
+    )
+    if (n_analyses > 1) {
+      config_items <- c(config_items,
+        "Analyses per simulation" = n_analyses,
+        "Total model fits" = total_model_fits
+      )
+    } else {
+      config_items <- c(config_items,
+        "Total simulations" = total_work_units
+      )
+    }
+    cli::cli_dl(config_items)
+    cli::cli_text("")
+  }
+
+  # Configure brms model with MCMC settings ----------------------------------
+  # This updates the compiled model template with the desired sampling settings.
+  # Workers will use this pre-configured model when fitting simulated data.
 
   if (backend == "brms") {
-    # set default brms args
+    # Set default brms args
     default_brms_args <- list(
       chains = 4,
       iter = 450,
       warmup = 200,
       cores = 1
     )
-    # merge with user-provided brms_args
+    # Merge with user-provided brms_args
     final_brms_args <- utils::modifyList(default_brms_args, x@brms_args)
-    # assign back to object for later use
+    # Assign back to object for reference
     x@brms_args <- final_brms_args
 
-    # warn if cores > 1
+    # Warn if cores > 1
     if (x@brms_args$cores > 1) {
       cli::cli_warn(c(
         "Parallel configuration issue detected",
@@ -304,20 +352,33 @@ S7::method(run, rctbp_power_analysis) <- function(x, ...) {
         "i" = "Set brms cores to 1 when using parallel simulations to avoid resource conflicts"
       ))
     }
-    # update brms_args in the object
-    x@conditions@design@model@brms_model <- do.call(function(...) {
-      stats::update(object = x@conditions@design@model@brms_model, ...)
-    }, x@brms_args)
+
+    # Update brms model with MCMC settings
+    # Note: This runs a quick fit on the template data to configure the model.
+    # Warnings about R-hat/ESS are expected and suppressed since this is just
+    # for configuration - actual inference happens in workers with simulated data.
+    # Changing chains/iter/warmup does NOT trigger recompilation (Stan code unchanged).
+    # See: https://github.com/paul-buerkner/brms/blob/master/R/update.R
+    if (should_show(1)) {
+      cli::cli_alert_info("Updating brms model with MCMC settings (chains={final_brms_args$chains}, iter={final_brms_args$iter}, warmup={final_brms_args$warmup})")
+    }
+    x@conditions@design@model@brms_model <- suppressWarnings(
+      do.call(function(...) {
+        stats::update(object = x@conditions@design@model@brms_model, ...)
+      }, x@brms_args)
+    )
+    if (should_show(1)) {
+      cli::cli_alert_success("Model configured")
+      cli::cli_text("")
+    }
+
+    # Also store in backend_args for workers
+    x@conditions@design@model@backend_args <- final_brms_args
+
   } else if (backend == "npe") {
     # For NPE backend, backend_args are already in model@backend_args
     if (should_show(2)) {
-      cat("Using NPE backend with configuration:\n")
-      cat("  Batch size:",
-          if (!is.null(design@model@backend_args$batch_size))
-            design@model@backend_args$batch_size
-          else
-            1,
-          "\n")
+      cli::cli_text("Using NPE backend with batch size: {design@model@backend_args$batch_size %||% 1}")
     }
   }
 
@@ -357,7 +418,6 @@ S7::method(run, rctbp_power_analysis) <- function(x, ...) {
 
   # Create work units: conditions x iterations (NOT interims!)
   # Work units are (id_cond, id_iter) pairs
-  n_conditions <- length(conditions@condition_arguments)
   work_units <- lapply(seq_len(n_conditions), function(id_cond) {
     lapply(seq_len(n_sims), function(id_iter) {
       list(
@@ -369,31 +429,6 @@ S7::method(run, rctbp_power_analysis) <- function(x, ...) {
   })
   work_units <- unlist(work_units, recursive = FALSE)
 
-  # Set up parallelization
-  total_work_units <- length(work_units)
-
-  # Optional logging
-  # Show if verbosity level is 2 (verbose)
-  if (should_show(2)) {
-    cli::cli_h3("Power Analysis Configuration")
-    cli::cli_text("")
-    cli::cli_text("{.strong Conditions:}")
-    print(conditions@conditions_grid)
-    cli::cli_text("")
-
-    cli::cli_dl(c(
-      "Backend" = backend,
-      "Batch size" = batch_size,
-      "Conditions to test" = nrow(conditions@conditions_grid),
-      "Simulations per condition" = n_sims,
-      "Total work units" = total_work_units
-    ))
-    cli::cli_text("")
-
-    # Note: analysis_at and adaptive are per-condition parameters
-    # and can be viewed in the conditions grid if needed
-  }
-  
   # Execute simulations
   if (requireNamespace("pbapply", quietly = TRUE)) {
     # set cl to NULL for default sequential execution
@@ -772,46 +807,101 @@ S7::method(run, rctbp_power_analysis) <- function(x, ...) {
   # Combine results - use bind_rows for robustness
   results_df_raw <- dplyr::bind_rows(results_raw_list)
 
-  # Debug: Check combined results
-  # Show if verbosity level is 2 (verbose)
-  if (should_show(2)) {
-    cli::cli_h3("Raw Results Summary")
+  # Brief simulation summary (shown at verbosity >= 1)
+  if (should_show(1)) {
+    n_conds <- length(unique(results_df_raw$id_cond))
+    total_sims <- nrow(results_df_raw)
+    has_interim <- "id_look" %in% colnames(results_df_raw)
+
     cli::cli_text("")
-
-    dims <- dim(results_df_raw)
-    cli::cli_text("{.strong Combined results dimensions:} {dims[1]} rows x {dims[2]} columns")
-
-    if (!is.null(results_df_raw) && nrow(results_df_raw) > 0) {
-      cli::cli_text("{.strong Column names:} {.val {colnames(results_df_raw)}}")
-
-      result_info <- c(
-        "Unique conditions" = length(unique(results_df_raw$sim_cond)),
-        "Unique iterations per condition" = n_sims
-      )
-
-      if ("sim_anlys" %in% colnames(results_df_raw)) {
-        analyses <- paste(sort(unique(results_df_raw$sim_anlys)), collapse = ", ")
-        result_info <- c(result_info, "Analyses per iteration" = analyses)
-      }
-
-      cli::cli_dl(result_info)
-    }
-    cli::cli_text("")
+    cli::cli_alert_info("Simulations complete: {n_conds} condition{?s}, {n_sims} iteration{?s} each")
   }
 
   # Average across simulation runs
-  results_df <- summarize_sims(results_df_raw, n_sims)
-  # Add condition IDs and arguments to results
-  results_df <- dplyr::full_join(conditions@conditions_grid, results_df, by = c("id_cond" = "sim_cond"))
-  # End time
-  elapsed_time <- difftime(Sys.time(), start_time, units = "mins")
-  # Print elapsed time
-  if (should_show(1)) {
-    cli::cli_alert_success("Total analysis time: {round(as.numeric(elapsed_time), 2)} minutes")
+  results_summary <- summarize_sims(results_df_raw, n_sims)
+
+  # =============================================================================
+
+  # HANDLE INTERIM VS STANDARD RESULT STRUCTURE
+  # =============================================================================
+  # summarize_sims() returns either:
+  # - A data frame (standard single-look analysis)
+  # - A list with $by_look and $overall (interim/sequential analysis)
+  #
+  # Results storage:
+  # - results_conditions: per-condition summary (single-look) or overall stopping stats (sequential)
+  # - results_interim: per-look metrics (sequential only, empty for single-look)
+  # - results_raw: raw per-simulation data
+  if (is.list(results_summary) && !is.data.frame(results_summary)) {
+    # Sequential analysis results
+    # results_interim = per-look metrics joined with conditions
+    results_interim_df <- dplyr::full_join(
+      conditions@conditions_grid,
+      results_summary$by_look,
+      by = "id_cond"
+    )
+
+    # results_conditions = overall stopping stats joined with conditions
+    results_conditions_df <- dplyr::full_join(
+      conditions@conditions_grid,
+      results_summary$overall,
+      by = "id_cond"
+    )
+  } else {
+    # Standard single-look results
+    results_conditions_df <- dplyr::full_join(
+      conditions@conditions_grid,
+      results_summary,
+      by = "id_cond"
+    )
+    results_interim_df <- data.frame()
   }
-  
+
+  # End time
+
+  elapsed_time <- difftime(Sys.time(), start_time, units = "mins")
+
+  # Print results summary (shown at verbosity >= 1)
+  if (should_show(1)) {
+    cli::cli_alert_success("Analysis complete in {round(as.numeric(elapsed_time), 2)} minutes")
+
+    # Show power range (check both results_conditions and results_interim for pwr_scs)
+    pwr_source <- if ("pwr_scs" %in% names(results_conditions_df)) {
+      results_conditions_df
+    } else if (nrow(results_interim_df) > 0 && "pwr_scs" %in% names(results_interim_df)) {
+      results_interim_df
+    } else {
+      NULL
+    }
+
+    if (!is.null(pwr_source)) {
+      pwr_range <- range(pwr_source$pwr_scs, na.rm = TRUE)
+      cli::cli_alert_info("Power range: {round(pwr_range[1] * 100, 1)}% - {round(pwr_range[2] * 100, 1)}%")
+
+      # Show best condition (highest power)
+      best_idx <- which.max(pwr_source$pwr_scs)
+      if (length(best_idx) > 0) {
+        best_pwr <- round(pwr_source$pwr_scs[best_idx] * 100, 1)
+        best_n <- pwr_source$n_total[best_idx]
+        cli::cli_alert_success("Highest power: {best_pwr}% at n_total = {best_n}")
+      }
+    }
+
+    # Show early stopping summary if sequential analysis
+    if (nrow(results_interim_df) > 0 && "prop_stp_early" %in% names(results_conditions_df)) {
+      avg_stopped <- mean(results_conditions_df$prop_stp_early, na.rm = TRUE)
+      avg_n_mn <- mean(results_conditions_df$n_mn, na.rm = TRUE)
+      avg_n_planned <- mean(results_conditions_df$n_planned, na.rm = TRUE)
+      cli::cli_alert_info("Early stopping: {round(avg_stopped * 100, 1)}% stopped early, avg N = {round(avg_n_mn, 0)} of {round(avg_n_planned, 0)} planned")
+    }
+
+    cli::cli_text("")
+    cli::cli_text("Use {.code print(result)} for detailed summary or {.code plot(result)} for visualizations")
+  }
+
   # Update the S7 object with results
-  x@results_summ <- results_df
+  x@results_conditions <- results_conditions_df
+  x@results_interim <- results_interim_df
   x@results_raw <- results_df_raw
   x@elapsed_time <- as.numeric(elapsed_time)
   
@@ -825,18 +915,169 @@ S7::method(run, rctbp_power_analysis) <- function(x, ...) {
 
 #' Print Method for rctbp_power_analysis Objects
 #'
-#' Displays a summary of a power analysis configuration object, including
-#' analysis parameters, condition information, and design specifications.
+#' Displays a compact summary of a power analysis object. When results are
+#' available, shows decision rates, early stopping statistics, and the
+#' optimal/highest power condition.
 #'
 #' @param x An S7 object of class "rctbp_power_analysis"
-#' @param ... Additional arguments (currently unused)
+#' @param ... Additional arguments:
+#'   \describe{
+#'     \item{target_pwr}{Target power for finding optimal condition. If NULL
+#'       (default), shows the condition with highest achieved power.}
+#'   }
 #'
 #' @return Invisibly returns the input object. Used for side effects (printing).
 #' @importFrom S7 method
 #' @name print.rctbp_power_analysis
 #' @export
 S7::method(print, rctbp_power_analysis) <- function(x, ...) {
-  report <- build_report.rctbp_power_analysis(x)
-  render_report(report)
+
+  dots <- list(...)
+  target_pwr <- if (!is.null(dots$target_pwr)) {
+    dots$target_pwr
+  } else {
+    x@conditions@target_pwr
+  }
+
+  design <- x@conditions@design
+  has_results <- nrow(x@results_conditions) > 0 || nrow(x@results_raw) > 0
+
+  # Helper: format range as "min-max"
+  fmt_range <- function(vals, pct = FALSE, digits = 1) {
+    rng <- range(vals, na.rm = TRUE)
+    if (pct) {
+      paste0(round(rng[1] * 100, digits), "%-", round(rng[2] * 100, digits), "%")
+    } else {
+      paste0(round(rng[1], digits), "-", round(rng[2], digits))
+    }
+  }
+
+  # Helper: format condition parameters compactly
+  fmt_params <- function(params) {
+    paste(
+      names(params),
+      sapply(params, function(v) if (is.numeric(v)) round(v, 3) else as.character(v)),
+      sep = "=",
+      collapse = ", "
+    )
+  }
+
+  # Header
+  cli::cli_h1("Power Analysis Results")
+
+  if (has_results) {
+    n_conditions <- nrow(x@conditions@conditions_grid)
+    has_interim <- x@has_interim
+    # For sequential: power metrics in results_interim, overall stats in results_conditions
+    # For single-look: power metrics in results_conditions
+    results_df <- if (has_interim) x@results_interim else x@results_conditions
+    interim_overall <- if (has_interim) x@results_conditions else NULL
+    n_looks <- if (has_interim) length(unique(results_df$id_look)) else 1
+
+    # Status line
+    runtime <- if (!is.na(x@elapsed_time)) round(x@elapsed_time, 1) else NA
+    design_type <- if (has_interim) paste0("Sequential (", n_looks, " looks)") else "Single-look"
+
+    cli::cli_alert_success("Completed in {runtime} min | {n_conditions} conditions x {x@n_sims} sims | {design_type}")
+
+    # Design section
+    cli::cli_h2("Design")
+    target_params_str <- paste(design@target_params, collapse = ", ")
+    cli::cli_text("Target: {.field {target_params_str}} | P(scs) >= {design@p_sig_scs}, P(ftl) >= {design@p_sig_ftl}")
+    if (!is.null(target_pwr)) {
+      cli::cli_text("Target power: {.strong {round(target_pwr * 100, 0)}%}")
+    }
+
+    # Decision Rates section
+    cli::cli_h2("Decision Rates {.emph (range across conditions)}")
+    pwr_scs_range <- fmt_range(results_df$pwr_scs, pct = TRUE)
+    pwr_ftl_range <- fmt_range(results_df$pwr_ftl, pct = TRUE)
+    cli::cli_bullets(c(
+      "*" = "Success: {pwr_scs_range}",
+      "*" = "Futility: {pwr_ftl_range}"
+    ))
+    if (has_interim && !is.null(interim_overall)) {
+      no_dec_range <- fmt_range(interim_overall$prop_no_dec, pct = TRUE)
+      cli::cli_bullets(c("*" = "No decision: {no_dec_range}"))
+    }
+
+    # Early Stopping section (only for sequential)
+    if (has_interim && !is.null(interim_overall)) {
+      cli::cli_h2("Early Stopping {.emph (range across conditions)}")
+      stp_range <- fmt_range(interim_overall$prop_stp_early, pct = TRUE, digits = 0)
+      n_mn_range <- fmt_range(interim_overall$n_mn, digits = 0)
+      n_planned_range <- fmt_range(interim_overall$n_planned, digits = 0)
+      cli::cli_bullets(c(
+        "*" = "Stopped early: {stp_range}",
+        "*" = "Sample size: {n_mn_range} (of {n_planned_range} planned)"
+      ))
+    }
+
+    # Find optimal condition
+    optimal <- find_optimal_condition(
+      results_summ = results_df,
+      conditions_grid = x@conditions@conditions_grid,
+      target_pwr = target_pwr,
+      interim_overall = interim_overall,
+      power_col = "pwr_scs"
+    )
+
+    # Optimal/Highest condition section
+    if (optimal$found || optimal$mode == "highest") {
+      if (optimal$mode == "highest") {
+        cli::cli_h2("Highest Power Condition {.emph (id: {optimal$condition_id})}")
+      } else {
+        cli::cli_h2("Optimal Condition for {round(target_pwr * 100, 0)}% Power {.emph (id: {optimal$condition_id})}")
+      }
+
+      param_str <- fmt_params(optimal$condition_params)
+      pwr_val <- round(optimal$achieved_pwr * 100, 1)
+      cli::cli_bullets(c("*" = "Power: {.strong {pwr_val}%} | {param_str}"))
+
+      if (!is.null(optimal$interim)) {
+        int <- optimal$interim
+        cli::cli_bullets(c(
+          "*" = "Stopped early: {round(int$prop_stp_early * 100, 1)}% | N: mean={round(int$n_mn, 0)}, median={round(int$n_mdn, 0)}, mode={round(int$n_mode, 0)}"
+        ))
+      }
+    } else if (!is.null(optimal$closest)) {
+      cli::cli_alert_warning("No condition achieves {round(target_pwr * 100, 0)}% power")
+      cli::cli_h2("Closest Condition {.emph (id: {optimal$closest$condition_id})}")
+
+      param_str <- fmt_params(optimal$closest$condition_params)
+      pwr_val <- round(optimal$closest$achieved_pwr * 100, 1)
+      cli::cli_bullets(c("*" = "Power: {.strong {pwr_val}%} | {param_str}"))
+
+      if (!is.null(optimal$closest$interim)) {
+        int <- optimal$closest$interim
+        cli::cli_bullets(c(
+          "*" = "Stopped early: {round(int$prop_stp_early * 100, 1)}% | N: mean={round(int$n_mn, 0)}, median={round(int$n_mdn, 0)}, mode={round(int$n_mode, 0)}"
+        ))
+      }
+    }
+    # Hints
+    cli::cli_text("")
+    cli::cli_rule()
+    if (is.null(target_pwr)) {
+      cli::cli_alert_info("Find optimal N for targeted power: {.code print(x, target_pwr = 0.8)}")
+    }
+    cli::cli_alert_info("Visualize: {.code plot(x)}")
+
+  } else {
+    # Pending analysis
+    n_conditions <- nrow(x@conditions@conditions_grid)
+    cli::cli_alert_warning("Analysis not yet run")
+
+    cli::cli_h2("Configuration")
+    cli::cli_bullets(c(
+      "*" = "Conditions: {n_conditions}",
+      "*" = "Simulations: {x@n_sims} per condition",
+      "*" = "Cores: {x@n_cores}"
+    ))
+    cli::cli_text("")
+    cli::cli_rule()
+    cli::cli_alert_info("Run: {.code run(x)}")
+  }
+
   invisible(x)
 }

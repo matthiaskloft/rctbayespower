@@ -9,7 +9,7 @@ summarize_sims(results_df_raw, n_sims)
 \arguments{
 \item{results_df_raw}{A data frame containing raw simulation results with columns:
 \itemize{
-\item \code{sim_cond}: Condition identifier
+\item \code{id_cond}: Condition identifier
 \item \code{par_name}: Parameter name
 \item \code{thr_scs}: Success threshold for the parameter
 \item \code{thr_ftl}: Futility threshold for the parameter
@@ -57,6 +57,6 @@ The function groups results by condition ID, parameter, and thresholds, then com
 }
 }
 \seealso{
-\code{\link[=compute_measures_brmsfit]{compute_measures_brmsfit()}}
+\code{\link[=compute_measures_brmsfit]{compute_measures_brmsfit()}}, \code{\link[=summarize_sims_with_interim]{summarize_sims_with_interim()}}
 }
 \keyword{internal}

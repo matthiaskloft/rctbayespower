@@ -13,8 +13,8 @@ rctbp_design <- S7::new_class(
     # Core design properties
     model = S7::class_any,                  # rctbp_model object
     target_params = S7::class_character,    # Parameters to analyze (must match model@parameter_names_brms)
-    p_sig_scs = S7::class_numeric,          # Probability threshold for success decision
-    p_sig_ftl = S7::class_numeric,          # Probability threshold for futility decision
+    p_sig_scs = S7::class_numeric | S7::class_function,  # Probability threshold or boundary function
+    p_sig_ftl = S7::class_numeric | S7::class_function,  # Probability threshold or boundary function
     design_name = S7::class_character | NULL,
 
     # Interim analysis properties (design-level defaults, can be overridden per-condition)
@@ -60,14 +60,29 @@ rctbp_design <- S7::new_class(
       ))
     }
 
-    # Validate probability thresholds are valid probabilities [0, 1]
-    if (length(self@p_sig_scs) != 1 ||
-        self@p_sig_scs < 0 || self@p_sig_scs > 1) {
-      return("'p_sig_scs' must be a numeric value between 0 and 1.")
+    # Validate probability thresholds: numeric [0, 1] or boundary function
+    if (is.function(self@p_sig_scs)) {
+      # Validate function returns valid probability at test point
+      test_val <- tryCatch(self@p_sig_scs(0.5), error = function(e) NA)
+      if (is.na(test_val) || !is.numeric(test_val) || length(test_val) != 1 ||
+          test_val < 0 || test_val > 1) {
+        return("'p_sig_scs' function must return a single numeric value between 0 and 1")
+      }
+    } else if (!is.numeric(self@p_sig_scs) || length(self@p_sig_scs) != 1 ||
+               self@p_sig_scs < 0 || self@p_sig_scs > 1) {
+      return("'p_sig_scs' must be a numeric value between 0 and 1, or a boundary function")
     }
-    if (length(self@p_sig_ftl) != 1 ||
-        self@p_sig_ftl < 0 || self@p_sig_ftl > 1) {
-      return("'p_sig_ftl' must be a numeric value between 0 and 1.")
+
+    if (is.function(self@p_sig_ftl)) {
+      # Validate function returns valid probability at test point
+      test_val <- tryCatch(self@p_sig_ftl(0.5), error = function(e) NA)
+      if (is.na(test_val) || !is.numeric(test_val) || length(test_val) != 1 ||
+          test_val < 0 || test_val > 1) {
+        return("'p_sig_ftl' function must return a single numeric value between 0 and 1")
+      }
+    } else if (!is.numeric(self@p_sig_ftl) || length(self@p_sig_ftl) != 1 ||
+               self@p_sig_ftl < 0 || self@p_sig_ftl > 1) {
+      return("'p_sig_ftl' must be a numeric value between 0 and 1, or a boundary function")
     }
 
     # Validate interim analysis properties
@@ -77,9 +92,16 @@ rctbp_design <- S7::new_class(
           !all(diff(self@analysis_at) > 0)) {
         return("'analysis_at' must be monotonically increasing (each value greater than previous)")
       }
-      # analysis_at must be positive integers
-      if (any(self@analysis_at <= 0) || any(self@analysis_at != round(self@analysis_at))) {
-        return("'analysis_at' must contain positive integers (sample sizes for interim analyses)")
+
+      # analysis_at must be proportions in (0, 1], with last value = 1
+      # (1 is auto-appended in build_design() if missing)
+      if (!all(self@analysis_at > 0 & self@analysis_at <= 1)) {
+        return("'analysis_at' must be proportions in (0, 1] (e.g., c(0.5, 0.75, 1))")
+      }
+
+      # Last value must be 1 (final analysis at n_total)
+      if (self@analysis_at[length(self@analysis_at)] != 1) {
+        return("'analysis_at' must end with 1 (final analysis at n_total)")
       }
     }
 
@@ -88,8 +110,9 @@ rctbp_design <- S7::new_class(
     if (!is.null(self@interim_function) && is.null(self@analysis_at)) {
       return("'interim_function' requires 'analysis_at' to specify when interim analyses occur")
     }
-    # Note: analysis_at without interim_function is allowed - a default "continue" function
-    # will be used (see interim_continue()), enabling sequential monitoring without stopping
+    # Note: analysis_at without interim_function is allowed and valid.
+    # This uses the default stopping rule: stop when dec_scs = 1 or dec_ftl = 1
+    # (i.e., when posterior probabilities exceed p_sig thresholds).
 
     # Validate adaptive requires interim analysis setup
     if (isTRUE(self@adaptive) && is.null(self@analysis_at)) {
@@ -120,26 +143,45 @@ rctbp_design <- S7::new_class(
 #' @param target_params Character vector specifying which model parameters to
 #'   analyze for power. Must be valid parameter names from the brms model.
 #'   Use `model@parameter_names_brms` to discover available names. Required.
-#' @param p_sig_scs Probability threshold for declaring success. The posterior
-#'   probability that the effect exceeds the success threshold must be greater
-#'   than this value to declare success (typically 0.975 or 0.95). Required.
-#' @param p_sig_ftl Probability threshold for declaring futility. The posterior
-#'   probability that the effect is below the futility threshold must be greater
-#'   than this value to declare futility (typically 0.5). Required.
+#' @param p_sig_scs Probability threshold for declaring success. Can be:
+#'   \itemize{
+#'     \item A numeric value between 0 and 1 (same threshold at all looks)
+#'     \item A boundary function from [boundary_obf()], [boundary_linear()],
+#'       [boundary_pocock()], or [boundary_power()] that takes information
+#'       fraction (current_n / n_total) and returns the threshold
+#'   }
+#'   For sequential designs, function-valued thresholds enable look-dependent
+#'   stopping boundaries (e.g., O'Brien-Fleming-style: stringent early, relaxed late).
+#'   Typically 0.975 or 0.95 for fixed threshold. Required.
+#' @param p_sig_ftl Probability threshold for declaring futility. Can be:
+#'   \itemize{
+#'     \item A numeric value between 0 and 1 (same threshold at all looks)
+#'     \item A boundary function that takes information fraction and returns threshold
+#'   }
+#'   For sequential designs with futility monitoring, consider using
+#'   [boundary_linear()] with increasing thresholds (lenient early, stringent late).
+#'   Typically 0.5 for fixed threshold. Required.
 #' @param design_name Optional character string providing a descriptive name for the
 #'   design. Defaults to NULL.
-#' @param analysis_at Optional numeric vector of sample sizes at which to perform
-#'   interim analyses. Must be monotonically increasing positive integers. The final
-#'   analysis at `n_total` is added automatically. Set to NULL (default) for
-#'   single-look designs with no interim analyses.
-#' @param interim_function Optional function to make interim decisions. Must accept
-#'   parameters: `interim_summaries`, `current_n`, `analysis_at`, `n_total`.
-#'   Should return a list with `decision` ("continue", "stop_success", "stop_futility")
-#'   and optionally `modified_params` (for adaptive designs). See
-#'   `interim_futility_only()` and `interim_success_futility()` for helper factories.
+#' @param analysis_at Optional numeric vector of proportions in (0, 1] specifying
+#'   when analyses occur as fractions of n_total. Example: `c(0.5, 0.75)` for
+#'   interim analyses at 50% and 75% of n_total. The final analysis at 1 (100%)
+#'   is auto-appended if not included. Must be monotonically increasing.
+#'   Converted to actual sample sizes in [build_conditions()] using n_total.
+#'   Set to NULL (default) for single-look designs with no interim analyses.
+#' @param interim_function Optional function for custom interim stopping decisions. If NULL
+#'   (default), the default stopping rule is used: stop for success when `dec_scs = 1`
+#'   (i.e., `pr_scs >= p_sig_scs`) or stop for futility when `dec_ftl = 1`
+#'   (i.e., `pr_ftl >= p_sig_ftl`).
+#'   If provided, must accept parameters: `interim_summaries`, `current_n`, `analysis_at`,
+#'   `n_total`. Should return a list with `decision` ("continue", "stop_success",
+#'   "stop_futility") and optionally `modified_params` (for adaptive designs).
+#'   See [interim_futility_only()] and [interim_success_futility()] for helper factories
+#'   that create custom stopping rules (e.g., different thresholds at different looks).
 #' @param adaptive Logical indicating whether the design allows parameter modification
 #'   between interim looks (default FALSE). When TRUE, the `interim_function` can return
-#'   modified simulation parameters (e.g., updated allocation ratios).
+#'   modified simulation parameters (e.g., updated allocation ratios). Requires
+#'   `interim_function` to be specified.
 #'
 #' @details
 #' The rctbp_design class combines model specifications with global analysis
@@ -166,6 +208,17 @@ rctbp_design <- S7::new_class(
 #' \strong{Interim Analysis:} The `analysis_at`, `interim_function`, and `adaptive` parameters
 #' specify design-level defaults for group sequential designs. These can be overridden
 #' per-condition in [build_conditions()] via `condition_values` or `static_values`.
+#'
+#' \strong{Design Types:}
+#' \itemize{
+#'   \item \emph{Single-look:} `analysis_at = NULL` - analyze only at final n_total
+#'   \item \emph{Sequential (default stopping):} `analysis_at` specified, `interim_function = NULL` -
+#'     stops when `dec_scs = 1` or `dec_ftl = 1` (based on p_sig thresholds)
+#'   \item \emph{Sequential (custom stopping):} `analysis_at` + `interim_function` - custom
+#'     stopping rules (e.g., different thresholds at different looks)
+#'   \item \emph{Adaptive:} `analysis_at` + `interim_function` + `adaptive = TRUE` - can
+#'     modify simulation parameters between looks (e.g., response-adaptive randomization)
+#' }
 #'
 #' \strong{Validation:} All parameters are validated for consistency with the
 #' underlying model structure.
@@ -198,13 +251,13 @@ rctbp_design <- S7::new_class(
 #'   p_sig_ftl = 0.5
 #' )
 #'
-#' # Design with interim analysis
+#' # Design with interim analysis (1 is auto-appended for final analysis)
 #' sequential_design <- build_design(
 #'   model = ancova_model,
 #'   target_params = "b_armtreat_1",
 #'   p_sig_scs = 0.975,
 #'   p_sig_ftl = 0.5,
-#'   analysis_at = c(50, 100),
+#'   analysis_at = c(0.5, 0.75),  # Interim at 50%, 75%; final at 100% (auto-appended)
 #'   interim_function = interim_futility_only(futility_threshold = 0.90)
 #' )
 #' }
@@ -216,6 +269,13 @@ build_design <- function(model,
                          analysis_at = NULL,
                          interim_function = NULL,
                          adaptive = FALSE) {
+  # Auto-append 1 to analysis_at if not present (final analysis at 100% of n_total)
+  if (!is.null(analysis_at)) {
+    if (analysis_at[length(analysis_at)] != 1) {
+      analysis_at <- c(analysis_at, 1)
+    }
+  }
+
   # Use S7 constructor directly - all validation happens in the class validator
   rctbp_design(
     model = model,

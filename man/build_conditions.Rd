@@ -4,7 +4,7 @@
 \alias{build_conditions}
 \title{Build Conditions for Power Analysis}
 \usage{
-build_conditions(design, condition_values, static_values)
+build_conditions(design, condition_values, static_values, target_pwr = NULL)
 }
 \arguments{
 \item{design}{An rctbp_design object that defines the study design}
@@ -14,6 +14,11 @@ parameter values to vary across conditions. All combinations will be created.}
 
 \item{static_values}{A named list of parameter values that remain constant
 across all conditions}
+
+\item{target_pwr}{Target power level for identifying optimal conditions
+(default NULL). If NULL, the condition with highest power is shown.
+If specified (0 to 1), finds the smallest sample size achieving at
+least this power when displaying results.}
 }
 \value{
 An S7 object of class "rctbp_conditions" containing:
@@ -23,6 +28,7 @@ separated into simulation and interim analysis arguments}
 \item{design}{The original rctbp_design object}
 \item{condition_values}{The original condition_values list}
 \item{static_values}{The original static_values list}
+\item{target_pwr}{Target power level for optimal condition identification}
 }
 \description{
 Creates a structured set of conditions and argument lists for power analysis

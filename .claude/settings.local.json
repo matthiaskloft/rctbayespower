@@ -38,7 +38,10 @@
       "Bash(_R_CHECK_FORCE_SUGGESTS_=false R CMD check:*)",
       "Bash(dos2unix:*)",
       "Bash(Makefile)",
-      "WebFetch(domain:cli.r-lib.org)"
+      "WebFetch(domain:cli.r-lib.org)",
+      "Bash(echo:*)",
+      "Bash(export _R_CHECK_FORCE_SUGGESTS_=false)",
+      "WebFetch(domain:paulbuerkner.com)"
     ],
     "deny": []
   }

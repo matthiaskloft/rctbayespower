@@ -17,13 +17,14 @@ Documentation is organized in `dev/` as numbered topic files:
 | [`03_workflow.md`](dev/03_workflow.md) | User workflow, API reference, debugging |
 | [`04_development_guidelines.md`](dev/04_development_guidelines.md) | Code style, roxygen, R CMD check |
 | [`05_testing.md`](dev/05_testing.md) | Testing strategy, parallel test setup |
-| [`06_interim_analysis_plan.md`](dev/06_interim_analysis_plan.md) | **[PLANNED]** Group sequential designs |
+| [`06_interim_analysis_plan.md`](dev/06_interim_analysis_plan.md) | Group sequential designs, boundary functions |
 | [`07_backend_abstraction_plan.md`](dev/07_backend_abstraction_plan.md) | **[PLANNED]** NPE/neural posterior estimation |
 | [`08_adaptive_trials_roadmap.md`](dev/08_adaptive_trials_roadmap.md) | **[PLANNED]** Binary, survival, adaptive designs |
+| [`09_bayesian_adaptive_designs_reference.md`](dev/09_bayesian_adaptive_designs_reference.md) | Reference: Bayesian adaptive trial designs |
 
 Archived files in `dev/archive/`.
 
-## Current Status (2025-11-24)
+## Current Status (2025-11-26)
 
 **Core Package State**: Functional and stable. Documentation up to date.
 
@@ -38,12 +39,15 @@ Archived files in `dev/archive/`.
 | Parallelization with model caching | ✅ |
 | Plotting (power curves, heatmaps) | ✅ |
 | Documentation (vignettes, manual pages) | ✅ |
+| Group sequential / interim analysis (non-adaptive) | ✅ |
+| Look-dependent stopping boundaries | ✅ |
+| Boundary re-analysis functions | ✅ |
 
 ### Planned / In Progress
 
 | Feature | Status | Plan |
 |---------|--------|------|
-| Interim analysis / group sequential | Planning | `06_interim_analysis_plan.md` |
+| Adaptive interim analysis (parameter modification) | Planning | `06_interim_analysis_plan.md` |
 | NPE backend abstraction | Placeholder code exists | `07_backend_abstraction_plan.md` |
 | Binary/survival outcomes | Not started | `08_adaptive_trials_roadmap.md` |
 | Test suite | 0% | `05_testing.md` |
@@ -82,7 +86,45 @@ result@results_summ
 
 **Note**: Parameter names vary by model. Use `model@parameter_names_brms` to discover available `target_params` and `model@parameter_names_sim_fn` for simulation arguments.
 
+### Sequential Design with Look-Dependent Boundaries
+
+```r
+# Create design with O'Brien-Fleming-style stopping boundaries
+design <- build_design(
+  model = model,
+  target_params = "b_armtreat_1",
+  p_sig_scs = boundary_obf(0.975),        # Function: stringent early, relaxed late
+  p_sig_ftl = boundary_linear(0.70, 0.90), # Function: lenient early, strict late
+  analysis_at = c(0.5, 0.75)               # Interim at 50%, 75%; final at 100%
+)
+
+# Available boundary functions:
+# - boundary_obf(base)        O'Brien-Fleming-style (most conservative early)
+# - boundary_pocock(threshold) Constant threshold (same at all looks)
+# - boundary_linear(start, end) Linear interpolation
+# - boundary_power(base, rho)  Power family (rho controls curve shape)
+
+# Post-hoc boundary comparison (no re-simulation needed)
+result <- power_analysis(conditions, n_sims = 500)
+comparison <- compare_boundaries(result, list(
+  "Fixed 0.975" = list(success = 0.975, futility = 0.90),
+  "OBF-style" = list(success = boundary_obf(0.975), futility = 0.90),
+  "Stringent" = list(success = 0.99, futility = 0.95)
+))
+
+# Re-analyze with new boundaries (returns modified power_analysis object)
+result_obf <- resummarize_boundaries(result,
+  p_sig_scs = boundary_obf(0.975),
+  p_sig_ftl = boundary_linear(0.70, 0.90)
+)
+```
+
 ## Development Practices
+
+### File Organization
+
+- **All R source files must be in `/R` root** - no subfolders allowed in `/R` directory
+- Save new development documents into `dev/`
 
 ### Documentation
 

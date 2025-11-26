@@ -23,6 +23,103 @@ flush(stderr()); flush(stdout())
 
 
 cleanEx()
+nameEx("boundary_linear")
+### * boundary_linear
+
+flush(stderr()); flush(stdout())
+
+### Name: boundary_linear
+### Title: Linear Boundary
+### Aliases: boundary_linear
+
+### ** Examples
+
+# Success boundary: strict early, relaxed late
+scs_boundary <- boundary_linear(start = 0.999, end = 0.975)
+scs_boundary(0.5)  # 0.987
+
+# Futility boundary: lenient early, strict late
+ftl_boundary <- boundary_linear(start = 0.70, end = 0.90)
+ftl_boundary(0.5)  # 0.80
+
+
+
+cleanEx()
+nameEx("boundary_obf")
+### * boundary_obf
+
+flush(stderr()); flush(stdout())
+
+### Name: boundary_obf
+### Title: O'Brien-Fleming-like Bayesian Boundary
+### Aliases: boundary_obf
+
+### ** Examples
+
+# Create OBF-style boundary
+obf <- boundary_obf(0.975)
+
+# Evaluate at different information fractions
+obf(0.25)  # Early look: ~0.9875
+obf(0.50)  # Midpoint: ~0.9823
+obf(1.00)  # Final: 0.975
+
+# Use in design
+## Not run: 
+##D design <- build_design(
+##D   model = my_model,
+##D   target_params = "b_armtreat_1",
+##D   p_sig_scs = boundary_obf(0.975),
+##D   p_sig_ftl = 0.90,
+##D   analysis_at = c(0.5, 0.75)
+##D )
+## End(Not run)
+
+
+
+cleanEx()
+nameEx("boundary_pocock")
+### * boundary_pocock
+
+flush(stderr()); flush(stdout())
+
+### Name: boundary_pocock
+### Title: Pocock-like Boundary (Constant)
+### Aliases: boundary_pocock
+
+### ** Examples
+
+# Create constant boundary
+pocock <- boundary_pocock(0.99)
+
+# Returns same value regardless of info_frac
+pocock(0.25)  # 0.99
+pocock(0.50)  # 0.99
+pocock(1.00)  # 0.99
+
+
+
+cleanEx()
+nameEx("boundary_power")
+### * boundary_power
+
+flush(stderr()); flush(stdout())
+
+### Name: boundary_power
+### Title: Power Family Boundary
+### Aliases: boundary_power
+
+### ** Examples
+
+# Compare different rho values at info_frac = 0.5
+boundary_power(0.975, rho = 3)(0.5)   # More conservative
+boundary_power(0.975, rho = 2)(0.5)   # OBF-like
+boundary_power(0.975, rho = 1)(0.5)   # Linear
+boundary_power(0.975, rho = 0.5)(0.5) # Less conservative
+
+
+
+cleanEx()
 nameEx("build_conditions")
 ### * build_conditions
 
@@ -79,13 +176,13 @@ flush(stderr()); flush(stdout())
 ##D   p_sig_ftl = 0.5
 ##D )
 ##D 
-##D # Design with interim analysis
+##D # Design with interim analysis (1 is auto-appended for final analysis)
 ##D sequential_design <- build_design(
 ##D   model = ancova_model,
 ##D   target_params = "b_armtreat_1",
 ##D   p_sig_scs = 0.975,
 ##D   p_sig_ftl = 0.5,
-##D   analysis_at = c(50, 100),
+##D   analysis_at = c(0.5, 0.75),  # Interim at 50%, 75%; final at 100% (auto-appended)
 ##D   interim_function = interim_futility_only(futility_threshold = 0.90)
 ##D )
 ## End(Not run)
@@ -178,6 +275,38 @@ flush(stderr()); flush(stdout())
 ##D   b_arm_treat = c(0.5, 0.7),
 ##D   b_covariate = 0.3
 ##D )
+## End(Not run)
+
+
+
+cleanEx()
+nameEx("compare_boundaries")
+### * compare_boundaries
+
+flush(stderr()); flush(stdout())
+
+### Name: compare_boundaries
+### Title: Compare Multiple Boundary Configurations
+### Aliases: compare_boundaries
+
+### ** Examples
+
+## Not run: 
+##D # Run simulation once
+##D result <- power_analysis(conditions, n_sims = 500, analysis_at = c(0.5, 0.75))
+##D 
+##D # Compare different boundary configurations
+##D comparison <- compare_boundaries(result, list(
+##D   "Fixed 0.975" = list(success = 0.975, futility = 0.90),
+##D   "OBF-style" = list(success = boundary_obf(0.975), futility = 0.90),
+##D   "Stringent" = list(success = 0.99, futility = 0.95),
+##D   "Linear" = list(
+##D     success = boundary_linear(0.999, 0.975),
+##D     futility = boundary_linear(0.70, 0.90)
+##D   )
+##D ))
+##D 
+##D print(comparison)
 ## End(Not run)
 
 
@@ -443,6 +572,36 @@ flush(stderr()); flush(stdout())
 ##D required_fn_args(my_object)
 ## End(Not run)
 
+
+
+
+cleanEx()
+nameEx("resummarize_boundaries")
+### * resummarize_boundaries
+
+flush(stderr()); flush(stdout())
+
+### Name: resummarize_boundaries
+### Title: Re-summarize Results with Different Boundaries
+### Aliases: resummarize_boundaries
+
+### ** Examples
+
+## Not run: 
+##D # Run simulation once
+##D result <- power_analysis(conditions, n_sims = 500, analysis_at = c(0.5, 0.75))
+##D 
+##D # Re-analyze with O'Brien-Fleming-style boundaries
+##D result_obf <- resummarize_boundaries(
+##D   result,
+##D   p_sig_scs = boundary_obf(0.975),
+##D   p_sig_ftl = boundary_linear(0.70, 0.90)
+##D )
+##D 
+##D # Compare results
+##D print(result)      # Original boundaries
+##D print(result_obf)  # OBF boundaries
+## End(Not run)
 
 
 

@@ -106,8 +106,8 @@ simulate_single_run <- function(condition_arguments,
       rhat = NA_real_,
       ess_bulk = NA_real_,
       ess_tail = NA_real_,
-      sim_iter = id_iter,
-      sim_cond = condition_arguments$id_cond,
+      id_iter = id_iter,
+      id_cond = condition_arguments$id_cond,
       converged = 0L,
       error_msg = "Data simulation failed"
     ))
@@ -151,8 +151,8 @@ simulate_single_run <- function(condition_arguments,
       rhat = NA_real_,
       ess_bulk = NA_real_,
       ess_tail = NA_real_,
-      sim_iter = id_iter,
-      sim_cond = condition_arguments$id_cond,
+      id_iter = id_iter,
+      id_cond = condition_arguments$id_cond,
       converged = 0L,
       error_msg = "Posterior estimation failed"
     ))
@@ -189,8 +189,8 @@ simulate_single_run <- function(condition_arguments,
       rhat = NA_real_,
       ess_bulk = NA_real_,
       ess_tail = NA_real_,
-      sim_iter = id_iter,
-      sim_cond = condition_arguments$id_cond,
+      id_iter = id_iter,
+      id_cond = condition_arguments$id_cond,
       converged = 0L,
       error_msg = "Posterior extraction failed"
     ))
@@ -209,9 +209,9 @@ simulate_single_run <- function(condition_arguments,
                           p_sig_ftl) |>
       dplyr::mutate(dplyr::across(-par_name, as.numeric))
     df |> dplyr::mutate(
-      sim_iter = id_iter,
-      sim_cond = condition_arguments$id_cond,
-      sim_anlys = 0L,  # 0 = single analysis (final only); 1+ = sequential interim numbers
+      id_iter = id_iter,
+      id_cond = condition_arguments$id_cond,
+      id_look = 0L,  # 0 = single analysis (final only); 1+ = sequential interim numbers
       converged = 1L,
       error_msg = NA_character_
     )
@@ -231,9 +231,9 @@ simulate_single_run <- function(condition_arguments,
       rhat = NA_real_,
       ess_bulk = NA_real_,
       ess_tail = NA_real_,
-      sim_iter = id_iter,
-      sim_cond = condition_arguments$id_cond,
-      sim_anlys = 0L,
+      id_iter = id_iter,
+      id_cond = condition_arguments$id_cond,
+      id_look = 0L,
       converged = 0L,
       error_msg = as.character(e)
     )

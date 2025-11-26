@@ -1,5 +1,9 @@
 rctbayespower-package	rctbayespower-package
 analytical_power_ancova_cont_2arms	analytical_power_ancova_cont_2arms
+boundary_linear	boundary_linear
+boundary_obf	boundary_obf
+boundary_pocock	boundary_pocock
+boundary_power	boundary_power
 build_conditions	build_conditions
 build_design	build_design
 build_model	build_model
@@ -15,10 +19,15 @@ calculate_mcse_mean	calculate_mcse_mean
 calculate_mcse_power	calculate_mcse_power
 class_data_frame	class_data_frame
 cli_or_md	cli_or_md
+compare_boundaries	compare_boundaries
 compare_power_methods	compare_power_methods
 compute_measures	compute_measures
 compute_measures_brmsfit	compute_measures_brmsfit
+create_comparison_plot	create_comparison_plot
 create_error_result	create_error_result
+create_heatmap_plot	create_heatmap_plot
+create_power_curve_plot	create_power_curve_plot
+create_power_plot	create_power_plot
 estimate_posterior	estimate_posterior
 estimate_posterior_brms	estimate_posterior_brms
 estimate_posterior_npe	estimate_posterior_npe
@@ -31,6 +40,7 @@ extract_posterior_rvars	extract_posterior_rvars
 extract_posterior_rvars_brms	extract_posterior_rvars_brms
 extract_posterior_rvars_npe	extract_posterior_rvars_npe
 f2_from_params_ancova_cont_2arms	f2_from_params_ancova_cont_2arms
+find_optimal_condition	find_optimal_condition
 get_args_without_defaults	get_args_without_defaults
 get_arg_defaults	get_arg_defaults
 get_output_mode	get_output_mode
@@ -52,6 +62,7 @@ md_rule	markdown_helpers
 new_output_builder	new_output_builder
 output_system	output_system
 parse_design_prior	parse_design_prior
+pivot_plot_data_long	pivot_plot_data_long
 plot.rctbp_power_analysis	plot.rctbp_power_analysis
 power_analysis	power_analysis
 prepare_data_for_npe	prepare_data_for_npe
@@ -61,6 +72,8 @@ print.rctbp_design	print.rctbp_design
 print.rctbp_model	print.rctbp_model
 print.rctbp_power_analysis	print.rctbp_power_analysis
 rctbayespower	rctbayespower-package
+rctbp_colors	rctbp_colors
+rctbp_theme	rctbp_theme
 render_cli	render_cli
 render_markdown	render_markdown
 render_report	render_report
@@ -69,6 +82,9 @@ report_renderers	report_renderers
 required_fn_args	required_fn_args
 required_fn_args_design	required_fn_args_design
 required_fn_args_model	required_fn_args_model
+resolve_boundary_vector	resolve_boundary_vector
+resolve_threshold	resolve_threshold
+resummarize_boundaries	resummarize_boundaries
 run	run
 run.rctbp_power_analysis	run.rctbp_power_analysis
 sample_from_npe_posterior	sample_from_npe_posterior
@@ -78,6 +94,8 @@ should_show	should_show
 simulate_single_run	simulate_single_run
 stack_data_for_npe	stack_data_for_npe
 summarize_sims	summarize_sims
+summarize_sims_with_interim	summarize_sims_with_interim
+to_interactive	to_interactive
 update_S7_with_dots	update_S7_with_dots
 validate_weighting_function	validate_weighting_function
 verbosity	verbosity

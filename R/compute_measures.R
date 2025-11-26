@@ -59,6 +59,8 @@ compute_measures <- function(posterior_rvars, target_params, thresholds_success,
       par_name = param,
       thr_scs = threshold_success,
       thr_ftl = threshold_futility,
+      p_sig_scs = p_sig_scs,
+      p_sig_ftl = p_sig_ftl,
       pr_scs = success_prob,
       pr_ftl = futility_prob,
       dec_scs = sig_success,
@@ -121,6 +123,8 @@ compute_measures <- function(posterior_rvars, target_params, thresholds_success,
       par_name = "union",
       thr_scs = NA,
       thr_ftl = NA,
+      p_sig_scs = p_sig_scs,
+      p_sig_ftl = p_sig_ftl,
       pr_scs = combined_success_prob,
       pr_ftl = combined_futility_prob,
       dec_scs = combined_sig_success,
@@ -208,7 +212,7 @@ compute_measures_brmsfit <- function(brmsfit, design) {
 #'
 #' @param results_df_raw A data frame containing raw simulation results with columns:
 #'   \itemize{
-#'     \item `sim_cond`: Condition identifier
+#'     \item `id_cond`: Condition identifier
 #'     \item `par_name`: Parameter name
 #'     \item `thr_scs`: Success threshold for the parameter
 #'     \item `thr_ftl`: Futility threshold for the parameter
@@ -248,7 +252,7 @@ compute_measures_brmsfit <- function(brmsfit, design) {
 #'   \item Concatenated error messages for debugging purposes
 #' }
 #'
-#' @seealso [compute_measures_brmsfit()]
+#' @seealso [compute_measures_brmsfit()], [summarize_sims_with_interim()]
 #' @keywords internal
 summarize_sims <- function(results_df_raw, n_sims) {
   # Validate input
@@ -259,13 +263,36 @@ summarize_sims <- function(results_df_raw, n_sims) {
       "i" = "This is an internal error - please report"
     ))
   }
-  # remove rows with NA in sim_cond or par_name
+
+  # =============================================================================
+  # INTERIM ANALYSIS DETECTION
+  # =============================================================================
+  # Detect if results contain interim analyses by checking:
+
+  # 1. Required interim columns exist (id_look, n_analyzed, stopped, stop_reason)
+  # 2. More than one unique analysis index exists (multiple looks per simulation)
+  #
+  # Single-look designs have id_look = 1 for all rows, so we only dispatch to
+  # interim summarization when there are actually multiple analysis timepoints.
+  has_interim_cols <- all(c("id_look", "n_analyzed", "stopped", "stop_reason") %in%
+                            names(results_df_raw))
+  has_multiple_analyses <- has_interim_cols &&
+    length(unique(results_df_raw$id_look)) > 1
+
+  if (has_multiple_analyses) {
+    return(summarize_sims_with_interim(results_df_raw, n_sims))
+  }
+
+  # =============================================================================
+  # STANDARD (SINGLE-LOOK) SUMMARIZATION
+  # =============================================================================
+  # remove rows with NA in id_cond or par_name
   results_df_raw <- results_df_raw |>
-    dplyr::filter(!is.na(sim_cond) & !is.na(par_name))
+    dplyr::filter(!is.na(id_cond) & !is.na(par_name))
 
 
   results_summarized <- results_df_raw |>
-    dplyr::group_by(sim_cond, par_name, thr_scs, thr_ftl) |>
+    dplyr::group_by(id_cond, par_name, thr_scs, thr_ftl, p_sig_scs, p_sig_ftl) |>
     dplyr::summarise(
       pr_scs_mean = mean(pr_scs, na.rm = TRUE),
       pr_scs_mcse = calculate_mcse_mean(pr_scs, n_sims),
@@ -322,4 +349,445 @@ summarize_sims <- function(results_df_raw, n_sims) {
     )
 
   return(results_summarized)
+}
+
+
+#' Summarize Power Analysis Results with Interim Analyses
+#'
+#' Aggregates raw simulation results for sequential designs with interim analyses.
+#' Provides both per-look summaries and overall trial outcome statistics.
+#'
+#' @param results_df_raw A data frame containing raw simulation results including
+#'   interim analysis columns (`id_look`, `n_analyzed`, `stopped`, `stop_reason`)
+#' @param n_sims Integer specifying the total number of simulations run
+#'
+#' @return A list with two data frames:
+#'   \describe{
+#'     \item{by_look}{Summary statistics grouped by condition, parameter, and interim look}
+#'     \item{overall}{Overall trial outcome statistics including stopping rates and sample size}
+#'   }
+#'
+#' @details
+#' This function is called automatically by [summarize_sims()] when interim analysis
+#' results are detected. It computes:
+#'
+#' \strong{Per-Look Metrics (by_look):}
+#' \itemize{
+#'   \item Power metrics: `pr_scs`, `pr_ftl`, `pwr_scs`, `pwr_ftl` (with SEs)
+#'   \item Posterior estimates: `post_med`, `post_mn`, `post_sd` (with SEs)
+#'   \item Convergence: `rhat`, `ess_bulk`, `conv_rate`
+#'   \item Stopping at this look: `prop_stp_look`, `prop_scs_look`, `prop_ftl_look`
+#'   \item Cumulative stopping: `cumul_stp`
+#' }
+#'
+#' \strong{Overall Metrics (overall):}
+#' \itemize{
+#'   \item `n_planned`: Maximum planned sample size
+#'   \item `n_mn`, `se_n_mn`: Mean sample size with standard error
+#'   \item `n_mdn`: Robust median (always an observed value, uses low median for ties)
+#'   \item `n_mode`: Modal sample size (most frequent stopping point)
+#'   \item `prop_at_mode`: Proportion of trials at modal N
+#'   \item `prop_stp_early`: Proportion stopped before final look
+#'   \item `prop_stp_scs`: Proportion stopped for success
+#'   \item `prop_stp_ftl`: Proportion stopped for futility
+#'   \item `prop_no_dec`: Proportion with no decision (= 1 - prop_stp_scs - prop_stp_ftl)
+#' }
+#'
+#' @seealso [summarize_sims()]
+#' @keywords internal
+summarize_sims_with_interim <- function(results_df_raw, n_sims) {
+  # Validate input
+  if (!is.data.frame(results_df_raw) || nrow(results_df_raw) == 0) {
+    cli::cli_abort(c(
+      "{.arg results_df_raw} must be a non-empty data frame",
+      "x" = "You supplied {.type {results_df_raw}} with {.val {nrow(results_df_raw)}} rows"
+    ))
+  }
+
+  # Check required interim columns exist
+ required_cols <- c("id_look", "n_analyzed", "stopped", "stop_reason")
+  missing_cols <- setdiff(required_cols, names(results_df_raw))
+  if (length(missing_cols) > 0) {
+    cli::cli_abort(c(
+      "Missing required interim analysis columns",
+      "x" = "Missing: {.val {missing_cols}}",
+      "i" = "This function requires results from sequential estimation"
+    ))
+  }
+
+  # Remove rows with NA in key identifiers
+  results_df_raw <- results_df_raw |>
+    dplyr::filter(!is.na(id_cond) & !is.na(par_name))
+
+  # =============================================================================
+  # PER-LOOK SUMMARY
+  # =============================================================================
+
+  # First compute per-look stopping stats (condition × look level)
+  # These will be joined to by_look (redundant across parameters but keeps it simple)
+  n_total_sims <- results_df_raw |>
+    dplyr::group_by(id_cond) |>
+    dplyr::summarise(n_total_sims = dplyr::n_distinct(id_iter), .groups = "drop")
+
+  # Count stops at each look
+  stopping_by_look <- results_df_raw |>
+    dplyr::filter(!is.na(stop_reason)) |>
+    dplyr::group_by(id_cond, id_look, n_analyzed) |>
+    dplyr::summarise(
+      n_stp_look = dplyr::n_distinct(id_iter),
+      n_scs_look = sum(stop_reason == "stop_success", na.rm = TRUE),
+      n_ftl_look = sum(stop_reason == "stop_futility", na.rm = TRUE),
+      .groups = "drop"
+    ) |>
+    dplyr::left_join(n_total_sims, by = "id_cond") |>
+    dplyr::mutate(
+      prop_stp_look = n_stp_look / n_total_sims,
+      prop_scs_look = n_scs_look / n_total_sims,
+      prop_ftl_look = n_ftl_look / n_total_sims
+    ) |>
+    dplyr::group_by(id_cond) |>
+    dplyr::arrange(id_look) |>
+    dplyr::mutate(cumul_stp = cumsum(prop_stp_look)) |>
+    dplyr::ungroup() |>
+    dplyr::select(id_cond, id_look, prop_stp_look, prop_scs_look, prop_ftl_look, cumul_stp)
+
+  # Group by condition, parameter, threshold, AND analysis look for power metrics
+  by_look <- results_df_raw |>
+    dplyr::group_by(id_cond, par_name, thr_scs, thr_ftl, p_sig_scs, p_sig_ftl, id_look, n_analyzed) |>
+    dplyr::summarise(
+      # Standard metrics
+      pr_scs = mean(pr_scs, na.rm = TRUE),
+      se_pr_scs = calculate_mcse_mean(pr_scs, n_sims),
+      pr_ftl = mean(pr_ftl, na.rm = TRUE),
+      se_pr_ftl = calculate_mcse_mean(pr_ftl, n_sims),
+      pwr_scs = mean(dec_scs, na.rm = TRUE),
+      se_pwr_scs = calculate_mcse_power(dec_scs, n_sims),
+      pwr_ftl = mean(dec_ftl, na.rm = TRUE),
+      se_pwr_ftl = calculate_mcse_power(dec_ftl, n_sims),
+      post_med = mean(.data$post_med, na.rm = TRUE),
+      se_post_med = calculate_mcse_mean(.data$post_med, n_sims),
+      post_mn = mean(.data$post_mn, na.rm = TRUE),
+      se_post_mn = calculate_mcse_mean(.data$post_mn, n_sims),
+      post_sd = mean(.data$post_sd, na.rm = TRUE),
+      se_post_sd = calculate_mcse_mean(.data$post_sd, n_sims),
+      # Convergence
+      rhat = mean(rhat, na.rm = TRUE),
+      ess_bulk = mean(ess_bulk, na.rm = TRUE),
+      conv_rate = mean(converged, na.rm = TRUE),
+      .groups = "drop"
+    ) |>
+    # Join per-look stopping stats (redundant across parameters)
+    dplyr::left_join(stopping_by_look, by = c("id_cond", "id_look")) |>
+    # Fill NA stopping stats with 0 (looks where no trials stopped)
+    dplyr::mutate(
+      prop_stp_look = dplyr::if_else(is.na(prop_stp_look), 0, prop_stp_look),
+      prop_scs_look = dplyr::if_else(is.na(prop_scs_look), 0, prop_scs_look),
+      prop_ftl_look = dplyr::if_else(is.na(prop_ftl_look), 0, prop_ftl_look),
+      cumul_stp = dplyr::if_else(is.na(cumul_stp), 0, cumul_stp)
+    )
+
+  # =============================================================================
+  # OVERALL TRIAL SUMMARY (per condition)
+  # =============================================================================
+  # For overall metrics, we need to look at the final state of each simulation
+  # Get final analysis for each simulation (last id_look per id_iter/id_cond)
+  # Also need to track where stopping actually occurred
+
+  # Get the analysis where stopping occurred (if any) for each simulation
+  stopping_info <- results_df_raw |>
+    dplyr::filter(!is.na(stop_reason)) |>
+    dplyr::group_by(id_cond, id_iter) |>
+    dplyr::slice_min(id_look, n = 1, with_ties = FALSE) |>
+    dplyr::ungroup() |>
+    dplyr::select(id_cond, id_iter, stop_n = n_analyzed, stop_reason)
+
+  # Get all unique simulation runs
+  all_sims <- results_df_raw |>
+    dplyr::select(id_cond, id_iter) |>
+    dplyr::distinct()
+
+  # Join to get stopping info for each sim (NA if no stop)
+  sim_outcomes <- all_sims |>
+    dplyr::left_join(stopping_info, by = c("id_cond", "id_iter"))
+
+  # Get planned n_total (max n_analyzed per condition)
+  planned_n <- results_df_raw |>
+    dplyr::group_by(id_cond) |>
+    dplyr::summarise(n_planned = max(n_analyzed, na.rm = TRUE), .groups = "drop")
+
+  sim_outcomes <- sim_outcomes |>
+    dplyr::left_join(planned_n, by = "id_cond") |>
+    dplyr::mutate(
+      # If no stop, the effective N is n_planned
+      effective_n = dplyr::if_else(is.na(stop_n), n_planned, stop_n),
+      stopped_early = !is.na(stop_n)
+    )
+
+
+  # Helper to compute mode (most frequent value) and proportion at mode
+  calc_mode <- function(x) {
+    x <- x[!is.na(x)]
+    if (length(x) == 0) return(NA_real_)
+    freq_table <- table(x)
+    as.numeric(names(freq_table)[which.max(freq_table)])
+  }
+
+  calc_prop_at_mode <- function(x) {
+    x <- x[!is.na(x)]
+    if (length(x) == 0) return(NA_real_)
+    freq_table <- table(x)
+    max(freq_table) / length(x)
+  }
+
+  # Robust median: returns actual observed value (low median for even n)
+  # Unlike stats::median which averages two middle values, this always
+  # returns a value that was actually observed in the data
+  calc_robust_median <- function(x) {
+    x <- sort(x[!is.na(x)])
+    n <- length(x)
+    if (n == 0) return(NA_real_)
+    # For odd n: middle value; for even n: lower of two middle values
+    x[(n + 1) %/% 2]
+  }
+
+  # Compute overall summaries by condition
+  overall <- sim_outcomes |>
+    dplyr::group_by(id_cond) |>
+    dplyr::summarise(
+      n_planned = dplyr::first(n_planned),
+      n_mn = mean(effective_n, na.rm = TRUE),
+      se_n_mn = stats::sd(effective_n, na.rm = TRUE) / sqrt(dplyr::n()),
+      n_mdn = calc_robust_median(effective_n),
+      n_mode = calc_mode(effective_n),
+      prop_at_mode = calc_prop_at_mode(effective_n),
+      prop_stp_early = mean(stopped_early, na.rm = TRUE),
+      prop_stp_scs = mean(stop_reason == "stop_success", na.rm = TRUE),
+      prop_stp_ftl = mean(stop_reason == "stop_futility", na.rm = TRUE),
+      prop_no_dec = 1 - prop_stp_scs - prop_stp_ftl,
+      .groups = "drop"
+    )
+
+  return(list(
+    by_look = by_look,
+    overall = overall
+  ))
+}
+
+
+# =============================================================================
+# POST-HOC BOUNDARY RE-ANALYSIS
+# =============================================================================
+
+#' Re-summarize Results with Different Boundaries
+#'
+#' Apply different stopping boundaries to existing simulation results and return
+#' a new power_analysis object with updated results. Useful for comparing boundary
+#' configurations without re-running simulations.
+#'
+#' @param power_result An rctbp_power_analysis object with completed results
+#' @param p_sig_scs New success boundary specification. Can be:
+#'   \itemize{
+#'     \item NULL to keep original thresholds
+#'     \item A single numeric value (same threshold at all looks)
+#'     \item A numeric vector (one threshold per look)
+#'     \item A boundary function from [boundary_obf()], [boundary_linear()], etc.
+#'   }
+#' @param p_sig_ftl New futility boundary specification (same format as p_sig_scs)
+#'
+#' @return A new rctbp_power_analysis object with recomputed:
+#'   \itemize{
+#'     \item `results_raw`: Updated decisions and stopping based on new boundaries
+#'     \item `results_interim`: Re-summarized by-look statistics
+#'     \item `results_conditions`: Re-summarized overall statistics
+#'   }
+#'
+#' @details
+#' This function takes the raw posterior probabilities (`pr_scs`, `pr_ftl`) from
+#' existing simulation results and recomputes the binary decisions (`dec_scs`,
+#' `dec_ftl`) and stopping behavior using new probability thresholds.
+#'
+#' Since posterior probabilities are stored in results_raw, different threshold
+#' configurations can be explored without re-running the computationally expensive
+#' posterior estimation.
+#'
+#' @export
+#' @seealso [compare_boundaries()], [boundary_obf()], [boundary_linear()]
+#'
+#' @examples
+#' \dontrun{
+#' # Run simulation once
+#' result <- power_analysis(conditions, n_sims = 500, analysis_at = c(0.5, 0.75))
+#'
+#' # Re-analyze with O'Brien-Fleming-style boundaries
+#' result_obf <- resummarize_boundaries(
+#'   result,
+#'   p_sig_scs = boundary_obf(0.975),
+#'   p_sig_ftl = boundary_linear(0.70, 0.90)
+#' )
+#'
+#' # Compare results
+#' print(result)      # Original boundaries
+#' print(result_obf)  # OBF boundaries
+#' }
+resummarize_boundaries <- function(power_result,
+                                    p_sig_scs = NULL,
+                                    p_sig_ftl = NULL) {
+
+  # Validate input
+ if (!inherits(power_result, "rctbayespower::rctbp_power_analysis") &&
+      !inherits(power_result, "rctbp_power_analysis")) {
+    cli::cli_abort(c(
+      "{.arg power_result} must be an rctbp_power_analysis object",
+      "x" = "Got object of class {.cls {class(power_result)}}"
+    ))
+  }
+
+  results_raw <- power_result@results_raw
+  n_sims <- power_result@n_sims
+
+  # Check if this is a sequential design (has multiple looks)
+  if (!"id_look" %in% names(results_raw) ||
+      length(unique(results_raw$id_look)) <= 1) {
+    cli::cli_abort(c(
+      "Cannot re-analyze boundaries for single-look designs",
+      "i" = "This function requires sequential designs with analysis_at specified"
+    ))
+  }
+
+  # Get look structure for resolving functions
+  look_info <- results_raw |>
+    dplyr::select(id_look, n_analyzed) |>
+    dplyr::distinct() |>
+    dplyr::arrange(id_look)
+
+  n_total <- max(look_info$n_analyzed)
+
+  # Use original thresholds if not specified
+  if (is.null(p_sig_scs)) p_sig_scs <- power_result@design@p_sig_scs
+  if (is.null(p_sig_ftl)) p_sig_ftl <- power_result@design@p_sig_ftl
+
+  # Resolve boundaries to per-look values
+  scs_thresholds <- resolve_boundary_vector(p_sig_scs, look_info, n_total)
+  ftl_thresholds <- resolve_boundary_vector(p_sig_ftl, look_info, n_total)
+
+  # Create threshold lookup
+  threshold_df <- look_info |>
+    dplyr::mutate(
+      p_sig_scs_new = scs_thresholds,
+      p_sig_ftl_new = ftl_thresholds
+    )
+
+  # Recompute decisions with new thresholds
+  results_recomputed <- results_raw |>
+    dplyr::left_join(threshold_df, by = c("id_look", "n_analyzed")) |>
+    dplyr::group_by(.data$id_cond, .data$id_iter, .data$par_name) |>
+    dplyr::arrange(.data$id_look) |>
+    dplyr::mutate(
+      # Recompute binary decisions
+      dec_scs = as.integer(.data$pr_scs >= .data$p_sig_scs_new),
+      dec_ftl = as.integer(.data$pr_ftl >= .data$p_sig_ftl_new),
+      # Update p_sig columns to show what was applied
+      p_sig_scs = .data$p_sig_scs_new,
+      p_sig_ftl = .data$p_sig_ftl_new,
+      # Recompute stopping
+      triggers_stop = (.data$dec_scs == 1) | (.data$dec_ftl == 1 & .data$dec_scs == 0),
+      already_stopped = cumsum(dplyr::lag(.data$triggers_stop, default = FALSE)) > 0,
+      is_stop_point = .data$triggers_stop & !.data$already_stopped,
+      stopped = cumsum(.data$is_stop_point) > 0,
+      stop_reason = dplyr::case_when(
+        .data$is_stop_point & .data$dec_scs == 1 ~ "stop_success",
+        .data$is_stop_point & .data$dec_ftl == 1 ~ "stop_futility",
+        TRUE ~ NA_character_
+      )
+    ) |>
+    dplyr::ungroup() |>
+    dplyr::select(-"p_sig_scs_new", -"p_sig_ftl_new", -"triggers_stop",
+                  -"already_stopped", -"is_stop_point")
+
+  # Summarize with existing function
+  summary_result <- summarize_sims_with_interim(results_recomputed, n_sims)
+
+  # Create new power_analysis object with updated results
+  new_result <- power_result
+  new_result@results_raw <- results_recomputed
+  new_result@results_interim <- summary_result$by_look
+  new_result@results_conditions <- summary_result$overall
+
+  new_result
+}
+
+
+#' Compare Multiple Boundary Configurations
+#'
+#' Evaluate the same simulation results under multiple stopping boundary
+#' specifications. Returns a summary comparing operating characteristics
+#' across all boundary configurations.
+#'
+#' @param power_result An rctbp_power_analysis object with completed results
+#' @param boundaries Named list of boundary specifications. Each element should
+#'   be a list with `success` and/or `futility` components specifying the
+#'   boundary for that configuration. Components can be numeric values or
+#'   boundary functions.
+#'
+#' @return A data frame with one row per boundary configuration per condition,
+#'   containing operating characteristics:
+#'   \itemize{
+#'     \item `boundary`: Name of the boundary configuration
+#'     \item `id_cond`: Condition identifier
+#'     \item `n_planned`, `n_mn`, `n_mdn`: Sample size statistics
+#'     \item `prop_stp_early`, `prop_stp_scs`, `prop_stp_ftl`: Stopping proportions
+#'   }
+#'
+#' @export
+#' @seealso [resummarize_boundaries()], [boundary_obf()], [boundary_linear()]
+#'
+#' @examples
+#' \dontrun{
+#' # Run simulation once
+#' result <- power_analysis(conditions, n_sims = 500, analysis_at = c(0.5, 0.75))
+#'
+#' # Compare different boundary configurations
+#' comparison <- compare_boundaries(result, list(
+#'   "Fixed 0.975" = list(success = 0.975, futility = 0.90),
+#'   "OBF-style" = list(success = boundary_obf(0.975), futility = 0.90),
+#'   "Stringent" = list(success = 0.99, futility = 0.95),
+#'   "Linear" = list(
+#'     success = boundary_linear(0.999, 0.975),
+#'     futility = boundary_linear(0.70, 0.90)
+#'   )
+#' ))
+#'
+#' print(comparison)
+#' }
+compare_boundaries <- function(power_result, boundaries) {
+
+  # Validate input
+  if (!is.list(boundaries) || length(boundaries) == 0) {
+    cli::cli_abort(c(
+      "{.arg boundaries} must be a non-empty named list",
+      "i" = "Each element should have 'success' and/or 'futility' components"
+    ))
+  }
+
+  if (is.null(names(boundaries)) || any(names(boundaries) == "")) {
+    cli::cli_abort(c(
+      "{.arg boundaries} must be a named list",
+      "i" = "Provide names for each boundary configuration"
+    ))
+  }
+
+  # Process each boundary configuration
+  purrr::map_dfr(names(boundaries), function(name) {
+    b <- boundaries[[name]]
+
+    reanalyzed <- resummarize_boundaries(
+      power_result,
+      p_sig_scs = b$success,
+      p_sig_ftl = b$futility
+    )
+
+    # Extract overall summary and add boundary name
+    reanalyzed@results_conditions |>
+      dplyr::mutate(boundary = name, .before = 1)
+  })
 }

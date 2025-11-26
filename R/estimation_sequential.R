@@ -14,7 +14,7 @@
 #' @param thresholds_futility Numeric vector of futility thresholds
 #' @param p_sig_scs Probability threshold for success
 #' @param p_sig_ftl Probability threshold for futility
-#' @param analysis_at Vector of sample sizes for interim analyses
+#' @param analysis_at Vector of sample sizes for all analyses (including final at n_total)
 #' @param interim_function Function to make interim decisions
 #' @param id_iter Iteration identifier
 #' @param id_cond Condition identifier
@@ -29,7 +29,8 @@ estimate_sequential_brms <- function(full_data, model, backend_args, target_para
                                      id_iter, id_cond) {
 
   n_total <- nrow(full_data)
-  analysis_schedule <- c(analysis_at, n_total)
+  # analysis_at now includes the final analysis at n_total (last value = n_total)
+  analysis_schedule <- analysis_at
   results_list <- list()
   stopped <- FALSE
   stop_reason <- NA_character_
@@ -38,6 +39,13 @@ estimate_sequential_brms <- function(full_data, model, backend_args, target_para
   for (id_analysis in seq_along(analysis_schedule)) {
     current_n <- analysis_schedule[id_analysis]
     is_final <- id_analysis == length(analysis_schedule)
+
+    # Calculate information fraction for threshold resolution
+    info_frac <- current_n / n_total
+
+    # Resolve probability thresholds (handle function or numeric)
+    current_p_sig_scs <- resolve_threshold(p_sig_scs, info_frac)
+    current_p_sig_ftl <- resolve_threshold(p_sig_ftl, info_frac)
 
     # Subset data to current analysis point
     analysis_data <- full_data[1:current_n, ]
@@ -90,10 +98,10 @@ estimate_sequential_brms <- function(full_data, model, backend_args, target_para
       next
     }
 
-    # Compute measures
+    # Compute measures (using resolved probability thresholds)
     measures <- tryCatch({
       compute_measures(posterior_rvars, target_params, thresholds_success,
-                      thresholds_futility, p_sig_scs, p_sig_ftl) |>
+                      thresholds_futility, current_p_sig_scs, current_p_sig_ftl) |>
         dplyr::mutate(dplyr::across(-par_name, as.numeric))
     }, error = function(e) {
       results_list[[id_analysis]] <- create_error_result(
@@ -114,22 +122,41 @@ estimate_sequential_brms <- function(full_data, model, backend_args, target_para
     #
     # Rationale: Complete data collection provides better understanding of trial
     # behavior even when stopping rule would have terminated early.
+    #
+    # Default stopping rule: dec_scs = 1 (success) or dec_ftl = 1 (futility)
+    # Custom interim_function can override this with more complex logic.
     interim_decision <- NULL
     if (!is_final && !stopped) {
-      interim_decision <- tryCatch({
-        interim_function(
-          interim_summaries = measures,
-          current_n = current_n,
-          analysis_at = current_n,
-          n_total = n_total
-        )
-      }, error = function(e) {
-        cli::cli_warn(c(
-          "Interim function failed",
-          "i" = "Error: {e$message}"
-        ))
-        list(decision = "continue", modified_params = NULL)
-      })
+      if (!is.null(interim_function)) {
+        # Custom stopping logic via interim_function
+        interim_decision <- tryCatch({
+          interim_function(
+            interim_summaries = measures,
+            current_n = current_n,
+            analysis_at = current_n,
+            n_total = n_total
+          )
+        }, error = function(e) {
+          cli::cli_warn(c(
+            "Interim function failed",
+            "i" = "Error: {e$message}"
+          ))
+          list(decision = "continue", modified_params = NULL)
+        })
+      } else {
+        # Default stopping rule: stop when dec_scs = 1 or dec_ftl = 1
+        # Check the first target parameter (or union if multiple)
+        dec_scs_val <- measures$dec_scs[1]
+        dec_ftl_val <- measures$dec_ftl[1]
+
+        if (!is.na(dec_scs_val) && dec_scs_val == 1) {
+          interim_decision <- list(decision = "stop_success", modified_params = NULL)
+        } else if (!is.na(dec_ftl_val) && dec_ftl_val == 1) {
+          interim_decision <- list(decision = "stop_futility", modified_params = NULL)
+        } else {
+          interim_decision <- list(decision = "continue", modified_params = NULL)
+        }
+      }
 
       # Record stopping decision (loop continues but no more decisions made)
       if (interim_decision$decision %in% c("stop_success", "stop_futility")) {
@@ -141,9 +168,9 @@ estimate_sequential_brms <- function(full_data, model, backend_args, target_para
     # Add IDs and interim information
     measures <- measures |>
       dplyr::mutate(
-        sim_iter = id_iter,
-        sim_cond = id_cond,
-        sim_anlys = id_analysis,
+        id_iter = id_iter,
+        id_cond = id_cond,
+        id_look = id_analysis,
         n_analyzed = current_n,
         stopped = stopped,
         stop_reason = if_else(stopped, stop_reason, NA_character_),
@@ -174,7 +201,7 @@ estimate_sequential_brms <- function(full_data, model, backend_args, target_para
 #' @param thresholds_futility Numeric vector of futility thresholds
 #' @param p_sig_scs Probability threshold for success
 #' @param p_sig_ftl Probability threshold for futility
-#' @param analysis_at Vector of sample sizes for interim analyses
+#' @param analysis_at Vector of sample sizes for all analyses (including final at n_total)
 #' @param interim_function Function to make interim decisions
 #' @param id_iter Vector of iteration identifiers (one per sim in batch)
 #' @param id_cond Vector of condition identifiers (one per sim in batch)
@@ -190,7 +217,8 @@ estimate_sequential_npe <- function(full_data_list, model, backend_args, target_
 
   batch_size <- length(full_data_list)
   n_total <- nrow(full_data_list[[1]])
-  analysis_schedule <- c(analysis_at, n_total)
+  # analysis_at now includes the final analysis at n_total (last value = n_total)
+  analysis_schedule <- analysis_at
   n_analyses <- length(analysis_schedule)
 
   # Initialize tracking for each sim
@@ -208,6 +236,13 @@ estimate_sequential_npe <- function(full_data_list, model, backend_args, target_
   for (id_analysis in seq_along(analysis_schedule)) {
     current_n <- analysis_schedule[id_analysis]
     is_final <- id_analysis == n_analyses
+
+    # Calculate information fraction for threshold resolution
+    info_frac <- current_n / n_total
+
+    # Resolve probability thresholds (handle function or numeric)
+    current_p_sig_scs <- resolve_threshold(p_sig_scs, info_frac)
+    current_p_sig_ftl <- resolve_threshold(p_sig_ftl, info_frac)
 
     # Subset all batch data to current analysis point
     analysis_data_batch <- lapply(full_data_list, function(fd) fd[1:current_n, ])
@@ -267,10 +302,10 @@ estimate_sequential_npe <- function(full_data_list, model, backend_args, target_
         next
       }
 
-      # Compute measures
+      # Compute measures (using resolved probability thresholds)
       measures <- tryCatch({
         compute_measures(posterior_rvars, target_params, thresholds_success,
-                        thresholds_futility, p_sig_scs, p_sig_ftl) |>
+                        thresholds_futility, current_p_sig_scs, current_p_sig_ftl) |>
           dplyr::mutate(dplyr::across(-par_name, as.numeric))
       }, error = function(e) {
         results_by_sim[[sim_idx]][[id_analysis]] <- create_error_result(
@@ -282,23 +317,40 @@ estimate_sequential_npe <- function(full_data_list, model, backend_args, target_
 
       if (is.null(measures)) next
 
-      # Make interim decision (if not final and not already stopped for this sim)
+      # Make interim decision (if not final and not already stopped)
+      # Default stopping rule: dec_scs = 1 or dec_ftl = 1
+      # Custom interim_function can override this with more complex logic.
       interim_decision <- NULL
       if (!is_final && !stopped[sim_idx]) {
-        interim_decision <- tryCatch({
-          interim_function(
-            interim_summaries = measures,
-            current_n = current_n,
-            analysis_at = current_n,
-            n_total = n_total
-          )
-        }, error = function(e) {
-          cli::cli_warn(c(
-            "Interim function failed",
-            "i" = "Error: {e$message}"
-          ))
-          list(decision = "continue", modified_params = NULL)
-        })
+        if (!is.null(interim_function)) {
+          # Custom stopping logic via interim_function
+          interim_decision <- tryCatch({
+            interim_function(
+              interim_summaries = measures,
+              current_n = current_n,
+              analysis_at = current_n,
+              n_total = n_total
+            )
+          }, error = function(e) {
+            cli::cli_warn(c(
+              "Interim function failed",
+              "i" = "Error: {e$message}"
+            ))
+            list(decision = "continue", modified_params = NULL)
+          })
+        } else {
+          # Default stopping rule: stop when dec_scs = 1 or dec_ftl = 1
+          dec_scs_val <- measures$dec_scs[1]
+          dec_ftl_val <- measures$dec_ftl[1]
+
+          if (!is.na(dec_scs_val) && dec_scs_val == 1) {
+            interim_decision <- list(decision = "stop_success", modified_params = NULL)
+          } else if (!is.na(dec_ftl_val) && dec_ftl_val == 1) {
+            interim_decision <- list(decision = "stop_futility", modified_params = NULL)
+          } else {
+            interim_decision <- list(decision = "continue", modified_params = NULL)
+          }
+        }
 
         # Record stopping for this sim
         if (interim_decision$decision %in% c("stop_success", "stop_futility")) {
@@ -310,9 +362,9 @@ estimate_sequential_npe <- function(full_data_list, model, backend_args, target_
       # Add IDs and interim information
       measures <- measures |>
         dplyr::mutate(
-          sim_iter = id_iter[sim_idx],
-          sim_cond = id_cond[sim_idx],
-          sim_anlys = id_analysis,
+          id_iter = id_iter[sim_idx],
+          id_cond = id_cond[sim_idx],
+          id_look = id_analysis,
           n_analyzed = current_n,
           stopped = stopped[sim_idx],
           stop_reason = if_else(stopped[sim_idx], stop_reason[sim_idx], NA_character_),

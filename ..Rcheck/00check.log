@@ -36,9 +36,28 @@ structure’ in the ‘Writing R Extensions’ manual.
 * checking for portable file names ... NOTE
 Found the following non-portable file paths:
   rctbayespower/.Rproj.user/shared/notebooks/02D52AB6-01-introduction/1/s/ckw6rfgwxs6po/000012.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/02D52AB6-01-introduction/1/s/clboeochvl532/000010.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/02D52AB6-01-introduction/1/s/cmba1olgrzdvx/000019.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/02D52AB6-01-introduction/1/s/cnuyz46zl728h/00001c.metadata
   rctbayespower/.Rproj.user/shared/notebooks/02D52AB6-01-introduction/1/s/ctxwkj5tk2tsh/00004e.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/02D52AB6-01-introduction/1/s/cupj7xf4oyb8f/000033.metadata
   rctbayespower/.Rproj.user/shared/notebooks/02D52AB6-01-introduction/1/s/cwnfbljbxv0a4/000032.metadata
   rctbayespower/.Rproj.user/shared/notebooks/02D52AB6-01-introduction/1/s/cxnr5y8edgy07/000010.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/02D52AB6-01-introduction/1/s/lib/crosstalk-1.2.2/css/crosstalk.min.css
+  rctbayespower/.Rproj.user/shared/notebooks/02D52AB6-01-introduction/1/s/lib/crosstalk-1.2.2/js/crosstalk.js
+  rctbayespower/.Rproj.user/shared/notebooks/02D52AB6-01-introduction/1/s/lib/crosstalk-1.2.2/js/crosstalk.js.map
+  rctbayespower/.Rproj.user/shared/notebooks/02D52AB6-01-introduction/1/s/lib/crosstalk-1.2.2/js/crosstalk.min.js
+  rctbayespower/.Rproj.user/shared/notebooks/02D52AB6-01-introduction/1/s/lib/crosstalk-1.2.2/js/crosstalk.min.js.map
+  rctbayespower/.Rproj.user/shared/notebooks/02D52AB6-01-introduction/1/s/lib/crosstalk-1.2.2/scss/crosstalk.scss
+  rctbayespower/.Rproj.user/shared/notebooks/02D52AB6-01-introduction/1/s/lib/htmltools-fill-0.5.8.1/fill.css
+  rctbayespower/.Rproj.user/shared/notebooks/02D52AB6-01-introduction/1/s/lib/htmlwidgets-1.6.4/htmlwidgets.js
+  rctbayespower/.Rproj.user/shared/notebooks/02D52AB6-01-introduction/1/s/lib/jquery-3.5.1/jquery-AUTHORS.txt
+  rctbayespower/.Rproj.user/shared/notebooks/02D52AB6-01-introduction/1/s/lib/jquery-3.5.1/jquery.min.js
+  rctbayespower/.Rproj.user/shared/notebooks/02D52AB6-01-introduction/1/s/lib/jquery-3.5.1/jquery.min.map
+  rctbayespower/.Rproj.user/shared/notebooks/02D52AB6-01-introduction/1/s/lib/plotly-binding-4.11.0/plotly.js
+  rctbayespower/.Rproj.user/shared/notebooks/02D52AB6-01-introduction/1/s/lib/plotly-htmlwidgets-css-2.11.1/plotly-htmlwidgets.css
+  rctbayespower/.Rproj.user/shared/notebooks/02D52AB6-01-introduction/1/s/lib/plotly-main-2.11.1/plotly-latest.min.js
+  rctbayespower/.Rproj.user/shared/notebooks/02D52AB6-01-introduction/1/s/lib/typedarray-0.1/typedarray.min.js
   rctbayespower/.Rproj.user/shared/notebooks/34F51C84-02-prior-specification/1/0C02CFDCbabef74e/chunks.json
   rctbayespower/.Rproj.user/shared/notebooks/8B91AF45-99-model-validation/1/0C02CFDCbabef74e/chunks.json
   rctbayespower/.Rproj.user/shared/notebooks/E174AE75-03-algorithm-performance/1/0C02CFDCbabef74e/chunks.json
@@ -50,6 +69,7 @@ Found the following non-portable file paths:
   rctbayespower/vignettes/.quarto/_freeze/articles/03-algorithm-performance/libs/quarto-html/tippy.umd.min.js
   rctbayespower/vignettes/.quarto/_freeze/articles/99-model-validation/libs/quarto-html/light-border.css
   rctbayespower/vignettes/.quarto/_freeze/articles/99-model-validation/libs/quarto-html/tippy.umd.min.js
+  rctbayespower/.Rproj.user/shared/notebooks/02D52AB6-01-introduction/1/s/lib/plotly-htmlwidgets-css-2.11.1
 
 Tarballs are only required to store paths of up to 100 bytes and cannot
 store those of more than 256 bytes, with restrictions including to 100
@@ -58,9 +78,9 @@ See section ‘Package structure’ in the ‘Writing R Extensions’ manual.
 * checking for sufficient/correct file permissions ... OK
 * checking whether package ‘rctbayespower’ can be installed ... OK
 * checking installed package size ... INFO
-  installed size is 27.4Mb
+  installed size is 27.5Mb
   sub-directories of 1Mb or more:
-    R  27.2Mb
+    R  27.3Mb
 * checking package directory ... OK
 * checking DESCRIPTION meta-information ... NOTE
 Checking should be performed on sources prepared by ‘R CMD build’.

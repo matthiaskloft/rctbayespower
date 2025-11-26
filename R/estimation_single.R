@@ -64,15 +64,19 @@ estimate_single_brms <- function(data, model, backend_args, target_params,
     return(create_error_result(id_iter, id_cond, id_analysis = 0L, "Extraction failed"))
   }
 
+  # Resolve probability thresholds (info_frac = 1 for single-look designs)
+  current_p_sig_scs <- resolve_threshold(p_sig_scs, 1)
+  current_p_sig_ftl <- resolve_threshold(p_sig_ftl, 1)
+
   # Compute measures
   result <- tryCatch({
     df <- compute_measures(posterior_rvars, target_params, thresholds_success,
-                          thresholds_futility, p_sig_scs, p_sig_ftl) |>
+                          thresholds_futility, current_p_sig_scs, current_p_sig_ftl) |>
       dplyr::mutate(dplyr::across(-par_name, as.numeric))
     df |> dplyr::mutate(
-      sim_iter = id_iter,
-      sim_cond = id_cond,
-      sim_anlys = 0L,  # Single analysis
+      id_iter = id_iter,
+      id_cond = id_cond,
+      id_look = 0L,  # Single analysis
       converged = 1L,
       error_msg = NA_character_
     )
@@ -165,15 +169,19 @@ estimate_single_npe <- function(data, model, backend_args, target_params,
       return(create_error_result(id_iter[i], id_cond[i], id_analysis = 0L, "Extraction failed"))
     }
 
+    # Resolve probability thresholds (info_frac = 1 for single-look designs)
+    current_p_sig_scs <- resolve_threshold(p_sig_scs, 1)
+    current_p_sig_ftl <- resolve_threshold(p_sig_ftl, 1)
+
     # Compute measures
     result <- tryCatch({
       df <- compute_measures(posterior_rvars, target_params, thresholds_success,
-                            thresholds_futility, p_sig_scs, p_sig_ftl) |>
+                            thresholds_futility, current_p_sig_scs, current_p_sig_ftl) |>
         dplyr::mutate(dplyr::across(-par_name, as.numeric))
       df |> dplyr::mutate(
-        sim_iter = id_iter[i],
-        sim_cond = id_cond[i],
-        sim_anlys = 0L,
+        id_iter = id_iter[i],
+        id_cond = id_cond[i],
+        id_look = 0L,
         converged = 1L,
         error_msg = NA_character_
       )
@@ -216,9 +224,9 @@ create_error_result <- function(id_iter, id_cond, id_analysis, error_msg) {
     rhat = NA_real_,
     ess_bulk = NA_real_,
     ess_tail = NA_real_,
-    sim_iter = id_iter,
-    sim_cond = id_cond,
-    sim_anlys = id_analysis,
+    id_iter = id_iter,
+    id_cond = id_cond,
+    id_look = id_analysis,
     converged = 0L,
     error_msg = error_msg
   )

@@ -30,7 +30,16 @@ devtools::install_github("matthiaskloft/rctbayespower")
 `rctbayespower` provides tools for conducting Bayesian power analysis
 for randomized controlled trials (RCTs) using `brms` and Stan.
 
-## Ressources
+### Key Features
+
+- **Bayesian power analysis** with brms and Stan
+- **Group sequential designs** with interim analyses
+- **Look-dependent stopping boundaries** (O'Brien-Fleming, Pocock, Linear, Power family)
+- **Post-hoc boundary comparison** without re-running simulations
+- **ANCOVA models** for continuous outcomes (2-arm and 3-arm)
+- **Parallelization** with automatic model caching
+
+## Resources
 
 The best way to get started is to visit the package website and the
 introductory vignette:

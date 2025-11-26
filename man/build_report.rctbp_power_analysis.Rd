@@ -4,10 +4,12 @@
 \alias{build_report.rctbp_power_analysis}
 \title{Build Report for rctbp_power_analysis}
 \usage{
-build_report.rctbp_power_analysis(x)
+build_report.rctbp_power_analysis(x, target_pwr = NULL)
 }
 \arguments{
 \item{x}{rctbp_power_analysis object}
+
+\item{target_pwr}{Target power for optimal condition (default NULL shows highest)}
 }
 \value{
 List with report sections

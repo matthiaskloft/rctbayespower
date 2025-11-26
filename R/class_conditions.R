@@ -6,14 +6,18 @@
 # organizes arguments into simulation args (for data generation) and
 # decision args (for analysis criteria).
 
-#' @importFrom S7 new_class class_list class_any class_data.frame
+#' @importFrom S7 new_class class_list class_any class_data.frame new_property
 rctbp_conditions <- S7::new_class("rctbp_conditions",
   properties = list(
-    conditions_grid = S7::class_data.frame,      # All parameter combinations
+    conditions_grid = S7::class_data.frame,       # All parameter combinations
     condition_arguments = S7::class_list,         # Structured args per condition
     design = S7::class_any,                       # rctbp_design object
     condition_values = S7::class_list,            # User-specified varying params
-    static_values = S7::class_list                # User-specified constant params
+    static_values = S7::class_list,               # User-specified constant params
+    target_pwr = S7::new_property(                # Target power for optimal condition
+      class = S7::class_any,                      # Allow NULL or numeric
+      default = NULL
+    )
   ),
   # Validator ensures grid and arguments are consistent
   validator = function(self) {
@@ -30,6 +34,14 @@ rctbp_conditions <- S7::new_class("rctbp_conditions",
     # Validate design object
     if (!inherits(self@design, "rctbayespower::rctbp_design") && !inherits(self@design, "rctbp_design")) {
       return("'design' must be a valid rctbp_design object.")
+    }
+
+    # Validate target_pwr (NULL is allowed)
+    if (!is.null(self@target_pwr)) {
+      if (!is.numeric(self@target_pwr) || length(self@target_pwr) != 1 ||
+          is.na(self@target_pwr) || self@target_pwr < 0 || self@target_pwr > 1) {
+        return("'target_pwr' must be NULL or a single numeric value between 0 and 1.")
+      }
     }
 
     NULL  # All validations passed
@@ -55,6 +67,10 @@ rctbp_conditions <- S7::new_class("rctbp_conditions",
 #'   parameter values to vary across conditions. All combinations will be created.
 #' @param static_values A named list of parameter values that remain constant
 #'   across all conditions
+#' @param target_pwr Target power level for identifying optimal conditions
+#'   (default NULL). If NULL, the condition with highest power is shown.
+#'   If specified (0 to 1), finds the smallest sample size achieving at
+#'   least this power when displaying results.
 #'
 #' @return An S7 object of class "rctbp_conditions" containing:
 #'   \item{conditions_grid}{A data.frame with all parameter combinations}
@@ -63,6 +79,7 @@ rctbp_conditions <- S7::new_class("rctbp_conditions",
 #'   \item{design}{The original rctbp_design object}
 #'   \item{condition_values}{The original condition_values list}
 #'   \item{static_values}{The original static_values list}
+#'   \item{target_pwr}{Target power level for optimal condition identification}
 #'
 #' @details The function performs several validation steps:
 #' \itemize{
@@ -103,7 +120,7 @@ rctbp_conditions <- S7::new_class("rctbp_conditions",
 #' }
 #'
 #' @export
-build_conditions <- function(design, condition_values, static_values) {
+build_conditions <- function(design, condition_values, static_values, target_pwr = NULL) {
   # validate design (allow both namespaced and non-namespaced class for testing)
   if (!inherits(design, "rctbayespower::rctbp_design") && !inherits(design, "rctbp_design")) {
     cli::cli_abort(c(
@@ -125,6 +142,17 @@ build_conditions <- function(design, condition_values, static_values) {
       "{.arg static_values} must be a list",
       "x" = "You supplied {.type {static_values}}"
     ))
+  }
+
+  # validate target_pwr (NULL is allowed)
+  if (!is.null(target_pwr)) {
+    if (!is.numeric(target_pwr) || length(target_pwr) != 1 ||
+        is.na(target_pwr) || target_pwr < 0 || target_pwr > 1) {
+      cli::cli_abort(c(
+        "{.arg target_pwr} must be NULL or a single numeric value between 0 and 1",
+        "x" = "You supplied {.val {target_pwr}}"
+      ))
+    }
   }
 
   # gather provided parameter names
@@ -226,16 +254,11 @@ build_conditions <- function(design, condition_values, static_values) {
     # Users can override per-condition via condition_values or static_values.
     # If design doesn't specify, fall back to single-look defaults (NULL/FALSE).
     #
-    # Special handling: if analysis_at is set but interim_function is NULL,
-    # use interim_continue() as default (sequential monitoring without stopping)
-    inherited_interim_fn <- design@interim_function
-    if (!is.null(design@analysis_at) && is.null(inherited_interim_fn)) {
-      inherited_interim_fn <- interim_continue()
-    }
-
+    # NOTE: interim_function = NULL is valid for sequential monitoring without stopping.
+    # The estimation functions handle NULL by simply not making stopping decisions.
     decision_defaults <- list(
       analysis_at = design@analysis_at,           # Inherit from design (NULL = final only)
-      interim_function = inherited_interim_fn,    # Inherit from design or default to continue
+      interim_function = design@interim_function, # Inherit from design (NULL = no stopping rules)
       adaptive = design@adaptive                  # Inherit from design (FALSE = non-adaptive)
     )
 
@@ -255,10 +278,19 @@ build_conditions <- function(design, condition_values, static_values) {
       }
     }
 
-    # Ensure interim_function is set when analysis_at is specified
-    # (handles case where user specifies analysis_at per-condition/static but not interim_function)
-    if (!is.null(decision_args$analysis_at) && is.null(decision_args$interim_function)) {
-      decision_args$interim_function <- interim_continue()
+    # Process analysis_at: convert proportions to sample sizes
+    if (!is.null(decision_args$analysis_at)) {
+      n_total <- sim_args$n_total
+      if (is.null(n_total)) {
+        cli::cli_abort(c(
+          "'n_total' is required when 'analysis_at' is specified",
+          "i" = "Add 'n_total' to {.arg condition_values} or {.arg static_values}"
+        ))
+      }
+
+      # Convert proportions to integer sample sizes
+      # analysis_at is validated as proportions in (0, 1] with last value = 1
+      decision_args$analysis_at <- as.integer(round(decision_args$analysis_at * n_total))
     }
 
     # Return both sets of args
@@ -276,7 +308,8 @@ build_conditions <- function(design, condition_values, static_values) {
     condition_arguments = condition_arguments,
     design = design,
     condition_values = condition_values,
-    static_values = static_values
+    static_values = static_values,
+    target_pwr = target_pwr
   )
 
   return(conditions_obj)

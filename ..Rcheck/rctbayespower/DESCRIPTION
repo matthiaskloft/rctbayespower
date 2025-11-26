@@ -13,8 +13,9 @@ Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.3
 Depends: R (>= 4.1.0)
-Imports: brms (>= 2.20.0), posterior, plotly, dplyr, tidyr, tibble,
-        parallel, rlang, stringr, purrr, S7, pwr, cli (>= 3.6.0)
+Imports: brms (>= 2.20.0), posterior, ggplot2, plotly, scales, dplyr,
+        tidyr, tibble, parallel, rlang, stringr, purrr, S7, pwr, cli
+        (>= 3.6.0)
 Suggests: testthat (>= 3.0.0), withr, knitr, rmarkdown, quarto,
         kableExtra, colorspace, pbapply
 Config/testthat/edition: 3
@@ -23,4 +24,4 @@ URL: https://matthiaskloft.github.io/rctbayespower/,
 Config/Needs/website: quarto-dev/quarto-r, r-lib/pkgdown, dplyr,
         kableExtra, pander
 LazyData: true
-Built: R 4.5.0; ; 2025-11-25 12:35:46 UTC; unix
+Built: R 4.5.0; ; 2025-11-26 01:37:49 UTC; unix

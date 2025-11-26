@@ -16,25 +16,24 @@ NULL
 #' @keywords internal
 #'
 render_cli <- function(report) {
-  # Title and status
-  if (!is.null(report$status)) {
-    status_msg <- paste0("STATUS: [", report$status, "] ",
-                         ifelse(report$status == "COMPLETED", "Analysis completed", "Analysis not yet run"))
-    if (report$status == "COMPLETED") {
-      cli::cli_alert_success(status_msg)
-    } else {
-      cli::cli_alert_info(status_msg)
-    }
-  }
+  # Title
+  cli::cli_h1(report$title)
 
-  cli::cli_h2(report$title)
-  cli::cli_rule()
+  # Status
+  if (!is.null(report$status)) {
+    if (report$status == "COMPLETED") {
+      cli::cli_alert_success("Analysis completed")
+    } else {
+      cli::cli_alert_info("Analysis not yet run")
+    }
+    cli::cli_text("")
+  }
 
   # Render sections
   for (section in report$sections) {
     if (is.null(section)) next
 
-    cli::cli_h3(section$name)
+    cli::cli_h2(section$name)
 
     # Items as definition list
     if (!is.null(section$items)) {
@@ -58,6 +57,62 @@ render_cli <- function(report) {
     if (!is.null(section$actions)) {
       for (action in section$actions) {
         cli::cli_bullets(c("*" = action))
+      }
+    }
+
+    # Optimal condition
+    if (!is.null(section$optimal_condition)) {
+      oc <- section$optimal_condition
+      if (isTRUE(oc$found)) {
+        bullets <- c(
+          "*" = paste0("{.strong Achieved power}: ", oc$achieved_pwr),
+          "*" = paste0("{.strong Sample size (n_total)}: ", oc$n_total),
+          "*" = paste0("{.strong Condition ID}: ", oc$condition_id),
+          "*" = paste0("{.strong Parameters}: ", oc$params)
+        )
+        # Add target power if in target mode
+        if (!is.null(oc$target_pwr)) {
+          bullets <- c("*" = paste0("{.strong Target power}: ", oc$target_pwr), bullets)
+        }
+        cli::cli_bullets(bullets)
+
+        # Add interim stats if available
+        if (!is.null(oc$interim)) {
+          cli::cli_text("")
+          cli::cli_text("{.emph Early stopping (this condition):}")
+          cli::cli_bullets(c(
+            "*" = paste0("{.field Mean N}: ", oc$interim$n_mn),
+            "*" = paste0("{.field Median N}: ", oc$interim$n_mdn),
+            "*" = paste0("{.field Mode N}: ", oc$interim$n_mode, " (", oc$interim$prop_at_mode, " of trials)"),
+            "*" = paste0("{.field Stopped early}: ", oc$interim$prop_stp_early),
+            "*" = paste0("{.field Stopped for success}: ", oc$interim$prop_stp_scs),
+            "*" = paste0("{.field Stopped for futility}: ", oc$interim$prop_stp_ftl),
+            "*" = paste0("{.field No decision}: ", oc$interim$prop_no_dec)
+          ))
+        }
+      } else {
+        cli::cli_alert_warning("No condition achieves the target power of {oc$target_pwr}")
+        cli::cli_bullets(c(
+          "*" = paste0("{.strong Closest power}: ", oc$closest_pwr),
+          "*" = paste0("{.strong Sample size (n_total)}: ", oc$closest_n),
+          "*" = paste0("{.strong Condition ID}: ", oc$closest_id),
+          "*" = paste0("{.strong Parameters}: ", oc$params)
+        ))
+
+        # Add interim stats for closest if available
+        if (!is.null(oc$interim)) {
+          cli::cli_text("")
+          cli::cli_text("{.emph Early stopping (closest condition):}")
+          cli::cli_bullets(c(
+            "*" = paste0("{.field Mean N}: ", oc$interim$n_mn),
+            "*" = paste0("{.field Median N}: ", oc$interim$n_mdn),
+            "*" = paste0("{.field Mode N}: ", oc$interim$n_mode, " (", oc$interim$prop_at_mode, " of trials)"),
+            "*" = paste0("{.field Stopped early}: ", oc$interim$prop_stp_early),
+            "*" = paste0("{.field Stopped for success}: ", oc$interim$prop_stp_scs),
+            "*" = paste0("{.field Stopped for futility}: ", oc$interim$prop_stp_ftl),
+            "*" = paste0("{.field No decision}: ", oc$interim$prop_no_dec)
+          ))
+        }
       }
     }
 
@@ -158,6 +213,64 @@ render_markdown <- function(report) {
         output <- c(output, paste0("- ", action))
       }
       output <- c(output, "")
+    }
+
+    # Optimal condition
+    if (!is.null(section$optimal_condition)) {
+      oc <- section$optimal_condition
+      if (isTRUE(oc$found)) {
+        # Add target power only if in target mode
+        if (!is.null(oc$target_pwr)) {
+          output <- c(output, paste0("- **Target power**: ", oc$target_pwr))
+        }
+        output <- c(output,
+          paste0("- **Achieved power**: ", oc$achieved_pwr),
+          paste0("- **Sample size (n_total)**: ", oc$n_total),
+          paste0("- **Condition ID**: ", oc$condition_id),
+          paste0("- **Parameters**: ", oc$params)
+        )
+
+        # Add interim stats if available
+        if (!is.null(oc$interim)) {
+          output <- c(output,
+            "",
+            "_Early stopping (this condition):_",
+            paste0("- Mean N: ", oc$interim$n_mn),
+            paste0("- Median N: ", oc$interim$n_mdn),
+            paste0("- Mode N: ", oc$interim$n_mode, " (", oc$interim$prop_at_mode, " of trials)"),
+            paste0("- Stopped early: ", oc$interim$prop_stp_early),
+            paste0("- Stopped for success: ", oc$interim$prop_stp_scs),
+            paste0("- Stopped for futility: ", oc$interim$prop_stp_ftl),
+            paste0("- No decision: ", oc$interim$prop_no_dec)
+          )
+        }
+        output <- c(output, "")
+      } else {
+        output <- c(output,
+          paste0("\u26A0\uFE0F No condition achieves the target power of ", oc$target_pwr),
+          "",
+          paste0("- **Closest power**: ", oc$closest_pwr),
+          paste0("- **Sample size (n_total)**: ", oc$closest_n),
+          paste0("- **Condition ID**: ", oc$closest_id),
+          paste0("- **Parameters**: ", oc$params)
+        )
+
+        # Add interim stats for closest if available
+        if (!is.null(oc$interim)) {
+          output <- c(output,
+            "",
+            "_Early stopping (closest condition):_",
+            paste0("- Mean N: ", oc$interim$n_mn),
+            paste0("- Median N: ", oc$interim$n_mdn),
+            paste0("- Mode N: ", oc$interim$n_mode, " (", oc$interim$prop_at_mode, " of trials)"),
+            paste0("- Stopped early: ", oc$interim$prop_stp_early),
+            paste0("- Stopped for success: ", oc$interim$prop_stp_scs),
+            paste0("- Stopped for futility: ", oc$interim$prop_stp_ftl),
+            paste0("- No decision: ", oc$interim$prop_no_dec)
+          )
+        }
+        output <- c(output, "")
+      }
     }
 
     # BRMS args
