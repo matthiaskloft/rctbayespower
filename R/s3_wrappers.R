@@ -20,6 +20,11 @@ print.rctbp_power_analysis <- function(x, ...) {
 }
 
 #' @export
+summary.rctbp_power_analysis <- function(object, ...) {
+  S7::method(summary, rctbp_power_analysis)(object, ...)
+}
+
+#' @export
 print.rctbp_conditions <- function(x, ...) {
   S7::method(print, rctbp_conditions)(x, ...)
 }

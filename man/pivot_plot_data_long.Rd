@@ -4,14 +4,14 @@
 \alias{pivot_plot_data_long}
 \title{Pivot plot data to long format for ggplot2}
 \usage{
-pivot_plot_data_long(plot_data, metric, values, include_se = FALSE)
+pivot_plot_data_long(plot_data, decision, metric, include_se = FALSE)
 }
 \arguments{
 \item{plot_data}{Data frame with power analysis results}
 
-\item{metric}{Filter: "success", "futility", or "both"}
+\item{decision}{Filter: "success", "futility", or "both"}
 
-\item{values}{Filter: "power", "post_prob", or "both"}
+\item{metric}{Filter: "power", "prob", or "both"}
 
 \item{include_se}{Whether to include standard error columns}
 }

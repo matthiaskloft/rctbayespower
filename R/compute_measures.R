@@ -567,6 +567,31 @@ summarize_sims_with_interim <- function(results_df_raw, n_sims) {
       .groups = "drop"
     )
 
+  # Add power metrics from final look to overall
+  final_look_id <- max(by_look$id_look)
+  final_power <- by_look |>
+    dplyr::filter(.data$id_look == final_look_id) |>
+    dplyr::select("id_cond", "pwr_scs", "pwr_ftl", "se_pwr_scs", "se_pwr_ftl")
+
+  # Add n_total (max n_analyzed per condition)
+  n_total_df <- results_df_raw |>
+    dplyr::group_by(.data$id_cond) |>
+    dplyr::summarise(n_total = max(.data$n_analyzed, na.rm = TRUE), .groups = "drop")
+
+  # Merge and reorder columns logically
+  overall <- overall |>
+    dplyr::left_join(final_power, by = "id_cond") |>
+    dplyr::left_join(n_total_df, by = "id_cond") |>
+    dplyr::select(
+      "id_cond",
+      # Sample size metrics
+      "n_total", "n_planned", "n_mn", "n_mdn", "n_mode", "se_n_mn", "prop_at_mode",
+      # Power metrics
+      "pwr_scs", "pwr_ftl", "se_pwr_scs", "se_pwr_ftl",
+      # Stopping proportions
+      "prop_stp_early", "prop_stp_scs", "prop_stp_ftl", "prop_no_dec"
+    )
+
   return(list(
     by_look = by_look,
     overall = overall

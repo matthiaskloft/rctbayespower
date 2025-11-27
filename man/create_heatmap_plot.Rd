@@ -10,7 +10,7 @@ create_heatmap_plot(
   analysis_type,
   effect_col,
   metric,
-  values,
+  decision,
   show_target,
   target_power,
   ...
@@ -25,9 +25,9 @@ create_heatmap_plot(
 
 \item{effect_col}{Column name for effect size (from condition_values)}
 
-\item{metric}{Filter: "success", "futility", or "both"}
+\item{metric}{Filter: "power", "prob", or "both"}
 
-\item{values}{Filter: "power", "post_prob", or "both"}
+\item{decision}{Filter: "success", "futility", or "both"}
 
 \item{show_target}{Whether to show target power contour lines}
 

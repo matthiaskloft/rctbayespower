@@ -11,8 +11,8 @@
 #' @param design Design object with p_sig_scs and p_sig_ftl
 #' @param analysis_type Must be "both" for heatmap
 #' @param effect_col Column name for effect size (from condition_values)
-#' @param metric Filter: "success", "futility", or "both"
-#' @param values Filter: "power", "post_prob", or "both"
+#' @param metric Filter: "power", "prob", or "both"
+#' @param decision Filter: "success", "futility", or "both"
 #' @param show_target Whether to show target power contour lines
 #' @param target_power Target power level for contour (default: design@p_sig_scs)
 #' @param ... Additional arguments (ignored)
@@ -25,7 +25,7 @@ create_heatmap_plot <- function(plot_data,
                                 analysis_type,
                                 effect_col,
                                 metric,
-                                values,
+                                decision,
                                 show_target,
                                 target_power,
                                 ...) {
@@ -56,7 +56,7 @@ create_heatmap_plot <- function(plot_data,
   }
 
   # Pivot data to long format
-  plot_data_long <- pivot_plot_data_long(plot_data, metric, values)
+  plot_data_long <- pivot_plot_data_long(plot_data, decision, metric)
 
   # Remove rows with NA values
   plot_data_long <- dplyr::filter(plot_data_long, !is.na(.data$value))
@@ -106,7 +106,7 @@ create_heatmap_plot <- function(plot_data,
     ggplot2::theme(legend.position = "right")
 
   # Add contour line at target power level (for power facets only)
-  if (show_target && (values == "power" || values == "both")) {
+  if (show_target && (metric == "power" || metric == "both")) {
     power_data <- dplyr::filter(plot_data_long, .data$measure == "Power")
     if (nrow(power_data) > 0) {
       p <- p +

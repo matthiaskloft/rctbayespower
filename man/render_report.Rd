@@ -2,17 +2,23 @@
 % Please edit documentation in R/report_renderers.R
 \name{render_report}
 \alias{render_report}
-\title{Render Report Based on Current Output Mode}
+\title{Render Report Based on Output Format}
 \usage{
-render_report(report)
+render_report(report, format = NULL, heading_level = 2L)
 }
 \arguments{
 \item{report}{List with report data from build_report.*()}
+
+\item{format}{Output format: "cli" or "markdown". If NULL (default), uses
+the global output mode setting from \code{\link[=get_output_mode]{get_output_mode()}}.}
+
+\item{heading_level}{Integer specifying the starting heading level for
+markdown output (default 2). Ignored for CLI format.}
 }
 \value{
 NULL (outputs to console)
 }
 \description{
-Routes to appropriate renderer based on output mode setting.
+Routes to appropriate renderer based on specified format or global setting.
 }
 \keyword{internal}

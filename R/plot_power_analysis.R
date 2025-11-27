@@ -11,32 +11,42 @@
 #'     \item "heatmap" - 2D heatmap when both sample sizes and effect sizes vary
 #'     \item "comparison" - Compare power vs posterior probabilities
 #'   }
-#' @param metric Which power metric to display:
-#'   \itemize{
-#'     \item "success" - Success power and probability
-#'     \item "futility" - Futility power and probability
-#'     \item "both" - Both success and futility power and probabilities (default)
-#'   }
-#' @param values Which values to display:
+#' @param metric Which statistic type to display:
 #'   \itemize{
 #'     \item "both" - Both power and posterior probabilities (default)
-#'     \item "power" - Power only
-#'     \item "post_prob" - Posterior probabilities only
+#'     \item "power" - Power (decision rate) only
+#'     \item "prob" - Posterior probabilities only
+#'   }
+#' @param decision Which decision criterion to display:
+#'   \itemize{
+#'     \item "both" - Both success and futility (default)
+#'     \item "success" - Success metrics only
+#'     \item "futility" - Futility metrics only
 #'   }
 #' @param show_target Whether to show target power lines (default: TRUE)
 #' @param show_mcse Whether to show Monte Carlo standard error ribbons for uncertainty
 #'   visualization (default: FALSE). Only applies to power_curve plots.
-#' @param facet_by For power_curve plots when both sample sizes and effect sizes vary:
+#' @param facet_by For power_curve plots, controls faceting:
 #'   \itemize{
-#'     \item "effect_size" - Facet by effect size, vary sample size on x-axis (default)
+#'     \item "decision" - Facet by decision type (Success/Futility) (default)
+#'     \item "metric" - Facet by metric type (Power/Probability)
+#'     \item "effect_size" - Facet by effect size, vary sample size on x-axis
 #'     \item "sample_size" - Facet by sample size, vary effect size on x-axis
-#'     \item "look" - For sequential designs, facet by interim analysis look
+#'   }
+#' @param group_by Variable to use for line coloring in power_curve plots:
+#'   \itemize{
+#'     \item "effect_size" - Color by effect size values (default)
+#'     \item "decision" - Color by success/futility decision
+#'     \item "metric" - Color by power/probability metric
+#'     \item "sample_size" - Color by sample size values
 #'   }
 #' @param target_power Optional numeric value (0-1) for drawing contour lines on heatmaps
 #'   at the specified target power level. If NULL (default), uses the design's p_sig_scs.
+#' @param interactive Whether to return an interactive plotly object (TRUE, default) or
+#'   a static ggplot2 object (FALSE).
 #' @param ... Additional arguments passed to plotting functions
 #'
-#' @return A plotly object for all plot types (power curves, heatmaps, and comparison plots)
+#' @return A plotly object (if interactive = TRUE) or ggplot2 object (if interactive = FALSE)
 #' @export
 #' @importFrom stats as.formula
 #' @importFrom rlang .data
@@ -44,6 +54,7 @@
 #' @importFrom ggplot2 geom_contour
 #' @importFrom ggplot2 scale_y_continuous scale_x_continuous scale_fill_gradient
 #' @importFrom ggplot2 scale_color_manual scale_linetype_manual scale_shape_manual scale_fill_manual
+#' @importFrom ggplot2 scale_color_brewer scale_fill_brewer scale_color_viridis_d scale_fill_viridis_d
 #' @importFrom ggplot2 labs theme_minimal theme element_text facet_wrap facet_grid vars
 #' @importFrom plotly ggplotly
 #' @importFrom scales percent_format percent
@@ -53,11 +64,13 @@
 S7::method(plot, rctbp_power_analysis) <- function(x,
                                                    type = "auto",
                                                    metric = "both",
-                                                   values = "both",
+                                                   decision = "both",
                                                    show_target = TRUE,
                                                    show_mcse = FALSE,
-                                                   facet_by = "effect_size",
+                                                   facet_by = "decision",
+                                                   group_by = "effect_size",
                                                    target_power = NULL,
+                                                   interactive = TRUE,
                                                    ...) {
   # Check if analysis has been run
   if (nrow(x@results_conditions) == 0) {
@@ -72,11 +85,13 @@ S7::method(plot, rctbp_power_analysis) <- function(x,
   create_power_plot(x,
                     type,
                     metric,
-                    values,
+                    decision,
                     show_target,
                     show_mcse,
                     facet_by,
+                    group_by,
                     target_power,
+                    interactive,
                     ...)
 }
 
@@ -89,11 +104,13 @@ S7::method(plot, rctbp_power_analysis) <- function(x,
 create_power_plot <- function(x,
                               type = "auto",
                               metric = "both",
-                              values = "both",
+                              decision = "both",
                               show_target = TRUE,
                               show_mcse = FALSE,
-                              facet_by = "effect_size",
+                              facet_by = "decision",
+                              group_by = "effect_size",
                               target_power = NULL,
+                              interactive = TRUE,
                               ...) {
   # Check for valid data
   if (nrow(x@results_conditions) == 0) {
@@ -184,34 +201,32 @@ create_power_plot <- function(x,
   # =============================================================================
   # VALIDATE PARAMETERS
   # =============================================================================
-  if (!metric %in% c("success", "futility", "both")) {
+  if (!metric %in% c("power", "prob", "both")) {
     cli::cli_abort(c(
-      "{.arg metric} must be {.val success}, {.val futility}, or {.val both}",
+      "{.arg metric} must be {.val power}, {.val prob}, or {.val both}",
       "x" = "You supplied {.val {metric}}"
     ))
   }
 
-  if (!values %in% c("power", "post_prob", "both")) {
+  if (!decision %in% c("success", "futility", "both")) {
     cli::cli_abort(c(
-      "{.arg values} must be {.val power}, {.val post_prob}, or {.val both}",
-      "x" = "You supplied {.val {values}}"
+      "{.arg decision} must be {.val success}, {.val futility}, or {.val both}",
+      "x" = "You supplied {.val {decision}}"
     ))
   }
 
-  if (!facet_by %in% c("effect_size", "sample_size", "look")) {
+  if (!facet_by %in% c("metric", "decision", "effect_size", "sample_size")) {
     cli::cli_abort(c(
-      "{.arg facet_by} must be {.val effect_size}, {.val sample_size}, or {.val look}",
+      "{.arg facet_by} must be {.val metric}, {.val decision}, {.val effect_size}, or {.val sample_size}",
       "x" = "You supplied {.val {facet_by}}"
     ))
   }
 
-  # Warn if facet_by = "look" but no interim analyses
-  if (facet_by == "look" && !has_looks) {
-    cli::cli_warn(c(
-      "Cannot facet by look - no interim analyses detected",
-      "i" = "Using default faceting instead"
+  if (!group_by %in% c("metric", "decision", "effect_size", "sample_size")) {
+    cli::cli_abort(c(
+      "{.arg group_by} must be {.val metric}, {.val decision}, {.val effect_size}, or {.val sample_size}",
+      "x" = "You supplied {.val {group_by}}"
     ))
-    facet_by <- "effect_size"
   }
 
   # =============================================================================
@@ -224,11 +239,12 @@ create_power_plot <- function(x,
       analysis_type,
       effect_col,
       metric,
-      values,
+      decision,
       show_target,
       show_mcse,
       facet_by,
       has_looks,
+      group_by,
       ...
     )
   } else if (type == "heatmap") {
@@ -238,7 +254,7 @@ create_power_plot <- function(x,
       analysis_type,
       effect_col,
       metric,
-      values,
+      decision,
       show_target,
       target_power,
       ...
@@ -250,7 +266,7 @@ create_power_plot <- function(x,
       analysis_type,
       effect_col,
       metric,
-      values,
+      decision,
       ...
     )
   } else {
@@ -260,6 +276,11 @@ create_power_plot <- function(x,
     ))
   }
 
-  # Convert to interactive plotly
-  to_interactive(p, legend_position = if (type == "heatmap") "right" else "bottom")
+  # Convert to interactive plotly if requested
+
+  if (interactive) {
+    to_interactive(p, legend_position = if (type == "heatmap") "right" else "bottom")
+  } else {
+    p
+  }
 }

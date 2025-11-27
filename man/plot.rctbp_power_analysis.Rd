@@ -14,18 +14,18 @@
 \item "comparison" - Compare power vs posterior probabilities
 }}
 
-\item{metric}{Which power metric to display:
-\itemize{
-\item "success" - Success power and probability
-\item "futility" - Futility power and probability
-\item "both" - Both success and futility power and probabilities (default)
-}}
-
-\item{values}{Which values to display:
+\item{metric}{Which statistic type to display:
 \itemize{
 \item "both" - Both power and posterior probabilities (default)
-\item "power" - Power only
-\item "post_prob" - Posterior probabilities only
+\item "power" - Power (decision rate) only
+\item "prob" - Posterior probabilities only
+}}
+
+\item{decision}{Which decision criterion to display:
+\itemize{
+\item "both" - Both success and futility (default)
+\item "success" - Success metrics only
+\item "futility" - Futility metrics only
 }}
 
 \item{show_target}{Whether to show target power lines (default: TRUE)}
@@ -33,20 +33,32 @@
 \item{show_mcse}{Whether to show Monte Carlo standard error ribbons for uncertainty
 visualization (default: FALSE). Only applies to power_curve plots.}
 
-\item{facet_by}{For power_curve plots when both sample sizes and effect sizes vary:
+\item{facet_by}{For power_curve plots, controls faceting:
 \itemize{
-\item "effect_size" - Facet by effect size, vary sample size on x-axis (default)
+\item "decision" - Facet by decision type (Success/Futility) (default)
+\item "metric" - Facet by metric type (Power/Probability)
+\item "effect_size" - Facet by effect size, vary sample size on x-axis
 \item "sample_size" - Facet by sample size, vary effect size on x-axis
-\item "look" - For sequential designs, facet by interim analysis look
+}}
+
+\item{group_by}{Variable to use for line coloring in power_curve plots:
+\itemize{
+\item "effect_size" - Color by effect size values (default)
+\item "decision" - Color by success/futility decision
+\item "metric" - Color by power/probability metric
+\item "sample_size" - Color by sample size values
 }}
 
 \item{target_power}{Optional numeric value (0-1) for drawing contour lines on heatmaps
 at the specified target power level. If NULL (default), uses the design's p_sig_scs.}
 
+\item{interactive}{Whether to return an interactive plotly object (TRUE, default) or
+a static ggplot2 object (FALSE).}
+
 \item{...}{Additional arguments passed to plotting functions}
 }
 \value{
-A plotly object for all plot types (power curves, heatmaps, and comparison plots)
+A plotly object (if interactive = TRUE) or ggplot2 object (if interactive = FALSE)
 }
 \description{
 Create comprehensive visualizations for power analysis results from rctbp_power_analysis objects.

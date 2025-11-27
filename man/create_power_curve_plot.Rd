@@ -10,11 +10,12 @@ create_power_curve_plot(
   analysis_type,
   effect_col,
   metric,
-  values,
+  decision,
   show_target,
   show_mcse,
   facet_by,
   has_looks,
+  group_by = "effect_size",
   ...
 )
 }
@@ -27,17 +28,20 @@ create_power_curve_plot(
 
 \item{effect_col}{Column name for effect size (from condition_values)}
 
-\item{metric}{Filter: "success", "futility", or "both"}
+\item{metric}{Filter: "power", "prob", or "both"}
 
-\item{values}{Filter: "power", "post_prob", or "both"}
+\item{decision}{Filter: "success", "futility", or "both"}
 
 \item{show_target}{Whether to show target power lines}
 
 \item{show_mcse}{Whether to show MCSE uncertainty ribbons}
 
-\item{facet_by}{Faceting: "effect_size", "sample_size", or "look"}
+\item{facet_by}{Faceting: "metric", "decision", "effect_size", or "sample_size"}
 
 \item{has_looks}{Whether data has multiple interim looks}
+
+\item{group_by}{Variable to use for line coloring: "decision", "metric",
+"effect_size", or "sample_size"}
 
 \item{...}{Additional arguments (ignored)}
 }

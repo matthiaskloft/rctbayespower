@@ -65,9 +65,16 @@ boundary_obf <- function(base = 0.975) {
     ))
   }
 
-  function(info_frac) {
+  f <- function(info_frac) {
     1 - (1 - base) * sqrt(info_frac)
   }
+
+  # Add metadata for display
+
+  attr(f, "boundary_type") <- "obf"
+  attr(f, "boundary_params") <- list(base = base)
+  class(f) <- c("boundary_function", "function")
+  f
 }
 
 
@@ -108,9 +115,15 @@ boundary_pocock <- function(threshold = 0.99) {
     ))
   }
 
-  function(info_frac) {
+  f <- function(info_frac) {
     threshold
   }
+
+  # Add metadata for display
+  attr(f, "boundary_type") <- "pocock"
+  attr(f, "boundary_params") <- list(threshold = threshold)
+  class(f) <- c("boundary_function", "function")
+  f
 }
 
 
@@ -158,9 +171,15 @@ boundary_linear <- function(start = 0.999, end = 0.975) {
     ))
   }
 
-  function(info_frac) {
+  f <- function(info_frac) {
     start + (end - start) * info_frac
   }
+
+  # Add metadata for display
+  attr(f, "boundary_type") <- "linear"
+  attr(f, "boundary_params") <- list(start = start, end = end)
+  class(f) <- c("boundary_function", "function")
+  f
 }
 
 
@@ -214,9 +233,15 @@ boundary_power <- function(base = 0.975, rho = 2) {
     ))
   }
 
-  function(info_frac) {
+  f <- function(info_frac) {
     1 - (1 - base) * info_frac^(rho / 2)
   }
+
+  # Add metadata for display
+  attr(f, "boundary_type") <- "power"
+  attr(f, "boundary_params") <- list(base = base, rho = rho)
+  class(f) <- c("boundary_function", "function")
+  f
 }
 
 

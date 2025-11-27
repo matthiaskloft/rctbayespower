@@ -10,7 +10,7 @@ create_comparison_plot(
   analysis_type,
   effect_col,
   metric,
-  values,
+  decision,
   ...
 )
 }
@@ -23,9 +23,9 @@ create_comparison_plot(
 
 \item{effect_col}{Column name for effect size (from condition_values)}
 
-\item{metric}{Filter: "success", "futility", or "both"}
+\item{metric}{Ignored (always shows both power and probability)}
 
-\item{values}{Ignored (always shows both power and probability)}
+\item{decision}{Filter: "success", "futility", or "both"}
 
 \item{...}{Additional arguments (ignored)}
 }

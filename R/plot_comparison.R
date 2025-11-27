@@ -11,8 +11,8 @@
 #' @param design Design object with p_sig_scs and p_sig_ftl
 #' @param analysis_type One of "sample_only" or "effect_only"
 #' @param effect_col Column name for effect size (from condition_values)
-#' @param metric Filter: "success", "futility", or "both"
-#' @param values Ignored (always shows both power and probability)
+#' @param metric Ignored (always shows both power and probability)
+#' @param decision Filter: "success", "futility", or "both"
 #' @param ... Additional arguments (ignored)
 #'
 #' @return A ggplot2 object
@@ -23,7 +23,7 @@ create_comparison_plot <- function(plot_data,
                                    analysis_type,
                                    effect_col,
                                    metric,
-                                   values,
+                                   decision,
                                    ...) {
   if (analysis_type == "both") {
     cli::cli_abort(c(
@@ -49,8 +49,8 @@ create_comparison_plot <- function(plot_data,
     ))
   }
 
-  # Force values to "both" for comparison plot
-  plot_data_long <- pivot_plot_data_long(plot_data, metric, values = "both")
+  # Force metric to "both" for comparison plot (always shows both power and probability)
+  plot_data_long <- pivot_plot_data_long(plot_data, decision, metric = "both")
 
   # Build ggplot
   p <- ggplot2::ggplot(

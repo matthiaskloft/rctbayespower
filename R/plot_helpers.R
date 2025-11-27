@@ -9,13 +9,13 @@
 #' ggplot2 visualization. Handles both value columns and optional standard errors.
 #'
 #' @param plot_data Data frame with power analysis results
-#' @param metric Filter: "success", "futility", or "both"
-#' @param values Filter: "power", "post_prob", or "both"
+#' @param decision Filter: "success", "futility", or "both"
+#' @param metric Filter: "power", "prob", or "both"
 #' @param include_se Whether to include standard error columns
 #'
 #' @return Data frame in long format with columns: measure, outcome, value, and optionally se
 #' @keywords internal
-pivot_plot_data_long <- function(plot_data, metric, values, include_se = FALSE) {
+pivot_plot_data_long <- function(plot_data, decision, metric, include_se = FALSE) {
   # Determine columns to pivot
   value_cols <- c("pwr_scs", "pwr_ftl", "pr_scs", "pr_ftl")
 
@@ -43,11 +43,26 @@ pivot_plot_data_long <- function(plot_data, metric, values, include_se = FALSE) 
   # Add standard errors if requested and available
   if (include_se) {
     se_cols <- c("se_pwr_scs", "se_pwr_ftl", "se_pr_scs", "se_pr_ftl")
-    if (all(se_cols %in% names(plot_data))) {
+    available_se_cols <- se_cols[se_cols %in% names(plot_data)]
+
+    if (length(available_se_cols) == 0) {
+      cli::cli_warn(c(
+        "Cannot show MCSE ribbons - no standard error columns found in data",
+        "i" = "Expected columns: {.val {se_cols}}"
+      ))
+    } else if (length(available_se_cols) < length(se_cols)) {
+      cli::cli_warn(c(
+        "Some MCSE columns missing - ribbons may be incomplete",
+        "i" = "Found: {.val {available_se_cols}}",
+        "i" = "Missing: {.val {setdiff(se_cols, available_se_cols)}}"
+      ))
+    }
+
+    if (length(available_se_cols) > 0) {
       # Pivot SE columns similarly
       se_data <- plot_data |>
         tidyr::pivot_longer(
-          cols = dplyr::all_of(se_cols),
+          cols = dplyr::all_of(available_se_cols),
           names_to = c("se_measure", "se_outcome"),
           names_pattern = "se_(pwr|pr)_(scs|ftl)",
           values_to = "se"
@@ -70,17 +85,17 @@ pivot_plot_data_long <- function(plot_data, metric, values, include_se = FALSE) 
     }
   }
 
-  # Filter based on metric parameter
-  if (metric == "success") {
+  # Filter based on decision parameter
+  if (decision == "success") {
     plot_data_long <- dplyr::filter(plot_data_long, .data$outcome == "Success")
-  } else if (metric == "futility") {
+  } else if (decision == "futility") {
     plot_data_long <- dplyr::filter(plot_data_long, .data$outcome == "Futility")
   }
 
-  # Filter based on values parameter
-  if (values == "power") {
+  # Filter based on metric parameter
+  if (metric == "power") {
     plot_data_long <- dplyr::filter(plot_data_long, .data$measure == "Power")
-  } else if (values == "post_prob") {
+  } else if (metric == "prob") {
     plot_data_long <- dplyr::filter(plot_data_long, .data$measure == "Probability")
   }
 

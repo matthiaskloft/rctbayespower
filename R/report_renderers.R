@@ -7,6 +7,185 @@
 #' @importFrom stats setNames
 NULL
 
+
+# =============================================================================
+# TABLE FORMATTING HELPERS
+# =============================================================================
+
+#' Format a Data Frame as a CLI Table
+#'
+#' Creates a nicely formatted table for CLI output with proper alignment.
+#'
+#' @param df Data frame to format
+#' @param max_rows Maximum rows to show (default 20)
+#' @return Character vector of formatted lines
+#' @keywords internal
+format_table_cli <- function(df, max_rows = 20) {
+ if (nrow(df) == 0) {
+    return("(no data)")
+  }
+
+  # Convert to data frame if tibble
+ df <- as.data.frame(df)
+
+  # Truncate if too many rows
+  truncated <- FALSE
+  if (nrow(df) > max_rows) {
+    df <- df[1:max_rows, , drop = FALSE]
+    truncated <- TRUE
+  }
+
+  # Format numeric columns
+  for (col in names(df)) {
+    if (is.numeric(df[[col]])) {
+      # Detect if likely a proportion (0-1 range)
+      vals <- df[[col]][!is.na(df[[col]])]
+      if (length(vals) > 0 && all(vals >= 0 & vals <= 1)) {
+        # Format as percentage
+        df[[col]] <- sprintf("%.1f%%", df[[col]] * 100)
+      } else if (all(abs(vals) < 100) && any(vals != floor(vals))) {
+        # Small decimals - show 2 decimal places
+        df[[col]] <- sprintf("%.2f", df[[col]])
+      } else {
+        # Integers or large numbers - no decimals
+        df[[col]] <- sprintf("%.0f", df[[col]])
+      }
+    } else if (is.list(df[[col]])) {
+      # Handle list columns (like par_name)
+      df[[col]] <- sapply(df[[col]], function(x) {
+        if (is.null(x)) "NULL" else paste(x, collapse = ", ")
+      })
+    } else {
+      df[[col]] <- as.character(df[[col]])
+    }
+    df[[col]][is.na(df[[col]])] <- "-"
+  }
+
+  # Calculate column widths
+  col_widths <- sapply(names(df), function(col) {
+    max(nchar(col), max(nchar(df[[col]]), na.rm = TRUE))
+  })
+
+  # Create header
+  header <- paste(
+    mapply(function(name, width) sprintf(paste0("%-", width, "s"), name),
+           names(df), col_widths),
+    collapse = "  "
+  )
+
+  # Create separator
+  separator <- paste(sapply(col_widths, function(w) strrep("\u2500", w)), collapse = "  ")
+
+  # Create rows
+  rows <- apply(df, 1, function(row) {
+    paste(
+      mapply(function(val, width) sprintf(paste0("%", width, "s"), val),
+             row, col_widths),
+      collapse = "  "
+    )
+  })
+
+  # Combine
+  result <- c(header, separator, rows)
+
+  if (truncated) {
+    result <- c(result, paste0("... (", nrow(df), " of ", max_rows, "+ rows shown)"))
+  }
+
+  result
+}
+
+
+#' Format a Data Frame as a Markdown Table
+#'
+#' Creates a markdown-formatted table with proper alignment.
+#'
+#' @param df Data frame to format
+#' @param max_rows Maximum rows to show (default 20)
+#' @return Character vector of formatted lines
+#' @keywords internal
+format_table_markdown <- function(df, max_rows = 20) {
+  if (nrow(df) == 0) {
+    return("_(no data)_")
+  }
+
+  # Convert to data frame if tibble
+  df <- as.data.frame(df)
+
+  # Truncate if too many rows
+  truncated <- FALSE
+  original_nrow <- nrow(df)
+  if (nrow(df) > max_rows) {
+    df <- df[1:max_rows, , drop = FALSE]
+    truncated <- TRUE
+  }
+
+  # Detect numeric columns for alignment
+  is_numeric <- sapply(df, is.numeric)
+
+  # Format values
+  for (col in names(df)) {
+    if (is.numeric(df[[col]])) {
+      vals <- df[[col]][!is.na(df[[col]])]
+      if (length(vals) > 0 && all(vals >= 0 & vals <= 1)) {
+        df[[col]] <- sprintf("%.1f%%", df[[col]] * 100)
+      } else if (all(abs(vals) < 100) && any(vals != floor(vals))) {
+        df[[col]] <- sprintf("%.2f", df[[col]])
+      } else {
+        df[[col]] <- sprintf("%.0f", df[[col]])
+      }
+    } else if (is.list(df[[col]])) {
+      df[[col]] <- sapply(df[[col]], function(x) {
+        if (is.null(x)) "NULL" else paste(x, collapse = ", ")
+      })
+    } else {
+      df[[col]] <- as.character(df[[col]])
+    }
+    df[[col]][is.na(df[[col]])] <- "-"
+  }
+
+  # Calculate column widths
+  col_widths <- sapply(names(df), function(col) {
+    max(nchar(col), max(nchar(df[[col]]), na.rm = TRUE))
+  })
+
+  # Create header row
+  header <- paste0("| ", paste(
+    mapply(function(name, width) sprintf(paste0("%-", width, "s"), name),
+           names(df), col_widths),
+    collapse = " | "
+  ), " |")
+
+  # Create alignment row
+  align_row <- paste0("| ", paste(
+    mapply(function(numeric, width) {
+      if (numeric) {
+        paste0(strrep("-", width - 1), ":")  # Right align for numbers
+      } else {
+        strrep("-", width)  # Left align for text
+      }
+    }, is_numeric, col_widths),
+    collapse = " | "
+  ), " |")
+
+  # Create data rows
+  rows <- apply(df, 1, function(row) {
+    paste0("| ", paste(
+      mapply(function(val, width) sprintf(paste0("%", width, "s"), val),
+             row, col_widths),
+      collapse = " | "
+    ), " |")
+  })
+
+  result <- c(header, align_row, rows)
+
+  if (truncated) {
+    result <- c(result, "", paste0("_... (showing ", max_rows, " of ", original_nrow, " rows)_"))
+  }
+
+  result
+}
+
 #' Render Report in CLI Mode
 #'
 #' Renders a structured report using cli package functions.
@@ -133,7 +312,8 @@ render_cli <- function(report) {
     # Grid (data frame)
     if (!is.null(section$grid)) {
       cli::cli_text("")
-      print(section$grid)
+      table_lines <- format_table_cli(section$grid)
+      cat(paste(table_lines, collapse = "\n"), "\n")
     }
 
     # BRMS model
@@ -165,14 +345,21 @@ render_cli <- function(report) {
 #' Renders a structured report in markdown format.
 #'
 #' @param report List with report data from build_report.*()
+#' @param heading_level Integer specifying the starting heading level (default 2)
 #' @return NULL (outputs to console)
 #' @keywords internal
 #'
-render_markdown <- function(report) {
+render_markdown <- function(report, heading_level = 2L) {
   output <- character()
 
-  # Title
-  output <- c(output, paste0("## ", report$title), "")
+  # Helper to create heading with the appropriate level
+  make_heading <- function(text, level_offset = 0) {
+    level <- min(heading_level + level_offset, 6)  # Cap at h6
+    paste0(strrep("#", level), " ", text)
+  }
+
+  # Title (primary heading)
+  output <- c(output, make_heading(report$title, 0), "")
 
   # Status
   if (!is.null(report$status)) {
@@ -188,7 +375,7 @@ render_markdown <- function(report) {
   for (section in report$sections) {
     if (is.null(section)) next
 
-    output <- c(output, paste0("### ", section$name), "")
+    output <- c(output, make_heading(section$name, 1), "")
 
     # Items as bullet list
     if (!is.null(section$items)) {
@@ -289,10 +476,8 @@ render_markdown <- function(report) {
 
     # Grid (data frame)
     if (!is.null(section$grid)) {
-      output <- c(output, "```")
-      grid_output <- utils::capture.output(print(section$grid))
-      output <- c(output, grid_output)
-      output <- c(output, "```", "")
+      table_lines <- format_table_markdown(section$grid)
+      output <- c(output, table_lines, "")
     }
 
     # BRMS model
@@ -325,21 +510,28 @@ render_markdown <- function(report) {
   invisible(NULL)
 }
 
-#' Render Report Based on Current Output Mode
+#' Render Report Based on Output Format
 #'
-#' Routes to appropriate renderer based on output mode setting.
+#' Routes to appropriate renderer based on specified format or global setting.
 #'
 #' @param report List with report data from build_report.*()
+#' @param format Output format: "cli" or "markdown". If NULL (default), uses
+#'   the global output mode setting from [get_output_mode()].
+#' @param heading_level Integer specifying the starting heading level for
+#'   markdown output (default 2). Ignored for CLI format.
 #' @return NULL (outputs to console)
 #' @keywords internal
 #'
-render_report <- function(report) {
-  mode <- get_output_mode()
+render_report <- function(report, format = NULL, heading_level = 2L) {
+  # Use explicit format if provided, otherwise fall back to global setting
+  if (is.null(format)) {
+    format <- get_output_mode()
+  }
 
-  if (mode == "cli") {
+  if (format == "cli") {
     render_cli(report)
   } else {
-    render_markdown(report)
+    render_markdown(report, heading_level = heading_level)
   }
 
   invisible(NULL)

@@ -6,6 +6,75 @@
 #' @keywords internal
 NULL
 
+#' Format Boundary Specification for Display
+#'
+#' Formats a probability threshold or boundary function into a display string.
+#'
+#' @param threshold Either a numeric value or a boundary function
+#' @return Character string describing the threshold
+#' @keywords internal
+format_boundary <- function(threshold) {
+  if (is.function(threshold)) {
+    # Check for boundary function metadata
+    boundary_type <- attr(threshold, "boundary_type")
+    boundary_params <- attr(threshold, "boundary_params")
+
+    if (!is.null(boundary_type) && !is.null(boundary_params)) {
+      # Format based on boundary type
+      switch(boundary_type,
+        "obf" = paste0("O'Brien-Fleming (", boundary_params$base, ")"),
+        "pocock" = paste0("Pocock (", boundary_params$threshold, ")"),
+        "linear" = paste0("Linear (", boundary_params$start, " \u2192 ", boundary_params$end, ")"),
+        "power" = paste0("Power (base=", boundary_params$base, ", rho=", boundary_params$rho, ")"),
+        # Fallback for unknown types
+        paste0("Function (", boundary_type, ")")
+      )
+    } else {
+      # Generic function without metadata - evaluate at sample points
+      sample_vals <- c(0.5, 1.0)
+      sample_results <- sapply(sample_vals, threshold)
+      paste0("Function (at 50%: ", round(sample_results[1], 4),
+             ", at 100%: ", round(sample_results[2], 4), ")")
+    }
+  } else {
+    as.character(threshold)
+  }
+}
+
+#' Format Value Range
+#'
+#' Formats a numeric vector as a range string "min-max" with optional percentage.
+#'
+#' @param vals Numeric vector
+#' @param pct Logical; if TRUE, format as percentages (default FALSE)
+#' @param digits Number of decimal digits (default 1)
+#' @return Character string representing the range
+#' @keywords internal
+fmt_range <- function(vals, pct = FALSE, digits = 1) {
+  rng <- range(vals, na.rm = TRUE)
+  if (pct) {
+    paste0(round(rng[1] * 100, digits), "%-", round(rng[2] * 100, digits), "%")
+  } else {
+    paste0(round(rng[1], digits), "-", round(rng[2], digits))
+  }
+}
+
+#' Format Parameters Compactly
+#'
+#' Formats a named list of parameters as "name=value, name=value" string.
+#'
+#' @param params Named list of parameters
+#' @return Character string with formatted parameters
+#' @keywords internal
+fmt_params <- function(params) {
+  paste(
+    names(params),
+    sapply(params, function(v) if (is.numeric(v)) round(v, 3) else as.character(v)),
+    sep = "=",
+    collapse = ", "
+  )
+}
+
 #' Build Report for rctbp_model
 #'
 #' Creates structured report data for a model object.
@@ -83,8 +152,8 @@ build_report.rctbp_design <- function(x) {
         items = list(
           "Design name" = if (is.null(x@design_name)) "NULL" else x@design_name,
           "Target parameters" = paste(x@target_params, collapse = ", "),
-          "Probability threshold for success" = x@p_sig_scs,
-          "Probability threshold for futility" = x@p_sig_ftl
+          "Probability threshold for success" = format_boundary(x@p_sig_scs),
+          "Probability threshold for futility" = format_boundary(x@p_sig_ftl)
         ),
         note = "Effect size thresholds are specified per-condition in build_conditions()."
       ),
@@ -170,14 +239,14 @@ build_report.rctbp_power_analysis <- function(x, target_pwr = NULL) {
   }
 
   report <- list(
-    title = "S7 Object: rctbp_power_analysis",
+    title = "Power Analysis Summary",
     sections = list(
       list(
         name = "Design Summary",
         items = list(
           "Target parameters" = paste(design@target_params, collapse = ", "),
-          "Success probability threshold" = design@p_sig_scs,
-          "Futility probability threshold" = design@p_sig_ftl,
+          "Success probability threshold" = format_boundary(design@p_sig_scs),
+          "Futility probability threshold" = format_boundary(design@p_sig_ftl),
           "Target power" = target_pwr_display
         )
       )
@@ -222,36 +291,6 @@ build_report.rctbp_power_analysis <- function(x, target_pwr = NULL) {
         power_ranges = power_ranges
       )
     ))
-
-    # Add interim analysis section if applicable
-    if (has_interim && !is.null(interim_overall)) {
-      # Compute aggregate interim statistics across conditions
-      avg_n_mn <- mean(interim_overall$n_mn, na.rm = TRUE)
-      avg_planned_n <- mean(interim_overall$n_planned, na.rm = TRUE)
-      avg_prop_stp <- mean(interim_overall$prop_stp_early, na.rm = TRUE)
-      avg_prop_scs <- mean(interim_overall$prop_stp_scs, na.rm = TRUE)
-      avg_prop_ftl <- mean(interim_overall$prop_stp_ftl, na.rm = TRUE)
-      avg_prop_no_dec <- mean(interim_overall$prop_no_dec, na.rm = TRUE)
-
-      # Number of analysis looks
-      n_looks <- length(unique(results_df$id_look))
-
-      report$sections <- c(report$sections, list(
-        list(
-          name = "Interim Analysis Summary",
-          items = list(
-            "Number of analysis looks" = n_looks,
-            "Trials stopped early (avg)" = paste0(round(avg_prop_stp * 100, 1), "%"),
-            "Stopped for success (avg)" = paste0(round(avg_prop_scs * 100, 1), "%"),
-            "Stopped for futility (avg)" = paste0(round(avg_prop_ftl * 100, 1), "%"),
-            "No decision (avg)" = paste0(round(avg_prop_no_dec * 100, 1), "%"),
-            "Mean sample size (avg)" = round(avg_n_mn, 0),
-            "Planned sample size (avg)" = round(avg_planned_n, 0)
-          ),
-          note = "Averages computed across all conditions. Use x@results_conditions for per-condition details."
-        )
-      ))
-    }
 
     # Find optimal condition for target power
     optimal <- find_optimal_condition(
@@ -572,4 +611,368 @@ find_optimal_condition <- function(results_summ, conditions_grid, target_pwr,
       closest = closest_info
     ))
   }
+}
+
+
+# =============================================================================
+# TOPIC-SPECIFIC REPORTS
+# =============================================================================
+
+#' Report on Power Metrics per Condition
+#'
+#' Displays power analysis metrics for each simulation condition, including
+#' success/futility rates, posterior estimates, and convergence diagnostics.
+#'
+#' @param x An rctbp_power_analysis object with results
+#' @param format Output format: "cli" for styled console output (default)
+#'   or "markdown" for markdown-formatted output suitable for Quarto/RMarkdown.
+#' @param heading_level Integer specifying the starting heading level for
+#'   markdown output (default 2). Use this to integrate reports into documents
+#'   where you need headings to start at a different level (e.g., 3 for `###`).
+#'
+#' @return Invisibly returns the input object. Prints report as side effect.
+#'
+#' @details
+#' The report includes a table with:
+#' \itemize{
+#'   \item Condition identifiers and sample sizes
+#'   \item Power metrics: `pwr_scs` (success rate), `pwr_ftl` (futility rate)
+#'   \item Posterior estimates: `post_mn`, `post_sd`
+#'   \item Convergence: `rhat`, `ess_bulk`
+#' }
+#'
+#' For sequential designs, power metrics are taken from the final analysis look.
+#'
+#' @seealso [report()], [report_stopping()], [report_stopping_by_look()]
+#'
+#' @export
+#'
+#' @examples
+#' \dontrun{
+#' # Power metrics report
+#' report_power(result)
+#'
+#' # Markdown format for Quarto integration
+#' report_power(result, format = "markdown")
+#' }
+report_power <- function(x, format = c("cli", "markdown"), heading_level = 2L) {
+  format <- match.arg(format)
+  heading_level <- as.integer(heading_level)
+
+  # Check for S7 class
+  if (!inherits(x, "rctbp_power_analysis") &&
+      !inherits(x, "rctbayespower::rctbp_power_analysis")) {
+    cli::cli_abort("{.arg x} must be an rctbp_power_analysis object")
+  }
+
+  has_results <- nrow(x@results_conditions) > 0
+  if (!has_results) {
+    cli::cli_abort(c(
+      "Analysis has not been run",
+      "i" = "Use {.code run(x)} first"
+    ))
+  }
+
+  # Get power metrics
+  if (x@has_interim) {
+    # For sequential: use final look from results_interim
+    results_interim <- x@results_interim
+    final_look <- max(results_interim$id_look)
+    power_df <- results_interim[results_interim$id_look == final_look, , drop = FALSE]
+  } else {
+    # For single-look: use results_conditions directly
+    power_df <- x@results_conditions
+  }
+
+  # Select relevant columns
+  cols <- c("id_cond", "n_total", "par_name", "pwr_scs", "se_pwr_scs",
+            "pwr_ftl", "se_pwr_ftl", "post_mn", "post_sd", "rhat", "ess_bulk")
+  cols_available <- intersect(cols, names(power_df))
+  power_table <- power_df[, cols_available, drop = FALSE]
+
+  # Sort by power (descending)
+  if ("pwr_scs" %in% names(power_table)) {
+    power_table <- power_table[order(-power_table$pwr_scs), ]
+  }
+
+  # Build report
+  report <- list(
+    title = "Power Metrics by Condition",
+    sections = list(
+      list(
+        name = "Power Results",
+        grid = power_table
+      )
+    )
+  )
+
+  render_report(report, format = format, heading_level = heading_level)
+  invisible(x)
+}
+
+
+#' Report on Early Stopping Metrics per Condition
+#'
+#' Displays early stopping statistics aggregated per condition. This report
+#' is only available for sequential designs with interim analyses.
+#'
+#' @param x An rctbp_power_analysis object with sequential design results
+#' @param format Output format: "cli" for styled console output (default)
+#'   or "markdown" for markdown-formatted output suitable for Quarto/RMarkdown.
+#' @param heading_level Integer specifying the starting heading level for
+#'   markdown output (default 2). Use this to integrate reports into documents
+#'   where you need headings to start at a different level (e.g., 3 for `###`).
+#'
+#' @return Invisibly returns the input object. Prints report as side effect.
+#'
+#' @details
+#' The report includes a table with per-condition statistics:
+#' \itemize{
+#'   \item Sample sizes: `n_total`, `n_planned`, `n_mn`, `n_mdn`, `n_mode`
+#'   \item Stopping proportions: `prop_stp_early`, `prop_stp_scs`, `prop_stp_ftl`
+#'   \item Modal stopping: `prop_at_mode` (proportion stopped at modal N)
+#'   \item No decision rate: `prop_no_dec`
+#' }
+#'
+#' @seealso [report()], [report_power()], [report_stopping_by_look()]
+#'
+#' @export
+#'
+#' @examples
+#' \dontrun{
+#' # Early stopping summary per condition
+#' report_stopping(result)
+#'
+#' # Markdown format for Quarto integration
+#' report_stopping(result, format = "markdown")
+#' }
+report_stopping <- function(x, format = c("cli", "markdown"), heading_level = 2L) {
+  format <- match.arg(format)
+  heading_level <- as.integer(heading_level)
+
+  # Check for S7 class
+  if (!inherits(x, "rctbp_power_analysis") &&
+      !inherits(x, "rctbayespower::rctbp_power_analysis")) {
+    cli::cli_abort("{.arg x} must be an rctbp_power_analysis object")
+  }
+
+  if (!x@has_interim) {
+    cli::cli_abort(c(
+      "Early stopping report requires a sequential design",
+      "i" = "This analysis does not have interim analyses"
+    ))
+  }
+
+  has_results <- nrow(x@results_conditions) > 0
+  if (!has_results) {
+    cli::cli_abort(c(
+      "Analysis has not been run",
+      "i" = "Use {.code run(x)} first"
+    ))
+  }
+
+  # Use results_conditions which has overall stopping stats
+  stopping_df <- x@results_conditions
+
+  # Select relevant columns
+  cols <- c("id_cond", "n_total", "n_planned", "n_mn", "se_n_mn", "n_mdn",
+            "n_mode", "prop_at_mode", "prop_stp_early", "prop_stp_scs",
+            "prop_stp_ftl", "prop_no_dec")
+  cols_available <- intersect(cols, names(stopping_df))
+  stopping_table <- stopping_df[, cols_available, drop = FALSE]
+
+  # Build report
+  report <- list(
+    title = "Early Stopping by Condition",
+    sections = list(
+      list(
+        name = "Stopping Statistics",
+        grid = stopping_table
+      )
+    )
+  )
+
+  render_report(report, format = format, heading_level = heading_level)
+  invisible(x)
+}
+
+
+#' Report on Early Stopping per Look and Condition
+#'
+#' Displays detailed early stopping statistics broken down by analysis look
+#' and condition. This report is only available for sequential designs.
+#'
+#' @param x An rctbp_power_analysis object with sequential design results
+#' @param format Output format: "cli" for styled console output (default)
+#'   or "markdown" for markdown-formatted output suitable for Quarto/RMarkdown.
+#' @param heading_level Integer specifying the starting heading level for
+#'   markdown output (default 2). Use this to integrate reports into documents
+#'   where you need headings to start at a different level (e.g., 3 for `###`).
+#'
+#' @return Invisibly returns the input object. Prints report as side effect.
+#'
+#' @details
+#' The report includes a table with per-look × per-condition statistics:
+#' \itemize{
+#'   \item Look identifiers: `id_cond`, `id_look`, `n_analyzed`
+#'   \item Power at this look: `pwr_scs`, `pwr_ftl`
+#'   \item Stopping at this look: `prop_stp_look`, `prop_scs_look`, `prop_ftl_look`
+#'   \item Cumulative stopping: `cumul_stp`
+#' }
+#'
+#' @seealso [report()], [report_power()], [report_stopping()]
+#'
+#' @export
+#'
+#' @examples
+#' \dontrun{
+#' # Per-look stopping breakdown
+#' report_stopping_by_look(result)
+#'
+#' # Markdown format for Quarto integration
+#' report_stopping_by_look(result, format = "markdown")
+#' }
+report_stopping_by_look <- function(x, format = c("cli", "markdown"),
+                                     heading_level = 2L) {
+  format <- match.arg(format)
+  heading_level <- as.integer(heading_level)
+
+  # Check for S7 class
+  if (!inherits(x, "rctbp_power_analysis") &&
+      !inherits(x, "rctbayespower::rctbp_power_analysis")) {
+    cli::cli_abort("{.arg x} must be an rctbp_power_analysis object")
+  }
+
+  if (!x@has_interim) {
+    cli::cli_abort(c(
+      "Per-look report requires a sequential design",
+      "i" = "This analysis does not have interim analyses"
+    ))
+  }
+
+  has_results <- nrow(x@results_interim) > 0
+  if (!has_results) {
+    cli::cli_abort(c(
+      "Analysis has not been run",
+      "i" = "Use {.code run(x)} first"
+    ))
+  }
+
+  # Use results_interim which has per-look data
+  look_df <- x@results_interim
+  n_looks <- length(unique(look_df$id_look))
+
+  # Select relevant columns
+  cols <- c("id_cond", "id_look", "n_analyzed", "pwr_scs", "pwr_ftl",
+            "prop_stp_look", "prop_scs_look", "prop_ftl_look", "cumul_stp")
+  cols_available <- intersect(cols, names(look_df))
+  look_table <- look_df[, cols_available, drop = FALSE]
+
+  # Sort by condition then look
+  look_table <- look_table[order(look_table$id_cond, look_table$id_look), ]
+
+  # Build report
+  report <- list(
+    title = paste0("Early Stopping by Look (", n_looks, " looks)"),
+    sections = list(
+      list(
+        name = "Per-Look Statistics",
+        grid = look_table
+      )
+    )
+  )
+
+  render_report(report, format = format, heading_level = heading_level)
+  invisible(x)
+}
+
+
+# Legacy aliases for backward compatibility
+#' @rdname report_stopping
+#' @export
+report_early_stopping <- report_stopping
+
+#' @rdname report_power
+#' @export
+report_conditions <- report_power
+
+
+#' Generate Topic-Specific Reports
+#'
+#' Unified interface for generating detailed reports on specific aspects
+#' of power analysis results. Multiple topics can be specified to generate
+#' concatenated reports.
+#'
+#' @param x An rctbp_power_analysis object
+#' @param topic Character vector specifying report topic(s). Valid values:
+#'   \describe{
+#'     \item{"power"}{Power metrics per condition}
+#'     \item{"stopping"}{Early stopping summary per condition (sequential only)}
+#'     \item{"stopping_by_look"}{Early stopping per look × condition (sequential only)}
+#'   }
+#'   Multiple topics can be specified to generate concatenated reports.
+#' @param format Output format: "cli" for styled console output (default)
+#'   or "markdown" for markdown-formatted output suitable for Quarto/RMarkdown.
+#' @param heading_level Integer specifying the starting heading level for
+#'   markdown output (default 2). Use this to integrate reports into documents
+#'   where you need headings to start at a different level (e.g., 3 for `###`).
+#' @param ... Additional arguments (currently unused)
+#'
+#' @return Invisibly returns the input object.
+#'
+#' @seealso [report_power()], [report_stopping()], [report_stopping_by_look()],
+#'   [summary.rctbp_power_analysis()]
+#'
+#' @export
+#'
+#' @examples
+#' \dontrun{
+#' # Power metrics per condition
+#' report(result, topic = "power")
+#'
+#' # Early stopping summary per condition (sequential only)
+#' report(result, topic = "stopping")
+#'
+#' # Per-look stopping breakdown (sequential only)
+#' report(result, topic = "stopping_by_look")
+#'
+#' # Multiple topics - generates concatenated reports
+#' report(result, topic = c("power", "stopping", "stopping_by_look"))
+#'
+#' # Markdown format for Quarto integration
+#' report(result, topic = "power", format = "markdown")
+#'
+#' # Start headings at level 3 (###) for embedding in a document section
+#' report(result, topic = "stopping", format = "markdown", heading_level = 3)
+#' }
+report <- function(x, topic = "power",
+                   format = c("cli", "markdown"), heading_level = 2L, ...) {
+  # Validate topics
+  valid_topics <- c("power", "stopping", "stopping_by_look")
+  invalid <- setdiff(topic, valid_topics)
+  if (length(invalid) > 0) {
+    cli::cli_abort(c(
+      "Invalid topic{?s}: {.val {invalid}}",
+      "i" = "Valid topics are: {.val {valid_topics}}"
+    ))
+  }
+
+  format <- match.arg(format)
+  heading_level <- as.integer(heading_level)
+
+  if (heading_level < 1 || heading_level > 6) {
+    cli::cli_abort("{.arg heading_level} must be between 1 and 6")
+  }
+
+  # Generate each report in sequence
+  for (t in topic) {
+    switch(t,
+      "power" = report_power(x, format = format, heading_level = heading_level),
+      "stopping" = report_stopping(x, format = format, heading_level = heading_level),
+      "stopping_by_look" = report_stopping_by_look(x, format = format,
+                                                    heading_level = heading_level)
+    )
+  }
+
+  invisible(x)
 }

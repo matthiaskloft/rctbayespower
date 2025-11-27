@@ -77,8 +77,8 @@ Specify the study design with target parameter, thresholds for success and futil
 design <- build_design(
   model = model_ancova,
   target_params = "b_arm2",
-  p_sig_scs = 0.9,
-  p_sig_ftl = 0.5,
+  p_sig_scs = boundary_obf(),
+  p_sig_ftl = boundary_obf(),
   analysis_at = c(.3,.6,1),
   adaptive = FALSE
 )
@@ -101,7 +101,7 @@ conditions <- build_conditions(
     # two sample sizes
     n_total = seq(80, 160, by = 80),
     # two effect sizes
-    b_arm_treat = c(0.3)
+    b_arm_treat = c(0, 0.3)
   ),
   static_values = list(
     # baseline effect
@@ -121,7 +121,7 @@ Run the analysis using the `power_analysis` function. This will run the model fo
 power <- power_analysis(
   conditions = conditions,
   n_cores = n_cores,
-  n_sims = n_cores,
+  n_sims = 1,
   verbosity = 2,
   brms_args = list(
     chains = 1,
@@ -129,6 +129,9 @@ power <- power_analysis(
     warmup = 100
   )
 )
+res <- power@results_interim
+power2 <- resummarize_boundaries(power,p_sig_ftl = boundary_obf(), p_sig_scs = boundary_obf())
+res2 <- power2@results_interim
 ```
 
 ```{r}
@@ -136,7 +139,32 @@ print(power)
 ```
 
 ```{r}
-plot(power, type = "power_curve", facet_by = "effect_size")
+summary(power)
+```
+
+```{r}
+report(x = power, topic = c("power", "stopping", "stopping_by_look"), format = "cli", heading_level = 3)
+```
+
+```{r}
+report_conditions(x = power)
+```
+
+```{r}
+report_early_stopping(x = power, format = "markdown", heading_level = 3)
+```
+
+
+```{r}
+plot(
+  power,
+  type = "power_curve",
+  facet_by = "metric",
+  show_target = FALSE,
+  values = "post_prob",
+  show_mcse = TRUE, 
+  interactive = FALSE
+)
 ```
 
 
