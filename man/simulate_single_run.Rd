@@ -2,25 +2,23 @@
 % Please edit documentation in R/simulate_single_run.R
 \name{simulate_single_run}
 \alias{simulate_single_run}
-\title{Single Run Simulation for RCT Bayesian Power Analysis}
+\title{Single Run Simulation for RCT Bayesian Power Analysis (DEPRECATED)}
 \usage{
 simulate_single_run(condition_arguments, id_iter, design)
 }
 \arguments{
-\item{condition_arguments}{A single entry from the condition_arguments list
-created by \code{\link[=build_conditions]{build_conditions()}}. Contains 'sim_args' with data simulation
-parameters and 'decision_args' with decision thresholds and criteria.}
+\item{condition_arguments}{A single entry from the condition_arguments list}
 
-\item{id_iter}{Iteration identifier for tracking individual simulation runs}
+\item{id_iter}{Iteration identifier}
 
-\item{design}{A rctbp_design or rctbp_power_analysis object containing the
-simulation and model specifications}
+\item{design}{A rctbp_design object}
 }
 \value{
-A data frame with power analysis measures for the simulation
+A data frame with power analysis measures
 }
 \description{
-Executes a single simulation run using pre-validated condition arguments.
-This function is the core simulation engine used by power analysis functions.
+\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#deprecated}{\figure{lifecycle-deprecated.svg}{options: alt='[Deprecated]'}}}{\strong{[Deprecated]}}
+
+This function is deprecated. Use \code{\link[=worker_process_single]{worker_process_single()}} instead.
 }
 \keyword{internal}

@@ -1,20 +1,19 @@
-* using log directory ‘/mnt/c/Users/Matze/Documents/GitHub/rctbayespower/..Rcheck’
-* using R version 4.5.0 (2025-04-11)
-* using platform: x86_64-pc-linux-gnu
+* using log directory 'C:/Users/Matze/Documents/GitHub/rctbayespower/..Rcheck'
+* using R version 4.5.2 (2025-10-31 ucrt)
+* using platform: x86_64-w64-mingw32
 * R was compiled by
-    gcc (Ubuntu 13.3.0-6ubuntu2~24.04) 13.3.0
-    GNU Fortran (Ubuntu 13.3.0-6ubuntu2~24.04) 13.3.0
-* running under: Ubuntu 24.04.2 LTS
+    gcc.exe (GCC) 14.3.0
+    GNU Fortran (GCC) 14.3.0
+* running under: Windows 11 x64 (build 26200)
 * using session charset: UTF-8
-* using options ‘--no-tests --no-manual --no-vignettes’
-* checking for file ‘./DESCRIPTION’ ... OK
-* this is package ‘rctbayespower’ version ‘0.0.0.9000’
+* using options '--no-tests --no-manual --no-vignettes'
+* checking for file './DESCRIPTION' ... OK
+* this is package 'rctbayespower' version '0.0.0.9000'
 * package encoding: UTF-8
 * checking package namespace information ... OK
-* checking package dependencies ... INFO
-Packages suggested but not available for checking:
-  'quarto', 'kableExtra', 'colorspace'
-* checking if this is a source package ... OK
+* checking package dependencies ... OK
+* checking if this is a source package ... NOTE
+Subdirectory 'rctbayespower.Rcheck/rctbayespower' seems to contain an installed version of the package.
 * checking if there is a namespace ... OK
 * checking for executable files ... OK
 * checking for hidden files and directories ... NOTE
@@ -31,16 +30,17 @@ Found the following hidden files and directories:
   .github
   vignettes/.quarto
   vignettes/articles/.quarto
-These were most likely included in error. See section ‘Package
-structure’ in the ‘Writing R Extensions’ manual.
+These were most likely included in error. See section 'Package
+structure' in the 'Writing R Extensions' manual.
 * checking for portable file names ... NOTE
 Found the following non-portable file paths:
+  rctbayespower/.Rproj.user/shared/notebooks/02D52AB6-01-introduction/1/s/c0wf04knuu60s/000016.metadata
   rctbayespower/.Rproj.user/shared/notebooks/02D52AB6-01-introduction/1/s/ckw6rfgwxs6po/000012.metadata
   rctbayespower/.Rproj.user/shared/notebooks/02D52AB6-01-introduction/1/s/clboeochvl532/000010.metadata
-  rctbayespower/.Rproj.user/shared/notebooks/02D52AB6-01-introduction/1/s/cmba1olgrzdvx/000019.metadata
-  rctbayespower/.Rproj.user/shared/notebooks/02D52AB6-01-introduction/1/s/cnuyz46zl728h/00001c.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/02D52AB6-01-introduction/1/s/cmba1olgrzdvx/000048.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/02D52AB6-01-introduction/1/s/cmba1olgrzdvx/000048.snapshot
   rctbayespower/.Rproj.user/shared/notebooks/02D52AB6-01-introduction/1/s/ctxwkj5tk2tsh/00004e.metadata
-  rctbayespower/.Rproj.user/shared/notebooks/02D52AB6-01-introduction/1/s/cupj7xf4oyb8f/000033.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/02D52AB6-01-introduction/1/s/cupj7xf4oyb8f/000022.metadata
   rctbayespower/.Rproj.user/shared/notebooks/02D52AB6-01-introduction/1/s/cwnfbljbxv0a4/000032.metadata
   rctbayespower/.Rproj.user/shared/notebooks/02D52AB6-01-introduction/1/s/cxnr5y8edgy07/000010.metadata
   rctbayespower/.Rproj.user/shared/notebooks/02D52AB6-01-introduction/1/s/lib/crosstalk-1.2.2/css/crosstalk.min.css
@@ -74,24 +74,24 @@ Found the following non-portable file paths:
 Tarballs are only required to store paths of up to 100 bytes and cannot
 store those of more than 256 bytes, with restrictions including to 100
 bytes for the final component.
-See section ‘Package structure’ in the ‘Writing R Extensions’ manual.
-* checking for sufficient/correct file permissions ... OK
-* checking whether package ‘rctbayespower’ can be installed ... OK
+See section 'Package structure' in the 'Writing R Extensions' manual.
+* checking whether package 'rctbayespower' can be installed ... OK
 * checking installed package size ... INFO
-  installed size is 27.5Mb
+  installed size is 27.6Mb
   sub-directories of 1Mb or more:
     R  27.3Mb
 * checking package directory ... OK
 * checking DESCRIPTION meta-information ... NOTE
-Checking should be performed on sources prepared by ‘R CMD build’.
+Checking should be performed on sources prepared by 'R CMD build'.
 * checking top-level files ... OK
 * checking for left-over files ... OK
 * checking index information ... OK
 * checking package subdirectories ... WARNING
-Found the following directory with the name of a check directory:
+Found the following directories with names of check directories:
   ./..Rcheck
+  ./rctbayespower.Rcheck
 Most likely, these were included erroneously.
-Subdirectory ‘data’ contains no data sets.
+Subdirectory 'data' contains no data sets.
 * checking code files for non-ASCII characters ... OK
 * checking R files for syntax errors ... OK
 * checking whether the package can be loaded ... OK
@@ -114,7 +114,7 @@ Subdirectory ‘data’ contains no data sets.
 * checking Rd \usage sections ... OK
 * checking Rd contents ... OK
 * checking for unstated dependencies in examples ... OK
-* checking contents of ‘data’ directory ... OK
+* checking contents of 'data' directory ... OK
 * checking data for non-ASCII characters ... OK
 * checking LazyData ... OK
 * checking data for ASCII and uncompressed saves ... OK
@@ -122,19 +122,19 @@ Subdirectory ‘data’ contains no data sets.
 * checking line endings in Makefiles ... OK
 * checking for GNU extensions in Makefiles ... OK
 * checking include directives in Makefiles ... OK
-* checking files in ‘vignettes’ ... WARNING
+* checking files in 'vignettes' ... WARNING
 Files in the 'vignettes' directory but no files in 'inst/doc':
-  ‘_quarto.yaml’ ‘articles/01-introduction.qmd’
-  ‘articles/02-prior-specification.qmd’
-  ‘articles/03-algorithm-performance.qmd’
-  ‘articles/99-model-validation.qmd’ ‘rebuild.R’
+  '_quarto.yaml' 'articles/01-introduction.qmd'
+  'articles/02-prior-specification.qmd'
+  'articles/03-algorithm-performance.qmd'
+  'articles/99-model-validation.qmd' 'rebuild.R'
 Package has no Sweave vignette sources and no VignetteBuilder field.
 * checking examples ... OK
-* checking for unstated dependencies in ‘tests’ ... OK
+* checking for unstated dependencies in 'tests' ... OK
 * checking tests ... SKIPPED
 * checking package vignettes ... NOTE
-Package has ‘vignettes’ subdirectory but apparently no vignettes.
-Perhaps the ‘VignetteBuilder’ information is missing from the
+Package has 'vignettes' subdirectory but apparently no vignettes.
+Perhaps the 'VignetteBuilder' information is missing from the
 DESCRIPTION file?
 * DONE
-Status: 2 WARNINGs, 4 NOTEs
+Status: 2 WARNINGs, 5 NOTEs

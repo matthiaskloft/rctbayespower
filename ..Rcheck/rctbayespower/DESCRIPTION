@@ -17,11 +17,17 @@ Imports: brms (>= 2.20.0), posterior, ggplot2, plotly, scales, dplyr,
         tidyr, tibble, parallel, rlang, stringr, purrr, S7, pwr, cli
         (>= 3.6.0)
 Suggests: testthat (>= 3.0.0), withr, knitr, rmarkdown, quarto,
-        kableExtra, colorspace, pbapply
+        kableExtra, colorspace, pbapply, rappdirs, matrixStats,
+        reticulate (>= 1.41)
+SystemRequirements: Python (>= 3.10) for BayesFlow backend (optional)
+Config/reticulate: list( packages = list( list(package = "bayesflow",
+        version = ">= 2.0", pip = TRUE), list(package = "keras",
+        version = ">= 3.0", pip = TRUE), list(package = "torch", pip =
+        TRUE), list(package = "numpy", pip = TRUE) ) )
 Config/testthat/edition: 3
 URL: https://matthiaskloft.github.io/rctbayespower/,
         https://github.com/matthiaskloft/rctbayespower
 Config/Needs/website: quarto-dev/quarto-r, r-lib/pkgdown, dplyr,
         kableExtra, pander
 LazyData: true
-Built: R 4.5.0; ; 2025-11-26 01:37:49 UTC; unix
+Built: R 4.5.2; ; 2025-11-27 18:40:06 UTC; windows

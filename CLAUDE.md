@@ -4,7 +4,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-`rctbayespower` is an R package for conducting Bayesian power analysis for randomized controlled trials (RCTs) using `brms` and Stan. The package provides tools for estimating power curves, determining optimal sample sizes, and incorporating prior knowledge about treatment effects using region of practical equivalence (ROPE) for decision making.
+`rctbayespower` is an R package for conducting Bayesian power analysis for randomized controlled trials (RCTs). The package supports dual backends:
+- **brms/Stan**: Traditional MCMC-based Bayesian inference
+- **BayesFlow**: Neural posterior estimation for fast amortized inference
+
+The package provides tools for estimating power curves, determining optimal sample sizes, and incorporating prior knowledge about treatment effects using region of practical equivalence (ROPE) for decision making.
 
 ## Developer Documentation
 
@@ -12,21 +16,22 @@ Documentation is organized in `dev/` as numbered topic files:
 
 | File | Topic |
 |------|-------|
-| [`01_architecture.md`](dev/01_architecture.md) | Package architecture, class hierarchy, parallelization |
+| [`01_architecture.md`](dev/01_architecture.md) | Package architecture, class hierarchy, backend system |
 | [`02_s7_classes.md`](dev/02_s7_classes.md) | S7 class definitions, properties, patterns |
 | [`03_workflow.md`](dev/03_workflow.md) | User workflow, API reference, debugging |
 | [`04_development_guidelines.md`](dev/04_development_guidelines.md) | Code style, roxygen, R CMD check |
 | [`05_testing.md`](dev/05_testing.md) | Testing strategy, parallel test setup |
 | [`06_interim_analysis_plan.md`](dev/06_interim_analysis_plan.md) | Group sequential designs, boundary functions |
-| [`07_backend_abstraction_plan.md`](dev/07_backend_abstraction_plan.md) | **[PLANNED]** NPE/neural posterior estimation |
+| [`07_backend_abstraction_plan.md`](dev/07_backend_abstraction_plan.md) | **[IMPLEMENTED]** Backend abstraction design |
 | [`08_adaptive_trials_roadmap.md`](dev/08_adaptive_trials_roadmap.md) | **[PLANNED]** Binary, survival, adaptive designs |
 | [`09_bayesian_adaptive_designs_reference.md`](dev/09_bayesian_adaptive_designs_reference.md) | Reference: Bayesian adaptive trial designs |
+| [`10_bayesflow_integration_roadmap.md`](dev/10_bayesflow_integration_roadmap.md) | BayesFlow integration status and next steps |
 
 Archived files in `dev/archive/`.
 
-## Current Status (2025-11-26)
+## Current Status (2025-11-27)
 
-**Core Package State**: Functional and stable. Documentation up to date.
+**Core Package State**: Functional with dual-backend support.
 
 ### Implemented
 
@@ -42,17 +47,32 @@ Archived files in `dev/archive/`.
 | Group sequential / interim analysis (non-adaptive) | ✅ |
 | Look-dependent stopping boundaries | ✅ |
 | Boundary re-analysis functions | ✅ |
+| **Dual backend support (brms + BayesFlow)** | ✅ |
+| **BayesFlow reticulate integration** | ✅ |
+| **Mock mode for testing without Python** | ✅ |
+
+### Backend System
+
+| Component | File | Status |
+|-----------|------|--------|
+| brms backend | `R/backend_brms.R` | ✅ Complete |
+| BayesFlow backend | `R/backend_bf.R` | ✅ Complete (reticulate calls) |
+| Model caching | `R/model_cache.R` | ✅ Complete |
+| Dual-backend model class | `R/class_model.R` | ✅ Complete |
+| Worker dispatch | `R/worker_functions.R` | ✅ Complete |
+| Batch simulation | `R/models_ancova.R` | ✅ Complete |
+| Shared utilities | `R/utils_results.R` | ✅ Complete |
 
 ### Planned / In Progress
 
 | Feature | Status | Plan |
 |---------|--------|------|
 | Adaptive interim analysis (parameter modification) | Planning | `06_interim_analysis_plan.md` |
-| NPE backend abstraction | Placeholder code exists | `07_backend_abstraction_plan.md` |
+| Train BayesFlow models | Next step | `10_bayesflow_integration_roadmap.md` |
 | Binary/survival outcomes | Not started | `08_adaptive_trials_roadmap.md` |
 | Test suite | 0% | `05_testing.md` |
 
-### Quick Workflow Example
+### Quick Workflow Example (brms backend)
 
 ```r
 model <- build_model(predefined_model = "ancova_cont_2arms")
@@ -82,6 +102,30 @@ conditions <- build_conditions(
 result <- power_analysis(conditions = conditions, n_sims = 100, n_cores = 4)
 plot(result)
 result@results_summ
+```
+
+### BayesFlow Backend (When Available)
+
+```r
+# Check if BayesFlow is available
+check_bf_available(silent = TRUE)
+
+# Load pre-trained BayesFlow model
+bf_model <- load_bf_model("ancova_cont_2arms")
+
+# Add BayesFlow backend to existing model
+model <- build_model(predefined_model = "ancova_cont_2arms")
+model <- add_bf_backend(model, bf_model)
+
+# Model now uses BayesFlow by default (faster)
+model@active_backend  # "bf"
+
+# Force brms backend if needed
+model@backend <- "brms"
+
+# Testing without Python (mock mode)
+Sys.setenv(RCTBP_MOCK_BF = "TRUE")
+# BayesFlow calls will return mock samples
 ```
 
 **Note**: Parameter names vary by model. Use `model@parameter_names_brms` to discover available `target_params` and `model@parameter_names_sim_fn` for simulation arguments.
@@ -119,17 +163,43 @@ result_obf <- resummarize_boundaries(result,
 )
 ```
 
+## File Organization
+
+### Core R Files
+
+| File | Purpose |
+|------|---------|
+| `R/class_model.R` | Model class (dual backend support) |
+| `R/class_design.R` | Design class definition |
+| `R/class_conditions.R` | Conditions class definition |
+| `R/class_power_analysis.R` | Power analysis + run() method |
+| `R/models_ancova.R` | ANCOVA model builders + batch simulation |
+
+### Backend Files
+
+| File | Purpose |
+|------|---------|
+| `R/backend_brms.R` | brms-specific estimation functions |
+| `R/backend_bf.R` | BayesFlow estimation + reticulate calls |
+| `R/model_cache.R` | Model download and caching system |
+| `R/utils_results.R` | Shared result utilities |
+| `R/worker_functions.R` | Parallel worker dispatch |
+
+### Deprecated Files (Empty, Kept for Reference)
+
+| File | Replacement |
+|------|-------------|
+| `R/backends.R` | `R/backend_brms.R`, `R/backend_bf.R` |
+| `R/estimation_single.R` | `R/backend_*.R` |
+| `R/estimation_sequential.R` | `R/backend_*.R` |
+| `R/simulate_single_run.R` | `R/worker_functions.R` |
+
 ## Development Practices
 
 ### File Organization
 
 - **All R source files must be in `/R` root** - no subfolders allowed in `/R` directory
 - Save new development documents into `dev/`
-
-### Documentation
-
-Save new development documents into `dev/`.
-
 
 ### Documentation Guidelines
 - **Always update documentations directly in the .R file's roxygen documentation**
@@ -156,11 +226,9 @@ Save new development documents into `dev/`.
 my_function <- function(p_sig_scs = 0.975) { ... }
 
 # GOOD: Documentation matches code
-#' @param p_sig_scs Probability threshold for success (default 0.975) 
+#' @param p_sig_scs Probability threshold for success (default 0.975)
 my_function <- function(p_sig_scs = 0.975) { ... }
 ```
-
-**Recent fixes applied**: Updated documentation for `p_sig_scs` in `power_analysis.R`, and class system fixes throughout package.
 
 ### Documentation Conventions
 - Don't use \code{\link{function_name}} in roxygen docs. Use [functionname()] instead.

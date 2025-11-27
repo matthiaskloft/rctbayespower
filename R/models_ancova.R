@@ -555,3 +555,228 @@ build_model_ancova_cont_3arms <- function(...) {
   # return the model object
   invisible(model)
 }
+
+
+# =============================================================================
+# BATCH SIMULATION FUNCTIONS (for BayesFlow Backend)
+# =============================================================================
+
+#' Simulate ANCOVA Data - Batched Format (2-arm)
+#'
+#' Generates multiple simulations at once for NPE/BayesFlow efficiency.
+#' Returns matrices instead of data.frames for direct use with neural networks.
+#'
+#' @param n_sims Number of simulations to generate (batch size)
+#' @param n_total Sample size per simulation
+#' @param p_alloc Allocation probability for treatment (default 0.5)
+#' @param intercept Intercept value (default 0)
+#' @param b_arm_treat Treatment effect coefficient
+#' @param b_covariate Covariate effect coefficient (default 0)
+#' @param sigma Residual standard deviation (default 1)
+#'
+#' @return List with batch-formatted arrays:
+#'   \itemize{
+#'     \item outcome: matrix (n_sims x n_total)
+#'     \item covariate: matrix (n_sims x n_total)
+#'     \item group: matrix (n_sims x n_total), binary treatment indicator
+#'     \item N: integer, sample size per simulation
+#'     \item p_alloc: numeric, allocation probability
+#'   }
+#'
+#' @details
+#' This function is optimized for batch generation using vectorized operations.
+#' It generates all simulations simultaneously, making it suitable for
+#' BayesFlow/NPE workflows where batching improves efficiency.
+#'
+#' The group matrix contains binary (0/1) values for 2-arm trials,
+#' where 0 = control and 1 = treatment.
+#'
+#' @keywords internal
+#'
+#' @examples
+#' \dontrun{
+#' # Generate 64 simulations with 100 subjects each
+#' batch_data <- simulate_data_ancova_cont_2arms_batch(
+#'   n_sims = 64,
+#'   n_total = 100,
+#'   b_arm_treat = 0.5,
+#'   b_covariate = 0.3
+#' )
+#' dim(batch_data$outcome)  # [64, 100]
+#' }
+simulate_data_ancova_cont_2arms_batch <- function(n_sims, n_total, p_alloc = 0.5,
+                                                   intercept = 0, b_arm_treat = 0,
+                                                   b_covariate = 0, sigma = 1) {
+  # Validate inputs
+  n_sims <- as.integer(n_sims)
+  n_total <- as.integer(n_total)
+
+  if (n_sims <= 0) {
+    cli::cli_abort(c(
+      "{.arg n_sims} must be a positive integer",
+      "x" = "You supplied {.val {n_sims}}"
+    ))
+  }
+  if (n_total <= 0) {
+    cli::cli_abort(c(
+      "{.arg n_total} must be a positive integer",
+      "x" = "You supplied {.val {n_total}}"
+    ))
+  }
+  if (sigma <= 0) {
+    cli::cli_abort(c(
+      "{.arg sigma} must be positive",
+      "x" = "You supplied {.val {sigma}}"
+    ))
+  }
+
+  total_elements <- n_sims * n_total
+
+  # Generate all random values at once (vectorized)
+  covariate_mat <- matrix(
+    stats::rnorm(total_elements),
+    nrow = n_sims,
+    ncol = n_total
+  )
+
+  group_mat <- matrix(
+    stats::rbinom(total_elements, 1, p_alloc),
+    nrow = n_sims,
+    ncol = n_total
+  )
+
+  # Calculate outcomes using vectorized operations
+  # outcome = intercept + covariate * b_covariate + group * b_arm_treat + error
+  outcome_mat <- intercept +
+    covariate_mat * b_covariate +
+    group_mat * b_arm_treat +
+    matrix(stats::rnorm(total_elements, 0, sigma), nrow = n_sims, ncol = n_total)
+
+  list(
+    outcome = outcome_mat,
+    covariate = covariate_mat,
+    group = group_mat,
+    N = n_total,
+    p_alloc = p_alloc
+  )
+}
+
+
+#' Simulate ANCOVA Data - Batched Format (3-arm)
+#'
+#' Generates multiple 3-arm simulations at once for NPE/BayesFlow efficiency.
+#' Returns matrices instead of data.frames for direct use with neural networks.
+#'
+#' @param n_sims Number of simulations to generate (batch size)
+#' @param n_total Sample size per simulation
+#' @param p_alloc Allocation probabilities (default c(1/3, 1/3, 1/3))
+#' @param intercept Intercept value (default 0)
+#' @param b_arm_treat Treatment effect coefficients (length 2 vector)
+#' @param b_covariate Covariate effect coefficient (default 0)
+#' @param sigma Residual standard deviation (default 1)
+#'
+#' @return List with batch-formatted arrays:
+#'   \itemize{
+#'     \item outcome: matrix (n_sims x n_total)
+#'     \item covariate: matrix (n_sims x n_total)
+#'     \item group: matrix (n_sims x n_total), values 0/1/2 for arms
+#'     \item N: integer, sample size per simulation
+#'     \item p_alloc: numeric vector, allocation probabilities
+#'   }
+#'
+#' @details
+#' Similar to [simulate_data_ancova_cont_2arms_batch()] but for 3-arm trials.
+#' The group matrix contains values 0, 1, 2 corresponding to control,
+#' treatment 1, and treatment 2 respectively.
+#'
+#' @keywords internal
+#'
+#' @examples
+#' \dontrun{
+#' # Generate 64 simulations with 150 subjects each
+#' batch_data <- simulate_data_ancova_cont_3arms_batch(
+#'   n_sims = 64,
+#'   n_total = 150,
+#'   b_arm_treat = c(0.3, 0.5),
+#'   b_covariate = 0.3
+#' )
+#' dim(batch_data$outcome)  # [64, 150]
+#' }
+simulate_data_ancova_cont_3arms_batch <- function(n_sims, n_total,
+                                                   p_alloc = c(1/3, 1/3, 1/3),
+                                                   intercept = 0,
+                                                   b_arm_treat = c(0, 0),
+                                                   b_covariate = 0, sigma = 1) {
+  # Validate inputs
+  n_sims <- as.integer(n_sims)
+  n_total <- as.integer(n_total)
+
+  if (n_sims <= 0) {
+    cli::cli_abort(c(
+      "{.arg n_sims} must be a positive integer",
+      "x" = "You supplied {.val {n_sims}}"
+    ))
+  }
+  if (n_total <= 0) {
+    cli::cli_abort(c(
+      "{.arg n_total} must be a positive integer",
+      "x" = "You supplied {.val {n_total}}"
+    ))
+  }
+  if (length(p_alloc) != 3 || abs(sum(p_alloc) - 1) > 1e-6) {
+    cli::cli_abort(c(
+      "{.arg p_alloc} must be length 3 and sum to 1",
+      "x" = "You supplied {.val {p_alloc}}"
+    ))
+  }
+  if (length(b_arm_treat) != 2) {
+    cli::cli_abort(c(
+      "{.arg b_arm_treat} must be length 2 for 3-arm trials",
+      "x" = "You supplied {.val {b_arm_treat}} with length {.val {length(b_arm_treat)}}"
+    ))
+  }
+  if (sigma <= 0) {
+    cli::cli_abort(c(
+      "{.arg sigma} must be positive",
+      "x" = "You supplied {.val {sigma}}"
+    ))
+  }
+
+  total_elements <- n_sims * n_total
+
+  # Generate covariates
+  covariate_mat <- matrix(
+    stats::rnorm(total_elements),
+    nrow = n_sims,
+    ncol = n_total
+  )
+
+  # Generate group assignments (0, 1, 2) using multinomial sampling
+  group_vec <- sample(
+    x = c(0L, 1L, 2L),
+    size = total_elements,
+    prob = p_alloc,
+    replace = TRUE
+  )
+  group_mat <- matrix(group_vec, nrow = n_sims, ncol = n_total)
+
+  # Calculate treatment effects
+  # For treatment coding: group 0 = control (ref), group 1 = treat_1, group 2 = treat_2
+  treat_effect <- matrix(0, nrow = n_sims, ncol = n_total)
+  treat_effect[group_mat == 1] <- b_arm_treat[1]
+  treat_effect[group_mat == 2] <- b_arm_treat[2]
+
+  # Calculate outcomes
+  outcome_mat <- intercept +
+    covariate_mat * b_covariate +
+    treat_effect +
+    matrix(stats::rnorm(total_elements, 0, sigma), nrow = n_sims, ncol = n_total)
+
+  list(
+    outcome = outcome_mat,
+    covariate = covariate_mat,
+    group = group_mat,
+    N = n_total,
+    p_alloc = p_alloc
+  )
+}

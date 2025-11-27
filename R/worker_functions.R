@@ -111,8 +111,8 @@ worker_process_single <- function(id_cond, id_iter, condition_args, design) {
           id_iter = id_iter,
           id_cond = id_cond
         )
-      } else {
-        estimate_single_npe(
+      } else if (backend == "bf") {
+        estimate_single_bf(
           data = full_data,
           model = estimation_model,
           backend_args = backend_args,
@@ -124,6 +124,11 @@ worker_process_single <- function(id_cond, id_iter, condition_args, design) {
           id_iter = id_iter,
           id_cond = id_cond
         )
+      } else {
+        cli::cli_abort(c(
+          "Unknown backend: {.val {backend}}",
+          "i" = "Supported backends: {.val brms}, {.val bf}"
+        ))
       }
     },
     sequential = {
@@ -142,9 +147,9 @@ worker_process_single <- function(id_cond, id_iter, condition_args, design) {
           id_iter = id_iter,
           id_cond = id_cond
         )
-      } else {
-        # For single simulation with NPE sequential, still pass as list
-        estimate_sequential_npe(
+      } else if (backend == "bf") {
+        # For single simulation with BayesFlow sequential, pass as list
+        estimate_sequential_bf(
           full_data_list = list(full_data),
           model = estimation_model,
           backend_args = backend_args,
@@ -158,6 +163,11 @@ worker_process_single <- function(id_cond, id_iter, condition_args, design) {
           id_iter = id_iter,
           id_cond = id_cond
         )
+      } else {
+        cli::cli_abort(c(
+          "Unknown backend: {.val {backend}}",
+          "i" = "Supported backends: {.val brms}, {.val bf}"
+        ))
       }
     },
     adaptive = {
@@ -172,11 +182,11 @@ worker_process_single <- function(id_cond, id_iter, condition_args, design) {
 }
 
 
-#' Process Batch of Work Units (NPE Batching)
+#' Process Batch of Work Units (BayesFlow Batching)
 #'
 #' Processes a batch of (id_cond, id_iter) work units together. Only used when
-#' backend = "npe" and batch_size > 1. Enables efficient batch processing through
-#' neural network.
+#' backend = "bf" (BayesFlow) and batch_size > 1. Enables efficient batch processing
+#' through neural posterior estimation.
 #'
 #' @param work_units List of work unit specifications, each with id_cond, id_iter, condition_args
 #' @param design Design object (S7 or list for parallel workers)
@@ -211,10 +221,10 @@ worker_process_batch <- function(work_units, design) {
     ))
   }
 
-  # Validate this is NPE
-  if (backend != "npe") {
+  # Validate this is BayesFlow
+  if (backend != "bf") {
     cli::cli_abort(c(
-      "{.fn worker_process_batch} should only be called for NPE backend",
+      "{.fn worker_process_batch} should only be called for BayesFlow backend",
       "x" = "Backend is {.val {backend}}",
       "i" = "This is an internal error - please report"
     ))
@@ -285,10 +295,10 @@ worker_process_batch <- function(work_units, design) {
     error_results <- list()
   }
 
-  # Call appropriate estimation function
+  # Call appropriate estimation function (BayesFlow backend)
   result <- switch(strategy,
     single = {
-      estimate_single_npe(
+      estimate_single_bf(
         data = full_data_list,
         model = estimation_model,
         backend_args = backend_args,
@@ -302,7 +312,7 @@ worker_process_batch <- function(work_units, design) {
       )
     },
     sequential = {
-      estimate_sequential_npe(
+      estimate_sequential_bf(
         full_data_list = full_data_list,
         model = estimation_model,
         backend_args = backend_args,
@@ -338,13 +348,27 @@ worker_process_batch <- function(work_units, design) {
 #' @return Named list with all necessary design components
 #' @keywords internal
 prepare_design_for_workers <- function(design) {
+  # Resolve active_backend (handles "auto" -> actual backend)
+  active_backend <- design@model@active_backend
+
+  # Select appropriate backend_args based on active backend
+  backend_args <- if (active_backend == "brms") {
+    design@model@backend_args_brms
+  } else if (active_backend == "bf") {
+    design@model@backend_args_bf
+  } else {
+    design@model@backend_args
+  }
+
   list(
     # Model components
     model_data_simulation_fn = design@model@data_simulation_fn,
-    model_backend = design@model@backend,
+    model_backend = active_backend,  # Resolved backend, not "auto"
     model_brms_model = design@model@brms_model,
     model_bayesflow_model = design@model@bayesflow_model,
-    model_backend_args = design@model@backend_args,
+    model_backend_args = backend_args,
+    model_backend_args_brms = design@model@backend_args_brms,
+    model_backend_args_bf = design@model@backend_args_bf,
     # Design parameters
     target_params = design@target_params,
     p_sig_scs = design@p_sig_scs,

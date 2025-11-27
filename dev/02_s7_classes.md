@@ -1,6 +1,6 @@
 # S7 Class System
 
-**Last Updated:** 2025-11-24
+**Last Updated:** 2025-11-27
 
 ## Why S7?
 
@@ -13,25 +13,40 @@
 
 ### `rctbp_model` (R/class_model.R)
 
-**Purpose**: Encapsulates everything needed to simulate data and fit a Bayesian model.
+**Purpose**: Encapsulates everything needed to simulate data and fit a Bayesian model. Supports dual backends (brms + BayesFlow).
 
 | Property | Type | Description |
 |----------|------|-------------|
 | `data_simulation_fn` | function | Generates trial data |
-| `brms_model` | brmsfit/NULL | Pre-compiled brms template (for brms backend) |
-| `bayesflow_model` | any/NULL | Neural posterior model (for NPE backend, placeholder) |
-| `backend_args` | list | Backend-specific arguments (default: empty list) |
+| `brms_model` | brmsfit/NULL | Pre-compiled brms template |
+| `bayesflow_model` | any/NULL | BayesFlow model (Keras/Workflow/Approximator) |
+| `backend` | character | "brms", "bf", or "auto" (default: "auto") |
+| `backend_args_brms` | list | brms config (chains, iter, etc.) |
+| `backend_args_bf` | list | BayesFlow config (batch_size, n_posterior_samples) |
 | `predefined_model` | character/NULL | Name if predefined |
 | `model_name` | character | Descriptive name |
 | `n_endpoints` | numeric | Number of outcomes |
 | `endpoint_types` | character | Types (continuous, binary) |
 | `n_arms` | numeric | Treatment arms |
 | `n_repeated_measures` | numeric/NULL | Time points |
-| `backend` | computed | "brms" or "npe" based on which model is set |
-| `parameter_names_sim_fn` | computed | Auto-extracted from sim function |
-| `parameter_names_brms` | computed | Auto-extracted from brms model |
+| `active_backend` | **computed** | Resolves "auto" → "bf" or "brms" |
+| `backend_args` | **computed** | Merged args for active backend |
+| `parameter_names_sim_fn` | **computed** | Auto-extracted from sim function |
+| `parameter_names_brms` | **computed** | Auto-extracted from brms model |
+
+**Backend Selection Logic** (in `active_backend` getter):
+```r
+if (backend != "auto") return(backend)
+if (!is.null(bayesflow_model)) return("bf")
+if (!is.null(brms_model)) return("brms")
+cli::cli_abort("No backend available")
+```
 
 **Constructor**: `build_model(predefined_model)` or direct construction for custom models
+
+**Helper Functions**:
+- `add_bf_backend(model, bf_model)`: Add BayesFlow backend to existing model
+- `add_brms_backend(model, brms_model)`: Add brms backend to existing model
 
 ### `rctbp_design` (R/class_design.R)
 
@@ -41,13 +56,25 @@
 |----------|------|-------------|
 | `model` | rctbp_model | The statistical model |
 | `target_params` | character | Parameters to analyze |
-| `p_sig_scs` | numeric | Probability threshold for success (default 0.975) |
-| `p_sig_ftl` | numeric | Probability threshold for futility (default 0.5) |
+| `p_sig_scs` | numeric/function | Probability threshold for success (default 0.975) |
+| `p_sig_ftl` | numeric/function | Probability threshold for futility (default 0.5) |
+| `analysis_at` | numeric/NULL | Interim analysis points (fractions of n_total) |
 | `design_name` | character/NULL | Optional name |
 
 **Constructor**: `build_design(model, target_params, ...)`
 
 **Validator**: Checks that `target_params` exist in the model's parameter names.
+
+**Look-Dependent Boundaries**: `p_sig_scs` and `p_sig_ftl` can be functions for sequential designs:
+```r
+design <- build_design(
+  model = model,
+  target_params = "b_armtreat_1",
+  p_sig_scs = boundary_obf(0.975),     # O'Brien-Fleming style
+  p_sig_ftl = boundary_linear(0.7, 0.9), # Linear interpolation
+  analysis_at = c(0.5, 0.75)           # Interim at 50%, 75%
+)
+```
 
 ### `rctbp_conditions` (R/class_conditions.R)
 
@@ -77,7 +104,7 @@
 | `verbose` | logical | Show progress (default: TRUE) |
 | `brms_args` | list/NULL | Arguments passed to brms |
 | `design_prior` | character/function/NULL | Optional design prior |
-| `design` | computed | Convenience access to conditions@design |
+| `design` | **computed** | Convenience access to conditions@design |
 | `results_summ` | data.frame | Aggregated results (filled after run) |
 | `results_raw` | data.frame | Individual simulation results (filled after run) |
 | `elapsed_time` | numeric | Runtime in minutes (filled after run) |
@@ -125,6 +152,24 @@ properties = list(
 )
 ```
 
+### Settable Properties with Validation
+
+```r
+properties = list(
+  backend = S7::new_property(
+    class = S7::class_character,
+    default = "auto",
+    setter = function(self, value) {
+      if (!value %in% c("brms", "bf", "auto")) {
+        cli::cli_abort("{.arg backend} must be 'brms', 'bf', or 'auto'")
+      }
+      self@backend <- value
+      self
+    }
+  )
+)
+```
+
 ### Defining Methods
 
 ```r
@@ -148,6 +193,7 @@ S7::method(print, MyClass) <- function(x, ...) {
 # Access via @
 model@data_simulation_fn
 design@model@brms_model
+model@active_backend  # Computed property
 
 # NOT $ (that's S3/list syntax)
 # model$data_simulation_fn  # WRONG

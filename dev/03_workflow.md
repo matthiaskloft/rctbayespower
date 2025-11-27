@@ -1,8 +1,8 @@
 # User Workflow & API Reference
 
-**Last Updated:** 2025-11-24
+**Last Updated:** 2025-11-27
 
-## Standard 4-Step Workflow
+## Standard 4-Step Workflow (brms Backend)
 
 ```r
 # Step 1: Define the model
@@ -51,6 +51,46 @@ result@results_summ
 result@results_raw
 ```
 
+## BayesFlow Backend Workflow
+
+```r
+# Step 1: Check BayesFlow availability
+check_bf_available(silent = TRUE)  # Returns TRUE/FALSE
+
+# Step 2: Build model with BayesFlow backend
+model <- build_model(predefined_model = "ancova_cont_2arms")
+
+# Option A: Load pre-trained BayesFlow model
+bf_model <- load_bf_model("ancova_cont_2arms")
+model <- add_bf_backend(model, bf_model)
+
+# Check active backend
+model@active_backend  # "bf" (prefers BayesFlow when available)
+
+# Option B: Force specific backend
+model@backend <- "brms"  # Force brms
+model@backend <- "bf"    # Force BayesFlow
+model@backend <- "auto"  # Prefer BayesFlow, fallback to brms
+
+# Steps 2-4: Same as brms workflow
+design <- build_design(model = model, target_params = "b_armtreat_1", ...)
+conditions <- build_conditions(design = design, ...)
+result <- power_analysis(conditions = conditions, n_sims = 1000, n_cores = 4)
+```
+
+## Testing Without Python (Mock Mode)
+
+```r
+# Enable mock mode for testing R infrastructure
+Sys.setenv(RCTBP_MOCK_BF = "TRUE")
+
+# BayesFlow calls return mock samples based on data
+result <- power_analysis(conditions, n_sims = 10, n_cores = 1)
+
+# Disable mock mode
+Sys.setenv(RCTBP_MOCK_BF = "")
+```
+
 ## Alternative: Build-then-Run
 
 ```r
@@ -82,6 +122,25 @@ power_config <- run(power_config)
 | `run()` | Execute power analysis | `rctbp_power_analysis` (with results) |
 | `plot()` | Visualize results | plotly object |
 
+### Backend Functions
+
+| Function | Purpose |
+|----------|---------|
+| `check_bf_available()` | Check if Python/BayesFlow available |
+| `add_bf_backend()` | Add BayesFlow backend to model |
+| `add_brms_backend()` | Add brms backend to model |
+| `load_bf_model()` | Load cached BayesFlow model |
+| `load_brms_model()` | Load cached brms model |
+
+### Model Cache Functions
+
+| Function | Purpose |
+|----------|---------|
+| `get_model_cache_dir()` | Get cache directory path |
+| `list_models()` | List available cached models |
+| `clear_model_cache()` | Remove cached models |
+| `get_cache_size()` | Get total cache size |
+
 ### Utility Functions
 
 | Function | Purpose |
@@ -89,6 +148,17 @@ power_config <- run(power_config)
 | `list_predefined_models()` | List available predefined models |
 | `get_predefined_model()` | Retrieve specific predefined model |
 | `required_fn_args()` | Extract required parameters for a design |
+
+### Boundary Functions (Sequential Designs)
+
+| Function | Purpose |
+|----------|---------|
+| `boundary_obf()` | O'Brien-Fleming-style (conservative early) |
+| `boundary_pocock()` | Constant threshold (same at all looks) |
+| `boundary_linear()` | Linear interpolation between start/end |
+| `boundary_power()` | Power family (rho controls curve shape) |
+| `compare_boundaries()` | Compare different boundary configurations |
+| `resummarize_boundaries()` | Re-analyze with new boundaries |
 
 ### Predefined Models
 
@@ -153,7 +223,7 @@ static_values = list(
 | `prob_success` | Mean P(effect > threshold) |
 | `prob_futility` | Mean P(effect < threshold) |
 | `median`, `mean` | Posterior point estimates |
-| `rhat`, `ess_bulk` | Convergence diagnostics |
+| `rhat`, `ess_bulk` | Convergence diagnostics (brms only) |
 | `*_se` | Monte Carlo standard errors |
 
 ### `results_raw` (Individual Simulations)
@@ -169,3 +239,6 @@ One row per simulation × condition × parameter, with all metrics from each ind
 | S7 property access error | Use `@` not `$` |
 | Missing parameters | Check `required_fn_args(design)` |
 | Convergence issues | Check `conv_rate` and `rhat` columns |
+| BayesFlow not available | Run `check_bf_available()` to diagnose |
+| Mock mode not working | Ensure `RCTBP_MOCK_BF = "TRUE"` (string) |
+| Backend not switching | Check `model@active_backend` after setting |

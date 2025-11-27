@@ -41,7 +41,12 @@
       "WebFetch(domain:cli.r-lib.org)",
       "Bash(echo:*)",
       "Bash(export _R_CHECK_FORCE_SUGGESTS_=false)",
-      "WebFetch(domain:paulbuerkner.com)"
+      "WebFetch(domain:paulbuerkner.com)",
+      "WebFetch(domain:tensorflow.rstudio.com)",
+      "WebFetch(domain:bayesflow.org)",
+      "WebFetch(domain:rstudio.github.io)",
+      "WebFetch(domain:keras3.posit.co)",
+      "WebFetch(domain:r-pkgs.org)"
     ],
     "deny": []
   }

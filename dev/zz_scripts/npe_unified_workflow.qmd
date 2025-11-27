@@ -1,0 +1,981 @@
+---
+title: "Unified NPE Power Analysis Workflow"
+author:
+ - name: Matthias Kloft
+   orcid: 0000-0003-1845-6957
+   affiliations: University of Marburg
+date: "`r Sys.Date()`"
+format:
+  html:
+    toc: true
+    number-sections: true
+    theme: cosmo
+    code-fold: true
+    code-tools: true
+    code-summary: "Show the code"
+    fig-width: 9
+    fig-height: 5
+    embed-resources: true
+execute:
+  message: false
+  warning: false
+---
+
+```{r setup}
+# Libraries
+packages <- c(
+"tidyverse",
+"here",
+"rctbayespower",
+"reticulate",
+"matrixStats",
+"knitr"
+)
+
+if (!require("pacman")) install.packages("pacman")
+pacman::p_load(packages, update = F, character.only = T)
+
+packages_py <- c("numpy", "bayesflow", "torch", "keras")
+reticulate::py_require(packages_py, python_version = "3.12")
+
+os <- import("os")
+os$environ["KERAS_BACKEND"] <- "torch"
+
+reticulate::py_config()
+np <- import("numpy")
+keras <- import("keras")
+bf <- import("bayesflow")
+```
+
+# Overview
+
+This document provides a **unified interface** for NPE-based power analysis that automatically handles both R and Python simulation functions. Users can:
+
+1. Provide their own simulation function in **either R or Python**
+2. The workflow automatically detects the function type
+3. Inference is always performed via BayesFlow (Python)
+4. Results are returned in a consistent format
+
+# Unified Workflow Functions
+
+## Simulation Function Contract
+
+Your simulation function must follow this contract:
+
+**Signature:**
+```
+sim_fn(n_sims, n_total, ...) -> list/dict
+```
+**Required return fields:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `outcome` | matrix (n_sims x n_total) | Outcome variable |
+| `covariate` | matrix (n_sims x n_total) | Covariate(s) |
+| `group` | matrix (n_sims x n_total) | Group assignment (0/1) |
+| `N` | integer | Sample size |
+| `p_alloc` | numeric | Allocation probability |
+
+## Core Functions
+
+```{r unified_functions}
+#' Detect if a function is R or Python
+#'
+#' @param fn Function to check
+#' @return Character: "r", "python", or "unknown"
+detect_function_type <- function(fn) {
+ if (is.function(fn)) {
+   return("r")
+ } else if (inherits(fn, "python.builtin.function") ||
+            inherits(fn, "python.builtin.method") ||
+            inherits(fn, "python.builtin.builtin_function_or_method")) {
+   return("python")
+ } else if ("__call__" %in% names(fn)) {
+   # Python callable object
+   return("python")
+ } else {
+   return("unknown")
+ }
+}
+
+
+#' Summarize a batch of posterior draws
+#'
+#' This is a key function in the memory-efficient batching system. Instead of
+#' storing all posterior draws (which can be huge: n_sims × n_post_draws floats),
+#' we immediately compute summary statistics and discard the raw draws.
+#'
+#' MEMORY SAVINGS EXAMPLE:
+#' - Raw draws: 1000 sims × 1000 draws = 1M floats = ~8 MB per condition
+#' - Summaries: 1000 sims × 7 stats = 7K floats = ~56 KB per condition
+#' - Savings: ~143x smaller memory footprint
+#'
+#' @param draws_mat Matrix of posterior draws (n_sims x n_post_draws).
+#'   Each row is one simulation, each column is one posterior sample.
+#' @param id_cond_vec Vector of condition IDs (length = nrow(draws_mat))
+#' @param id_sim_vec Vector of simulation IDs (length = nrow(draws_mat))
+#' @param threshold Threshold for prob_exceed calculation. Used to compute
+#'   P(parameter > threshold) which is key for power analysis.
+#' @param summary_probs Quantile probabilities for CI, e.g., c(0.025, 0.975) for 95% CI
+#' @return tibble with per-simulation summaries (7 statistics per simulation)
+#' @keywords internal
+.summarize_batch <- function(draws_mat, id_cond_vec, id_sim_vec,
+                              threshold, summary_probs) {
+  # Compute all summary statistics row-wise (each row = one simulation)
+  # Using matrixStats functions for efficiency (vectorized C implementations)
+  tibble(
+    id_cond = id_cond_vec,
+    id_sim = id_sim_vec,
+    post_mean = rowMeans(draws_mat),                                    # Point estimate (mean)
+    post_median = rowMedians(draws_mat),                                # Point estimate (median)
+    post_sd = rowSds(draws_mat),                                        # Posterior uncertainty
+    ci_lower = rowQuantiles(draws_mat, probs = summary_probs[1]),       # Lower CI bound
+    ci_upper = rowQuantiles(draws_mat, probs = summary_probs[2]),       # Upper CI bound
+    prob_exceed_thresh = rowMeans(draws_mat > threshold)                # P(param > threshold)
+  )
+}
+
+
+#' Unified NPE Power Analysis
+#'
+#' Run simulation-based power analysis with automatic R/Python detection.
+#' Supports memory-efficient batching by processing simulations in chunks.
+#'
+#' @param sim_fn Simulation function (R or Python). Must follow the contract:
+#'   sim_fn(n_sims, n_total, ...) -> list with outcome, covariate, group, N, p_alloc
+#' @param conditions_grid Data frame with id_cond, n_total, and condition-specific params
+#' @param model_bf BayesFlow model (Keras)
+#' @param n_sims Number of simulations per condition
+#' @param n_post_draws Number of posterior draws
+#' @param target_param Name of target parameter in BayesFlow output (default: "b_group")
+#' @param condition_args Named list mapping condition_grid columns to sim_fn argument names
+#' @param static_args Named list of static arguments passed to sim_fn for all conditions
+#' @param sim_batch_size Number of simulations per batch (NULL = all at once).
+#'   Recommended: 500 for memory efficiency
+#' @param threshold Threshold for power calculation (prob > threshold)
+#' @param summary_probs Quantile probabilities for CI (default: 95% CI)
+#' @param return_draws If TRUE, return raw draws (memory intensive). Default FALSE
+#' @param gc_between_batches If TRUE, call gc() between batches. Default TRUE
+#' @param verbose Print progress
+#' @return List with results_df (per-simulation summaries), summary (per-condition),
+#'   and optionally draws if return_draws=TRUE
+run_npe_power_analysis <- function(sim_fn,
+                                    conditions_grid,
+                                    model_bf,
+                                    n_sims = 1000L,
+                                    n_post_draws = 1000L,
+                                    target_param = "b_group",
+                                    condition_args = list(),
+                                    static_args = list(),
+                                    sim_batch_size = 1000L,
+                                    threshold = 0.1,
+                                    summary_probs = c(0.025, 0.975),
+                                    return_draws = FALSE,
+                                    gc_between_batches = TRUE,
+                                    verbose = TRUE) {
+
+ # Detect function type
+ fn_type <- detect_function_type(sim_fn)
+
+ if (fn_type == "unknown") {
+   stop("Cannot detect simulation function type. Provide an R function or Python callable.")
+ }
+
+ # Calculate batches with even splitting
+ # -----------------------------------------------------------------------
+ # EVEN BATCH STRATEGY: Adjust batch_size so all batches are equal
+ # Example: n_sims=1200, requested batch_size=1000
+ #   - n_batches = ceiling(1200/1000) = 2
+ #   - adjusted_batch_size = ceiling(1200/2) = 600
+ #   - Result: 2 even batches of 600 (not 1000+200)
+ # -----------------------------------------------------------------------
+ requested_batch_size <- sim_batch_size
+ if (is.null(sim_batch_size) || sim_batch_size >= n_sims) {
+   n_batches <- 1L
+   sim_batch_size <- n_sims
+ } else {
+   n_batches <- ceiling(n_sims / sim_batch_size)
+   # Recalculate batch size to create even batches
+   sim_batch_size <- ceiling(n_sims / n_batches)
+ }
+ batch_size_adjusted <- !is.null(requested_batch_size) &&
+                        requested_batch_size != sim_batch_size &&
+                        n_batches > 1L
+
+ if (verbose) {
+   cat("=== NPE Power Analysis ===\n")
+   cat("Simulation backend:", toupper(fn_type), "\n")
+   cat("Conditions:", nrow(conditions_grid), "\n")
+   cat("Simulations per condition:", n_sims, "\n")
+   cat("Posterior draws:", n_post_draws, "\n")
+   cat("Batches:", n_batches, "(", sim_batch_size, "sims/batch )\n")
+   if (batch_size_adjusted) {
+     cat("  (adjusted from", requested_batch_size, "for even batches)\n")
+   }
+   cat("Memory mode:", if (return_draws) "keep draws" else "summaries only", "\n")
+   cat("==========================\n\n")
+ }
+
+ # Dispatch to appropriate backend
+ if (fn_type == "r") {
+   results <- .run_with_r_simulation(
+     sim_fn = sim_fn,
+     conditions_grid = conditions_grid,
+     model_bf = model_bf,
+     n_sims = n_sims,
+     n_post_draws = n_post_draws,
+     target_param = target_param,
+     condition_args = condition_args,
+     static_args = static_args,
+     sim_batch_size = sim_batch_size,
+     threshold = threshold,
+     summary_probs = summary_probs,
+     return_draws = return_draws,
+     gc_between_batches = gc_between_batches,
+     verbose = verbose
+   )
+ } else {
+   results <- .run_with_python_simulation(
+     sim_fn = sim_fn,
+     conditions_grid = conditions_grid,
+     model_bf = model_bf,
+     n_sims = n_sims,
+     n_post_draws = n_post_draws,
+     target_param = target_param,
+     condition_args = condition_args,
+     static_args = static_args,
+     sim_batch_size = sim_batch_size,
+     threshold = threshold,
+     summary_probs = summary_probs,
+     return_draws = return_draws,
+     gc_between_batches = gc_between_batches,
+     verbose = verbose
+   )
+ }
+
+ return(results)
+}
+
+
+#' Internal: Run with R simulation function (with batching)
+#'
+#' BATCHING STRATEGY:
+#' ==================
+#' This function implements memory-efficient batching by processing simulations
+#' in chunks. The key insight is that we can't reduce the size of a single
+#' BayesFlow inference call (all conditions with same n_total must be batched
+#' together for efficiency), but we CAN process fewer simulations at a time.
+#'
+#' LOOP STRUCTURE:
+#' ---------------
+#' Outer loop: n_total values (e.g., 100, 200, 300)
+#'   - BayesFlow requires fixed n_total per batch (ragged arrays not supported)
+#'   - All conditions with same n_total are processed together
+#'
+#' Inner loop: simulation batches (e.g., sims 1-500, then 501-1000)
+#'   - Controls memory usage by limiting how many sims we hold at once
+#'   - After each batch: summarize immediately, then free memory
+#'
+#' MEMORY FLOW PER BATCH:
+#' ----------------------
+#' 1. Simulate batch_n_sims datasets for each condition with this n_total
+#' 2. Stack into matrices (outcome, covariate, group)
+#' 3. Run BayesFlow inference → get posterior draws
+#' 4. Immediately summarize draws → 7 statistics per simulation
+#' 5. Free large objects (draws, simulation matrices)
+#' 6. Keep only the small summary tibble
+#'
+#' @keywords internal
+.run_with_r_simulation <- function(sim_fn, conditions_grid, model_bf,
+                                    n_sims, n_post_draws, target_param,
+                                    condition_args, static_args,
+                                    sim_batch_size, threshold, summary_probs,
+                                    return_draws, gc_between_batches, verbose) {
+
+ # Group conditions by n_total (required for BayesFlow batching)
+ unique_n <- unique(conditions_grid$n_total)
+ n_conditions_total <- nrow(conditions_grid)
+ total_sims <- n_conditions_total * n_sims
+ n_batches <- ceiling(n_sims / sim_batch_size)
+
+ # Storage for results - only summaries (small) unless return_draws=TRUE
+ all_summaries <- list()
+ all_draws_list <- if (return_draws) list() else NULL
+ global_sim_id <- 0L  # Running counter for unique simulation IDs
+
+ # ========================================================================
+ # OUTER LOOP: Process each unique n_total value
+ # ========================================================================
+ for (n_val in unique_n) {
+   # Get all conditions with this sample size
+   conds_subset <- conditions_grid[conditions_grid$n_total == n_val, ]
+   n_conds <- nrow(conds_subset)
+
+   # ======================================================================
+   # INNER LOOP: Process simulations in batches
+   # This is where memory savings come from - we don't hold all sims at once
+   # ======================================================================
+   for (batch_idx in seq_len(n_batches)) {
+     # Calculate which simulations are in this batch
+     batch_start <- (batch_idx - 1L) * sim_batch_size + 1L
+     batch_end <- min(batch_idx * sim_batch_size, n_sims)
+     batch_n_sims <- batch_end - batch_start + 1L
+     batch_total_datasets <- n_conds * batch_n_sims  # Total rows for inference
+
+     if (verbose) {
+       cat("[n_total=", n_val, "] Batch ", batch_idx, "/", n_batches,
+           ": simulating... ", sep = "")
+     }
+
+     # Preallocate matrices for this batch only (not all n_sims!)
+     # Shape: (n_conditions * batch_n_sims) x n_total
+     outcome_mat <- numeric(batch_total_datasets * n_val)
+     dim(outcome_mat) <- c(batch_total_datasets, n_val)
+     covariate_mat <- numeric(batch_total_datasets * n_val)
+     dim(covariate_mat) <- c(batch_total_datasets, n_val)
+     group_mat <- numeric(batch_total_datasets * n_val)
+     dim(group_mat) <- c(batch_total_datasets, n_val)
+     id_cond_vec <- integer(batch_total_datasets)
+     id_sim_vec <- integer(batch_total_datasets)
+
+     # Fill matrices by calling sim_fn for each condition
+     row_idx <- 1L
+     for (c_idx in seq_len(n_conds)) {
+       cond <- conds_subset[c_idx, ]
+
+       # Build arguments for simulation function:
+       # 1. Required args: n_sims (batch size!), n_total
+       # 2. Static args: same for all conditions (e.g., p_alloc, b_covariate)
+       # 3. Condition-specific args from grid (e.g., b_arm_treat)
+       sim_args <- c(
+         list(n_sims = batch_n_sims, n_total = n_val),
+         static_args
+       )
+
+       # Map grid columns to sim_fn argument names via condition_args
+       for (grid_col in names(condition_args)) {
+         arg_name <- condition_args[[grid_col]]
+         if (grid_col %in% names(cond)) {
+           sim_args[[arg_name]] <- cond[[grid_col]]
+         }
+       }
+
+       # Auto pass-through: columns not in condition_args go directly
+       # (allows grid columns to match sim_fn args without explicit mapping)
+       for (col in names(cond)) {
+         if (!(col %in% c("id_cond", "n_total")) && !(col %in% names(condition_args))) {
+           if (!(col %in% names(sim_args))) {
+             sim_args[[col]] <- cond[[col]]
+           }
+         }
+       }
+
+       # Call user's simulation function
+       sim_data <- do.call(sim_fn, sim_args)
+
+       # Store in batch matrices
+       end_row <- row_idx + batch_n_sims - 1L
+       outcome_mat[row_idx:end_row, ] <- sim_data$outcome
+       covariate_mat[row_idx:end_row, ] <- sim_data$covariate
+       group_mat[row_idx:end_row, ] <- sim_data$group
+       id_cond_vec[row_idx:end_row] <- cond$id_cond
+       id_sim_vec[row_idx:end_row] <- global_sim_id + seq_len(batch_n_sims)
+       global_sim_id <- global_sim_id + batch_n_sims
+       row_idx <- end_row + 1L
+     }
+
+     if (verbose) cat("inferring... ")
+
+     # --------------------------------------------------------------------
+     # BAYESFLOW INFERENCE
+     # Convert R matrices to NumPy and run amortized inference
+     # --------------------------------------------------------------------
+     data_cond <- list(
+       outcome = r_to_py(outcome_mat),
+       covariate = r_to_py(covariate_mat),
+       group = r_to_py(group_mat),
+       N = as.integer(n_val),
+       p_alloc = static_args$p_alloc %||% 0.5
+     )
+
+     # model_bf$sample() returns dict with parameter names as keys
+     # Each value has shape (n_datasets, n_post_draws, 1) - squeeze removes last dim
+     post_draws <- model_bf$sample(conditions = data_cond, num_samples = as.integer(n_post_draws))
+     draws_np <- np$squeeze(post_draws[[target_param]], axis = 2L)
+     draws_mat <- as.matrix(draws_np)  # Shape: (batch_total_datasets, n_post_draws)
+
+     if (verbose) cat("summarizing... ")
+
+     # --------------------------------------------------------------------
+     # SUMMARIZE IMMEDIATELY - This is the key memory optimization!
+     # Convert n_post_draws columns → 7 summary statistics
+     # --------------------------------------------------------------------
+     batch_summary <- .summarize_batch(
+       draws_mat = draws_mat,
+       id_cond_vec = id_cond_vec,
+       id_sim_vec = id_sim_vec,
+       threshold = threshold,
+       summary_probs = summary_probs
+     )
+     batch_summary$batch_id <- batch_idx
+     all_summaries[[length(all_summaries) + 1L]] <- batch_summary
+
+     # Optionally keep raw draws (not recommended for large analyses)
+     if (return_draws) {
+       all_draws_list[[length(all_draws_list) + 1L]] <- draws_np
+     }
+
+     # --------------------------------------------------------------------
+     # FREE MEMORY - Critical for memory efficiency!
+     # Remove large objects and optionally trigger garbage collection
+     # --------------------------------------------------------------------
+     rm(outcome_mat, covariate_mat, group_mat, draws_mat, post_draws, data_cond)
+     if (gc_between_batches) invisible(gc())
+
+     if (verbose) cat("done\n")
+   }
+ }
+
+ # Combine all batch summaries into single tibble
+ results_df <- bind_rows(all_summaries)
+
+ # Build return object
+ result <- list(
+   results_df = results_df,
+   backend = "r",
+   n_batches = n_batches
+ )
+
+ # If user requested raw draws, concatenate all batches
+ if (return_draws) {
+   result$draws <- do.call(np$concatenate, list(all_draws_list, axis = 0L))
+ }
+
+ result
+}
+
+
+#' Internal: Run with Python simulation function (with batching)
+#'
+#' PYTHON BACKEND NOTES:
+#' =====================
+#' This function handles Python simulation functions (accessed via reticulate).
+#' The batching strategy is identical to the R version, but with differences:
+#'
+#' 1. Python functions return NumPy arrays directly (no conversion needed)
+#' 2. We use np$vstack() to combine arrays (more efficient than R's rbind)
+#' 3. Integer args must be explicitly converted with as.integer() for Python
+#'
+#' WHEN TO USE PYTHON BACKEND:
+#' - When simulation logic is already in Python
+#' - When using NumPy-specific features (e.g., custom RNG, vectorized ops)
+#' - When maximum performance is needed (avoid R→Python conversion overhead)
+#'
+#' See .run_with_r_simulation() for detailed batching strategy documentation.
+#'
+#' @keywords internal
+.run_with_python_simulation <- function(sim_fn, conditions_grid, model_bf,
+                                         n_sims, n_post_draws, target_param,
+                                         condition_args, static_args,
+                                         sim_batch_size, threshold, summary_probs,
+                                         return_draws, gc_between_batches, verbose) {
+
+ # Import numpy for array operations (needed for vstack, squeeze)
+ np <- import("numpy")
+
+ # Setup - same structure as R version
+ unique_n <- unique(conditions_grid$n_total)
+ n_conditions_total <- nrow(conditions_grid)
+ n_batches <- ceiling(n_sims / sim_batch_size)
+
+ # Storage for results - only summaries unless return_draws=TRUE
+ all_summaries <- list()
+ all_draws_list <- if (return_draws) list() else NULL
+ global_sim_id <- 0L  # Running counter for unique simulation IDs
+
+ # ========================================================================
+ # OUTER LOOP: Process each unique n_total value
+ # (BayesFlow requires fixed n_total per batch - see R version for details)
+ # ========================================================================
+ for (n_val in unique_n) {
+   conds_subset <- conditions_grid[conditions_grid$n_total == n_val, ]
+   n_conds <- nrow(conds_subset)
+
+   # ======================================================================
+   # INNER LOOP: Process simulations in batches for memory efficiency
+   # ======================================================================
+   for (batch_idx in seq_len(n_batches)) {
+     batch_start <- (batch_idx - 1L) * sim_batch_size + 1L
+     batch_end <- min(batch_idx * sim_batch_size, n_sims)
+     batch_n_sims <- batch_end - batch_start + 1L
+     batch_total_datasets <- n_conds * batch_n_sims
+
+     if (verbose) {
+       cat("[n_total=", n_val, "] Batch ", batch_idx, "/", n_batches,
+           ": simulating... ", sep = "")
+     }
+
+     # Collect NumPy arrays in lists (will vstack later)
+     # Using lists because Python sim_fn returns NumPy arrays directly
+     outcome_list <- list()
+     covariate_list <- list()
+     group_list <- list()
+     id_cond_vec <- integer(batch_total_datasets)
+     id_sim_vec <- integer(batch_total_datasets)
+
+     row_idx <- 1L
+     for (c_idx in seq_len(n_conds)) {
+       cond <- conds_subset[c_idx, ]
+
+       # Build keyword arguments for Python function
+       # IMPORTANT: Must use as.integer() for int args (R defaults to double)
+       sim_kwargs <- c(
+         list(n_sims = as.integer(batch_n_sims), n_total = as.integer(n_val)),
+         lapply(static_args, function(x) if (is.integer(x)) as.integer(x) else x)
+       )
+
+       # Map grid columns to sim_fn argument names
+       for (grid_col in names(condition_args)) {
+         arg_name <- condition_args[[grid_col]]
+         if (grid_col %in% names(cond)) {
+           sim_kwargs[[arg_name]] <- cond[[grid_col]]
+         }
+       }
+
+       # Auto pass-through for unmapped columns
+       for (col in names(cond)) {
+         if (!(col %in% c("id_cond", "n_total")) && !(col %in% names(condition_args))) {
+           if (!(col %in% names(sim_kwargs))) {
+             sim_kwargs[[col]] <- cond[[col]]
+           }
+         }
+       }
+
+       # Call Python simulation function (returns dict with NumPy arrays)
+       sim_data <- do.call(sim_fn, sim_kwargs)
+
+       # Store NumPy arrays in lists for later stacking
+       outcome_list[[length(outcome_list) + 1L]] <- sim_data$outcome
+       covariate_list[[length(covariate_list) + 1L]] <- sim_data$covariate
+       group_list[[length(group_list) + 1L]] <- sim_data$group
+
+       # Track IDs (R vectors, not NumPy)
+       end_row <- row_idx + batch_n_sims - 1L
+       id_cond_vec[row_idx:end_row] <- cond$id_cond
+       id_sim_vec[row_idx:end_row] <- global_sim_id + seq_len(batch_n_sims)
+       global_sim_id <- global_sim_id + batch_n_sims
+       row_idx <- end_row + 1L
+     }
+
+     if (verbose) cat("inferring... ")
+
+     # --------------------------------------------------------------------
+     # BAYESFLOW INFERENCE
+     # Stack NumPy arrays and run amortized inference
+     # --------------------------------------------------------------------
+     outcome_mat <- np$vstack(outcome_list)    # Efficient NumPy vertical stack
+     covariate_mat <- np$vstack(covariate_list)
+     group_mat <- np$vstack(group_list)
+
+     data_cond <- list(
+       outcome = outcome_mat,
+       covariate = covariate_mat,
+       group = group_mat,
+       N = as.integer(n_val),
+       p_alloc = static_args$p_alloc %||% 0.5
+     )
+
+     # BayesFlow inference - returns dict with shape (n_datasets, n_draws, 1)
+     post_draws <- model_bf$sample(conditions = data_cond, num_samples = as.integer(n_post_draws))
+     draws_np <- np$squeeze(post_draws[[target_param]], axis = 2L)
+     draws_mat <- as.matrix(draws_np)  # Convert to R matrix for summarization
+
+     if (verbose) cat("summarizing... ")
+
+     # --------------------------------------------------------------------
+     # SUMMARIZE IMMEDIATELY - Key memory optimization
+     # --------------------------------------------------------------------
+     batch_summary <- .summarize_batch(
+       draws_mat = draws_mat,
+       id_cond_vec = id_cond_vec,
+       id_sim_vec = id_sim_vec,
+       threshold = threshold,
+       summary_probs = summary_probs
+     )
+     batch_summary$batch_id <- batch_idx
+     all_summaries[[length(all_summaries) + 1L]] <- batch_summary
+
+     # Optionally keep raw draws (memory intensive!)
+     if (return_draws) {
+       all_draws_list[[length(all_draws_list) + 1L]] <- draws_np
+     }
+
+     # --------------------------------------------------------------------
+     # FREE MEMORY - Critical for memory efficiency
+     # --------------------------------------------------------------------
+     rm(outcome_mat, covariate_mat, group_mat, outcome_list, covariate_list,
+        group_list, draws_mat, post_draws, data_cond)
+     if (gc_between_batches) invisible(gc())
+
+     if (verbose) cat("done\n")
+   }
+ }
+
+ # Combine summaries
+ results_df <- bind_rows(all_summaries)
+
+ # Build return object
+ result <- list(
+   results_df = results_df,
+   backend = "python",
+   n_batches = n_batches
+ )
+
+ if (return_draws) {
+   result$draws <- do.call(np$concatenate, list(all_draws_list, axis = 0L))
+ }
+
+ result
+}
+
+
+#' Process raw results into summary statistics
+#'
+#' This function creates per-condition summary statistics from per-simulation results.
+#' It handles both the new memory-efficient batched format and the legacy format
+#' (for backward compatibility).
+#'
+#' OUTPUT STRUCTURE:
+#' -----------------
+#' - results_df: Per-simulation metrics joined with condition info
+#'     - id_cond, id_sim, post_mean, post_median, post_sd, ci_lower, ci_upper
+#'     - prob_exceed_thresh, covered (if b_arm_treat exists)
+#'     - Plus all columns from conditions_grid
+#'
+#' - summary: Per-condition aggregates
+#'     - n_sims, mean_estimate, bias, rmse, coverage_95, mean_ci_width, power
+#'
+#' FORMAT DETECTION:
+#' -----------------
+#' - New batched format: results$results_df exists (summaries pre-computed)
+#' - Legacy format: results$draws exists (raw draws, need to compute summaries)
+#'
+#' @param results Output from run_npe_power_analysis
+#' @param conditions_grid Original conditions grid (needed for joining metadata)
+#' @param threshold Success threshold for power calculation (only used for legacy format;
+#'   new format uses threshold passed to run_npe_power_analysis)
+#' @return List with results_df (per-simulation), summary (per-condition),
+#'   backend ("r" or "python"), and n_batches
+process_npe_results <- function(results, conditions_grid, threshold = 0.1) {
+
+ # ========================================================================
+ # FORMAT DETECTION: New batched format vs legacy format
+ # ========================================================================
+ if (!is.null(results$results_df)) {
+   # NEW BATCHED FORMAT: Summaries already computed by .summarize_batch()
+   # Just need to join with condition metadata
+   results_df <- results$results_df |>
+     left_join(conditions_grid, by = "id_cond")
+ } else {
+   # LEGACY FORMAT: Raw draws available, compute summaries now
+   # (This path is taken if return_draws=TRUE was used, or for old code)
+   draws_mat <- as.matrix(results$draws)
+
+   results_df <- tibble(
+     id_cond = results$id_cond,
+     id_sim = results$id_sim,
+     post_mean = rowMeans(draws_mat),
+     post_median = rowMedians(draws_mat),
+     post_sd = rowSds(draws_mat),
+     ci_lower = rowQuantiles(draws_mat, probs = 0.025),
+     ci_upper = rowQuantiles(draws_mat, probs = 0.975),
+     prob_exceed_thresh = rowMeans(draws_mat > threshold)
+   ) |>
+     left_join(conditions_grid, by = "id_cond")
+ }
+
+ # ========================================================================
+ # COVERAGE CALCULATION (if true parameter value is known)
+ # ========================================================================
+ if ("b_arm_treat" %in% names(results_df)) {
+   results_df <- results_df |>
+     mutate(covered = b_arm_treat >= ci_lower & b_arm_treat <= ci_upper)
+ }
+
+ # ========================================================================
+ # PER-CONDITION SUMMARY (aggregate across simulations)
+ # ========================================================================
+ group_cols <- intersect(names(conditions_grid), names(results_df))
+
+ summary_df <- results_df |>
+   group_by(across(all_of(group_cols))) |>
+   summarise(
+     n_sims = n(),                                                              # Number of simulations
+     mean_estimate = mean(post_median),                                         # Average point estimate
+     bias = if ("b_arm_treat" %in% names(results_df)) mean(post_median - b_arm_treat) else NA_real_,
+     rmse = if ("b_arm_treat" %in% names(results_df)) sqrt(mean((post_median - b_arm_treat)^2)) else NA_real_,
+     coverage_95 = if ("covered" %in% names(results_df)) mean(covered) else NA_real_,
+     mean_ci_width = mean(ci_upper - ci_lower),                                 # Precision measure
+     power = mean(prob_exceed_thresh > 0.95),                                   # P(P(param > threshold) > 0.95)
+     .groups = "drop"
+   )
+
+ list(
+   results_df = results_df,
+   summary = summary_df,
+   backend = results$backend,
+   n_batches = results$n_batches %||% 1L
+ )
+}
+```
+
+# Example: Using R Simulation Function
+
+```{r load_model}
+# Load BayesFlow model
+model_bf <- keras$saving$load_model(
+ "checkpoints/ancova_cont_2arms_bkp.keras",
+ compile = TRUE,
+ safe_mode = FALSE
+)
+
+# Build conditions
+model <- rctbayespower::build_model(predefined_model = "ancova_cont_2arms")
+
+design <- build_design(
+ model = model,
+ target_params = "b_arm2",
+ p_sig_scs = boundary_obf(),
+ p_sig_ftl = boundary_obf(),
+ analysis_at = c(.3, .6, 1),
+ adaptive = FALSE
+)
+
+conditions <- build_conditions(
+ design = design,
+ condition_values = list(
+   n_total = seq(100, 300, by = 100),
+   b_arm_treat = c(0, 0.3)
+ ),
+ static_values = list(
+   b_covariate = 0,
+   thresholds_success = 0.1,
+   thresholds_futility = 0
+ )
+)
+
+conditions_grid <- conditions@conditions_grid
+```
+
+## Define R Simulation Function
+
+```{r r_sim_function}
+# User-defined R simulation function
+my_simulate_r <- function(n_sims, n_total, p_alloc = 0.5, b_covariate = 0,
+                          b_arm_treat = 0, intercept = 0, sigma = 1) {
+ n_total <- as.integer(n_total)
+ n_sims <- as.integer(n_sims)
+ total_elements <- n_sims * n_total
+
+ covariate_mat <- rnorm(total_elements)
+ dim(covariate_mat) <- c(n_sims, n_total)
+
+ group_mat <- rbinom(total_elements, size = 1, prob = p_alloc)
+ dim(group_mat) <- c(n_sims, n_total)
+
+ outcome_mat <- intercept +
+                covariate_mat * b_covariate +
+                group_mat * b_arm_treat +
+                rnorm(total_elements, mean = 0, sd = sigma)
+ dim(outcome_mat) <- c(n_sims, n_total)
+
+ list(
+   outcome = outcome_mat,
+   covariate = covariate_mat,
+   group = group_mat,
+   N = n_total,
+   p_alloc = p_alloc
+ )
+}
+```
+
+## Run with R Backend
+
+```{r run_r_backend}
+t_start <- Sys.time()
+
+results_r <- run_npe_power_analysis(
+ sim_fn = my_simulate_r,
+ conditions_grid = conditions_grid,
+ model_bf = model_bf,
+ n_sims = 1000L,
+ n_post_draws = 1000L,
+ target_param = "b_group",
+ static_args = list(p_alloc = 0.5, b_covariate = 0),
+ # Memory-efficient batching parameters
+ sim_batch_size = 1000L,  # Process 250 sims at a time
+ threshold = conditions@static_values$thresholds_success,
+ return_draws = FALSE,   # Only keep summaries (saves memory)
+ gc_between_batches = TRUE,
+ verbose = TRUE
+)
+
+t_end <- Sys.time()
+time_r <- as.numeric(difftime(t_end, t_start, units = "secs"))
+
+# Process results
+processed_r <- process_npe_results(
+ results_r,
+ conditions_grid,
+ threshold = conditions@static_values$thresholds_success
+)
+
+cat("\nR Backend completed in", round(time_r, 2), "seconds\n")
+cat("Batches used:", processed_r$n_batches, "\n")
+kable(processed_r$summary, digits = 3, caption = "R Backend Results")
+```
+
+# Example: Using Python Simulation Function
+
+## Define Python Simulation Function
+
+```{python py_sim_function}
+import numpy as np
+
+RNG = np.random.default_rng(2025)
+
+def my_simulate_py(n_sims, n_total, p_alloc=0.5, b_covariate=0.0, b_arm_treat=0.0):
+   """User-defined Python simulation function."""
+   n_sims = int(n_sims)
+   n_total = int(n_total)
+   p = float(p_alloc)
+   b_cov = float(b_covariate)
+   b_grp = float(b_arm_treat)
+
+   group = (RNG.random((n_sims, n_total)) < p).astype(np.float64)
+   covariate = RNG.standard_normal((n_sims, n_total))
+   noise = RNG.standard_normal((n_sims, n_total))
+   outcome = b_cov * covariate + b_grp * group + noise
+
+   return {
+       "outcome": outcome,
+       "covariate": covariate,
+       "group": group,
+       "N": n_total,
+       "p_alloc": p_alloc
+   }
+```
+
+## Run with Python Backend
+
+```{r run_python_backend}
+t_start <- Sys.time()
+
+results_py <- run_npe_power_analysis(
+ sim_fn = py$my_simulate_py,
+ conditions_grid = conditions_grid,
+ model_bf = model_bf,
+ n_sims = 1000L,
+ n_post_draws = 1000L,
+ target_param = "b_group",
+ static_args = list(p_alloc = 0.5, b_covariate = 0),
+ # Memory-efficient batching parameters
+ sim_batch_size = 1000L,  # Process 250 sims at a time
+ threshold = conditions@static_values$thresholds_success,
+ return_draws = FALSE,   # Only keep summaries (saves memory)
+ gc_between_batches = TRUE,
+ verbose = TRUE
+)
+
+t_end <- Sys.time()
+time_py <- as.numeric(difftime(t_end, t_start, units = "secs"))
+
+# Process results
+processed_py <- process_npe_results(
+ results_py,
+ conditions_grid,
+ threshold = conditions@static_values$thresholds_success
+)
+
+cat("\nPython Backend completed in", round(time_py, 2), "seconds\n")
+cat("Batches used:", processed_py$n_batches, "\n")
+kable(processed_py$summary, digits = 3, caption = "Python Backend Results")
+```
+
+# Comparison
+
+```{r comparison}
+comparison <- tibble(
+ Backend = c("R", "Python"),
+ Time = c(time_r, time_py),
+ `Mean Power (b=0.3)` = c(
+   mean(processed_r$summary$power[processed_r$summary$b_arm_treat == 0.3]),
+   mean(processed_py$summary$power[processed_py$summary$b_arm_treat == 0.3])
+ ),
+ `Mean Coverage` = c(
+   mean(processed_r$summary$coverage_95, na.rm = TRUE),
+   mean(processed_py$summary$coverage_95, na.rm = TRUE)
+ )
+)
+
+kable(comparison, digits = 3, caption = "Backend Comparison")
+```
+
+```{r comparison_plot}
+bind_rows(
+ processed_r$summary |> mutate(Backend = "R"),
+ processed_py$summary |> mutate(Backend = "Python")
+) |>
+ ggplot(aes(x = n_total, y = power, color = Backend, linetype = as.factor(b_arm_treat))) +
+ geom_line(linewidth = 1) +
+ geom_point(size = 2) +
+ geom_hline(yintercept = 0.8, linetype = "dashed", alpha = 0.3) +
+ labs(
+   title = "Power Curves: R vs Python Simulation Backend",
+   x = "Sample Size",
+   y = "Power",
+   linetype = "Effect Size"
+ ) +
+ theme_minimal() +
+ scale_color_brewer(palette = "Set1")
+```
+
+# Summary
+
+The unified workflow provides:
+
+| Feature | Description |
+|---------|-------------|
+| **Auto-detection** | Automatically detects R vs Python simulation functions |
+| **Consistent API** | Same `run_npe_power_analysis()` call regardless of backend |
+| **Flexible** | Accepts any simulation function following the contract |
+| **Efficient** | Batches by n_total, handles R→NumPy conversion automatically |
+| **Memory-efficient** | Optional `sim_batch_size` to process simulations in chunks |
+| **Extensible** | Easy to plug in custom simulation models |
+
+## Memory-Efficient Batching
+
+For large-scale analyses, use `sim_batch_size` to process simulations in chunks:
+
+```r
+run_npe_power_analysis(
+  ...,
+  sim_batch_size = 1000L,    # Process 500 sims at a time (default)
+  return_draws = FALSE,     # Only keep summaries (default)
+  gc_between_batches = TRUE # Free memory between batches (default)
+)
+```
+
+**Memory savings estimate:**
+
+| Scenario | Keep draws | Summaries only |
+|----------|------------|----------------|
+| 38 cond × 1000 sims × 1000 draws | ~304 MB | ~12 MB |
+| 100 cond × 5000 sims × 1000 draws | ~4 GB | ~160 MB |
+
+Per-simulation summary (7 floats) vs raw draws (1000 floats) = **~143x smaller**.
+
+**When to use which backend:**
+
+- **R**: When you have existing R simulation code or prefer R syntax
+- **Python**: When you need maximum performance or have Python-native simulations

@@ -1,10 +1,40 @@
 pkgname <- "rctbayespower"
 source(file.path(R.home("share"), "R", "examples-header.R"))
 options(warn = 1)
+options(pager = "console")
 library('rctbayespower')
 
 base::assign(".oldSearch", base::search(), pos = 'CheckExEnv')
 base::assign(".old_wd", base::getwd(), pos = 'CheckExEnv')
+cleanEx()
+nameEx("add_bf_backend")
+### * add_bf_backend
+
+flush(stderr()); flush(stdout())
+
+### Name: add_bf_backend
+### Title: Add BayesFlow Backend to Existing Model
+### Aliases: add_bf_backend
+
+### ** Examples
+
+## Not run: 
+##D # Start with brms-only model
+##D model <- build_model(predefined_model = "ancova_cont_2arms")
+##D model@active_backend  # "brms"
+##D 
+##D # Add BayesFlow backend
+##D bf_model <- load_bf_model("ancova_cont_2arms")
+##D model <- add_bf_backend(model, bf_model)
+##D model@active_backend  # "bf" (auto prefers BayesFlow)
+##D 
+##D # Force brms backend even with BayesFlow available
+##D model@backend <- "brms"
+##D model@active_backend  # "brms"
+## End(Not run)
+
+
+
 cleanEx()
 nameEx("analytical_power_ancova_cont_2arms")
 ### * analytical_power_ancova_cont_2arms
@@ -204,6 +234,14 @@ flush(stderr()); flush(stdout())
 ## Not run: 
 ##D # Method 1: Use predefined model (recommended)
 ##D ancova_model <- build_model(predefined_model = "ancova_cont_2arms")
+##D 
+##D # Method 2: Add BayesFlow backend later
+##D model <- build_model(predefined_model = "ancova_cont_2arms")
+##D bf_model <- load_bf_model("ancova_cont_2arms")
+##D model <- add_bf_backend(model, bf_model)
+##D 
+##D # Method 3: Force specific backend
+##D model@backend <- "brms"  # Use brms even if BayesFlow available
 ## End(Not run)
 
 
@@ -275,6 +313,48 @@ flush(stderr()); flush(stdout())
 ##D   b_arm_treat = c(0.5, 0.7),
 ##D   b_covariate = 0.3
 ##D )
+## End(Not run)
+
+
+
+cleanEx()
+nameEx("check_bf_available")
+### * check_bf_available
+
+flush(stderr()); flush(stdout())
+
+### Name: check_bf_available
+### Title: Check BayesFlow Availability
+### Aliases: check_bf_available
+
+### ** Examples
+
+## Not run: 
+##D if (check_bf_available(silent = TRUE)) {
+##D   message("BayesFlow is available!")
+##D }
+## End(Not run)
+
+
+
+cleanEx()
+nameEx("clear_model_cache")
+### * clear_model_cache
+
+flush(stderr()); flush(stdout())
+
+### Name: clear_model_cache
+### Title: Clear Model Cache
+### Aliases: clear_model_cache
+
+### ** Examples
+
+## Not run: 
+##D # Clear all cached models
+##D clear_model_cache()
+##D 
+##D # Clear only BayesFlow models
+##D clear_model_cache("bf")
 ## End(Not run)
 
 
@@ -362,6 +442,25 @@ flush(stderr()); flush(stdout())
 
 
 cleanEx()
+nameEx("get_cache_size")
+### * get_cache_size
+
+flush(stderr()); flush(stdout())
+
+### Name: get_cache_size
+### Title: Get Cache Size
+### Aliases: get_cache_size
+
+### ** Examples
+
+## Not run: 
+##D cache_size <- get_cache_size()
+##D print(paste("Total cache:", sum(cache_size) / 1e6, "MB"))
+## End(Not run)
+
+
+
+cleanEx()
 nameEx("get_output_mode")
 ### * get_output_mode
 
@@ -392,6 +491,26 @@ flush(stderr()); flush(stdout())
 
 get_verbosity()
 
+
+
+
+cleanEx()
+nameEx("init_bf_python")
+### * init_bf_python
+
+flush(stderr()); flush(stdout())
+
+### Name: init_bf_python
+### Title: Initialize BayesFlow Python Environment
+### Aliases: init_bf_python
+
+### ** Examples
+
+## Not run: 
+##D py_mods <- init_bf_python()
+##D py_mods$bf  # BayesFlow module
+##D py_mods$keras  # Keras module
+## End(Not run)
 
 
 
@@ -477,6 +596,28 @@ flush(stderr()); flush(stdout())
 
 
 cleanEx()
+nameEx("list_models")
+### * list_models
+
+flush(stderr()); flush(stdout())
+
+### Name: list_models
+### Title: List Available Models
+### Aliases: list_models
+
+### ** Examples
+
+## Not run: 
+##D # List all models
+##D list_models()
+##D 
+##D # List only BayesFlow models
+##D list_models("bf")
+## End(Not run)
+
+
+
+cleanEx()
 nameEx("list_predefined_models")
 ### * list_predefined_models
 
@@ -500,6 +641,50 @@ if (length(available_models) > 0) {
   model <- build_model(predefined_model = available_models[1])
 }
 
+
+
+
+cleanEx()
+nameEx("load_bf_model")
+### * load_bf_model
+
+flush(stderr()); flush(stdout())
+
+### Name: load_bf_model
+### Title: Load Pre-trained BayesFlow Model
+### Aliases: load_bf_model
+
+### ** Examples
+
+## Not run: 
+##D # Load predefined BayesFlow model
+##D bf_model <- load_bf_model("ancova_cont_2arms")
+##D 
+##D # Force re-download
+##D bf_model <- load_bf_model("ancova_cont_2arms", force_download = TRUE)
+## End(Not run)
+
+
+
+cleanEx()
+nameEx("load_brms_model")
+### * load_brms_model
+
+flush(stderr()); flush(stdout())
+
+### Name: load_brms_model
+### Title: Load Pre-compiled brms Model
+### Aliases: load_brms_model
+
+### ** Examples
+
+## Not run: 
+##D # Load predefined brms model
+##D model <- load_brms_model("ancova_cont_2arms")
+##D 
+##D # Force re-download
+##D model <- load_brms_model("ancova_cont_2arms", force_download = TRUE)
+## End(Not run)
 
 
 
@@ -553,6 +738,106 @@ flush(stderr()); flush(stdout())
 ##D print(conditions) # or just: conditions
 ## End(Not run)
 
+
+
+
+cleanEx()
+nameEx("report")
+### * report
+
+flush(stderr()); flush(stdout())
+
+### Name: report
+### Title: Generate Topic-Specific Reports
+### Aliases: report
+
+### ** Examples
+
+## Not run: 
+##D # Power metrics per condition
+##D report(result, topic = "power")
+##D 
+##D # Early stopping summary per condition (sequential only)
+##D report(result, topic = "stopping")
+##D 
+##D # Per-look stopping breakdown (sequential only)
+##D report(result, topic = "stopping_by_look")
+##D 
+##D # Multiple topics - generates concatenated reports
+##D report(result, topic = c("power", "stopping", "stopping_by_look"))
+##D 
+##D # Markdown format for Quarto integration
+##D report(result, topic = "power", format = "markdown")
+##D 
+##D # Start headings at level 3 (###) for embedding in a document section
+##D report(result, topic = "stopping", format = "markdown", heading_level = 3)
+## End(Not run)
+
+
+
+cleanEx()
+nameEx("report_power")
+### * report_power
+
+flush(stderr()); flush(stdout())
+
+### Name: report_power
+### Title: Report on Power Metrics per Condition
+### Aliases: report_power report_conditions
+
+### ** Examples
+
+## Not run: 
+##D # Power metrics report
+##D report_power(result)
+##D 
+##D # Markdown format for Quarto integration
+##D report_power(result, format = "markdown")
+## End(Not run)
+
+
+
+cleanEx()
+nameEx("report_stopping")
+### * report_stopping
+
+flush(stderr()); flush(stdout())
+
+### Name: report_stopping
+### Title: Report on Early Stopping Metrics per Condition
+### Aliases: report_stopping report_early_stopping
+
+### ** Examples
+
+## Not run: 
+##D # Early stopping summary per condition
+##D report_stopping(result)
+##D 
+##D # Markdown format for Quarto integration
+##D report_stopping(result, format = "markdown")
+## End(Not run)
+
+
+
+cleanEx()
+nameEx("report_stopping_by_look")
+### * report_stopping_by_look
+
+flush(stderr()); flush(stdout())
+
+### Name: report_stopping_by_look
+### Title: Report on Early Stopping per Look and Condition
+### Aliases: report_stopping_by_look
+
+### ** Examples
+
+## Not run: 
+##D # Per-look stopping breakdown
+##D report_stopping_by_look(result)
+##D 
+##D # Markdown format for Quarto integration
+##D report_stopping_by_look(result, format = "markdown")
+## End(Not run)
 
 
 
@@ -687,6 +972,58 @@ if (should_show(2)) {
   message("This is a debug message")
 }
 
+
+
+
+cleanEx()
+nameEx("simulate_data_ancova_cont_2arms_batch")
+### * simulate_data_ancova_cont_2arms_batch
+
+flush(stderr()); flush(stdout())
+
+### Name: simulate_data_ancova_cont_2arms_batch
+### Title: Simulate ANCOVA Data - Batched Format (2-arm)
+### Aliases: simulate_data_ancova_cont_2arms_batch
+### Keywords: internal
+
+### ** Examples
+
+## Not run: 
+##D # Generate 64 simulations with 100 subjects each
+##D batch_data <- simulate_data_ancova_cont_2arms_batch(
+##D   n_sims = 64,
+##D   n_total = 100,
+##D   b_arm_treat = 0.5,
+##D   b_covariate = 0.3
+##D )
+##D dim(batch_data$outcome)  # [64, 100]
+## End(Not run)
+
+
+
+cleanEx()
+nameEx("simulate_data_ancova_cont_3arms_batch")
+### * simulate_data_ancova_cont_3arms_batch
+
+flush(stderr()); flush(stdout())
+
+### Name: simulate_data_ancova_cont_3arms_batch
+### Title: Simulate ANCOVA Data - Batched Format (3-arm)
+### Aliases: simulate_data_ancova_cont_3arms_batch
+### Keywords: internal
+
+### ** Examples
+
+## Not run: 
+##D # Generate 64 simulations with 150 subjects each
+##D batch_data <- simulate_data_ancova_cont_3arms_batch(
+##D   n_sims = 64,
+##D   n_total = 150,
+##D   b_arm_treat = c(0.3, 0.5),
+##D   b_covariate = 0.3
+##D )
+##D dim(batch_data$outcome)  # [64, 150]
+## End(Not run)
 
 
 

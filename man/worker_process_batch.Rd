@@ -2,7 +2,7 @@
 % Please edit documentation in R/worker_functions.R
 \name{worker_process_batch}
 \alias{worker_process_batch}
-\title{Process Batch of Work Units (NPE Batching)}
+\title{Process Batch of Work Units (BayesFlow Batching)}
 \usage{
 worker_process_batch(work_units, design)
 }
@@ -16,7 +16,7 @@ Data frame with results for all work units and all analyses
 }
 \description{
 Processes a batch of (id_cond, id_iter) work units together. Only used when
-backend = "npe" and batch_size > 1. Enables efficient batch processing through
-neural network.
+backend = "bf" (BayesFlow) and batch_size > 1. Enables efficient batch processing
+through neural posterior estimation.
 }
 \keyword{internal}

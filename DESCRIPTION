@@ -38,7 +38,20 @@ Suggests:
     quarto,
     kableExtra,
     colorspace,
-    pbapply
+    pbapply,
+    rappdirs,
+    matrixStats,
+    reticulate (>= 1.41)
+SystemRequirements: Python (>= 3.10) for BayesFlow backend (optional)
+Config/reticulate:
+  list(
+    packages = list(
+      list(package = "bayesflow", version = ">= 2.0", pip = TRUE),
+      list(package = "keras", version = ">= 3.0", pip = TRUE),
+      list(package = "torch", pip = TRUE),
+      list(package = "numpy", pip = TRUE)
+    )
+  )
 Config/testthat/edition: 3
 URL: https://matthiaskloft.github.io/rctbayespower/, https://github.com/matthiaskloft/rctbayespower
 Config/Needs/website: 

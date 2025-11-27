@@ -2,8 +2,14 @@
 # S7 CLASS DEFINITION: rctbp_model
 # =============================================================================
 # Encapsulates all components needed for power analysis simulation including
-# data simulation function, posterior estimation model (brms or NPE), and
-# trial metadata (endpoints, arms, repeated measures).
+# data simulation function, posterior estimation models (brms AND/OR BayesFlow),
+# and trial metadata (endpoints, arms, repeated measures).
+#
+# Dual Backend Support:
+#   - Models can have brms_model, bayesflow_model, or BOTH
+#   - backend property controls which is used: "brms", "bf", or "auto"
+#   - "auto" prefers BayesFlow if available (faster), else brms
+#   - active_backend resolves "auto" to actual backend
 
 #' @importFrom S7 new_class class_character class_numeric class_integer class_function class_any new_union new_property
 rctbp_model <- S7::new_class(
@@ -12,8 +18,32 @@ rctbp_model <- S7::new_class(
     # Core components
     data_simulation_fn = S7::class_function,  # Generates trial data
     brms_model = S7::class_any | NULL,        # Template brmsfit object (backend = "brms")
-    bayesflow_model = S7::class_any | NULL,   # Neural posterior model (backend = "npe")
+    bayesflow_model = S7::class_any | NULL,   # Neural posterior model (backend = "bf")
+
+    # Backend selection: "brms", "bf", or "auto"
+    # "auto" = use whichever is available (prefer bf if both)
+    backend = S7::new_property(
+      class = S7::class_character,
+      default = "auto",
+      setter = function(self, value) {
+        if (!value %in% c("brms", "bf", "auto")) {
+          cli::cli_abort(c(
+            "{.arg backend} must be 'brms', 'bf', or 'auto'",
+            "x" = "You supplied {.val {value}}"
+          ))
+        }
+        self@backend <- value
+        self
+      }
+    ),
+
+    # Backend-specific arguments
     backend_args = S7::new_property(S7::class_list, default = list()),
+    backend_args_brms = S7::new_property(S7::class_list, default = list()),
+    backend_args_bf = S7::new_property(
+      S7::class_list,
+      default = list(batch_size = 64L, n_posterior_samples = 1000L)
+    ),
 
     # Model metadata
     predefined_model = S7::new_union(S7::class_character, NULL),  # Name if using predefined
@@ -23,20 +53,29 @@ rctbp_model <- S7::new_class(
     n_arms = S7::class_numeric,
     n_repeated_measures = S7::class_numeric | NULL,
 
-    # Computed properties (getters extract information dynamically)
-    backend = S7::new_property(
+    # Computed property: resolved backend (handles "auto" fallback)
+    active_backend = S7::new_property(
       class = S7::class_character,
       getter = function(self) {
-        # Backend determined by which model is present
-        if (!is.null(self@brms_model)) {
-          return("brms")
-        } else if (!is.null(self@bayesflow_model)) {
-          return("npe")
-        } else {
-          return(NA_character_)
+        if (self@backend != "auto") {
+          # Explicit backend requested - validate availability
+          if (self@backend == "brms" && is.null(self@brms_model)) {
+            cli::cli_abort("Backend 'brms' requested but no brms model available")
+          }
+          if (self@backend == "bf" && is.null(self@bayesflow_model)) {
+            cli::cli_abort("Backend 'bf' requested but no BayesFlow model available")
+          }
+          return(self@backend)
         }
+
+        # Auto fallback: prefer BayesFlow if available (faster), else brms
+        if (!is.null(self@bayesflow_model)) return("bf")
+        if (!is.null(self@brms_model)) return("brms")
+        cli::cli_abort("No backend available - provide brms_model or bayesflow_model")
       }
     ),
+
+    # Computed property: simulation parameter names
     parameter_names_sim_fn = S7::new_property(
       class = S7::class_character,
       getter = function(self) {
@@ -44,6 +83,8 @@ rctbp_model <- S7::new_class(
         names(formals(self@data_simulation_fn))
       }
     ),
+
+    # Computed property: brms parameter names
     parameter_names_brms = S7::new_property(
       class = S7::class_character,
       getter = function(self) {
@@ -58,26 +99,33 @@ rctbp_model <- S7::new_class(
   ),
   # Validator ensures object consistency and catches configuration errors early
   validator = function(self) {
-    # Validate exactly one backend model is provided (not both, not neither)
+    # Validate at least one backend model is provided
     has_brms <- !is.null(self@brms_model)
     has_bayesflow <- !is.null(self@bayesflow_model)
 
     if (!has_brms && !has_bayesflow) {
-      return("Either 'brms_model' or 'bayesflow_model' must be provided.")
+      return("At least one of 'brms_model' or 'bayesflow_model' must be provided.")
     }
 
-    if (has_brms && has_bayesflow) {
-      return("Only one of 'brms_model' or 'bayesflow_model' can be provided, not both.")
-    }
-
-    # Validate model type matches backend
+    # Validate model type if provided
     if (has_brms && !inherits(self@brms_model, "brmsfit")) {
       return("'brms_model' must be a valid brmsfit object.")
     }
 
-    # Validate backend_args is a list
+    # Validate backend_args are lists
     if (!is.list(self@backend_args)) {
       return("'backend_args' must be a list.")
+    }
+    if (!is.list(self@backend_args_brms)) {
+      return("'backend_args_brms' must be a list.")
+    }
+    if (!is.list(self@backend_args_bf)) {
+      return("'backend_args_bf' must be a list.")
+    }
+
+    # Validate backend value
+    if (!self@backend %in% c("brms", "bf", "auto")) {
+      return("'backend' must be 'brms', 'bf', or 'auto'.")
     }
 
     # Validate trial structure parameters
@@ -118,7 +166,7 @@ rctbp_model <- S7::new_class(
 #' Create a Build Model Object
 #'
 #' Constructs a build_model object that encapsulates a data simulation
-#' function, a posterior estimation model (brms or Bayesflow/NPE), and associated
+#' function, posterior estimation model(s) (brms and/or BayesFlow), and associated
 #' metadata for power analysis. This object serves as the foundation for Bayesian
 #' power analysis in RCTs with support for multiple backends.
 #'
@@ -127,12 +175,16 @@ rctbp_model <- S7::new_class(
 #'   data simulation.
 #' @param brms_model A fitted brmsfit object that serves as the template model.
 #'   This should be compiled without posterior draws (chains = 0) for efficiency.
-#'   Provide either brms_model or bayesflow_model, not both.
-#' @param bayesflow_model A trained neural posterior estimation model (keras/tensorflow).
-#'   Use this for NPE backend instead of brms. Provide either brms_model or
-#'   bayesflow_model, not both.
-#' @param backend_args Named list of backend-specific arguments. For brms: chains,
-#'   iter, cores, etc. For NPE: batch_size, n_posterior_samples, etc.
+#'   Can provide brms_model, bayesflow_model, or both.
+#' @param bayesflow_model A trained BayesFlow neural posterior estimation model
+#'   (keras model via reticulate). Can provide brms_model, bayesflow_model, or both.
+#' @param backend Which backend to use: "brms", "bf", or "auto" (default).
+#'   "auto" prefers BayesFlow if available (faster), else uses brms.
+#' @param backend_args Named list of backend-specific arguments (legacy, use
+#'   backend_args_brms or backend_args_bf instead).
+#' @param backend_args_brms List of brms-specific arguments: chains, iter, cores, etc.
+#' @param backend_args_bf List of BayesFlow-specific arguments: batch_size,
+#'   n_posterior_samples, etc. Default: list(batch_size = 64L, n_posterior_samples = 1000L)
 #' @param n_endpoints Number of endpoints in the study (must be positive integer)
 #' @param endpoint_types Character vector specifying the type of each endpoint.
 #'   Valid types are "continuous", "binary", "count". Length must match n_endpoints.
@@ -153,15 +205,22 @@ rctbp_model <- S7::new_class(
 #' The build_model class encapsulates all components needed for power
 #' analysis simulation:
 #'
+#' \strong{Dual Backend Support:} Models can have both brms and BayesFlow backends
+#' simultaneously. The `backend` parameter controls which is used at runtime:
+#' \itemize{
+#'   \item "brms" - Force brms backend
+#'   \item "bf" - Force BayesFlow backend
+#'   \item "auto" - Use BayesFlow if available (faster), else brms
+#' }
+#'
+#' You can switch backends at any time: `model@backend <- "brms"`
 #'
 #' \strong{Predefined Models:} For convenience, users can specify predefined_model
 #' to use ready-made model configurations. This is the recommended approach for
 #' standard analyses. When using predefined models, other parameters are ignored.
 #'
-#'
 #' \strong{Custom Models:} For advanced users, custom models can be created by
-#' providing all required parameters:
-#'
+#' providing all required parameters.
 #'
 #' \strong{Data Simulation Function:} Must accept n_total (total sample size),
 #' p_alloc (vector of allocation probabilities), and true_parameter_values
@@ -172,25 +231,40 @@ rctbp_model <- S7::new_class(
 #' The model should be fitted with minimal chains (e.g., chains = 0) to serve
 #' as a compilation template only.
 #'
-#' \strong{Validation:} The function validates that the data simulation function
-#' has the required parameter structure and that the brms model is properly fitted.
+#' \strong{BayesFlow Model:} A trained BayesFlow approximator (.keras file) loaded
+#' via Python/reticulate. See [load_bf_model()] for loading pre-trained models.
 #'
 #' @return An S7 object of class "rctbp_model" containing the specified properties
 #'
 #' @export
 #' @importFrom stringr str_subset
-#' @seealso [build_design()], [build_model_ancova()]
+#' @seealso [build_design()], [build_model_ancova()], [add_bf_backend()],
+#'   [load_bf_model()], [load_brms_model()]
 #'
 #' @examples
 #' \dontrun{
 #' # Method 1: Use predefined model (recommended)
 #' ancova_model <- build_model(predefined_model = "ancova_cont_2arms")
+#'
+#' # Method 2: Add BayesFlow backend later
+#' model <- build_model(predefined_model = "ancova_cont_2arms")
+#' bf_model <- load_bf_model("ancova_cont_2arms")
+#' model <- add_bf_backend(model, bf_model)
+#'
+#' # Method 3: Force specific backend
+#' model@backend <- "brms"  # Use brms even if BayesFlow available
 #' }
 build_model <- function(predefined_model = NULL,
                         data_simulation_fn,
                         brms_model = NULL,
                         bayesflow_model = NULL,
+                        backend = "auto",
                         backend_args = list(),
+                        backend_args_brms = list(),
+                        backend_args_bf = list(
+                          batch_size = 64L,
+                          n_posterior_samples = 1000L
+                        ),
                         n_endpoints = NULL,
                         endpoint_types = NULL,
                         n_arms = NULL,
@@ -227,19 +301,20 @@ build_model <- function(predefined_model = NULL,
     ))
   }
 
-  # Validate that exactly one model is provided
-  if (is.null(brms_model) && is.null(bayesflow_model)) {
+  # Validate backend parameter
+  if (!backend %in% c("brms", "bf", "auto")) {
     cli::cli_abort(c(
-      "Either {.arg brms_model} or {.arg bayesflow_model} must be provided",
-      "x" = "Both are NULL",
-      "i" = "Provide one model specification"
+      "{.arg backend} must be 'brms', 'bf', or 'auto'",
+      "x" = "You supplied {.val {backend}}"
     ))
   }
-  if (!is.null(brms_model) && !is.null(bayesflow_model)) {
+
+  # Validate at least one model is provided
+  if (is.null(brms_model) && is.null(bayesflow_model)) {
     cli::cli_abort(c(
-      "Only one of {.arg brms_model} or {.arg bayesflow_model} can be provided",
-      "x" = "Both were supplied",
-      "i" = "Choose one model backend"
+      "At least one of {.arg brms_model} or {.arg bayesflow_model} must be provided",
+      "x" = "Both are NULL",
+      "i" = "Provide at least one model specification"
     ))
   }
 
@@ -252,8 +327,11 @@ build_model <- function(predefined_model = NULL,
 
   # Set default model_name if NULL
   if (is.null(model_name)) {
-    backend_type <- if (!is.null(brms_model)) "brms" else "NPE"
-    model_name <- paste0("Custom Model (", backend_type, ")")
+    backends_present <- c()
+    if (!is.null(brms_model)) backends_present <- c(backends_present, "brms")
+    if (!is.null(bayesflow_model)) backends_present <- c(backends_present, "bf")
+    backend_str <- paste(backends_present, collapse = "+")
+    model_name <- paste0("Custom Model (", backend_str, ")")
   }
 
   # Create S7 object - validation happens automatically
@@ -262,7 +340,10 @@ build_model <- function(predefined_model = NULL,
     data_simulation_fn = data_simulation_fn,
     brms_model = brms_model,
     bayesflow_model = bayesflow_model,
+    backend = backend,
     backend_args = backend_args,
+    backend_args_brms = backend_args_brms,
+    backend_args_bf = backend_args_bf,
     model_name = model_name,
     n_endpoints = n_endpoints,
     endpoint_types = endpoint_types,
@@ -383,5 +464,128 @@ get_predefined_model <- function(model_name) {
       "x" = "Got {.cls {class(model)}}"
     ), call = FALSE)
   }
+  model
+}
+
+
+# =============================================================================
+# UTILITY FUNCTIONS: Backend Management
+# =============================================================================
+
+#' Add BayesFlow Backend to Existing Model
+#'
+#' Adds a BayesFlow model to an existing rctbp_model that only has brms.
+#' This enables dual-backend support, allowing comparison between backends
+#' or switching to the faster BayesFlow backend.
+#'
+#' @param model Existing rctbp_model object
+#' @param bayesflow_model BayesFlow/Keras model (Python object via reticulate).
+#'   Load using [load_bf_model()] or Python's keras.models.load_model().
+#' @param backend_args_bf BayesFlow configuration (batch_size, n_posterior_samples)
+#' @param set_active Whether to switch to BayesFlow backend (default TRUE)
+#'
+#' @return The modified model with BayesFlow backend added
+#'
+#' @export
+#' @seealso [build_model()], [load_bf_model()]
+#'
+#' @examples
+#' \dontrun{
+#' # Start with brms-only model
+#' model <- build_model(predefined_model = "ancova_cont_2arms")
+#' model@active_backend  # "brms"
+#'
+#' # Add BayesFlow backend
+#' bf_model <- load_bf_model("ancova_cont_2arms")
+#' model <- add_bf_backend(model, bf_model)
+#' model@active_backend  # "bf" (auto prefers BayesFlow)
+#'
+#' # Force brms backend even with BayesFlow available
+#' model@backend <- "brms"
+#' model@active_backend  # "brms"
+#' }
+add_bf_backend <- function(model, bayesflow_model,
+                            backend_args_bf = list(
+                              batch_size = 64L,
+                              n_posterior_samples = 1000L
+                            ),
+                            set_active = TRUE) {
+
+  # Validate input
+  if (!inherits(model, "rctbayespower::rctbp_model") &&
+      !inherits(model, "rctbp_model")) {
+    cli::cli_abort(c(
+      "{.arg model} must be an rctbp_model object",
+      "x" = "Got {.cls {class(model)}}"
+    ))
+  }
+
+  if (is.null(bayesflow_model)) {
+    cli::cli_abort("{.arg bayesflow_model} cannot be NULL")
+  }
+
+  # Add BayesFlow model and args
+  model@bayesflow_model <- bayesflow_model
+  model@backend_args_bf <- backend_args_bf
+
+  # Optionally switch to BayesFlow backend
+  if (set_active) {
+    model@backend <- "bf"
+  }
+
+  model
+}
+
+
+#' Add brms Backend to Existing Model
+#'
+#' Adds a brms model to an existing rctbp_model that only has BayesFlow.
+#' This enables dual-backend support.
+#'
+#' @param model Existing rctbp_model object
+#' @param brms_model Compiled brmsfit template model
+#' @param backend_args_brms brms configuration (chains, iter, etc.)
+#' @param set_active Whether to switch to brms backend (default FALSE)
+#'
+#' @return The modified model with brms backend added
+#'
+#' @export
+#' @seealso [build_model()], [load_brms_model()]
+add_brms_backend <- function(model, brms_model,
+                              backend_args_brms = list(),
+                              set_active = FALSE) {
+
+  # Validate input
+  if (!inherits(model, "rctbayespower::rctbp_model") &&
+      !inherits(model, "rctbp_model")) {
+    cli::cli_abort(c(
+      "{.arg model} must be an rctbp_model object",
+      "x" = "Got {.cls {class(model)}}"
+    ))
+  }
+
+  if (is.null(brms_model)) {
+    cli::cli_abort("{.arg brms_model} cannot be NULL")
+  }
+
+  if (!inherits(brms_model, "brmsfit")) {
+    cli::cli_abort(c(
+      "{.arg brms_model} must be a brmsfit object",
+      "x" = "Got {.cls {class(brms_model)}}"
+    ))
+  }
+
+  # Strip posterior draws for efficiency
+  brms_model <- suppressMessages(stats::update(brms_model, chains = 0, silent = 2))
+
+  # Add brms model and args
+  model@brms_model <- brms_model
+  model@backend_args_brms <- backend_args_brms
+
+  # Optionally switch to brms backend
+  if (set_active) {
+    model@backend <- "brms"
+  }
+
   model
 }
