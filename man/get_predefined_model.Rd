@@ -10,8 +10,10 @@ get_predefined_model(model_name)
 \item{model_name}{Character scalar, name of the predefined model.}
 }
 \value{
-The model object.
+The model object (rctbp_model).
 }
 \description{
-Access an internal predefined model by name.
+Builds a predefined model, caching the compiled brmsfit for efficiency.
+On first use, compiles the brms model and caches it locally.
+On subsequent uses, loads the cached brmsfit and creates a fresh rctbp_model.
 }

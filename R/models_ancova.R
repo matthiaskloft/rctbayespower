@@ -386,11 +386,6 @@ build_model_ancova <- function(prior_intercept = NULL,
 
   # compile the brms model -----------------------------------------------------
 
-  # fit the brms model
-  if (should_show(1)) {
-    cli::cli_alert_info("Compiling the brms model")
-  }
-
   # model for retrieving parameter names
   brms_model_ancova <-
     suppressMessages(suppressWarnings(
@@ -405,18 +400,13 @@ build_model_ancova <- function(prior_intercept = NULL,
         silent = 2
       )
     ))
-  if (should_show(1)) {
-    cli::cli_alert_success("Model compilation done")
-  }
-
-
 
   # build model object ---------------------------------------------------------
 
   # Create S7 ANCOVA model object
   ancova_model <- rctbp_model(
-    data_simulation_fn = simulate_data_ancova,
-    brms_model = brms_model_ancova,
+    sim_fn = simulate_data_ancova,
+    inference_model = brms_model_ancova,
     model_name = "ANCOVA",
     n_endpoints = 1L,
     endpoint_types = "continuous",

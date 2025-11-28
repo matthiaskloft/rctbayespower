@@ -362,19 +362,39 @@ compute_summaries_batch_ancova <- function(data_batch) {
 
 #' Prepare Single data.frame as Batch Format for BayesFlow
 #'
-#' Converts a single simulation's data.frame to the batch format expected
-#' by BayesFlow models.
+#' Converts a single simulation's data to the batch format expected
+#' by BayesFlow models. Handles both:
+#' - R data.frame (rows=observations, cols=outcome/covariate/arm)
+#' - Python batch dict (matrices with rows=simulations, cols=observations)
 #'
-#' @param data Single data.frame with columns: outcome, covariate, arm
+#' @param data Single data.frame OR Python batch dict
 #' @param backend_args List containing p_alloc and other settings
 #'
 #' @return List with batch-formatted arrays (n_sims = 1)
 #' @keywords internal
 prepare_single_as_batch_bf <- function(data, backend_args) {
+  # Detect if this is Python batch format (dict with matrices)
+  # Python sim_fn returns: list(outcome=matrix, covariate=matrix, group=matrix, N=int)
+  if (is.list(data) && !is.data.frame(data) && "outcome" %in% names(data)) {
+    # Already in batch format from Python sim_fn
+    # Just ensure group key exists (Python uses 'group', some may use 'arm')
+    group_data <- data$group %||% data$arm
+    return(list(
+      outcome = if (is.matrix(data$outcome)) data$outcome else matrix(data$outcome, nrow = 1),
+      covariate = if (is.matrix(data$covariate)) data$covariate else matrix(data$covariate, nrow = 1),
+      group = if (is.matrix(group_data)) group_data else matrix(group_data, nrow = 1),
+      N = data$N %||% ncol(data$outcome),
+      p_alloc = data$p_alloc %||% backend_args$p_alloc %||% 0.5
+    ))
+  }
+
+  # R data.frame format (rows=observations)
+  # Need to convert arm factor to numeric if present
+  arm_numeric <- if (is.factor(data$arm)) as.numeric(data$arm) - 1 else data$arm
   list(
     outcome = matrix(data$outcome, nrow = 1),
     covariate = matrix(data$covariate, nrow = 1),
-    group = matrix(data$arm, nrow = 1),
+    group = matrix(arm_numeric, nrow = 1),
     N = nrow(data),
     p_alloc = backend_args$p_alloc %||% 0.5
   )
@@ -383,22 +403,53 @@ prepare_single_as_batch_bf <- function(data, backend_args) {
 
 #' Prepare List of data.frames as Batch Format for BayesFlow
 #'
-#' Converts a list of simulation data.frames to the batch format expected
-#' by BayesFlow models.
+#' Converts a list of simulation data to the batch format expected
+#' by BayesFlow models. Handles both:
+#' - R data.frames (rows=observations)
+#' - Python batch dicts (matrices with rows=simulations)
 #'
-#' @param data_list List of data.frames, each with columns: outcome, covariate, arm
+#' @param data_list List of data.frames OR Python batch dicts
 #' @param backend_args List containing p_alloc and other settings
 #'
 #' @return List with batch-formatted arrays
 #' @keywords internal
 prepare_data_list_as_batch_bf <- function(data_list, backend_args) {
-  list(
-    outcome = do.call(rbind, lapply(data_list, function(d) d$outcome)),
-    covariate = do.call(rbind, lapply(data_list, function(d) d$covariate)),
-    group = do.call(rbind, lapply(data_list, function(d) d$arm)),
-    N = nrow(data_list[[1]]),
-    p_alloc = backend_args$p_alloc %||% 0.5
-  )
+  # Check first element to detect format
+  first <- data_list[[1]]
+
+  if (is.list(first) && !is.data.frame(first) && "outcome" %in% names(first)) {
+    # Python batch format - each element is already a batch dict with matrices
+    # Stack the matrices vertically
+    outcome_list <- lapply(data_list, function(d) {
+      if (is.matrix(d$outcome)) d$outcome else matrix(d$outcome, nrow = 1)
+    })
+    covariate_list <- lapply(data_list, function(d) {
+      if (is.matrix(d$covariate)) d$covariate else matrix(d$covariate, nrow = 1)
+    })
+    group_list <- lapply(data_list, function(d) {
+      g <- d$group %||% d$arm
+      if (is.matrix(g)) g else matrix(g, nrow = 1)
+    })
+
+    list(
+      outcome = do.call(rbind, outcome_list),
+      covariate = do.call(rbind, covariate_list),
+      group = do.call(rbind, group_list),
+      N = first$N %||% ncol(first$outcome),
+      p_alloc = first$p_alloc %||% backend_args$p_alloc %||% 0.5
+    )
+  } else {
+    # R data.frame format
+    list(
+      outcome = do.call(rbind, lapply(data_list, function(d) d$outcome)),
+      covariate = do.call(rbind, lapply(data_list, function(d) d$covariate)),
+      group = do.call(rbind, lapply(data_list, function(d) {
+        if (is.factor(d$arm)) as.numeric(d$arm) - 1 else d$arm
+      })),
+      N = nrow(data_list[[1]]),
+      p_alloc = backend_args$p_alloc %||% 0.5
+    )
+  }
 }
 
 
@@ -559,10 +610,8 @@ mock_bf_samples <- function(batch_size, n_samples, data_batch = NULL) {
 #' Processes a batch of simulations through BayesFlow in a single forward pass.
 #' This is the core function for neural posterior estimation.
 #'
-#' Supports multiple BayesFlow model types:
-#' - BasicWorkflow: Uses workflow.sample(conditions=dict, num_samples=int)
-#' - Approximator: Uses approximator.sample(data=dict, num_samples=int)
-#' - Raw Keras: Uses model.predict() + Gaussian sampling
+#' The model's adapter handles summary statistic computation internally.
+#' We pass raw data (outcome, covariate, group, N, p_alloc) to the model.
 #'
 #' Mock Mode: Set environment variable RCTBP_MOCK_BF=TRUE to use mock samples
 #' instead of actual BayesFlow inference. Useful for testing R infrastructure.
@@ -588,50 +637,63 @@ estimate_batch_bf <- function(data_batch, bf_model, backend_args, target_params)
     return(mock_bf_samples(batch_size, n_samples, data_batch))
   }
 
+  # Validate model before proceeding
+
+  if (is.null(bf_model)) {
+    cli::cli_abort(c(
+      "BayesFlow model is NULL",
+      "i" = "The model may not have been loaded correctly",
+      "i" = "Check that the model file exists and is a valid BayesFlow model"
+    ))
+  }
+
+  # Check if model is a valid Python object
+  if (!inherits(bf_model, "python.builtin.object")) {
+    cli::cli_abort(c(
+      "BayesFlow model is not a valid Python object",
+      "x" = "Model class: {.cls {class(bf_model)}}",
+      "i" = "The model may have been corrupted during serialization",
+      "i" = "BayesFlow backend does not support parallel execution"
+    ))
+  }
+
   # Initialize Python
   py_mods <- init_bf_python()
   np <- py_mods$np
 
-  # Step 1: Compute summary statistics from data batch
-  summaries <- compute_summaries_batch_ancova(data_batch)
-  batch_size <- nrow(summaries)
+  # Step 1: Convert R matrices to NumPy arrays and create conditions dict in Python
+  # Note: Creating dict in R with reticulate::dict() and numpy arrays causes issues
+  # So we construct the dict directly in Python using reticulate::r_to_py()
+  data_cond <- reticulate::r_to_py(list(
+    outcome = np$array(data_batch$outcome, dtype = "float32"),
+    covariate = np$array(data_batch$covariate, dtype = "float32"),
+    group = np$array(data_batch$group, dtype = "float32"),
+    N = as.integer(data_batch$N),
+    p_alloc = as.numeric(data_batch$p_alloc)
+  ))
 
-  # Step 2: Convert to NumPy array
-  summaries_np <- np$array(summaries, dtype = "float32")
-
-  # Step 3: Call BayesFlow model for posterior samples
+  # Step 2: Call BayesFlow model for posterior samples
   samples_py <- tryCatch({
-    sample_bf_model(
-      bf_model = bf_model,
-      summaries_np = summaries_np,
-      n_samples = n_samples,
-      target_param = target_params[1]
-    )
+    bf_model$sample(conditions = data_cond, num_samples = n_samples)
   }, error = function(e) {
     cli::cli_abort(c(
       "BayesFlow sampling failed",
       "x" = e$message,
-      "i" = "Check that the model is compatible with the summary statistics format"
+      "i" = "Check that the model is compatible with the data format"
     ))
   })
 
-  # Step 4: Convert back to R matrix
+  # Step 3: Convert back to R matrix
   samples_r <- reticulate::py_to_r(samples_py)
 
   # Handle different output shapes
-  # Expected shapes:
-  # - [batch_size, n_samples] for single parameter
-
-  # - [batch_size, n_samples, n_params] for multiple parameters
-  # - dict with parameter names as keys
+  # Expected: dict with parameter names as keys (e.g., "b_group")
+  # Each value has shape [batch_size, n_samples, 1]
   if (is.list(samples_r) && !is.matrix(samples_r)) {
-    # Dict output from workflow - extract target parameter
+    # Dict output - extract target parameter
     if (target_params[1] %in% names(samples_r)) {
       samples_r <- samples_r[[target_params[1]]]
-    } else if ("parameters" %in% names(samples_r)) {
-      # Generic "parameters" key
-      samples_r <- samples_r[["parameters"]]
-    } else {
+    } else if (length(samples_r) > 0) {
       # Use first element
       samples_r <- samples_r[[1]]
     }
@@ -639,7 +701,7 @@ estimate_batch_bf <- function(data_batch, bf_model, backend_args, target_params)
 
   # Ensure 2D matrix [batch_size, n_samples]
   if (length(dim(samples_r)) == 3) {
-    # [batch, samples, params] -> select first param -> [batch, samples]
+    # [batch, samples, params] -> squeeze last dim -> [batch, samples]
     samples_r <- samples_r[, , 1, drop = TRUE]
   }
 
@@ -689,50 +751,77 @@ estimate_single_bf <- function(data, model, backend_args, target_params,
                                 thresholds_success, thresholds_futility,
                                 p_sig_scs, p_sig_ftl, id_iter, id_cond) {
 
-  # Determine if this is a batch call (list of data.frames) or single call
-  is_batch <- is.list(data) && !is.data.frame(data)
+  # Detect data format:
+  # 1. R data.frame (single sim, rows=observations)
+  # 2. Python batch dict (single sim, has 'outcome' key with matrix)
+  # 3. List of R data.frames (multiple sims)
+  # 4. List of Python batch dicts (multiple sims)
 
-  if (is_batch) {
-    # Batch processing: list of data.frames
-    data_list <- data
-    batch_size <- length(data_list)
-    n_analyzed <- nrow(data_list[[1]])
+  is_python_batch_dict <- function(x) {
+    is.list(x) && !is.data.frame(x) && "outcome" %in% names(x)
+  }
+
+  if (is.data.frame(data)) {
+    # Case 1: Single R data.frame
+    batch_size <- 1L
+    n_analyzed <- nrow(data)
+    data_batch <- prepare_single_as_batch_bf(data, backend_args)
+
+  } else if (is_python_batch_dict(data)) {
+    # Case 2: Single Python batch dict
+    batch_size <- nrow(data$outcome)
+    n_analyzed <- ncol(data$outcome)
+    data_batch <- prepare_single_as_batch_bf(data, backend_args)
+
+    # Expand id vectors if needed (Python batch may have multiple rows)
+    if (length(id_iter) == 1 && batch_size > 1) id_iter <- rep(id_iter, batch_size)
+    if (length(id_cond) == 1 && batch_size > 1) id_cond <- rep(id_cond, batch_size)
+
+  } else if (is.list(data) && length(data) > 0) {
+    # Case 3 or 4: List of simulations
+    first <- data[[1]]
+    batch_size <- length(data)
+
+    if (is.data.frame(first)) {
+      # Case 3: List of R data.frames
+      n_analyzed <- nrow(first)
+    } else if (is_python_batch_dict(first)) {
+      # Case 4: List of Python batch dicts (each with 1 row)
+      n_analyzed <- ncol(first$outcome)
+    } else {
+      cli::cli_abort("Unknown data format in estimate_single_bf")
+    }
 
     # Ensure id vectors are correct length
     if (length(id_iter) == 1) id_iter <- rep(id_iter, batch_size)
     if (length(id_cond) == 1) id_cond <- rep(id_cond, batch_size)
 
     # Prepare batch data
-    data_batch <- prepare_data_list_as_batch_bf(data_list, backend_args)
-  } else {
-    # Single data.frame: wrap as batch of 1
-    batch_size <- 1L
-    n_analyzed <- nrow(data)
+    data_batch <- prepare_data_list_as_batch_bf(data, backend_args)
 
-    # Prepare single as batch
-    data_batch <- prepare_single_as_batch_bf(data, backend_args)
+  } else {
+    cli::cli_abort("Unknown data format in estimate_single_bf")
   }
 
   # Estimate posterior via BayesFlow
+  bf_error_msg <- NULL
   draws_matrix <- tryCatch({
     estimate_batch_bf(data_batch, model, backend_args, target_params)
   }, error = function(e) {
-    cli::cli_warn(c(
-      "BayesFlow estimation failed",
-      "x" = "Condition {id_cond[1]}, iteration {id_iter[1]}",
-      "i" = "Error: {e$message}"
-    ))
+    # Capture the actual error message for debugging
+    bf_error_msg <<- conditionMessage(e)
     return(NULL)
   })
 
   if (is.null(draws_matrix)) {
-    # Create error results for all simulations in batch
+    # Create error results for all simulations in batch with actual error message
+    error_msg <- paste("BayesFlow estimation failed:", bf_error_msg %||% "unknown error")
     error_results <- lapply(seq_len(batch_size), function(i) {
       create_error_result(
         id_iter[i],
         id_cond[i],
         id_analysis = 0L,
-        "BayesFlow estimation failed"
+        error_msg
       )
     })
     return(dplyr::bind_rows(error_results))
@@ -822,21 +911,20 @@ estimate_sequential_bf <- function(full_data_list, model, backend_args, target_p
     data_batch <- prepare_data_list_as_batch_bf(analysis_data_list, backend_args)
 
     # Single BayesFlow forward pass for all active simulations
+    bf_error_msg <- NULL
     draws_matrix <- tryCatch({
       estimate_batch_bf(data_batch, model, backend_args, target_params)
     }, error = function(e) {
-      cli::cli_warn(c(
-        "BayesFlow batch estimation failed",
-        "x" = "Analysis {id_analysis}",
-        "i" = "Error: {e$message}"
-      ))
+      # Capture the actual error message for debugging
+      bf_error_msg <<- conditionMessage(e)
       return(NULL)
     })
 
     if (is.null(draws_matrix)) {
-      # Create error results for all active simulations
+      # Create error results for all active simulations with actual error message
+      error_msg <- paste("BayesFlow estimation failed:", bf_error_msg %||% "unknown error")
       error_results <- do.call(rbind, lapply(active_idx, function(i) {
-        create_error_result(id_iter[i], id_cond[i], id_analysis, "BayesFlow estimation failed")
+        create_error_result(id_iter[i], id_cond[i], id_analysis, error_msg)
       }))
       all_results[[id_analysis]] <- error_results
       next

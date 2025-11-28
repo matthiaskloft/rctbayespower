@@ -7,7 +7,7 @@
 prepare_single_as_batch_bf(data, backend_args)
 }
 \arguments{
-\item{data}{Single data.frame with columns: outcome, covariate, arm}
+\item{data}{Single data.frame OR Python batch dict}
 
 \item{backend_args}{List containing p_alloc and other settings}
 }
@@ -15,7 +15,11 @@ prepare_single_as_batch_bf(data, backend_args)
 List with batch-formatted arrays (n_sims = 1)
 }
 \description{
-Converts a single simulation's data.frame to the batch format expected
-by BayesFlow models.
+Converts a single simulation's data to the batch format expected
+by BayesFlow models. Handles both:
+\itemize{
+\item R data.frame (rows=observations, cols=outcome/covariate/arm)
+\item Python batch dict (matrices with rows=simulations, cols=observations)
+}
 }
 \keyword{internal}

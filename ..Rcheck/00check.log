@@ -61,6 +61,13 @@ Found the following non-portable file paths:
   rctbayespower/.Rproj.user/shared/notebooks/34F51C84-02-prior-specification/1/0C02CFDCbabef74e/chunks.json
   rctbayespower/.Rproj.user/shared/notebooks/8B91AF45-99-model-validation/1/0C02CFDCbabef74e/chunks.json
   rctbayespower/.Rproj.user/shared/notebooks/E174AE75-03-algorithm-performance/1/0C02CFDCbabef74e/chunks.json
+  rctbayespower/.Rproj.user/shared/notebooks/ED3A19A3-04-bayesflow-backend/1/0C02CFDCca76367c/chunks.json
+  rctbayespower/.Rproj.user/shared/notebooks/ED3A19A3-04-bayesflow-backend/1/s/c4ee7pnudyy5k/00000f.csv
+  rctbayespower/.Rproj.user/shared/notebooks/ED3A19A3-04-bayesflow-backend/1/s/cgseianfq3lkv/00000f.csv
+  rctbayespower/.Rproj.user/shared/notebooks/ED3A19A3-04-bayesflow-backend/1/s/chztxjdwhe0bj/00000f.csv
+  rctbayespower/.Rproj.user/shared/notebooks/ED3A19A3-04-bayesflow-backend/1/s/cniak4kp9jnl7/000015.csv
+  rctbayespower/.Rproj.user/shared/notebooks/ED3A19A3-04-bayesflow-backend/1/s/csg8t1mcsaehx/00000f.csv
+  rctbayespower/.Rproj.user/shared/notebooks/ED3A19A3-04-bayesflow-backend/1/s/cyc0cl3owmbjk/00000f.csv
   rctbayespower/vignettes/.quarto/_freeze/articles/02-prior-specification/libs/quarto-html/light-border.css
   rctbayespower/vignettes/.quarto/_freeze/articles/02-prior-specification/libs/quarto-html/popper.min.js
   rctbayespower/vignettes/.quarto/_freeze/articles/02-prior-specification/libs/quarto-html/tippy.umd.min.js
@@ -75,66 +82,4 @@ Tarballs are only required to store paths of up to 100 bytes and cannot
 store those of more than 256 bytes, with restrictions including to 100
 bytes for the final component.
 See section 'Package structure' in the 'Writing R Extensions' manual.
-* checking whether package 'rctbayespower' can be installed ... OK
-* checking installed package size ... INFO
-  installed size is 27.6Mb
-  sub-directories of 1Mb or more:
-    R  27.3Mb
-* checking package directory ... OK
-* checking DESCRIPTION meta-information ... NOTE
-Checking should be performed on sources prepared by 'R CMD build'.
-* checking top-level files ... OK
-* checking for left-over files ... OK
-* checking index information ... OK
-* checking package subdirectories ... WARNING
-Found the following directories with names of check directories:
-  ./..Rcheck
-  ./rctbayespower.Rcheck
-Most likely, these were included erroneously.
-Subdirectory 'data' contains no data sets.
-* checking code files for non-ASCII characters ... OK
-* checking R files for syntax errors ... OK
-* checking whether the package can be loaded ... OK
-* checking whether the package can be loaded with stated dependencies ... OK
-* checking whether the package can be unloaded cleanly ... OK
-* checking whether the namespace can be loaded with stated dependencies ... OK
-* checking whether the namespace can be unloaded cleanly ... OK
-* checking loading without being on the library search path ... OK
-* checking whether startup messages can be suppressed ... OK
-* checking dependencies in R code ... OK
-* checking S3 generic/method consistency ... OK
-* checking replacement functions ... OK
-* checking foreign function calls ... OK
-* checking R code for possible problems ... OK
-* checking Rd files ... OK
-* checking Rd metadata ... OK
-* checking Rd cross-references ... OK
-* checking for missing documentation entries ... OK
-* checking for code/documentation mismatches ... OK
-* checking Rd \usage sections ... OK
-* checking Rd contents ... OK
-* checking for unstated dependencies in examples ... OK
-* checking contents of 'data' directory ... OK
-* checking data for non-ASCII characters ... OK
-* checking LazyData ... OK
-* checking data for ASCII and uncompressed saves ... OK
-* checking R/sysdata.rda ... OK
-* checking line endings in Makefiles ... OK
-* checking for GNU extensions in Makefiles ... OK
-* checking include directives in Makefiles ... OK
-* checking files in 'vignettes' ... WARNING
-Files in the 'vignettes' directory but no files in 'inst/doc':
-  '_quarto.yaml' 'articles/01-introduction.qmd'
-  'articles/02-prior-specification.qmd'
-  'articles/03-algorithm-performance.qmd'
-  'articles/99-model-validation.qmd' 'rebuild.R'
-Package has no Sweave vignette sources and no VignetteBuilder field.
-* checking examples ... OK
-* checking for unstated dependencies in 'tests' ... OK
-* checking tests ... SKIPPED
-* checking package vignettes ... NOTE
-Package has 'vignettes' subdirectory but apparently no vignettes.
-Perhaps the 'VignetteBuilder' information is missing from the
-DESCRIPTION file?
-* DONE
-Status: 2 WARNINGs, 5 NOTEs
+* checking whether package 'rctbayespower' can be installed ...

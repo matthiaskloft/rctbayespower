@@ -12,7 +12,7 @@ rctbp_design <- S7::new_class(
   properties = list(
     # Core design properties
     model = S7::class_any,                  # rctbp_model object
-    target_params = S7::class_character,    # Parameters to analyze (must match model@parameter_names_brms)
+    target_params = S7::class_character,    # Parameters to analyze (must match model@par_names_inference)
     p_sig_scs = S7::class_numeric | S7::class_function,  # Probability threshold or boundary function
     p_sig_ftl = S7::class_numeric | S7::class_function,  # Probability threshold or boundary function
     design_name = S7::class_character | NULL,
@@ -51,12 +51,12 @@ rctbp_design <- S7::new_class(
       return("'p_sig_ftl' cannot be NULL.")
     }
 
-    # Validate target_params exist in brms model
+    # Validate target_params exist in the inference model
     # This ensures we can extract posteriors for these parameters
-    if (!all(self@target_params %in% self@model@parameter_names_brms)) {
+    if (!all(self@target_params %in% self@model@par_names_inference)) {
       return(paste(
         "'target_params' must be a subset of the parameter names in the model:",
-        paste(self@model@parameter_names_brms, collapse = ", ")
+        paste(self@model@par_names_inference, collapse = ", ")
       ))
     }
 
@@ -141,8 +141,8 @@ rctbp_design <- S7::new_class(
 #'
 #' @param model An S7 object of class "rctbp_model" created by [build_model()]
 #' @param target_params Character vector specifying which model parameters to
-#'   analyze for power. Must be valid parameter names from the brms model.
-#'   Use `model@parameter_names_brms` to discover available names. Required.
+#'   analyze for power. Must be valid parameter names from the inference model.
+#'   Use `model@par_names_inference` to discover available names. Required.
 #' @param p_sig_scs Probability threshold for declaring success. Can be:
 #'   \itemize{
 #'     \item A numeric value between 0 and 1 (same threshold at all looks)
@@ -195,10 +195,10 @@ rctbp_design <- S7::new_class(
 #' that determine how certain we need to be about exceeding those thresholds.
 #'
 #' \strong{Model Integration:} Links to the rctbp_model object containing data
-#' simulation function and compiled brms model.
+#' simulation function and inference model (brms or BayesFlow).
 #'
 #' \strong{Target Parameters:} Specifies which model parameters to analyze for power.
-#' Parameter names are model-dependent. Use `model@parameter_names_brms` to discover
+#' Parameter names are model-dependent. Use `model@par_names_inference` to discover
 #' available parameters for your specific model.
 #'
 #' \strong{Probability Thresholds:} The p_sig_scs and p_sig_ftl parameters

@@ -60,8 +60,8 @@ list_predefined_models()
 
 
 Get the predefined ANCOVA model for continuous outcomes with two arms:
-```{r build_model_ancova}
-model_ancova <- build_model(predefined_model = "ancova_cont_2arms")
+```{r get_model_ancova}
+model_ancova <- get_model("ancova_cont_2arms")
 print(model_ancova)
 ```
 

@@ -4,27 +4,25 @@
 \alias{power_analysis}
 \title{Build Power Analysis Configuration}
 \usage{
-power_analysis(run = TRUE, ...)
+power_analysis(conditions, ..., run = TRUE)
 }
 \arguments{
-\item{run}{Logical indicating whether to immediately execute the analysis
-after creating the configuration object (default TRUE)}
+\item{conditions}{An rctbp_conditions object containing the experimental
+conditions and design parameters for the power analysis. Created by
+\code{\link[=build_conditions]{build_conditions()}}.}
 
-\item{...}{Arguments passed to the rctbp_power_analysis constructor, including:
-\itemize{
-\item conditions: An rctbp_conditions object containing the experimental
-conditions and design parameters for the power analysis
-\item n_sims: Number of simulations to run per condition (default 100)
-\item n_cores: Number of CPU cores to use for parallel execution (default 1).
-Must not exceed the number of available cores
-\item verbosity: Verbosity level controlling output detail (default 1).
-0 = quiet (minimal output), 1 = normal (standard output), 2 = verbose (detailed debug output).
-Can also be set globally with options(rctbayespower.verbosity = level).
-\item brms_args: List of additional arguments to pass to \code{\link[brms:brm]{brms::brm()}}
-function (default empty list)
-\item design_prior: Prior specification for design parameters. Can be NULL
-(no prior), a string with brms syntax, or a function for custom priors
+\item{...}{Additional arguments passed to the rctbp_power_analysis constructor:
+\describe{
+\item{n_sims}{Number of simulations to run per condition (default 100)}
+\item{n_cores}{Number of CPU cores for parallel execution (default 1)}
+\item{verbosity}{Output detail level: 0 (quiet), 1 (normal), 2 (verbose)}
+\item{brms_args}{List of brms arguments (chains, iter, warmup, cores)}
+\item{bf_args}{List of BayesFlow arguments (n_posterior_samples, batch_size)}
+\item{design_prior}{Prior specification (NULL, brms syntax string, or function)}
 }}
+
+\item{run}{Logical indicating whether to immediately execute the analysis
+(default TRUE). Set to FALSE to create configuration for later execution.}
 }
 \value{
 An S7 object of class "rctbp_power_analysis" containing:
@@ -62,19 +60,27 @@ not exceed available system cores.
 # Create conditions for power analysis
 conditions <- build_conditions(design, n_total = c(100, 200))
 
-# Basic power analysis configuration
-power_config <- build_power_analysis(conditions, n_sims = 100)
+# Basic power analysis (brms backend)
+result <- power_analysis(conditions, n_sims = 100)
 
-# Parallel execution with custom BRMS arguments
-power_config <- build_power_analysis(
-  conditions = conditions,
+# With custom brms arguments
+result <- power_analysis(
+  conditions,
   n_sims = 1000,
   n_cores = 4,
   brms_args = list(chains = 4, iter = 2000)
 )
 
-# Execute the analysis
-results <- run(power_config)
+# BayesFlow backend with custom settings
+result <- power_analysis(
+  conditions,
+  n_sims = 1000,
+  bf_args = list(n_posterior_samples = 2000, batch_size = 128)
+)
+
+# Create without running (for inspection)
+config <- power_analysis(conditions, n_sims = 100, run = FALSE)
+config <- run(config)  # Execute later
 }
 }
 \seealso{

@@ -4,6 +4,8 @@
   -> implemented link\_sigma as argument for ancova
 * print() should show default values for the data\_simulation\_fn as well as required arguments to specify
 
+* allocation probs need to be disambiguated
+
 
 ## class 'conditions'
 
@@ -19,6 +21,8 @@
   
 # Power Analysis
 * save full quantile profile for target parameter posterior to enable post-hoc exploration of alternative thresholds
+
+* reports: report for convergence
 
 # Across Package
 

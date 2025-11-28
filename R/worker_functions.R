@@ -17,22 +17,18 @@ worker_process_single <- function(id_cond, id_iter, condition_args, design) {
 
   # Extract design components (handle S7 and list)
   if (inherits(design, "rctbayespower::rctbp_design") || inherits(design, "rctbp_design")) {
-    data_simulation_fn <- design@model@data_simulation_fn
+    sim_fn <- design@model@sim_fn
     backend <- design@model@backend
-    estimation_model <- if (backend == "brms") design@model@brms_model else design@model@bayesflow_model
-    backend_args <- design@model@backend_args
+    estimation_model <- design@model@inference_model
+    backend_args <- if (backend == "brms") design@model@backend_args_brms else design@model@backend_args_bf
     target_params <- design@target_params
     p_sig_scs <- design@p_sig_scs
     p_sig_ftl <- design@p_sig_ftl
   } else if (is.list(design)) {
     # Regular list for parallel workers
-    data_simulation_fn <- design$model_data_simulation_fn
+    sim_fn <- design$model_sim_fn
     backend <- design$model_backend
-    estimation_model <- if (backend == "brms") {
-      design$model_brms_model
-    } else {
-      design$model_bayesflow_model
-    }
+    estimation_model <- design$model_inference_model
     backend_args <- design$model_backend_args
     target_params <- design$target_params
     p_sig_scs <- design$p_sig_scs
@@ -80,7 +76,7 @@ worker_process_single <- function(id_cond, id_iter, condition_args, design) {
   # Simulate full dataset (unless adaptive - which handles its own simulation)
   if (strategy %in% c("single", "sequential")) {
     full_data <- tryCatch({
-      do.call(data_simulation_fn, condition_args$sim_args)
+      do.call(sim_fn, condition_args$sim_args)
     }, error = function(e) {
       cli::cli_warn(c(
         "Data simulation failed",
@@ -199,18 +195,18 @@ worker_process_batch <- function(work_units, design) {
 
   # Extract design components
   if (inherits(design, "rctbayespower::rctbp_design") || inherits(design, "rctbp_design")) {
-    data_simulation_fn <- design@model@data_simulation_fn
+    sim_fn <- design@model@sim_fn
     backend <- design@model@backend
-    estimation_model <- design@model@bayesflow_model  # Must be NPE
-    backend_args <- design@model@backend_args
+    estimation_model <- design@model@inference_model  # Must be BayesFlow
+    backend_args <- design@model@backend_args_bf
     target_params <- design@target_params
     p_sig_scs <- design@p_sig_scs
     p_sig_ftl <- design@p_sig_ftl
   } else if (is.list(design)) {
-    data_simulation_fn <- design$model_data_simulation_fn
+    sim_fn <- design$model_sim_fn
     backend <- design$model_backend
-    estimation_model <- design$model_bayesflow_model
-    backend_args <- design$model_backend_args
+    estimation_model <- design$model_inference_model
+    backend_args <- design$model_backend_args  # Already selected in prepare_design_for_workers
     target_params <- design$target_params
     p_sig_scs <- design$p_sig_scs
     p_sig_ftl <- design$p_sig_ftl
@@ -257,7 +253,7 @@ worker_process_batch <- function(work_units, design) {
   # Simulate full datasets for all work units
   full_data_list <- lapply(work_units, function(wu) {
     tryCatch({
-      do.call(data_simulation_fn, wu$condition_args$sim_args)
+      do.call(sim_fn, wu$condition_args$sim_args)
     }, error = function(e) {
       cli::cli_warn(c(
         "Data simulation failed",
@@ -348,24 +344,21 @@ worker_process_batch <- function(work_units, design) {
 #' @return Named list with all necessary design components
 #' @keywords internal
 prepare_design_for_workers <- function(design) {
-  # Resolve active_backend (handles "auto" -> actual backend)
-  active_backend <- design@model@active_backend
+  # Backend is already resolved at model creation time (never "auto")
+  backend <- design@model@backend
 
-  # Select appropriate backend_args based on active backend
-  backend_args <- if (active_backend == "brms") {
+  # Select appropriate backend_args based on backend
+  backend_args <- if (backend == "brms") {
     design@model@backend_args_brms
-  } else if (active_backend == "bf") {
-    design@model@backend_args_bf
   } else {
-    design@model@backend_args
+    design@model@backend_args_bf
   }
 
   list(
     # Model components
-    model_data_simulation_fn = design@model@data_simulation_fn,
-    model_backend = active_backend,  # Resolved backend, not "auto"
-    model_brms_model = design@model@brms_model,
-    model_bayesflow_model = design@model@bayesflow_model,
+    model_sim_fn = design@model@sim_fn,
+    model_backend = backend,
+    model_inference_model = design@model@inference_model,
     model_backend_args = backend_args,
     model_backend_args_brms = design@model@backend_args_brms,
     model_backend_args_bf = design@model@backend_args_bf,

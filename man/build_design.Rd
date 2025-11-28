@@ -19,8 +19,8 @@ build_design(
 \item{model}{An S7 object of class "rctbp_model" created by \code{\link[=build_model]{build_model()}}}
 
 \item{target_params}{Character vector specifying which model parameters to
-analyze for power. Must be valid parameter names from the brms model.
-Use \code{model@parameter_names_brms} to discover available names. Required.}
+analyze for power. Must be valid parameter names from the inference model.
+Use \code{model@par_names_inference} to discover available names. Required.}
 
 \item{p_sig_scs}{Probability threshold for declaring success. Can be:
 \itemize{
@@ -97,10 +97,10 @@ The design only stores the probability thresholds (p_sig_scs, p_sig_ftl)
 that determine how certain we need to be about exceeding those thresholds.
 
 \strong{Model Integration:} Links to the rctbp_model object containing data
-simulation function and compiled brms model.
+simulation function and inference model (brms or BayesFlow).
 
 \strong{Target Parameters:} Specifies which model parameters to analyze for power.
-Parameter names are model-dependent. Use \code{model@parameter_names_brms} to discover
+Parameter names are model-dependent. Use \code{model@par_names_inference} to discover
 available parameters for your specific model.
 
 \strong{Probability Thresholds:} The p_sig_scs and p_sig_ftl parameters

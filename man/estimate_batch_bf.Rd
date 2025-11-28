@@ -25,12 +25,8 @@ Processes a batch of simulations through BayesFlow in a single forward pass.
 This is the core function for neural posterior estimation.
 }
 \details{
-Supports multiple BayesFlow model types:
-\itemize{
-\item BasicWorkflow: Uses workflow.sample(conditions=dict, num_samples=int)
-\item Approximator: Uses approximator.sample(data=dict, num_samples=int)
-\item Raw Keras: Uses model.predict() + Gaussian sampling
-}
+The model's adapter handles summary statistic computation internally.
+We pass raw data (outcome, covariate, group, N, p_alloc) to the model.
 
 Mock Mode: Set environment variable RCTBP_MOCK_BF=TRUE to use mock samples
 instead of actual BayesFlow inference. Useful for testing R infrastructure.

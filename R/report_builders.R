@@ -97,27 +97,21 @@ build_report.rctbp_model <- function(x) {
           "Endpoint types" = paste(x@endpoint_types, collapse = ", "),
           "Number of arms" = x@n_arms,
           "Number of repeated measures" = if (is.null(x@n_repeated_measures)) "NULL" else x@n_repeated_measures,
-          "Parameter names - simulation function" = paste(x@parameter_names_sim_fn, collapse = ", ")
+          "Parameter names - simulation" = paste(x@par_names_sim, collapse = ", ")
         )
       ),
-      if (x@backend == "brms") {
+      list(
+        name = if (x@backend == "brms") "BRMS Model" else "BayesFlow Model",
+        items = list(
+          "Parameter names - inference" = paste(x@par_names_inference, collapse = ", ")
+        ),
+        brms_model = if (x@backend == "brms") x@inference_model else NULL,
+        bayesflow_model = if (x@backend == "bf") x@inference_model else NULL
+      ),
+      if (x@backend == "brms" && length(x@backend_args_brms) > 0) {
         list(
-          name = "BRMS Model",
-          items = list(
-            "Parameter names - brms model" = paste(x@parameter_names_brms, collapse = ", ")
-          ),
-          brms_model = x@brms_model
-        )
-      } else if (x@backend == "npe") {
-        list(
-          name = "Bayesflow/NPE Model",
-          bayesflow_model = x@bayesflow_model
-        )
-      },
-      if (length(x@backend_args) > 0) {
-        list(
-          name = "Backend Arguments",
-          backend_args = x@backend_args
+          name = "brms Arguments",
+          backend_args = x@backend_args_brms
         )
       }
     )
@@ -143,8 +137,8 @@ build_report.rctbp_design <- function(x) {
           "Endpoint types" = paste(x@model@endpoint_types, collapse = ", "),
           "Number of arms" = x@model@n_arms,
           "Number of repeated measures" = if (is.null(x@model@n_repeated_measures)) "NULL" else x@model@n_repeated_measures,
-          "Parameter names - simulation function" = paste(x@model@parameter_names_sim_fn, collapse = ", "),
-          "Parameter names - brms model" = paste(x@model@parameter_names_brms, collapse = ", ")
+          "Parameter names - simulation" = paste(x@model@par_names_sim, collapse = ", "),
+          "Parameter names - inference" = paste(x@model@par_names_inference, collapse = ", ")
         )
       ),
       list(
@@ -172,10 +166,17 @@ build_report.rctbp_design <- function(x) {
           "These defaults apply to all conditions unless overridden."
         } else NULL
       ),
-      list(
-        name = "brms Model",
-        brms_model = x@model@brms_model
-      )
+      if (x@model@backend == "brms") {
+        list(
+          name = "brms Model",
+          brms_model = x@model@inference_model
+        )
+      } else if (x@model@backend == "bf") {
+        list(
+          name = "BayesFlow Model",
+          bayesflow_model = x@model@inference_model
+        )
+      }
     )
   )
 }

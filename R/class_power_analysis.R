@@ -14,6 +14,7 @@ rctbp_power_analysis <- S7::new_class(
     n_cores = S7::new_property(S7::class_numeric, default = 1),
     verbosity = S7::new_property(class = S7::class_numeric, default = 1),
     brms_args = S7::class_list | NULL,
+    bf_args = S7::class_list | NULL,  # BayesFlow args: n_posterior_samples, batch_size
     design_prior = S7::new_property(S7::class_character |
                                       S7::class_function | NULL, default = NULL),
 
@@ -99,6 +100,42 @@ rctbp_power_analysis <- S7::new_class(
 )
 
 # =============================================================================
+# INTERNAL HELPER: format_duration()
+# =============================================================================
+# Formats time in minutes to a human-readable string (days, hours, mins, secs)
+# dropping zero units
+
+format_duration <- function(minutes) {
+  if (is.na(minutes) || !is.numeric(minutes)) return("N/A")
+
+  total_seconds <- round(minutes * 60)
+
+  days <- total_seconds %/% 86400
+  remaining <- total_seconds %% 86400
+  hours <- remaining %/% 3600
+  remaining <- remaining %% 3600
+  mins <- remaining %/% 60
+  secs <- remaining %% 60
+
+  parts <- character()
+
+  if (days > 0) {
+    parts <- c(parts, paste0(days, if (days == 1) " day" else " days"))
+  }
+  if (hours > 0) {
+    parts <- c(parts, paste0(hours, if (hours == 1) " hour" else " hours"))
+  }
+  if (mins > 0) {
+    parts <- c(parts, paste0(mins, if (mins == 1) " min" else " mins"))
+  }
+  if (secs > 0 || length(parts) == 0) {
+    parts <- c(parts, paste0(secs, if (secs == 1) " sec" else " secs"))
+  }
+
+  paste(parts, collapse = " ")
+}
+
+# =============================================================================
 # CONSTRUCTOR FUNCTION: power_analysis()
 # =============================================================================
 # Creates power analysis configuration object and optionally executes it.
@@ -111,23 +148,20 @@ rctbp_power_analysis <- S7::new_class(
 #' This function creates an S7 object that serves as the main interface for
 #' configuring and executing power analysis simulations.
 #'
-#' @param run Logical indicating whether to immediately execute the analysis
-#'   after creating the configuration object (default TRUE)
-#' @param ... Arguments passed to the rctbp_power_analysis constructor, including:
-#'   \itemize{
-#'     \item conditions: An rctbp_conditions object containing the experimental
-#'       conditions and design parameters for the power analysis
-#'     \item n_sims: Number of simulations to run per condition (default 100)
-#'     \item n_cores: Number of CPU cores to use for parallel execution (default 1).
-#'       Must not exceed the number of available cores
-#'     \item verbosity: Verbosity level controlling output detail (default 1).
-#'       0 = quiet (minimal output), 1 = normal (standard output), 2 = verbose (detailed debug output).
-#'       Can also be set globally with options(rctbayespower.verbosity = level).
-#'     \item brms_args: List of additional arguments to pass to [brms::brm()]
-#'       function (default empty list)
-#'     \item design_prior: Prior specification for design parameters. Can be NULL
-#'       (no prior), a string with brms syntax, or a function for custom priors
+#' @param conditions An rctbp_conditions object containing the experimental
+#'   conditions and design parameters for the power analysis. Created by
+#'   [build_conditions()].
+#' @param ... Additional arguments passed to the rctbp_power_analysis constructor:
+#'   \describe{
+#'     \item{n_sims}{Number of simulations to run per condition (default 100)}
+#'     \item{n_cores}{Number of CPU cores for parallel execution (default 1)}
+#'     \item{verbosity}{Output detail level: 0 (quiet), 1 (normal), 2 (verbose)}
+#'     \item{brms_args}{List of brms arguments (chains, iter, warmup, cores)}
+#'     \item{bf_args}{List of BayesFlow arguments (n_posterior_samples, batch_size)}
+#'     \item{design_prior}{Prior specification (NULL, brms syntax string, or function)}
 #'   }
+#' @param run Logical indicating whether to immediately execute the analysis
+#'   (default TRUE). Set to FALSE to create configuration for later execution.
 #'
 #' @return An S7 object of class "rctbp_power_analysis" containing:
 #'   \itemize{
@@ -161,37 +195,46 @@ rctbp_power_analysis <- S7::new_class(
 #' # Create conditions for power analysis
 #' conditions <- build_conditions(design, n_total = c(100, 200))
 #'
-#' # Basic power analysis configuration
-#' power_config <- build_power_analysis(conditions, n_sims = 100)
+#' # Basic power analysis (brms backend)
+#' result <- power_analysis(conditions, n_sims = 100)
 #'
-#' # Parallel execution with custom BRMS arguments
-#' power_config <- build_power_analysis(
-#'   conditions = conditions,
+#' # With custom brms arguments
+#' result <- power_analysis(
+#'   conditions,
 #'   n_sims = 1000,
 #'   n_cores = 4,
 #'   brms_args = list(chains = 4, iter = 2000)
 #' )
 #'
-#' # Execute the analysis
-#' results <- run(power_config)
+#' # BayesFlow backend with custom settings
+#' result <- power_analysis(
+#'   conditions,
+#'   n_sims = 1000,
+#'   bf_args = list(n_posterior_samples = 2000, batch_size = 128)
+#' )
+#'
+#' # Create without running (for inspection)
+#' config <- power_analysis(conditions, n_sims = 100, run = FALSE)
+#' config <- run(config)  # Execute later
 #' }
-power_analysis <- function(run = TRUE, ...) {
-  power_object <- rctbp_power_analysis(...)
-  
-  # Overwrite object parameters with dots if provided and run = FALSE
-  # Avoids updating twice, since run() also updates S7 object with dots
-  if (!run){
-    if (length(list(...)) > 0) {
-      # Recreate the S7 object with updated parameters
-      power_object <- update_S7_with_dots(power_object, ...)
-    }
+power_analysis <- function(conditions, ..., run = TRUE) {
+  # Validate conditions early for better error messages
+  if (!inherits(conditions, "rctbayespower::rctbp_conditions") &&
+      !inherits(conditions, "rctbp_conditions")) {
+    cli::cli_abort(c(
+      "{.arg conditions} must be a valid rctbp_conditions object",
+      "x" = "Got object of class {.cls {class(conditions)}}",
+      "i" = "Use {.fn build_conditions} to create a valid conditions object"
+    ))
   }
 
-  # Run the power analysis immediately if requested)
+  power_object <- rctbp_power_analysis(conditions = conditions, ...)
+
+  # Run the power analysis immediately if requested
   if (run) {
     power_object <- run(x = power_object)
   }
-  
+
   return(power_object)
 }
 
@@ -362,9 +405,9 @@ S7::method(run, rctbp_power_analysis) <- function(x, ...) {
     if (should_show(1)) {
       cli::cli_alert_info("Updating brms model with MCMC settings (chains={final_brms_args$chains}, iter={final_brms_args$iter}, warmup={final_brms_args$warmup})")
     }
-    x@conditions@design@model@brms_model <- suppressWarnings(
+    x@conditions@design@model@inference_model <- suppressWarnings(
       do.call(function(...) {
-        stats::update(object = x@conditions@design@model@brms_model, ...)
+        stats::update(object = x@conditions@design@model@inference_model, ...)
       }, x@brms_args)
     )
     if (should_show(1)) {
@@ -373,12 +416,36 @@ S7::method(run, rctbp_power_analysis) <- function(x, ...) {
     }
 
     # Also store in backend_args for workers
-    x@conditions@design@model@backend_args <- final_brms_args
+    x@conditions@design@model@backend_args_brms <- final_brms_args
 
-  } else if (backend == "npe") {
-    # For NPE backend, backend_args are already in model@backend_args
-    if (should_show(2)) {
-      cli::cli_text("Using NPE backend with batch size: {design@model@backend_args$batch_size %||% 1}")
+  } else if (backend == "bf") {
+    # For BayesFlow backend, merge user-provided bf_args with model defaults
+    default_bf_args <- list(
+      n_posterior_samples = 1000L,
+      batch_size = NULL
+    )
+    # Get model defaults, then override with user-provided args
+    model_bf_args <- design@model@backend_args_bf
+    if (length(model_bf_args) > 0) {
+      default_bf_args <- utils::modifyList(default_bf_args, model_bf_args)
+    }
+    if (!is.null(x@bf_args) && length(x@bf_args) > 0) {
+      default_bf_args <- utils::modifyList(default_bf_args, x@bf_args)
+    }
+    final_bf_args <- default_bf_args
+
+    # Resolve NULL batch_size to n_sims
+    if (is.null(final_bf_args$batch_size)) {
+      final_bf_args$batch_size <- x@n_sims
+    }
+
+    x@bf_args <- final_bf_args
+
+    # Store in model for workers
+    x@conditions@design@model@backend_args_bf <- final_bf_args
+
+    if (should_show(1)) {
+      cli::cli_alert_info("Using BayesFlow backend (n_posterior_samples={final_bf_args$n_posterior_samples}, batch_size={final_bf_args$batch_size})")
     }
   }
 
@@ -387,6 +454,18 @@ S7::method(run, rctbp_power_analysis) <- function(x, ...) {
   # Extract variables from object
   n_cores <- x@n_cores
   n_sims <- x@n_sims
+
+  # =============================================================================
+  # BAYESFLOW PARALLEL LIMITATION
+  # =============================================================================
+  # BayesFlow models are Python objects that cannot be serialized to PSOCK workers.
+  # Force sequential execution for BayesFlow backend, but use batch processing
+  # for efficiency (neural network vectorization provides speedup).
+  if (backend == "bf" && n_cores > 1) {
+    cli::cli_alert_warning("BayesFlow backend does not support parallel clusters (Python objects cannot be serialized)")
+    cli::cli_alert_info("Running sequentially with batch processing for efficiency")
+    n_cores <- 1L
+  }
   
   # Extract parameters from the object
   conditions <- x@conditions
@@ -410,8 +489,8 @@ S7::method(run, rctbp_power_analysis) <- function(x, ...) {
 
   # Detect backend and batching strategy
   backend <- design@model@backend
-  batch_size <- if (backend == "npe" && !is.null(design@model@backend_args$batch_size)) {
-    design@model@backend_args$batch_size
+  batch_size <- if (backend == "bf" && !is.null(design@model@backend_args_bf$batch_size)) {
+    design@model@backend_args_bf$batch_size
   } else {
     1L  # No batching for brms or when batch_size not specified
   }
@@ -863,7 +942,7 @@ S7::method(run, rctbp_power_analysis) <- function(x, ...) {
 
   # Print results summary (shown at verbosity >= 1)
   if (should_show(1)) {
-    cli::cli_alert_success("Analysis complete in {round(as.numeric(elapsed_time), 2)} minutes")
+    cli::cli_alert_success("Analysis complete in {format_duration(as.numeric(elapsed_time))}")
 
     # Show power range (check both results_conditions and results_interim for pwr_scs)
     pwr_source <- if ("pwr_scs" %in% names(results_conditions_df)) {
@@ -971,10 +1050,10 @@ S7::method(print, rctbp_power_analysis) <- function(x, ...) {
     n_looks <- if (has_interim) length(unique(results_df$id_look)) else 1
 
     # Status line
-    runtime <- if (!is.na(x@elapsed_time)) round(x@elapsed_time, 1) else NA
+    runtime <- format_duration(x@elapsed_time)
     design_type <- if (has_interim) paste0("Sequential (", n_looks, " looks)") else "Single-look"
 
-    cli::cli_alert_success("Completed in {runtime} min | {n_conditions} conditions x {x@n_sims} sims | {design_type}")
+    cli::cli_alert_success("Completed in {runtime} | {n_conditions} conditions x {x@n_sims} sims | {design_type}")
 
     # Design section
     cli::cli_h2("Design")
@@ -1148,9 +1227,9 @@ S7::method(summary, rctbp_power_analysis) <- function(object, ...) {
     n_looks <- if (has_interim) length(unique(results_df$id_look)) else 1
 
     # Status line
-    runtime <- if (!is.na(object@elapsed_time)) round(object@elapsed_time, 1) else NA
+    runtime <- format_duration(object@elapsed_time)
     design_type <- if (has_interim) paste0("Sequential (", n_looks, " looks)") else "Single-look"
-    cli::cli_alert_success("Completed in {runtime} min | {n_conditions} conditions x {object@n_sims} sims | {design_type}")
+    cli::cli_alert_success("Completed in {runtime} | {n_conditions} conditions x {object@n_sims} sims | {design_type}")
 
     # Design section (more verbose than print)
     cli::cli_h2("Design")

@@ -38,9 +38,11 @@ format_table_cli <- function(df, max_rows = 20) {
   # Format numeric columns
   for (col in names(df)) {
     if (is.numeric(df[[col]])) {
-      # Detect if likely a proportion (0-1 range)
+      # Detect if likely a proportion based on column name AND value range
+      # Only format as percentage if column name suggests it's a proportion/probability
+      is_proportion_col <- grepl("^(pwr_|prop_|p_sig_|se_pwr_)", col, ignore.case = TRUE)
       vals <- df[[col]][!is.na(df[[col]])]
-      if (length(vals) > 0 && all(vals >= 0 & vals <= 1)) {
+      if (is_proportion_col && length(vals) > 0 && all(vals >= 0 & vals <= 1)) {
         # Format as percentage
         df[[col]] <- sprintf("%.1f%%", df[[col]] * 100)
       } else if (all(abs(vals) < 100) && any(vals != floor(vals))) {
@@ -126,8 +128,11 @@ format_table_markdown <- function(df, max_rows = 20) {
   # Format values
   for (col in names(df)) {
     if (is.numeric(df[[col]])) {
+      # Detect if likely a proportion based on column name AND value range
+      # Only format as percentage if column name suggests it's a proportion/probability
+      is_proportion_col <- grepl("^(pwr_|prop_|p_sig_|se_pwr_)", col, ignore.case = TRUE)
       vals <- df[[col]][!is.na(df[[col]])]
-      if (length(vals) > 0 && all(vals >= 0 & vals <= 1)) {
+      if (is_proportion_col && length(vals) > 0 && all(vals >= 0 & vals <= 1)) {
         df[[col]] <- sprintf("%.1f%%", df[[col]] * 100)
       } else if (all(abs(vals) < 100) && any(vals != floor(vals))) {
         df[[col]] <- sprintf("%.2f", df[[col]])
@@ -322,10 +327,20 @@ render_cli <- function(report) {
       print(section$brms_model)
     }
 
-    # Bayesflow model
+    # Bayesflow model - show summary if available
     if (!is.null(section$bayesflow_model)) {
       cli::cli_text("")
-      print(section$bayesflow_model)
+      bf_model <- section$bayesflow_model
+      # Try to call summary() method (works for Keras/BayesFlow models)
+      tryCatch({
+        if (!is.null(bf_model$summary)) {
+          bf_model$summary()
+        } else {
+          print(bf_model)
+        }
+      }, error = function(e) {
+        print(bf_model)
+      })
     }
 
     # Backend args
@@ -488,10 +503,19 @@ render_markdown <- function(report, heading_level = 2L) {
       output <- c(output, "```", "")
     }
 
-    # Bayesflow model
+    # Bayesflow model - show summary if available
     if (!is.null(section$bayesflow_model)) {
       output <- c(output, "```")
-      model_output <- utils::capture.output(print(section$bayesflow_model))
+      bf_model <- section$bayesflow_model
+      model_output <- tryCatch({
+        if (!is.null(bf_model$summary)) {
+          utils::capture.output(bf_model$summary())
+        } else {
+          utils::capture.output(print(bf_model))
+        }
+      }, error = function(e) {
+        utils::capture.output(print(bf_model))
+      })
       output <- c(output, model_output)
       output <- c(output, "```", "")
     }

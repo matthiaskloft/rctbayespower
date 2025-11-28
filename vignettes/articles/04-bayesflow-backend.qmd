@@ -1,0 +1,216 @@
+---
+title: "BayesFlow Backend for Fast Power Analysis"
+author:
+ - name: Matthias Kloft
+   orcid: 0000-0003-1845-6957
+date: "`r Sys.Date()`"
+format:
+  html:
+    toc: true
+    number-sections: true
+    theme: cosmo
+    code-fold: false
+    code-tools: true
+    code-summary: "Show the code"
+    fig-width: 7
+    fig-height: 4.5
+    embed-resources: true
+execute:
+  message: false
+  warning: false
+---
+
+```{r setup}
+#| message: false
+
+library(rctbayespower)
+library(dplyr)
+
+
+n_sims <- 100
+n_cores <- parallel::detectCores() - 2
+```
+
+***
+
+# Introduction
+
+The `rctbayespower` package supports two backends for posterior estimation:
+
+1. **brms/Stan** (default): Traditional MCMC-based Bayesian inference
+2. **BayesFlow**: Neural posterior estimation for fast amortized inference
+
+This vignette demonstrates the BayesFlow backend, which offers significant speed improvements for large-scale power analyses.
+
+## Why BayesFlow?
+
+| Aspect | brms/Stan | BayesFlow |
+|--------|-----------|-----------|
+| **Speed** | ~10-30 seconds per simulation | ~0.01 seconds per simulation |
+| **Scalability** | Limited by MCMC overhead | Batch processing, GPU-ready |
+| **Accuracy** | Gold standard | Approximate (but well-calibrated) |
+| **Setup** | R only | Requires Python + trained model |
+
+BayesFlow uses neural networks trained on simulated data to approximate the posterior distribution. Once trained, inference is nearly instantaneous.
+
+## Current Status
+
+The BayesFlow backend infrastructure is fully implemented. Pre-trained models for ANCOVA designs are available via GitHub releases and are automatically downloaded on first use.
+
+***
+
+# Checking BayesFlow Availability
+
+Before using the BayesFlow backend, check if Python and BayesFlow are available:
+
+```{r check-availability}
+# Check silently (returns TRUE/FALSE)
+bf_available <- check_bf_available(silent = TRUE)
+cat("BayesFlow available:", bf_available, "\n")
+
+# For detailed diagnostics, use silent = FALSE (will error if not available)
+# check_bf_available(silent = FALSE)
+```
+
+If BayesFlow is not available, the package will fall back to brms or you can use mock mode for development.
+
+***
+
+# BayesFlow Workflow
+
+The workflow with BayesFlow is nearly identical to brms, with a few key differences.
+
+## Step 1: Get Model
+
+```{r get-model}
+# Get model with automatic backend selection
+# Uses BayesFlow if available, otherwise falls back to brms
+# rctbayespower::clear_model_cache()
+model <- get_model("ancova_cont_2arms", backend = "bf")
+print(model)
+```
+
+## Step 2: Check Backend
+
+```{r check-backend}
+# The backend property shows which backend will be used
+# This is resolved at get_model() time, not at analysis time
+cat("Backend:", model@backend, "\n")
+```
+
+## Step 3: Build Design
+
+```{r build-design}
+design <- build_design(
+  model = model,
+  target_params = "b_group",
+  p_sig_scs = 0.975,
+  p_sig_ftl = 0.5
+)
+print(design)
+```
+
+## Step 4: Build Conditions
+
+```{r build-conditions}
+conditions <- build_conditions(
+  design = design,
+  condition_values = list(
+    n_total = seq(40, 160, 40),
+    b_arm_treat = c(0.5)
+  ),
+  static_values = list(
+    b_covariate = 0.3,
+    thresholds_success = 0.1,
+    thresholds_futility = 0
+  )
+)
+print(conditions)
+```
+
+## Step 5: Run Power Analysis
+
+```{r power-analysis}
+#| eval: true
+
+# Run power analysis - uses whichever backend is active
+power <- power_analysis(
+  conditions,
+  n_sims = 1000L,
+  n_cores = 10,
+  run = TRUE,
+  verbosity = 2#,
+  # brms_args = list(
+  #   chains = 4,
+  #   iter = 3500,
+  #   warmup = 100
+  # )
+)
+```
+
+```{r power-results}
+# View results
+print(power)
+```
+```{r}
+# Power by condition
+power@results_conditions |>
+ select(id_cond, n_total, pwr_scs, pwr_ftl, post_mn)
+```
+
+## BRMS for Comparison
+```{r}
+model_brms <- get_model("ancova_cont_2arms", backend = "brms")
+design_brms <- build_design(
+  model = model_brms,
+  target_params = "b_arm2",
+    p_sig_scs = 0.975,
+  p_sig_ftl = 0.5
+)
+conditions_brms <- conditions
+conditions_brms@design <- design_brms
+power_brms <- power_analysis(
+  conditions_brms,
+  n_sims = n_sims,
+  n_cores = n_cores,
+  run = TRUE,
+  verbosity = 1,
+  brms_args = list(
+    chains = 4,
+    iter = 3500,
+    warmup = 100
+  )
+)
+```
+
+```{r}
+print(power_brms)
+```
+
+
+### Compare Timings
+```{r}
+bf_time <- power@elapsed_time*60
+brms_time <- power_brms@elapsed_time*60
+# format to minutes plus seconds
+format_time <- function(time_sec) {
+  mins <- floor(time_sec / 60)
+  secs <- round(time_sec %% 60)
+  paste0(mins, " min ", secs, " sec")
+}
+
+cat("BayesFlow time:", format_time(bf_time), "\n")
+cat("brms time:", format_time(brms_time), "\n")
+
+# Ratio / Speedup
+speedup <- brms_time / bf_time
+cat("Speedup (brms / BayesFlow):", round(speedup, 1), "x\n")
+```
+
+
+
+# Session Information
+
+```{r session-info}
+sessionInfo()
+```

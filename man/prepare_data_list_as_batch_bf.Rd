@@ -7,7 +7,7 @@
 prepare_data_list_as_batch_bf(data_list, backend_args)
 }
 \arguments{
-\item{data_list}{List of data.frames, each with columns: outcome, covariate, arm}
+\item{data_list}{List of data.frames OR Python batch dicts}
 
 \item{backend_args}{List containing p_alloc and other settings}
 }
@@ -15,7 +15,11 @@ prepare_data_list_as_batch_bf(data_list, backend_args)
 List with batch-formatted arrays
 }
 \description{
-Converts a list of simulation data.frames to the batch format expected
-by BayesFlow models.
+Converts a list of simulation data to the batch format expected
+by BayesFlow models. Handles both:
+\itemize{
+\item R data.frames (rows=observations)
+\item Python batch dicts (matrices with rows=simulations)
+}
 }
 \keyword{internal}

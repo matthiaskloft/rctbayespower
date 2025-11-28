@@ -109,7 +109,7 @@ required_fn_args_design <- function(design, print = TRUE) {
   }
 
   # get args without defaults for the data simulation function
-  params_sim <- get_args_without_defaults(design@model@data_simulation_fn)
+  params_sim <- get_args_without_defaults(design@model@sim_fn)
 
   # Decision parameters (per-condition): thresholds, analysis_at, interim_function, adaptive
   params_decision <- c("thresholds_success", "thresholds_futility", "analysis_at",
@@ -173,7 +173,7 @@ required_fn_args_model <- function(model, print = TRUE) {
   }
 
   # get args without defaults for the model
-  params <- get_args_without_defaults(model@data_simulation_fn)
+  params <- get_args_without_defaults(model@sim_fn)
 
   # print the parameters if requested
   if (print) {

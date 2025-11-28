@@ -16,8 +16,8 @@
 #           └── ancova_cont_3arms.keras
 #
 # GitHub Releases:
-#   - brms-models-v1: Pre-compiled brmsfit objects
-#   - bf-models-v1: Pre-trained BayesFlow approximators
+#   - brms-models-v0.0.0.9000: Pre-compiled brmsfit objects
+#   - bf-models-v0.0.0.9000: Pre-trained BayesFlow approximators
 
 # =============================================================================
 # CACHE DIRECTORY MANAGEMENT
@@ -68,9 +68,8 @@ download_model <- function(model_name, dest_path, model_type = c("brms", "bf")) 
   model_type <- match.arg(model_type)
 
   # URL pattern: GitHub releases asset
-  # TODO: Update with actual repository URL when published
   base_url <- "https://github.com/matthiaskloft/rctbayespower/releases/download"
-  version_tag <- paste0(model_type, "-models-v1")
+  version_tag <- paste0(model_type, "-models-v0.0.0.9000")
 
   ext <- if (model_type == "brms") ".rds" else ".keras"
   url <- paste0(base_url, "/", version_tag, "/", model_name, ext)
@@ -132,6 +131,10 @@ load_brms_model <- function(model_name, force_download = FALSE, quiet = FALSE) {
       cli::cli_alert_info("Downloading brms model: {.val {model_name}}")
     }
     download_model(model_name, model_file, "brms")
+  } else {
+    if (!quiet) {
+      cli::cli_alert_info("Loading cached brms model: {.val {model_name}}")
+    }
   }
 
   readRDS(model_file)
@@ -180,6 +183,10 @@ load_bf_model <- function(model_name, force_download = FALSE, quiet = FALSE) {
       cli::cli_alert_info("Downloading BayesFlow model: {.val {model_name}}")
     }
     download_model(model_name, model_file, "bf")
+  } else {
+    if (!quiet) {
+      cli::cli_alert_info("Loading cached BayesFlow model: {.val {model_name}}")
+    }
   }
 
   # Load via Python for full BayesFlow compatibility

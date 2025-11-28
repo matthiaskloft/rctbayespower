@@ -72,18 +72,20 @@ Archived files in `dev/archive/`.
 | Binary/survival outcomes | Not started | `08_adaptive_trials_roadmap.md` |
 | Test suite | 0% | `05_testing.md` |
 
-### Quick Workflow Example (brms backend)
+### Quick Workflow Example
 
 ```r
-model <- build_model(predefined_model = "ancova_cont_2arms")
+# Get predefined model (defaults to brms backend)
+model <- build_model("ancova_cont_2arms")
 
 # Discover available parameter names for target_params
 model@parameter_names_brms    # brms parameters (for target_params)
 model@parameter_names_sim_fn  # simulation function parameters
+model@backend                 # "brms" or "bf"
 
 design <- build_design(
   model = model,
-  target_params = "b_armtreat_1",  # Must match model@parameter_names_brms
+  target_params = "b_arm2",  # Must match model@parameter_names_brms
   p_sig_scs = 0.975,
   p_sig_ftl = 0.5
 )
@@ -101,7 +103,7 @@ conditions <- build_conditions(
 )
 result <- power_analysis(conditions = conditions, n_sims = 100, n_cores = 4)
 plot(result)
-result@results_summ
+result@results_conditions
 ```
 
 ### BayesFlow Backend (When Available)
@@ -110,18 +112,22 @@ result@results_summ
 # Check if BayesFlow is available
 check_bf_available(silent = TRUE)
 
-# Load pre-trained BayesFlow model
-bf_model <- load_bf_model("ancova_cont_2arms")
+# Backend options:
+# - "auto": Load BOTH models, prefer BayesFlow (allows quick switching)
+# - "bf": Try BayesFlow, fall back to brms WITH WARNING (loads only one)
+# - "brms": Load brms only, never try BayesFlow
 
-# Add BayesFlow backend to existing model
-model <- build_model(predefined_model = "ancova_cont_2arms")
-model <- add_bf_backend(model, bf_model)
+# Auto-selection: loads BOTH models, prefers bf, allows switching
+model <- build_model("ancova_cont_2arms")  # backend = "auto" (default)
+model@backend      # "bf" if available, "brms" otherwise
+model@inference_model_brms   # Also available for quick switching
+model@backend <- "brms"  # Switch to brms without reloading
 
-# Model now uses BayesFlow by default (faster)
-model@active_backend  # "bf"
+# BayesFlow only (falls back to brms with warning if unavailable)
+model <- build_model("ancova_cont_2arms", backend = "bf")
 
-# Force brms backend if needed
-model@backend <- "brms"
+# brms only (never tries BayesFlow)
+model <- build_model("ancova_cont_2arms", backend = "brms")
 
 # Testing without Python (mock mode)
 Sys.setenv(RCTBP_MOCK_BF = "TRUE")
@@ -136,7 +142,7 @@ Sys.setenv(RCTBP_MOCK_BF = "TRUE")
 # Create design with O'Brien-Fleming-style stopping boundaries
 design <- build_design(
   model = model,
-  target_params = "b_armtreat_1",
+  target_params = "b_arm2",
   p_sig_scs = boundary_obf(0.975),        # Function: stringent early, relaxed late
   p_sig_ftl = boundary_linear(0.70, 0.90), # Function: lenient early, strict late
   analysis_at = c(0.5, 0.75)               # Interim at 50%, 75%; final at 100%

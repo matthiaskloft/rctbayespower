@@ -2,17 +2,14 @@
 % Please edit documentation in R/class_model.R
 \name{build_model}
 \alias{build_model}
-\title{Create a Build Model Object}
+\title{Build a Custom Model}
 \usage{
 build_model(
-  predefined_model = NULL,
-  data_simulation_fn,
-  brms_model = NULL,
-  bayesflow_model = NULL,
-  backend = "auto",
-  backend_args = list(),
+  sim_fn = NULL,
+  inference_model = NULL,
+  backend = c("brms", "bf"),
   backend_args_brms = list(),
-  backend_args_bf = list(batch_size = 64L, n_posterior_samples = 1000L),
+  backend_args_bf = list(batch_size = NULL, n_posterior_samples = 1000L),
   n_endpoints = NULL,
   endpoint_types = NULL,
   n_arms = NULL,
@@ -21,106 +18,49 @@ build_model(
 )
 }
 \arguments{
-\item{predefined_model}{Optional character string specifying a predefined model
-to use instead of creating a custom model. Currently supported values:
-\itemize{
-\item "ancova_cont_2arms" - ANCOVA model for continuous outcomes with baseline covariate and 2 arms
-\item "ancova_cont_3arms" - ANCOVA model for continuous outcomes with baseline covariate and 3 arms
-}
-When specified, other parameters are ignored and the predefined model is returned.
-Use \code{\link[=list_predefined_models]{list_predefined_models()}} to see all available models.}
+\item{sim_fn}{A function that simulates trial data. Must accept parameters
+\code{n_total} and \code{p_alloc} at minimum.}
 
-\item{data_simulation_fn}{A function that simulates data for the RCT. Must take
-parameters n_total, p_alloc, and further parameters needed for
-data simulation.}
+\item{inference_model}{A brmsfit object (for brms backend) or BayesFlow model
+(for bf backend).}
 
-\item{brms_model}{A fitted brmsfit object that serves as the template model.
-This should be compiled without posterior draws (chains = 0) for efficiency.
-Can provide brms_model, bayesflow_model, or both.}
+\item{backend}{Which backend to use: "brms" (default) or "bf".}
 
-\item{bayesflow_model}{A trained BayesFlow neural posterior estimation model
-(keras model via reticulate). Can provide brms_model, bayesflow_model, or both.}
+\item{backend_args_brms}{List of brms-specific arguments (chains, iter, etc.)}
 
-\item{backend}{Which backend to use: "brms", "bf", or "auto" (default).
-"auto" prefers BayesFlow if available (faster), else uses brms.}
+\item{backend_args_bf}{List of BayesFlow-specific arguments.
+Default: list(batch_size = 64L, n_posterior_samples = 1000L)}
 
-\item{backend_args}{Named list of backend-specific arguments (legacy, use
-backend_args_brms or backend_args_bf instead).}
+\item{n_endpoints}{Number of endpoints (positive integer)}
 
-\item{backend_args_brms}{List of brms-specific arguments: chains, iter, cores, etc.}
+\item{endpoint_types}{Character vector of endpoint types ("continuous", "binary", "count")}
 
-\item{backend_args_bf}{List of BayesFlow-specific arguments: batch_size,
-n_posterior_samples, etc. Default: list(batch_size = 64L, n_posterior_samples = 1000L)}
+\item{n_arms}{Number of arms including control (positive integer)}
 
-\item{n_endpoints}{Number of endpoints in the study (must be positive integer)}
+\item{n_repeated_measures}{Number of repeated measures (NULL or 0 for single timepoint)}
 
-\item{endpoint_types}{Character vector specifying the type of each endpoint.
-Valid types are "continuous", "binary", "count". Length must match n_endpoints.}
-
-\item{n_arms}{Number of arms in the study including control arm (must be positive integer)}
-
-\item{n_repeated_measures}{Number of repeated measures per participant.
-Use NULL or 0 for single time point studies.}
-
-\item{model_name}{Optional character string providing a descriptive name for the model}
+\item{model_name}{Descriptive name for the model}
 }
 \value{
-An S7 object of class "rctbp_model" containing the specified properties
+An S7 object of class "rctbp_model"
 }
 \description{
-Constructs a build_model object that encapsulates a data simulation
-function, posterior estimation model(s) (brms and/or BayesFlow), and associated
-metadata for power analysis. This object serves as the foundation for Bayesian
-power analysis in RCTs with support for multiple backends.
-}
-\details{
-The build_model class encapsulates all components needed for power
-analysis simulation:
-
-\strong{Dual Backend Support:} Models can have both brms and BayesFlow backends
-simultaneously. The \code{backend} parameter controls which is used at runtime:
-\itemize{
-\item "brms" - Force brms backend
-\item "bf" - Force BayesFlow backend
-\item "auto" - Use BayesFlow if available (faster), else brms
-}
-
-You can switch backends at any time: \code{model@backend <- "brms"}
-
-\strong{Predefined Models:} For convenience, users can specify predefined_model
-to use ready-made model configurations. This is the recommended approach for
-standard analyses. When using predefined models, other parameters are ignored.
-
-\strong{Custom Models:} For advanced users, custom models can be created by
-providing all required parameters.
-
-\strong{Data Simulation Function:} Must accept n_total (total sample size),
-p_alloc (vector of allocation probabilities), and true_parameter_values
-(named list of parameter values). The function should return a data.frame with
-simulated baseline data ready for outcome generation.
-
-\strong{BRMS Model:} A compiled brms model that will be used as a template.
-The model should be fitted with minimal chains (e.g., chains = 0) to serve
-as a compilation template only.
-
-\strong{BayesFlow Model:} A trained BayesFlow approximator (.keras file) loaded
-via Python/reticulate. See \code{\link[=load_bf_model]{load_bf_model()}} for loading pre-trained models.
+Creates a custom rctbp_model from user-supplied components. For most users,
+\code{\link[=get_model]{get_model()}} with predefined models is recommended instead.
 }
 \examples{
 \dontrun{
-# Method 1: Use predefined model (recommended)
-ancova_model <- build_model(predefined_model = "ancova_cont_2arms")
-
-# Method 2: Add BayesFlow backend later
-model <- build_model(predefined_model = "ancova_cont_2arms")
-bf_model <- load_bf_model("ancova_cont_2arms")
-model <- add_bf_backend(model, bf_model)
-
-# Method 3: Force specific backend
-model@backend <- "brms"  # Use brms even if BayesFlow available
+# Create custom model with brms backend
+model <- build_model(
+  sim_fn = my_sim_function,
+  inference_model = my_compiled_brms,
+  backend = "brms",
+  n_endpoints = 1,
+  endpoint_types = "continuous",
+  n_arms = 2
+)
 }
 }
 \seealso{
-\code{\link[=build_design]{build_design()}}, \code{\link[=build_model_ancova]{build_model_ancova()}}, \code{\link[=add_bf_backend]{add_bf_backend()}},
-\code{\link[=load_bf_model]{load_bf_model()}}, \code{\link[=load_brms_model]{load_brms_model()}}
+\code{\link[=get_model]{get_model()}} for predefined models
 }
