@@ -1,0 +1,213 @@
+---
+title: "BayesFlow Backend for Fast Power Analysis"
+author:
+ - name: Matthias Kloft
+   orcid: 0000-0003-1845-6957
+date: "`r Sys.Date()`"
+format:
+  html:
+    toc: true
+    number-sections: true
+    theme: cosmo
+    code-fold: false
+    code-tools: true
+    code-summary: "Show the code"
+    fig-width: 7
+    fig-height: 7
+    embed-resources: true
+execute:
+  message: true
+  warning: true
+---
+
+```{r setup}
+#| message: false
+
+library(rctbayespower)
+library(dplyr)
+library(pander)
+
+# Initialize BayesFlow Python environment
+init_bf_python("rctbp-3-12-gpu")
+
+n_sims <- 1000L
+n_cores <- parallel::detectCores() - 1
+```
+
+***
+
+# Introduction
+
+Power analysis for Bayesian trials typically requires running thousands of simulations, each involving full posterior estimation. With traditional MCMC methods, this can take hours or even days. The **BayesFlow backend** reduces this to seconds.
+
+## Two Backends
+
+The `rctbayespower` package supports two backends for posterior estimation:
+
+| | brms/Stan | BayesFlow |
+|--------|-----------|-----------|
+| **Method** | MCMC sampling | Neural posterior estimation |
+| **Speed** | ~10-30 sec/simulation | ~5 ms/simulation |
+| **Accuracy** | Gold standard | Approximate (well-calibrated) |
+| **GPU support** | No | Yes |
+| **Setup** | R only | Requires Python |
+
+**BayesFlow** uses neural networks trained on simulated data to learn the mapping from summary statistics to posterior distributions. Once trained, inference is a single forward pass—nearly instantaneous.
+
+## When to Use Each
+
+- **brms/Stan**: Final analyses, validation, complex custom models
+- **BayesFlow**: Rapid prototyping, parameter sweeps, large simulation studies, Bayesian optimization
+
+
+## Setting Up the Python Environment
+
+The BayesFlow backend requires Python with PyTorch, Keras, and BayesFlow. Use `setup_bf_python()` for automated setup with GPU detection:
+
+```{r setup-python}
+#| eval: false
+
+# One-command setup (first time only)
+setup_bf_python()
+
+# With options:
+setup_bf_python(envname = "rctbp-3-12-gpu", python_version = "3.12", cuda_version = "auto")
+setup_bf_python(envname = "rctbp-3-12-cpu", python_version = "3.12", cuda_version = "cpu")
+setup_bf_python(cuda_version = "cpu")
+setup_bf_python(force = TRUE)
+```
+
+Check your installation:
+
+```{r bf-status}
+#| eval: false
+
+bf_status()
+```
+
+```
+── BayesFlow Environment Status ──
+── Python Configuration ──
+ℹ Python: ~/.virtualenvs/r-rctbayespower/Scripts/python.exe
+ℹ Version: 3.12
+ℹ Virtual env: ~/.virtualenvs/r-rctbayespower
+
+── Package Status ──
+✔ Python: 3.12
+✔ PyTorch: 2.9.1+cu128
+✔ CUDA: 12.8 (NVIDIA GeForce GTX 1660 SUPER)
+✔ BayesFlow: 2.0.7
+✔ Keras: 3.12.0
+✔ NumPy: 1.26.4
+
+── Status ──
+✔ BayesFlow ready with GPU acceleration
+```
+
+::: {.callout-note collapse="true"}
+## Manual Installation
+
+```bash
+# Create and activate virtual environment
+python -m venv ~/.virtualenvs/r-rctbayespower
+source ~/.virtualenvs/r-rctbayespower/bin/activate  # Linux/Mac
+# or: ~/.virtualenvs/r-rctbayespower/Scripts/activate  # Windows
+
+# Install PyTorch with CUDA
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu128
+
+# Install dependencies
+pip install bayesflow keras numpy
+```
+
+Then in R: `reticulate::use_virtualenv("r-rctbayespower", required = TRUE)`
+:::
+
+***
+
+# BayesFlow Workflow
+
+The workflow with BayesFlow is nearly identical to brms.
+
+## Step 1: Get Model
+
+```{r get-model}
+model <- get_model("ancova_cont_2arms", backend = "bf")
+print(model)
+cat("Backend:", model@backend, "\n")
+```
+
+## Step 2: Build Design
+
+```{r build-design}
+design <- build_design(
+  model = model,
+  target_params = "b_group",
+  p_sig_scs = 0.975,
+  p_sig_ftl = 0.5
+)
+print(design)
+```
+
+## Step 3: Build Conditions
+
+```{r build-conditions}
+conditions <- build_conditions(
+  design = design,
+  condition_values = list(
+    n_total = seq(20, 300, 10),
+    b_arm_treat = c(0, .3, 0.5)
+  ),
+  static_values = list(
+    b_covariate = 0.3,
+    thresholds_success = 0.1,
+    thresholds_futility = 0.1
+  )
+)
+print(conditions)
+```
+
+## Step 4: Run Power Analysis
+
+```{r power-analysis-bf}
+power_bf <- power_analysis(
+  conditions,
+  n_sims = n_sims,
+  run = TRUE,
+  verbosity = 2,
+  bf_args = list(n_posterior_samples = 1000)
+)
+```
+
+```{r power-results-bf}
+print(power_bf)
+
+power_bf@results_conditions |>
+  select(id_cond, n_total, pwr_scs, pwr_ftl)
+```
+
+```{r fig.height=7}
+plot(
+  power_bf,
+  type = "power_curve",
+  values = "prob",
+  interactive = FALSE,
+  target_power = .9,
+  show_target = TRUE,
+  group_by = "metric",
+  facet_by = c("decision","effect_size")
+)
+```
+
+
+## Simulation Based Calibration
+
+
+
+***
+
+# Session Information
+
+```{r session-info}
+pander::pander(sessionInfo())
+```

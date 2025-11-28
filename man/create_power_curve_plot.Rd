@@ -16,6 +16,7 @@ create_power_curve_plot(
   facet_by,
   has_looks,
   group_by = "effect_size",
+  target_power = NULL,
   ...
 )
 }
@@ -36,12 +37,16 @@ create_power_curve_plot(
 
 \item{show_mcse}{Whether to show MCSE uncertainty ribbons}
 
-\item{facet_by}{Faceting: "metric", "decision", "effect_size", or "sample_size"}
+\item{facet_by}{Faceting variable(s). Single value or vector of two for
+2D grid faceting. Options: "metric", "decision", "effect_size", "sample_size"}
 
 \item{has_looks}{Whether data has multiple interim looks}
 
 \item{group_by}{Variable to use for line coloring: "decision", "metric",
 "effect_size", or "sample_size"}
+
+\item{target_power}{Optional numeric value (0-1) for target power line.
+If NULL, uses design thresholds when group_by = "decision".}
 
 \item{...}{Additional arguments (ignored)}
 }

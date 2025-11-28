@@ -420,11 +420,15 @@ S7::method(run, rctbp_power_analysis) <- function(x, ...) {
 
   if (backend == "brms") {
     # Set default brms args
+    # refresh = 0 and silent = 2 suppress Stan/brms output to avoid
+    # console I/O bottleneck (can cause 6x slowdown in interactive sessions)
     default_brms_args <- list(
       chains = 4,
       iter = 450,
       warmup = 200,
-      cores = 1
+      cores = 1,
+      refresh = 0,
+      silent = 2
     )
     # Merge with user-provided brms_args
     final_brms_args <- utils::modifyList(default_brms_args, x@brms_args)

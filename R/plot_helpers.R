@@ -126,7 +126,20 @@ rctbp_theme <- function() {
     ggplot2::theme(
       legend.position = "bottom",
       plot.title = ggplot2::element_text(size = 14, face = "bold"),
-      plot.subtitle = ggplot2::element_text(size = 10)
+      plot.subtitle = ggplot2::element_text(size = 10),
+      # Facet separation
+      panel.spacing = ggplot2::unit(0.8, "lines"),
+      panel.border = ggplot2::element_rect(
+        color = "gray80",
+        fill = NA,
+        linewidth = 0.5
+      ),
+      strip.background = ggplot2::element_rect(
+        fill = "gray95",
+        color = "gray80",
+        linewidth = 0.5
+      ),
+      strip.text = ggplot2::element_text(face = "bold", size = 10)
     )
 }
 

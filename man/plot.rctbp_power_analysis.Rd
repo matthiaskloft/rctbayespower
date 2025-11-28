@@ -33,13 +33,16 @@
 \item{show_mcse}{Whether to show Monte Carlo standard error ribbons for uncertainty
 visualization (default: FALSE). Only applies to power_curve plots.}
 
-\item{facet_by}{For power_curve plots, controls faceting:
+\item{facet_by}{For power_curve plots, controls faceting. Can be a single
+value or a vector of two values for 2D faceting with \code{\link[ggplot2:facet_grid]{ggplot2::facet_grid()}}:
 \itemize{
 \item "decision" - Facet by decision type (Success/Futility) (default)
 \item "metric" - Facet by metric type (Power/Probability)
-\item "effect_size" - Facet by effect size, vary sample size on x-axis
-\item "sample_size" - Facet by sample size, vary effect size on x-axis
-}}
+\item "effect_size" - Facet by effect size values
+\item "sample_size" - Facet by sample size values
+}
+Examples: \code{facet_by = "decision"} for 1D faceting,
+\code{facet_by = c("decision", "effect_size")} for 2D grid faceting (rows ~ cols).}
 
 \item{group_by}{Variable to use for line coloring in power_curve plots:
 \itemize{

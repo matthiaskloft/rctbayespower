@@ -78,8 +78,10 @@ estimate_posterior_brms <- function(data, brms_model, backend_args = list()) {
   # User backend_args override defaults
   final_args <- modifyList(default_args, backend_args)
 
-  # Fit model
-  fitted_model <- do.call(stats::update, final_args)
+  # Fit model (suppress output to avoid console I/O bottleneck)
+  fitted_model <- suppressWarnings(suppressMessages(
+    do.call(stats::update, final_args)
+  ))
 
   return(fitted_model)
 }

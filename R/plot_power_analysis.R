@@ -26,13 +26,16 @@
 #' @param show_target Whether to show target power lines (default: TRUE)
 #' @param show_mcse Whether to show Monte Carlo standard error ribbons for uncertainty
 #'   visualization (default: FALSE). Only applies to power_curve plots.
-#' @param facet_by For power_curve plots, controls faceting:
+#' @param facet_by For power_curve plots, controls faceting. Can be a single
+#'   value or a vector of two values for 2D faceting with [ggplot2::facet_grid()]:
 #'   \itemize{
 #'     \item "decision" - Facet by decision type (Success/Futility) (default)
 #'     \item "metric" - Facet by metric type (Power/Probability)
-#'     \item "effect_size" - Facet by effect size, vary sample size on x-axis
-#'     \item "sample_size" - Facet by sample size, vary effect size on x-axis
+#'     \item "effect_size" - Facet by effect size values
+#'     \item "sample_size" - Facet by sample size values
 #'   }
+#'   Examples: `facet_by = "decision"` for 1D faceting,
+#'   `facet_by = c("decision", "effect_size")` for 2D grid faceting (rows ~ cols).
 #' @param group_by Variable to use for line coloring in power_curve plots:
 #'   \itemize{
 #'     \item "effect_size" - Color by effect size values (default)
@@ -215,10 +218,18 @@ create_power_plot <- function(x,
     ))
   }
 
-  if (!facet_by %in% c("metric", "decision", "effect_size", "sample_size")) {
+  valid_facets <- c("metric", "decision", "effect_size", "sample_size")
+  if (length(facet_by) > 2) {
+    cli::cli_abort(c(
+      "{.arg facet_by} must have 1 or 2 elements",
+      "x" = "You supplied {length(facet_by)} elements"
+    ))
+  }
+  invalid_facets <- setdiff(facet_by, valid_facets)
+  if (length(invalid_facets) > 0) {
     cli::cli_abort(c(
       "{.arg facet_by} must be {.val metric}, {.val decision}, {.val effect_size}, or {.val sample_size}",
-      "x" = "You supplied {.val {facet_by}}"
+      "x" = "Invalid value(s): {.val {invalid_facets}}"
     ))
   }
 
@@ -245,6 +256,7 @@ create_power_plot <- function(x,
       facet_by,
       has_looks,
       group_by,
+      target_power,
       ...
     )
   } else if (type == "heatmap") {

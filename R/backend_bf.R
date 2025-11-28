@@ -327,6 +327,18 @@ init_bf_python <- function(envname = NULL) {
     cli::cli_alert_info("Set KERAS_BACKEND=torch for BayesFlow")
   }
 
+ # Suggest PYTORCH_CUDA_ALLOC_CONF for GPU memory management
+  if (Sys.getenv("PYTORCH_CUDA_ALLOC_CONF") == "") {
+    tryCatch({
+      torch <- reticulate::import("torch", delay_load = FALSE)
+      if (torch$cuda$is_available()) {
+        cli::cli_alert_info(
+          "Tip: Set {.code Sys.setenv(PYTORCH_CUDA_ALLOC_CONF = \"expandable_segments:True\")} before running to reduce GPU memory fragmentation"
+        )
+      }
+    }, error = function(e) NULL)
+  }
+
   # Import modules with delay_load for CRAN compatibility
   .bf_cache$bf <- reticulate::import("bayesflow", delay_load = TRUE)
   .bf_cache$np <- reticulate::import("numpy", convert = FALSE, delay_load = TRUE)
@@ -815,6 +827,38 @@ is_bf_mock_mode <- function() {
 }
 
 
+#' Clear GPU Memory Cache
+#'
+#' Releases unused GPU memory held by PyTorch. Should be called after each
+#' batch of BayesFlow inference to prevent memory accumulation during
+#' power analysis with many simulations.
+#'
+#' This function:
+#' 1. Runs Python garbage collection
+#' 2. Calls torch.cuda.empty_cache() if CUDA is available
+#'
+#' @return Invisible NULL
+#' @keywords internal
+clear_gpu_memory <- function() {
+  tryCatch({
+    # Run Python garbage collection first
+    gc_mod <- reticulate::import("gc", delay_load = FALSE)
+    gc_mod$collect()
+
+    # Clear CUDA cache if available
+    torch <- reticulate::import("torch", delay_load = FALSE)
+    if (torch$cuda$is_available()) {
+      torch$cuda$empty_cache()
+      torch$cuda$synchronize()
+    }
+  }, error = function(e) {
+    # Silently ignore - memory cleanup is best-effort
+  })
+
+  invisible(NULL)
+}
+
+
 #' Generate Mock BayesFlow Samples
 #'
 #' Generates fake posterior samples for testing purposes.
@@ -924,15 +968,29 @@ estimate_batch_bf <- function(data_batch, bf_model, backend_args, target_params)
   samples_py <- tryCatch({
     bf_model$sample(conditions = data_cond, num_samples = n_samples)
   }, error = function(e) {
+    err_msg <- e$message
+    # Check for CUDA out of memory error
+    if (grepl("OutOfMemory|out of memory|CUDA", err_msg, ignore.case = TRUE)) {
+      cli::cli_abort(c(
+        "BayesFlow sampling failed: GPU out of memory",
+        "x" = err_msg,
+        "i" = "Try reducing batch size: {.code bf_args = list(batch_size = 32)}",
+        "i" = "Set memory config: {.code Sys.setenv(PYTORCH_CUDA_ALLOC_CONF = \"expandable_segments:True\")}",
+        "i" = "Current batch size: {batch_size}, posterior samples: {n_samples}"
+      ))
+    }
     cli::cli_abort(c(
       "BayesFlow sampling failed",
-      "x" = e$message,
+      "x" = err_msg,
       "i" = "Check that the model is compatible with the data format"
     ))
   })
 
   # Step 3: Convert back to R matrix
   samples_r <- reticulate::py_to_r(samples_py)
+
+  # Step 4: Clear GPU memory to prevent accumulation between batches
+  clear_gpu_memory()
 
   # Handle different output shapes
   # Expected: dict with parameter names as keys (e.g., "b_group")

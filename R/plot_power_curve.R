@@ -15,10 +15,13 @@
 #' @param decision Filter: "success", "futility", or "both"
 #' @param show_target Whether to show target power lines
 #' @param show_mcse Whether to show MCSE uncertainty ribbons
-#' @param facet_by Faceting: "metric", "decision", "effect_size", or "sample_size"
+#' @param facet_by Faceting variable(s). Single value or vector of two for
+#'   2D grid faceting. Options: "metric", "decision", "effect_size", "sample_size"
 #' @param has_looks Whether data has multiple interim looks
 #' @param group_by Variable to use for line coloring: "decision", "metric",
 #'   "effect_size", or "sample_size"
+#' @param target_power Optional numeric value (0-1) for target power line.
+#'   If NULL, uses design thresholds when group_by = "decision".
 #' @param ... Additional arguments (ignored)
 #'
 #' @return A ggplot2 object
@@ -35,6 +38,7 @@ create_power_curve_plot <- function(plot_data,
                                     facet_by,
                                     has_looks,
                                     group_by = "effect_size",
+                                    target_power = NULL,
                                     ...) {
   # =============================================================================
   # DETERMINE PLOT STRUCTURE (x-axis, faceting, title)
@@ -42,25 +46,41 @@ create_power_curve_plot <- function(plot_data,
   # Default x-axis is sample size
   x_var <- "n_total"
   x_label <- "Total Sample Size"
-  facet_var <- NULL
   title_base <- "Power Analysis"
 
-  # Handle facet_by options
-  # "decision" -> facet by outcome (Success/Futility)
-  # "metric" -> facet by measure (Power/Probability)
-  if (facet_by == "decision") {
-    facet_var <- "outcome"
-    title_base <- "Power by Decision"
-  } else if (facet_by == "metric") {
-    facet_var <- "measure"
-    title_base <- "Power by Metric"
-  } else if (facet_by == "effect_size" && !is.null(effect_col)) {
-    facet_var <- effect_col
-    title_base <- "Power by Effect Size"
-  } else if (facet_by == "sample_size") {
+
+  # Helper to resolve facet_by name to internal column name
+ resolve_facet_var <- function(fb) {
+    switch(
+      fb,
+      "decision" = "outcome",
+      "metric" = "measure",
+      "effect_size" = effect_col,
+      "sample_size" = "n_total",
+      NULL
+    )
+  }
+
+  # Resolve facet variables (supports 1 or 2 elements)
+  facet_vars <- vapply(facet_by, resolve_facet_var, character(1))
+  use_facet_grid <- length(facet_vars) == 2
+
+  # Handle x-axis adjustment for sample_size faceting
+  if ("sample_size" %in% facet_by) {
     x_var <- if (!is.null(effect_col)) effect_col else "n_total"
     x_label <- if (!is.null(effect_col)) paste("Effect Size (", effect_col, ")") else "Total Sample Size"
-    facet_var <- "n_total"
+  }
+
+  # Adjust title based on faceting
+  if (use_facet_grid) {
+    title_base <- paste("Power by", paste(facet_by, collapse = " & "))
+  } else if (facet_by[1] == "decision") {
+    title_base <- "Power by Decision"
+  } else if (facet_by[1] == "metric") {
+    title_base <- "Power by Metric"
+  } else if (facet_by[1] == "effect_size") {
+    title_base <- "Power by Effect Size"
+  } else if (facet_by[1] == "sample_size") {
     title_base <- "Power by Sample Size"
   }
 
@@ -140,39 +160,44 @@ create_power_curve_plot <- function(plot_data,
     color_label <- "Effect Size"
   }
 
-  # Create facet label if faceting
-  if (!is.null(facet_var)) {
-    if (facet_var == "outcome") {
-      # Facet by Success/Futility - use outcome directly
-      plot_data_long$facet_label <- factor(
-        plot_data_long$outcome,
-        levels = c("Success", "Futility")
-      )
-    } else if (facet_var == "measure") {
-      # Facet by Power/Probability - use measure directly
-      plot_data_long$facet_label <- factor(
-        plot_data_long$measure,
-        levels = c("Power", "Probability")
-      )
-    } else if (facet_var == "n_total") {
-      plot_data_long$facet_label <- factor(
-        paste0("N = ", plot_data_long$n_total),
-        levels = paste0("N = ", sort(unique(plot_data_long$n_total)))
+  # Helper to create facet label column for a given facet variable
+ create_facet_label <- function(data, fvar, effect_col_name) {
+    if (fvar == "outcome") {
+      factor(data$outcome, levels = c("Success", "Futility"))
+    } else if (fvar == "measure") {
+      factor(data$measure, levels = c("Power", "Probability"))
+    } else if (fvar == "n_total") {
+      factor(
+        paste0("N = ", data$n_total),
+        levels = paste0("N = ", sort(unique(data$n_total)))
       )
     } else {
       # Effect size column
-      plot_data_long$facet_label <- factor(
-        paste0(facet_var, " = ", plot_data_long[[facet_var]]),
-        levels = paste0(facet_var, " = ", sort(unique(plot_data_long[[facet_var]])))
+      factor(
+        paste0(fvar, " = ", data[[fvar]]),
+        levels = paste0(fvar, " = ", sort(unique(data[[fvar]])))
       )
     }
+  }
+
+  # Create facet label columns
+  if (use_facet_grid) {
+    # Two facet variables: create row and column labels
+    plot_data_long$facet_row <- create_facet_label(plot_data_long, facet_vars[1], effect_col)
+    plot_data_long$facet_col <- create_facet_label(plot_data_long, facet_vars[2], effect_col)
+  } else if (length(facet_vars) == 1 && !is.na(facet_vars[1])) {
+    # Single facet variable
+    plot_data_long$facet_label <- create_facet_label(plot_data_long, facet_vars[1], effect_col)
   }
 
   # Build group interaction for proper line connectivity
   # Must include: outcome, measure, and any facet/color variables to avoid cross-connections
   group_vars <- c("outcome", "measure")
-  if (!is.null(facet_var) && facet_var %in% names(plot_data_long)) {
-    group_vars <- c(group_vars, facet_var)
+  # Add all facet variables that exist in the data
+  for (fv in facet_vars) {
+    if (!is.na(fv) && fv %in% names(plot_data_long)) {
+      group_vars <- c(group_vars, fv)
+    }
   }
   if (color_var != "outcome" && color_var %in% names(plot_data_long)) {
     group_vars <- c(group_vars, color_var)
@@ -203,7 +228,10 @@ create_power_curve_plot <- function(plot_data,
       shape = .data$measure,
       group = .data$line_group
     )
-  )
+  ) +
+    # Boundary lines at 0% and 100% (slightly distinct from grid)
+    ggplot2::geom_hline(yintercept = 0, color = "gray50", linewidth = 0.4) +
+    ggplot2::geom_hline(yintercept = 1, color = "gray50", linewidth = 0.4)
 
   # Add MCSE ribbons if requested
   if (show_mcse && "se" %in% names(plot_data_long)) {
@@ -265,9 +293,23 @@ create_power_curve_plot <- function(plot_data,
     }
   }
 
-  # Add target lines if requested (only for decision-based coloring)
+  # Add target lines if requested
+
+  # Case 1: User specified explicit target_power - show single gray target line
+  if (show_target && !is.null(target_power) && (metric == "power" || metric == "both")) {
+    p <- p +
+      ggplot2::geom_hline(
+        yintercept = target_power,
+        color = "gray40",
+        linetype = "dashed",
+        linewidth = 0.7,
+        alpha = 0.8
+      )
+  }
+
+  # Case 2: No explicit target_power and group_by == "decision" - show design thresholds
   # Note: Skip target lines when boundary functions are used (thresholds vary by look)
-  if (show_target && (metric == "power" || metric == "both") && group_by == "decision") {
+  if (show_target && is.null(target_power) && (metric == "power" || metric == "both") && group_by == "decision") {
     # Only add target lines for numeric thresholds, not boundary functions
     p_scs_numeric <- is.numeric(design@p_sig_scs)
     p_ftl_numeric <- is.numeric(design@p_sig_ftl)
@@ -313,7 +355,11 @@ create_power_curve_plot <- function(plot_data,
   }
 
   # Add faceting if needed
-  if (!is.null(facet_var)) {
+  if (use_facet_grid) {
+    # 2D faceting with facet_grid (rows ~ cols)
+    p <- p + ggplot2::facet_grid(facet_row ~ facet_col)
+  } else if (length(facet_vars) == 1 && !is.na(facet_vars[1])) {
+    # 1D faceting with facet_wrap
     p <- p + ggplot2::facet_wrap(~ facet_label)
   }
 

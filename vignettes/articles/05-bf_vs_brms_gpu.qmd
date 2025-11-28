@@ -73,7 +73,6 @@ setup_bf_python()
 # With options:
 setup_bf_python(envname = "rctbp-3-12-gpu", python_version = "3.12", cuda_version = "auto")
 setup_bf_python(envname = "rctbp-3-12-cpu", python_version = "3.12", cuda_version = "cpu")
-
 setup_bf_python(cuda_version = "cpu")
 setup_bf_python(force = TRUE)
 ```
@@ -210,8 +209,12 @@ power_brms <- power_analysis(
   n_sims = n_sims,
   n_cores = n_cores,
   run = TRUE,
-  verbosity = 1,
-  brms_args = list(chains = 4, iter = 350, warmup = 100)
+  verbosity = 0,
+  brms_args = list(
+    chains = 4,
+    iter = 350,
+    warmup = 100
+  )
 )
 print(power_brms)
 ```
