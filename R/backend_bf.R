@@ -229,6 +229,51 @@ detect_function_type <- function(fn) {
 # FAST POSTERIOR SUMMARIZATION
 # =============================================================================
 
+#' Compute Convergence Diagnostics for BayesFlow Samples
+#'
+#' Computes rhat, ess_bulk, and ess_tail for BayesFlow posterior samples.
+#' For BayesFlow (IID samples), these metrics assess sample quality rather
+#' than MCMC chain convergence. Split-rhat is used (splits samples in half).
+#'
+#' Uses vectorized computation: all simulations are processed as separate
+#' "variables" in a single draws_array, allowing batch computation.
+#'
+#' @param draws_mat Matrix of posterior draws (n_sims x n_post_draws)
+#'
+#' @return List with rhat, ess_bulk, ess_tail vectors (length = n_sims)
+#' @keywords internal
+compute_convergence_bf <- function(draws_mat) {
+  n_sims <- nrow(draws_mat)
+  n_draws <- ncol(draws_mat)
+
+  # Vectorized approach: treat each simulation as a separate "variable"
+
+  # draws_array expects [iteration, chain, variable]
+  # - iteration = n_draws (posterior samples)
+  # - chain = 1 (BayesFlow produces single "chain" of IID samples)
+  # - variable = n_sims (each simulation is a variable)
+  draws_arr <- array(
+    data = t(draws_mat),  # Transpose: n_draws x n_sims
+    dim = c(n_draws, 1L, n_sims),
+    dimnames = list(NULL, NULL, paste0("sim_", seq_len(n_sims)))
+  )
+  draws_obj <- posterior::as_draws_array(draws_arr)
+
+  # Compute diagnostics for all simulations at once (returns named vector)
+  # Note: split-rhat is used internally (splits chain in half)
+  rhat_vec <- as.numeric(posterior::rhat(draws_obj))
+  ess_bulk_vec <- as.numeric(posterior::ess_bulk(draws_obj))
+  ess_tail_vec <- as.numeric(posterior::ess_tail(draws_obj))
+
+  list(
+    rhat = rhat_vec,
+    ess_bulk = ess_bulk_vec,
+    ess_tail = ess_tail_vec
+  )
+}
+
+
+
 #' Summarize Posterior Draws - BayesFlow Backend
 #'
 #' Computes all summary statistics directly from draws matrix using vectorized
@@ -246,12 +291,16 @@ detect_function_type <- function(fn) {
 #' @param id_cond Vector of condition IDs (length = n_sims)
 #' @param id_look Analysis look ID (integer)
 #' @param n_analyzed Sample size at this analysis (integer)
+#' @param skip_convergence If TRUE (default), skip computing rhat/ess_bulk/ess_tail
+#'   for faster execution. These metrics are less informative for NPE since
+#'   BayesFlow samples are IID by design. Set to FALSE to compute them.
 #'
 #' @return Data frame with package output schema (n_sims rows)
 #' @keywords internal
 summarize_post_bf <- function(draws_mat, target_param,
                                thr_scs, thr_ftl, p_sig_scs, p_sig_ftl,
-                               id_iter, id_cond, id_look = 1L, n_analyzed) {
+                               id_iter, id_cond, id_look = 1L, n_analyzed,
+                               skip_convergence = TRUE) {
 
   # Check matrixStats availability (for performance)
   if (!requireNamespace("matrixStats", quietly = TRUE)) {
@@ -269,6 +318,18 @@ summarize_post_bf <- function(draws_mat, target_param,
   # Probability below futility threshold
   pr_ftl <- rowMeans(draws_mat < thr_ftl)
 
+  # Compute convergence diagnostics (optional - less informative for NPE)
+  if (skip_convergence) {
+    rhat <- rep(NA_real_, n_sims)
+    ess_bulk <- rep(NA_real_, n_sims)
+    ess_tail <- rep(NA_real_, n_sims)
+  } else {
+    convergence <- compute_convergence_bf(draws_mat)
+    rhat <- convergence$rhat
+    ess_bulk <- convergence$ess_bulk
+    ess_tail <- convergence$ess_tail
+  }
+
   data.frame(
     par_name = rep(target_param, n_sims),
     thr_scs = rep(thr_scs, n_sims),
@@ -283,9 +344,9 @@ summarize_post_bf <- function(draws_mat, target_param,
     post_mad = matrixStats::rowMads(draws_mat),
     post_mn = rowMeans(draws_mat),
     post_sd = matrixStats::rowSds(draws_mat),
-    rhat = rep(NA_real_, n_sims),       # Not applicable for BayesFlow
-    ess_bulk = rep(NA_real_, n_sims),   # Not applicable for BayesFlow
-    ess_tail = rep(NA_real_, n_sims),   # Not applicable for BayesFlow
+    rhat = rhat,
+    ess_bulk = ess_bulk,
+    ess_tail = ess_tail,
     id_iter = id_iter,
     id_cond = id_cond,
     id_look = rep(as.integer(id_look), n_sims),
@@ -842,7 +903,8 @@ estimate_single_bf <- function(data, model, backend_args, target_params,
     id_iter = id_iter,
     id_cond = id_cond,
     id_look = 0L,
-    n_analyzed = n_analyzed
+    n_analyzed = n_analyzed,
+    skip_convergence = backend_args$skip_convergence %||% TRUE
   )
 
   result
@@ -941,7 +1003,8 @@ estimate_sequential_bf <- function(full_data_list, model, backend_args, target_p
       id_iter = id_iter[active_idx],
       id_cond = id_cond[active_idx],
       id_look = id_analysis,
-      n_analyzed = current_n
+      n_analyzed = current_n,
+      skip_convergence = backend_args$skip_convergence %||% TRUE
     )
 
     # Update stopping state (if not final)

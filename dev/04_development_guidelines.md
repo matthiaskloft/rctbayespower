@@ -1,6 +1,8 @@
 # Development Guidelines
 
-**Last Updated:** 2025-11-24
+**Last Updated:** 2025-11-28
+
+See also: [`11_code_consistency_review.md`](11_code_consistency_review.md) for detailed patterns verified across all R files.
 
 ## Code Style Requirements
 
@@ -13,6 +15,51 @@
 - **Parameter validation**: Extensive validation with informative errors at function start
 - **Assignment**: Use `<-` not `=`
 - **Booleans**: Use `TRUE`/`FALSE` not `T`/`F`
+
+### Naming Conventions
+
+| Element | Convention | Examples |
+|---------|------------|----------|
+| S7 classes | `rctbp_*` prefix | `rctbp_model`, `rctbp_design` |
+| Power columns | `pwr_*` prefix | `pwr_scs`, `pwr_ftl` |
+| Probability columns | `pr_*` prefix | `pr_scs`, `pr_ftl` |
+| Decision columns | `dec_*` prefix | `dec_scs`, `dec_ftl` |
+| Standard error cols | `se_*` prefix | `se_pwr_scs`, `se_pr_ftl` |
+| Success suffix | `_scs` | `pwr_scs`, `pr_scs` |
+| Futility suffix | `_ftl` | `pwr_ftl`, `pr_ftl` |
+| Functions | snake_case | `build_model`, `power_analysis` |
+| Parameters | snake_case | `n_total`, `p_sig_scs` |
+
+### File Structure
+
+All R files should follow this structure:
+
+```r
+# =============================================================================
+# FILE TITLE IN CAPS
+# =============================================================================
+# Brief description of file purpose.
+
+# Section code...
+
+# =============================================================================
+# NEXT SECTION
+# =============================================================================
+```
+
+### Error Handling Pattern
+
+Use `cli::cli_abort()` with structured messages:
+
+```r
+cli::cli_abort(c(
+  "Main error message",
+  "x" = "What went wrong: {.val {bad_value}}",
+  "i" = "Helpful hint or suggestion"
+))
+```
+
+For warnings, use `cli::cli_warn()` with the same structure.
 
 ### Output and Messaging
 

@@ -14,7 +14,8 @@ summarize_post_bf(
   id_iter,
   id_cond,
   id_look = 1L,
-  n_analyzed
+  n_analyzed,
+  skip_convergence = TRUE
 )
 }
 \arguments{
@@ -37,6 +38,10 @@ summarize_post_bf(
 \item{id_look}{Analysis look ID (integer)}
 
 \item{n_analyzed}{Sample size at this analysis (integer)}
+
+\item{skip_convergence}{If TRUE (default), skip computing rhat/ess_bulk/ess_tail
+for faster execution. These metrics are less informative for NPE since
+BayesFlow samples are IID by design. Set to FALSE to compute them.}
 }
 \value{
 Data frame with package output schema (n_sims rows)

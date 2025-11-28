@@ -500,6 +500,12 @@ find_optimal_condition <- function(results_summ, conditions_grid, target_pwr,
   }
   id_col <- "id_cond"
 
+  # Check if power column has any non-NA values
+  # aggregate() with formula interface drops NA values, causing "no rows" error if all NA
+  if (all(is.na(results_summ[[power_col]]))) {
+    return(not_found)
+  }
+
   # Join results with conditions grid
   # Get unique power per condition (handle multi-parameter cases)
   results_by_cond <- stats::aggregate(

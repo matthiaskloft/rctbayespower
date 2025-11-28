@@ -81,7 +81,7 @@ rctbp_model <- S7::new_class(
 
         if (self@backend == "brms" && inherits(self@inference_model, "brmsfit")) {
           # Extract from brmsfit (fixed effects with "b_" prefix)
-          stringr::str_subset(brms::variables(self@inference_model), pattern = "^b_")
+          grep("^b_", brms::variables(self@inference_model), value = TRUE)
         } else if (self@backend == "bf") {
           # Extract from BayesFlow/keras model
           get_bf_parameter_names(self@inference_model)

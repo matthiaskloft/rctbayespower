@@ -573,22 +573,26 @@ S7::method(run, rctbp_power_analysis) <- function(x, ...) {
       # both development and production modes.
 
       functions_to_export <- c(
+        # Worker orchestration
         "worker_process_single",
         "worker_process_batch",
         "prepare_design_for_workers",
+        # brms backend
         "estimate_single_brms",
-        "estimate_single_npe",
         "estimate_sequential_brms",
-        "estimate_sequential_npe",
-        "create_error_result",
-        "estimate_posterior",
         "estimate_posterior_brms",
-        "estimate_posterior_npe",
-        "extract_posterior_rvars",
         "extract_posterior_rvars_brms",
-        "extract_posterior_rvars_npe",
+        "summarize_post_brms",
+        # BayesFlow backend
+        "estimate_single_bf",
+        "estimate_sequential_bf",
+        "estimate_batch_bf",
+        "summarize_post_bf",
+        # Shared utilities
+        "create_error_result",
+        "resolve_threshold",
         "compute_measures",
-        "compute_measures_brmsfit",
+        # MCSE calculations
         "calculate_mcse_power",
         "calculate_mcse_mean",
         "calculate_mcse_integrated_power"
@@ -731,22 +735,26 @@ S7::method(run, rctbp_power_analysis) <- function(x, ...) {
       )
 
       functions_to_export <- c(
+        # Worker orchestration
         "worker_process_single",
         "worker_process_batch",
         "prepare_design_for_workers",
+        # brms backend
         "estimate_single_brms",
-        "estimate_single_npe",
         "estimate_sequential_brms",
-        "estimate_sequential_npe",
-        "create_error_result",
-        "estimate_posterior",
         "estimate_posterior_brms",
-        "estimate_posterior_npe",
-        "extract_posterior_rvars",
         "extract_posterior_rvars_brms",
-        "extract_posterior_rvars_npe",
+        "summarize_post_brms",
+        # BayesFlow backend
+        "estimate_single_bf",
+        "estimate_sequential_bf",
+        "estimate_batch_bf",
+        "summarize_post_bf",
+        # Shared utilities
+        "create_error_result",
+        "resolve_threshold",
         "compute_measures",
-        "compute_measures_brmsfit",
+        # MCSE calculations
         "calculate_mcse_power",
         "calculate_mcse_mean",
         "calculate_mcse_integrated_power"

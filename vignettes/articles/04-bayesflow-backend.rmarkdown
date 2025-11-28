@@ -251,3 +251,4 @@ bind_rows(bf_conv, brms_conv)
 ```{r session-info}
 pander::pander(sessionInfo())
 ```
+

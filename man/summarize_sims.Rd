@@ -57,6 +57,6 @@ The function groups results by condition ID, parameter, and thresholds, then com
 }
 }
 \seealso{
-\code{\link[=compute_measures_brmsfit]{compute_measures_brmsfit()}}, \code{\link[=summarize_sims_with_interim]{summarize_sims_with_interim()}}
+\code{\link[=summarize_sims_with_interim]{summarize_sims_with_interim()}}
 }
 \keyword{internal}

@@ -162,48 +162,6 @@ compute_measures <- function(posterior_rvars, target_params, thresholds_success,
 }
 
 
-#' Compute Power Measures from brms Model Fit (Wrapper for Backward Compatibility)
-#'
-#' This function extracts posterior samples from a fitted brms model and computes
-#' various power analysis measures. It is a wrapper around compute_measures() that
-#' first extracts rvars from the brmsfit object.
-#'
-#' @param brmsfit A fitted brms model object containing posterior samples
-#' @param design A list or S7 design object containing the experimental design specification
-#'
-#' @return A data frame containing power analysis measures
-#' @seealso [compute_measures()]
-#' @keywords internal
-compute_measures_brmsfit <- function(brmsfit, design) {
-  # Validate inputs
-  if (!inherits(brmsfit, "brmsfit")) {
-    cli::cli_abort(c(
-      "{.arg brmsfit} must be a fitted brms model object",
-      "x" = "You supplied {.cls {class(brmsfit)}}",
-      "i" = "Provide a fitted {.cls brmsfit} object"
-    ))
-  }
-
-  # Extract target parameters from design
-  if (inherits(design, "rctbayespower::rctbp_design") || inherits(design, "rctbp_design")) {
-    target_params <- design@target_params
-  } else if (is.list(design)) {
-    target_params <- design$target_params
-  } else {
-    cli::cli_abort(c(
-      "Invalid design object",
-      "i" = "This is an internal error - please report"
-    ))
-  }
-
-  # Extract posterior rvars from brms model
-  posterior_rvars <- brms::as_draws_rvars(brmsfit, variable = target_params)
-
-  # Call backend-agnostic compute_measures
-  compute_measures(posterior_rvars, design)
-}
-
-
 #' Summarize Power Analysis Simulation Results
 #'
 #' This function aggregates raw simulation results across multiple runs to compute
@@ -252,7 +210,7 @@ compute_measures_brmsfit <- function(brmsfit, design) {
 #'   \item Concatenated error messages for debugging purposes
 #' }
 #'
-#' @seealso [compute_measures_brmsfit()], [summarize_sims_with_interim()]
+#' @seealso [summarize_sims_with_interim()]
 #' @keywords internal
 summarize_sims <- function(results_df_raw, n_sims) {
   # Validate input
@@ -286,10 +244,33 @@ summarize_sims <- function(results_df_raw, n_sims) {
   # =============================================================================
   # STANDARD (SINGLE-LOOK) SUMMARIZATION
   # =============================================================================
-  # remove rows with NA in id_cond or par_name
+  # Track rows before filtering (for error detection)
+  n_total_rows <- nrow(results_df_raw)
+
+  # remove rows with NA in id_cond or par_name (error results have NA par_name)
   results_df_raw <- results_df_raw |>
     dplyr::filter(!is.na(id_cond) & !is.na(par_name))
 
+  # Warn if all rows were filtered (indicates all simulations failed)
+  if (nrow(results_df_raw) == 0) {
+    cli::cli_warn(c(
+      "All {n_total_rows} simulation results were filtered out (likely all simulations failed)",
+      "i" = "Check the raw results for error messages",
+      "i" = "This may indicate a model or data compatibility issue"
+    ))
+    # Return empty data frame with expected columns
+    return(data.frame(
+      id_cond = integer(),
+      par_name = character(),
+      thr_scs = numeric(),
+      thr_ftl = numeric(),
+      p_sig_scs = numeric(),
+      p_sig_ftl = numeric(),
+      pwr_scs = numeric(),
+      pwr_ftl = numeric(),
+      stringsAsFactors = FALSE
+    ))
+  }
 
   results_summarized <- results_df_raw |>
     dplyr::group_by(id_cond, par_name, thr_scs, thr_ftl, p_sig_scs, p_sig_ftl) |>
@@ -415,9 +396,38 @@ summarize_sims_with_interim <- function(results_df_raw, n_sims) {
     ))
   }
 
-  # Remove rows with NA in key identifiers
+  # Track rows before filtering (for error detection)
+  n_total_rows <- nrow(results_df_raw)
+
+  # Remove rows with NA in key identifiers (error results have NA par_name)
   results_df_raw <- results_df_raw |>
     dplyr::filter(!is.na(id_cond) & !is.na(par_name))
+
+  # Warn if all rows were filtered (indicates all simulations failed)
+  if (nrow(results_df_raw) == 0) {
+    cli::cli_warn(c(
+      "All {n_total_rows} simulation results were filtered out (likely all simulations failed)",
+      "i" = "Check the raw results for error messages",
+      "i" = "This may indicate a model or data compatibility issue"
+    ))
+    # Return list with empty data frames matching expected structure
+    return(list(
+      by_look = data.frame(
+        id_cond = integer(),
+        id_look = integer(),
+        pwr_scs = numeric(),
+        pwr_ftl = numeric(),
+        stringsAsFactors = FALSE
+      ),
+      overall = data.frame(
+        id_cond = integer(),
+        n_planned = integer(),
+        pwr_scs = numeric(),
+        pwr_ftl = numeric(),
+        stringsAsFactors = FALSE
+      )
+    ))
+  }
 
   # =============================================================================
   # PER-LOOK SUMMARY

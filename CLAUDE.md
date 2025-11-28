@@ -26,12 +26,13 @@ Documentation is organized in `dev/` as numbered topic files:
 | [`08_adaptive_trials_roadmap.md`](dev/08_adaptive_trials_roadmap.md) | **[PLANNED]** Binary, survival, adaptive designs |
 | [`09_bayesian_adaptive_designs_reference.md`](dev/09_bayesian_adaptive_designs_reference.md) | Reference: Bayesian adaptive trial designs |
 | [`10_bayesflow_integration_roadmap.md`](dev/10_bayesflow_integration_roadmap.md) | BayesFlow integration status and next steps |
+| [`11_code_consistency_review.md`](dev/11_code_consistency_review.md) | Code consistency patterns, naming conventions |
 
 Archived files in `dev/archive/`.
 
-## Current Status (2025-11-27)
+## Current Status (2025-11-28)
 
-**Core Package State**: Functional with dual-backend support.
+**Core Package State**: Functional with dual-backend support. Code consistency review completed.
 
 ### Implemented
 
@@ -109,6 +110,18 @@ result@results_conditions
 ### BayesFlow Backend (When Available)
 
 ```r
+# Set up Python environment with GPU support (first time only)
+setup_bf_python()  # Auto-detects CUDA, creates venv, installs packages
+
+# Or with specific options:
+setup_bf_python(cuda_version = "12.4")  # Specific CUDA version
+setup_bf_python(cuda_version = "cpu")   # CPU-only
+
+# Check status and verify installation
+bf_status()                    # Show full environment status
+verify_bf_installation()       # Check all packages
+detect_cuda_version()          # Just check CUDA
+
 # Check if BayesFlow is available
 check_bf_available(silent = TRUE)
 
@@ -171,25 +184,74 @@ result_obf <- resummarize_boundaries(result,
 
 ## File Organization
 
-### Core R Files
+### Core Classes (`R/class_*.R`)
 
 | File | Purpose |
 |------|---------|
 | `R/class_model.R` | Model class (dual backend support) |
 | `R/class_design.R` | Design class definition |
 | `R/class_conditions.R` | Conditions class definition |
-| `R/class_power_analysis.R` | Power analysis + run() method |
+| `R/class_power_analysis.R` | Power analysis + run() + print/summary methods |
 | `R/models_ancova.R` | ANCOVA model builders + batch simulation |
 
-### Backend Files
+### Backend System
 
 | File | Purpose |
 |------|---------|
-| `R/backend_brms.R` | brms-specific estimation functions |
+| `R/backend_brms.R` | brms-specific estimation (single + sequential) |
 | `R/backend_bf.R` | BayesFlow estimation + reticulate calls |
 | `R/model_cache.R` | Model download and caching system |
-| `R/utils_results.R` | Shared result utilities |
-| `R/worker_functions.R` | Parallel worker dispatch |
+| `R/utils_results.R` | Shared error result utilities |
+| `R/worker_functions.R` | Parallel worker dispatch + S7 serialization |
+
+### Boundaries
+
+| File | Purpose |
+|------|---------|
+| `R/boundaries.R` | Stopping boundary functions (OBF, Pocock, linear, power) |
+
+### Plotting (`R/plot_*.R`)
+
+| File | Purpose |
+|------|---------|
+| `R/plot_power_analysis.R` | Main S7 plot method + dispatcher |
+| `R/plot_power_curve.R` | Power curve visualization |
+| `R/plot_heatmap.R` | 2D heatmap visualization |
+| `R/plot_comparison.R` | Power vs probability comparison |
+| `R/plot_helpers.R` | Shared utilities (pivot, colors, theme) |
+
+### Reporting (`R/report_*.R`)
+
+| File | Purpose |
+|------|---------|
+| `R/report_builders.R` | Build structured report data + topic reports |
+| `R/report_renderers.R` | CLI/Markdown table rendering |
+
+### Utilities
+
+| File | Purpose |
+|------|---------|
+| `R/compute_measures.R` | Posterior measure computation from rvars |
+| `R/verbosity.R` | Three-level verbosity control (0, 1, 2) |
+| `R/output_system.R` | CLI/Markdown dual-mode output system |
+| `R/MCSE.R` | Monte Carlo standard error calculations |
+| `R/required_fn_args.R` | Parameter requirement analysis |
+| `R/S7_helpers.R` | S7 utility functions |
+| `R/s3_wrappers.R` | S3 method wrappers for S7 classes |
+
+### Python Integration
+
+| File | Purpose |
+|------|---------|
+| `R/setup_python.R` | Environment setup helpers (GPU detection, install) |
+| `R/python_simulators.R` | Python simulator loading (reticulate) |
+
+### Package Infrastructure
+
+| File | Purpose |
+|------|---------|
+| `R/zzz.R` | .onLoad hook (S7 method registration) |
+| `R/rctbayespower-package.R` | Package documentation + globalVariables |
 
 ### Deprecated Files (Empty, Kept for Reference)
 
@@ -199,8 +261,65 @@ result_obf <- resummarize_boundaries(result,
 | `R/estimation_single.R` | `R/backend_*.R` |
 | `R/estimation_sequential.R` | `R/backend_*.R` |
 | `R/simulate_single_run.R` | `R/worker_functions.R` |
+| `R/class_interim.R` | Deprecated (interim handling in backends) |
 
 ## Development Practices
+
+### Code Patterns (Verified 2025-11-28)
+
+See [`dev/11_code_consistency_review.md`](dev/11_code_consistency_review.md) for full details.
+
+#### File Structure
+```r
+# =============================================================================
+# FILE TITLE IN CAPS
+# =============================================================================
+# Brief description of file purpose.
+
+# Major section code...
+
+# =============================================================================
+# NEXT MAJOR SECTION
+# =============================================================================
+```
+
+#### Naming Conventions
+
+| Element | Convention | Examples |
+|---------|------------|----------|
+| S7 classes | `rctbp_*` prefix | `rctbp_model`, `rctbp_design` |
+| Power columns | `pwr_*` prefix | `pwr_scs`, `pwr_ftl` |
+| Probability columns | `pr_*` prefix | `pr_scs`, `pr_ftl` |
+| Decision columns | `dec_*` prefix | `dec_scs`, `dec_ftl` |
+| Standard error cols | `se_*` prefix | `se_pwr_scs`, `se_pr_ftl` |
+| Success suffix | `_scs` | `pwr_scs`, `pr_scs` |
+| Futility suffix | `_ftl` | `pwr_ftl`, `pr_ftl` |
+| Functions | snake_case | `build_model`, `power_analysis` |
+| Parameters | snake_case | `n_total`, `p_sig_scs` |
+
+#### Error Handling Pattern
+```r
+cli::cli_abort(c(
+  "Main error message",
+  "x" = "What went wrong: {.val {bad_value}}",
+  "i" = "Helpful hint or suggestion"
+))
+```
+
+#### S7 Class Pattern
+```r
+rctbp_classname <- S7::new_class(
+  "rctbp_classname",
+  properties = list(
+    prop1 = S7::new_property(S7::class_numeric, default = 0),
+    prop2 = S7::class_character | NULL
+  ),
+  validator = function(self) {
+    if (invalid) cli::cli_abort(c("message", "x" = "...", "i" = "..."))
+    NULL
+  }
+)
+```
 
 ### File Organization
 

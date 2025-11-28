@@ -25,7 +25,6 @@ Imports:
     tibble,
     parallel,
     rlang,
-    stringr,
     purrr,
     S7,
     pwr,
@@ -46,8 +45,8 @@ SystemRequirements: Python (>= 3.10) for BayesFlow backend (optional)
 Config/reticulate:
   list(
     packages = list(
-      list(package = "bayesflow", version = ">= 2.0", pip = TRUE),
-      list(package = "keras", version = ">= 3.0", pip = TRUE),
+      list(package = "bayesflow", pip = TRUE),
+      list(package = "keras", pip = TRUE),
       list(package = "torch", pip = TRUE),
       list(package = "numpy", pip = TRUE)
     )
