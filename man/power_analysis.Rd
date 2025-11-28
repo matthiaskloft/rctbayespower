@@ -17,7 +17,13 @@ conditions and design parameters for the power analysis. Created by
 \item{n_cores}{Number of CPU cores for parallel execution (default 1)}
 \item{verbosity}{Output detail level: 0 (quiet), 1 (normal), 2 (verbose)}
 \item{brms_args}{List of brms arguments (chains, iter, warmup, cores)}
-\item{bf_args}{List of BayesFlow arguments (n_posterior_samples, batch_size)}
+\item{bf_args}{List of BayesFlow arguments:
+\itemize{
+\item n_posterior_samples: Number of posterior samples (default: 1000)
+\item batch_size: Batch size for inference (default: n_sims)
+\item envname: Python virtual environment name (default: NULL for auto-detect)
+}
+}
 \item{design_prior}{Prior specification (NULL, brms syntax string, or function)}
 }}
 

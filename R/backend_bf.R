@@ -34,6 +34,137 @@
 .bf_cache <- new.env(parent = emptyenv())
 
 
+#' Get BayesFlow Environment Information
+#'
+#' Returns information about the current Python environment and compute device
+#' (CPU or GPU) for BayesFlow inference. Used to display status messages during
+#' power analysis.
+#'
+#' @param envname Optional name of Python virtual environment to check.
+#'   If NULL (default), uses the currently active environment.
+#'
+#' @return A list with:
+#'   \itemize{
+#'     \item `device`: "GPU" or "CPU"
+#'     \item `device_name`: GPU name (e.g., "NVIDIA RTX 4090") or "CPU"
+#'     \item `cuda_version`: CUDA version string or NULL for CPU
+#'     \item `cpu_name`: CPU processor name or NULL if unavailable
+#'     \item `envname`: Name of the Python virtual environment or NULL
+#'     \item `python_path`: Path to Python executable
+#'   }
+#'   Returns NULL if BayesFlow is not available.
+#' @export
+#'
+#' @examples
+#' \dontrun{
+#' info <- get_bf_env_info()
+#' if (!is.null(info)) {
+#'   cat("Device:", info$device_name, "\n")
+#'   cat("Environment:", info$envname, "\n")
+#' }
+#'
+#' # Check specific environment
+#' info <- get_bf_env_info(envname = "r-rctbayespower")
+#' }
+get_bf_env_info <- function(envname = NULL) {
+  # Check if Python is already initialized
+  python_already_initialized <- reticulate::py_available(initialize = FALSE)
+
+  # If envname specified and Python already initialized, check compatibility
+  if (!is.null(envname) && nchar(envname) > 0 && python_already_initialized) {
+    current_config <- reticulate::py_config()
+    current_path <- normalizePath(current_config$python, winslash = "/", mustWork = FALSE)
+
+    requested_path <- tryCatch({
+      venv_python <- reticulate::virtualenv_python(envname)
+      normalizePath(venv_python, winslash = "/", mustWork = FALSE)
+    }, error = function(e) NULL)
+
+    if (!is.null(requested_path) && !identical(current_path, requested_path)) {
+      # Cannot switch - silently use current environment
+      envname <- NULL
+    }
+  }
+
+  # Activate specified environment if provided (only if Python not yet initialized)
+  if (!is.null(envname) && nchar(envname) > 0 && !python_already_initialized) {
+    tryCatch({
+      reticulate::use_virtualenv(envname, required = TRUE)
+    }, error = function(e) {
+      # Silently fall back to current environment
+    })
+  }
+
+  # Return NULL if BayesFlow not available
+  if (!check_bf_available(silent = TRUE)) {
+    return(NULL)
+  }
+
+  # Initialize Python if needed
+  if (!reticulate::py_available(initialize = TRUE)) {
+    return(NULL)
+  }
+
+  info <- list(
+    device = "CPU",
+    device_name = "CPU",
+    cuda_version = NULL,
+    cpu_name = NULL,
+    envname = NULL,
+    python_path = NULL
+  )
+
+  # Get Python configuration
+  config <- tryCatch(reticulate::py_config(), error = function(e) NULL)
+  if (!is.null(config)) {
+    info$python_path <- config$python
+
+    # Extract environment name from path
+    # Common patterns: .../envs/envname/... or .../virtualenvs/envname/...
+    path <- config$python
+    if (!is.null(config$virtualenv)) {
+      info$envname <- basename(config$virtualenv)
+    } else {
+      # Try to extract from path
+      env_match <- regmatches(path, regexpr("(envs|virtualenvs|venv)[/\\\\]([^/\\\\]+)", path))
+      if (length(env_match) > 0 && nchar(env_match) > 0) {
+        info$envname <- sub(".*[/\\\\]", "", env_match)
+      }
+    }
+  }
+
+  # Get CPU info via Python platform module
+  tryCatch({
+    platform <- reticulate::import("platform", delay_load = FALSE)
+    cpu_name <- platform$processor()
+    # On some systems processor() returns empty, try uname().machine as fallback
+    if (is.null(cpu_name) || nchar(cpu_name) == 0) {
+      cpu_name <- platform$machine()
+    }
+    if (!is.null(cpu_name) && nchar(cpu_name) > 0) {
+      info$cpu_name <- cpu_name
+    }
+  }, error = function(e) {
+    # Platform module not available - leave cpu_name as NULL
+
+  })
+
+  # Check GPU availability via PyTorch
+  tryCatch({
+    torch <- reticulate::import("torch", delay_load = FALSE)
+    if (torch$cuda$is_available()) {
+      info$device <- "GPU"
+      info$device_name <- torch$cuda$get_device_name(0L)
+      info$cuda_version <- torch$version$cuda
+    }
+  }, error = function(e) {
+    # PyTorch not available or CUDA check failed - stay with CPU
+  })
+
+  info
+}
+
+
 #' Check BayesFlow Availability
 #'
 #' Checks if Python, reticulate, and BayesFlow are available for use.
@@ -91,10 +222,14 @@ check_bf_available <- function(silent = FALSE) {
 #' Called automatically by estimation functions.
 #'
 #' This function:
-#' 1. Returns cached modules if already initialized
-#' 2. Declares Python dependencies via py_require() for automatic venv provisioning
-#' 3. Sets KERAS_BACKEND=torch before importing keras (required for PyTorch backend)
-#' 4. Imports modules with delay_load for CRAN compatibility
+#' 1. Activates the specified virtual environment if provided
+#' 2. Returns cached modules if already initialized (and envname matches)
+#' 3. Declares Python dependencies via py_require() for automatic venv provisioning
+#' 4. Sets KERAS_BACKEND=torch before importing keras (required for PyTorch backend)
+#' 5. Imports modules with delay_load for CRAN compatibility
+#'
+#' @param envname Optional name of Python virtual environment to use.
+#'   If NULL (default), uses the currently active environment or auto-detects.
 #'
 #' @return List with bf, np, and keras Python modules
 #' @export
@@ -104,13 +239,64 @@ check_bf_available <- function(silent = FALSE) {
 #' py_mods <- init_bf_python()
 #' py_mods$bf  # BayesFlow module
 #' py_mods$keras  # Keras module
+#'
+#' # Use specific environment
+#' py_mods <- init_bf_python(envname = "r-rctbayespower")
 #' }
-init_bf_python <- function() {
-  # Return cached if available
+init_bf_python <- function(envname = NULL) {
+  # Check if Python is already initialized
+ python_already_initialized <- reticulate::py_available(initialize = FALSE)
+
+  # If envname specified and Python already initialized, check compatibility
+  if (!is.null(envname) && nchar(envname) > 0 && python_already_initialized) {
+    # Get current Python path
+    current_config <- reticulate::py_config()
+    current_path <- normalizePath(current_config$python, winslash = "/", mustWork = FALSE)
+
+    # Get requested environment path
+    requested_path <- tryCatch({
+      venv_python <- reticulate::virtualenv_python(envname)
+      normalizePath(venv_python, winslash = "/", mustWork = FALSE)
+    }, error = function(e) NULL)
+
+    if (!is.null(requested_path) && !identical(current_path, requested_path)) {
+      # Extract current env name from path for clearer message
+      current_envname <- basename(dirname(dirname(current_path)))
+
+      cli::cli_warn(c(
+        "Cannot switch Python environment in active R session",
+        "x" = "Requested: {.val {envname}}",
+        "!" = "Currently using: {.val {current_envname}}",
+        "i" = "Restart R session to use a different Python environment",
+        "i" = "Continuing with current environment..."
+      ))
+      # Don't try to switch - use current environment
+      envname <- NULL
+    }
+  }
+
+  # Activate specified environment if provided (only if Python not yet initialized)
+  if (!is.null(envname) && nchar(envname) > 0 && !python_already_initialized) {
+    tryCatch({
+      reticulate::use_virtualenv(envname, required = TRUE)
+    }, error = function(e) {
+      cli::cli_warn(c(
+        "Could not activate virtual environment {.val {envname}}",
+        "i" = "Using current Python environment instead",
+        "x" = conditionMessage(e)
+      ))
+    })
+  }
+
+  # Check if cache is valid (same environment)
+  cached_envname <- .bf_cache$envname %||% ""
+  current_envname <- envname %||% ""
+
   if (exists("bf", envir = .bf_cache) &&
       exists("np", envir = .bf_cache) &&
       exists("keras", envir = .bf_cache) &&
-      !is.null(.bf_cache$bf)) {
+      !is.null(.bf_cache$bf) &&
+      cached_envname == current_envname) {
     return(list(bf = .bf_cache$bf, np = .bf_cache$np, keras = .bf_cache$keras))
   }
 
@@ -145,6 +331,7 @@ init_bf_python <- function() {
   .bf_cache$bf <- reticulate::import("bayesflow", delay_load = TRUE)
   .bf_cache$np <- reticulate::import("numpy", convert = FALSE, delay_load = TRUE)
   .bf_cache$keras <- reticulate::import("keras", delay_load = TRUE)
+  .bf_cache$envname <- envname  # Store envname for cache validation
 
   list(bf = .bf_cache$bf, np = .bf_cache$np, keras = .bf_cache$keras)
 }

@@ -17,7 +17,7 @@ format:
     embed-resources: true
 execute:
   message: true
-  warning: false
+  warning: true
 ---
 
 ```{r setup}
@@ -27,8 +27,11 @@ library(rctbayespower)
 library(dplyr)
 library(pander)
 
-n_sims <- 1000
-n_cores <- parallel::detectCores() - 2
+# Initialize BayesFlow Python environment
+init_bf_python("rctbp-3-12-cpu")
+
+n_sims <- 100L
+n_cores <- 1
 ```
 
 ***
@@ -68,7 +71,8 @@ The BayesFlow backend requires Python with PyTorch, Keras, and BayesFlow. Use `s
 setup_bf_python()
 
 # With options:
-setup_bf_python(python_version = "3.12")
+setup_bf_python(envname = "rctbp-3-12-gpu", python_version = "3.12", cuda_version = "auto")
+setup_bf_python(envname = "rctbp-3-12-cpu", python_version = "3.12", cuda_version = "cpu")
 setup_bf_python(cuda_version = "cpu")
 setup_bf_python(force = TRUE)
 ```
@@ -165,19 +169,18 @@ print(conditions)
 
 ## Step 4: Run Power Analysis
 
-```{r power-analysis}
+```{r power-analysis-bf}
 power_bf <- power_analysis(
   conditions,
   n_sims = n_sims,
   n_cores = 1,
   run = TRUE,
   verbosity = 2,
-  bf_args = list(n_posterior_samples = 2000, 
-                 skip_convergence = FALSE)
+  bf_args = list(n_posterior_samples = 1000)
 )
 ```
 
-```{r power-results}
+```{r power-results-bf}
 print(power_bf)
 
 power_bf@results_conditions |>
@@ -207,7 +210,7 @@ power_brms <- power_analysis(
   n_cores = n_cores,
   run = TRUE,
   verbosity = 1,
-  brms_args = list(chains = 4, iter = 600, warmup = 100)
+  brms_args = list(chains = 4, iter = 350, warmup = 100)
 )
 print(power_brms)
 ```
@@ -225,24 +228,14 @@ format_time <- function(time_sec) {
 }
 
 speedup <- brms_time / bf_time
-cat("BayesFlow:", format_time(bf_time), "\n")
-cat("brms:", format_time(brms_time), "\n")
-cat("Speedup:", round(speedup, 1), "x\n")
+
+paste0(
+  cat("BayesFlow:", format_time(bf_time), "\n"),
+  cat("brms:", format_time(brms_time), "\n"),
+  cat("Speedup:", round(speedup, 1), "x\n")
+)
 ```
 
-## Compare Convergence
-
-```{r convergence}
-bf_conv <- power_bf@results_conditions |>
-  select(id_cond, rhat, ess_bulk, ess_tail) |>
-  mutate(Backend = "BayesFlow", .before = everything())
-
-brms_conv <- power_brms@results_conditions |>
-  select(id_cond, rhat, ess_bulk, ess_tail) |>
-  mutate(Backend = "brms", .before = everything())
-
-bind_rows(bf_conv, brms_conv)
-```
 
 ***
 
@@ -251,4 +244,3 @@ bind_rows(bf_conv, brms_conv)
 ```{r session-info}
 pander::pander(sessionInfo())
 ```
-

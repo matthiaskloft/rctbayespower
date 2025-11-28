@@ -5,6 +5,44 @@
 # parameters (n_sims, n_cores), conditions object, and placeholders for results.
 
 #' @importFrom S7 new_class class_any class_numeric class_logical class_list class_character
+NULL
+
+
+# =============================================================================
+# CPU INFO HELPER
+# =============================================================================
+
+# Get CPU Information (internal helper, not exported)
+# Returns CPU processor name for display in power analysis output.
+# Works cross-platform using R system commands.
+get_cpu_info <- function() {
+  tryCatch({
+    os <- Sys.info()["sysname"]
+
+    cpu_name <- if (os == "Windows") {
+      # Windows: use wmic
+      result <- system("wmic cpu get name", intern = TRUE, ignore.stderr = TRUE)
+      # Filter out empty lines and header
+      result <- trimws(result[nchar(trimws(result)) > 0])
+      if (length(result) > 1) result[2] else NULL
+    } else if (os == "Darwin") {
+      # macOS: use sysctl
+      result <- system("sysctl -n machdep.cpu.brand_string", intern = TRUE, ignore.stderr = TRUE)
+      if (length(result) > 0 && nchar(result[1]) > 0) result[1] else NULL
+    } else {
+      # Linux: read from /proc/cpuinfo
+      if (file.exists("/proc/cpuinfo")) {
+        lines <- readLines("/proc/cpuinfo", n = 10, warn = FALSE)
+        model_line <- grep("^model name", lines, value = TRUE)
+        if (length(model_line) > 0) {
+          sub("^model name\\s*:\\s*", "", model_line[1])
+        } else NULL
+      } else NULL
+    }
+
+    if (!is.null(cpu_name) && nchar(cpu_name) > 0) cpu_name else NULL
+  }, error = function(e) NULL)
+}
 
 rctbp_power_analysis <- S7::new_class(
   "rctbp_power_analysis",
@@ -157,7 +195,13 @@ format_duration <- function(minutes) {
 #'     \item{n_cores}{Number of CPU cores for parallel execution (default 1)}
 #'     \item{verbosity}{Output detail level: 0 (quiet), 1 (normal), 2 (verbose)}
 #'     \item{brms_args}{List of brms arguments (chains, iter, warmup, cores)}
-#'     \item{bf_args}{List of BayesFlow arguments (n_posterior_samples, batch_size)}
+#'     \item{bf_args}{List of BayesFlow arguments:
+#'       \itemize{
+#'         \item n_posterior_samples: Number of posterior samples (default: 1000)
+#'         \item batch_size: Batch size for inference (default: n_sims)
+#'         \item envname: Python virtual environment name (default: NULL for auto-detect)
+#'       }
+#'     }
 #'     \item{design_prior}{Prior specification (NULL, brms syntax string, or function)}
 #'   }
 #' @param run Logical indicating whether to immediately execute the analysis
@@ -412,6 +456,12 @@ S7::method(run, rctbp_power_analysis) <- function(x, ...) {
     )
     if (should_show(1)) {
       cli::cli_alert_success("Model configured")
+
+      # Show CPU info for brms backend
+      cpu_name <- get_cpu_info()
+      if (!is.null(cpu_name)) {
+        cli::cli_dl(c("Device" = paste0("CPU (", cpu_name, ")")))
+      }
       cli::cli_text("")
     }
 
@@ -422,7 +472,8 @@ S7::method(run, rctbp_power_analysis) <- function(x, ...) {
     # For BayesFlow backend, merge user-provided bf_args with model defaults
     default_bf_args <- list(
       n_posterior_samples = 1000L,
-      batch_size = NULL
+      batch_size = NULL,
+      envname = NULL
     )
     # Get model defaults, then override with user-provided args
     model_bf_args <- design@model@backend_args_bf
@@ -444,8 +495,37 @@ S7::method(run, rctbp_power_analysis) <- function(x, ...) {
     # Store in model for workers
     x@conditions@design@model@backend_args_bf <- final_bf_args
 
+    # Initialize BayesFlow Python environment with specified envname
+    init_bf_python(envname = final_bf_args$envname)
+
     if (should_show(1)) {
-      cli::cli_alert_info("Using BayesFlow backend (n_posterior_samples={final_bf_args$n_posterior_samples}, batch_size={final_bf_args$batch_size})")
+      # Get environment info for display
+      bf_info <- get_bf_env_info()
+
+      if (!is.null(bf_info)) {
+        device_str <- if (bf_info$device == "GPU") {
+          paste0("GPU (", bf_info$device_name, ", CUDA ", bf_info$cuda_version, ")")
+        } else {
+          # Use R-based CPU info for better names
+          cpu_name <- get_cpu_info()
+          if (!is.null(cpu_name)) {
+            paste0("CPU (", cpu_name, ")")
+          } else {
+            "CPU"
+          }
+        }
+        env_str <- if (!is.null(bf_info$envname)) bf_info$envname else "default"
+
+        cli::cli_alert_info("Using BayesFlow backend")
+        cli::cli_dl(c(
+          "Device" = device_str,
+          "Environment" = env_str,
+          "Posterior samples" = as.character(final_bf_args$n_posterior_samples),
+          "Batch size" = as.character(final_bf_args$batch_size)
+        ))
+      } else {
+        cli::cli_alert_info("Using BayesFlow backend (n_posterior_samples={final_bf_args$n_posterior_samples}, batch_size={final_bf_args$batch_size})")
+      }
     }
   }
 

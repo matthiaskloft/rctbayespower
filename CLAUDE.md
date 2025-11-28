@@ -118,9 +118,11 @@ setup_bf_python(cuda_version = "12.4")  # Specific CUDA version
 setup_bf_python(cuda_version = "cpu")   # CPU-only
 
 # Check status and verify installation
-bf_status()                    # Show full environment status
-verify_bf_installation()       # Check all packages
-detect_cuda_version()          # Just check CUDA
+bf_status()                              # Show full environment status
+bf_status(envname = "r-rctbayespower")   # Check specific environment
+verify_bf_installation()                 # Check all packages
+detect_cuda_version()                    # Just check CUDA
+get_bf_env_info()                        # Get device (CPU/GPU) and environment info
 
 # Check if BayesFlow is available
 check_bf_available(silent = TRUE)
@@ -141,6 +143,17 @@ model <- build_model("ancova_cont_2arms", backend = "bf")
 
 # brms only (never tries BayesFlow)
 model <- build_model("ancova_cont_2arms", backend = "brms")
+
+# Specify Python environment for BayesFlow
+result <- power_analysis(
+  conditions,
+  n_sims = 100,
+  bf_args = list(
+    envname = "r-rctbayespower",  # Use specific venv
+    n_posterior_samples = 2000
+  )
+)
+# Output shows: Device (CPU/GPU), Environment name, posterior samples, batch size
 
 # Testing without Python (mock mode)
 Sys.setenv(RCTBP_MOCK_BF = "TRUE")

@@ -500,14 +500,21 @@ verify_bf_installation <- function() {
 #' Displays current Python configuration and BayesFlow availability.
 #' Automatically initializes Python if not already active.
 #'
+#' @param envname Optional name of Python virtual environment to check.
+#'   If NULL (default), uses the currently active environment or auto-detects.
+#'
 #' @return Invisibly returns list with status results
 #' @export
 #'
 #' @examples
 #' \dontrun{
+#' # Check current/default environment
 #' bf_status()
+#'
+#' # Check specific environment
+#' bf_status(envname = "r-rctbayespower")
 #' }
-bf_status <- function() {
+bf_status <- function(envname = NULL) {
   cli::cli_h1("BayesFlow Environment Status")
 
   if (!requireNamespace("reticulate", quietly = TRUE)) {
@@ -515,8 +522,48 @@ bf_status <- function() {
     return(invisible(NULL))
   }
 
-  # Try to initialize Python if not available
+  # Check if Python is already initialized
+  python_already_initialized <- reticulate::py_available(initialize = FALSE)
 
+  # If envname specified and Python already initialized, check compatibility
+  if (!is.null(envname) && nchar(envname) > 0 && python_already_initialized) {
+    current_config <- reticulate::py_config()
+    current_path <- normalizePath(current_config$python, winslash = "/", mustWork = FALSE)
+
+    requested_path <- tryCatch({
+      venv_python <- reticulate::virtualenv_python(envname)
+      normalizePath(venv_python, winslash = "/", mustWork = FALSE)
+    }, error = function(e) NULL)
+
+    if (!is.null(requested_path) && !identical(current_path, requested_path)) {
+      current_envname <- basename(dirname(dirname(current_path)))
+      cli::cli_alert_warning("Cannot switch Python environment in active R session")
+      cli::cli_alert_info("Requested: {.val {envname}}, but currently using: {.val {current_envname}}")
+      cli::cli_alert_info("Restart R session to use a different environment")
+      cli::cli_text("")
+      # Continue showing status of current environment
+      envname <- NULL
+    }
+  }
+
+  # Activate specified environment if provided (only if Python not yet initialized)
+  if (!is.null(envname) && nchar(envname) > 0 && !python_already_initialized) {
+    tryCatch({
+      reticulate::use_virtualenv(envname, required = TRUE)
+      cli::cli_alert_success("Activated environment: {.val {envname}}")
+    }, error = function(e) {
+      cli::cli_alert_danger("Could not activate environment {.val {envname}}: {conditionMessage(e)}")
+
+      # Show available virtualenvs
+      venvs <- tryCatch(reticulate::virtualenv_list(), error = function(e) character(0))
+      if (length(venvs) > 0) {
+        cli::cli_alert_info("Available environments: {.val {venvs}}")
+      }
+      return(invisible(NULL))
+    })
+  }
+
+  # Try to initialize Python if not available
   if (!reticulate::py_available(initialize = TRUE)) {
     cli::cli_alert_warning("Python not available")
 
@@ -526,7 +573,7 @@ bf_status <- function() {
 
     if (length(bf_venvs) > 0) {
       cli::cli_alert_info("Found BayesFlow environments: {.val {bf_venvs}}")
-      cli::cli_alert_info("Activate with: {.code reticulate::use_virtualenv(\"{bf_venvs[1]}\")}")
+      cli::cli_alert_info("Activate with: {.code bf_status(envname = \"{bf_venvs[1]}\")}")
     } else if (length(venvs) > 0) {
       cli::cli_alert_info("Available environments: {.val {venvs}}")
     } else {

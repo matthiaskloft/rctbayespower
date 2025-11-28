@@ -9,7 +9,7 @@ build_model(
   inference_model = NULL,
   backend = c("brms", "bf"),
   backend_args_brms = list(),
-  backend_args_bf = list(batch_size = NULL, n_posterior_samples = 1000L),
+  backend_args_bf = list(batch_size = NULL, n_posterior_samples = 1000L, envname = NULL),
   n_endpoints = NULL,
   endpoint_types = NULL,
   n_arms = NULL,
@@ -28,8 +28,12 @@ build_model(
 
 \item{backend_args_brms}{List of brms-specific arguments (chains, iter, etc.)}
 
-\item{backend_args_bf}{List of BayesFlow-specific arguments.
-Default: list(batch_size = 64L, n_posterior_samples = 1000L)}
+\item{backend_args_bf}{List of BayesFlow-specific arguments:
+\describe{
+\item{batch_size}{Batch size for inference (default: NULL, uses n_sims)}
+\item{n_posterior_samples}{Number of posterior samples (default: 1000)}
+\item{envname}{Python virtual environment name to use (default: NULL for auto-detect)}
+}}
 
 \item{n_endpoints}{Number of endpoints (positive integer)}
 

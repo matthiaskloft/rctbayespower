@@ -4,7 +4,11 @@
 \alias{init_bf_python}
 \title{Initialize BayesFlow Python Environment}
 \usage{
-init_bf_python()
+init_bf_python(envname = NULL)
+}
+\arguments{
+\item{envname}{Optional name of Python virtual environment to use.
+If NULL (default), uses the currently active environment or auto-detects.}
 }
 \value{
 List with bf, np, and keras Python modules
@@ -16,7 +20,8 @@ Called automatically by estimation functions.
 \details{
 This function:
 \enumerate{
-\item Returns cached modules if already initialized
+\item Activates the specified virtual environment if provided
+\item Returns cached modules if already initialized (and envname matches)
 \item Declares Python dependencies via py_require() for automatic venv provisioning
 \item Sets KERAS_BACKEND=torch before importing keras (required for PyTorch backend)
 \item Imports modules with delay_load for CRAN compatibility
@@ -27,5 +32,8 @@ This function:
 py_mods <- init_bf_python()
 py_mods$bf  # BayesFlow module
 py_mods$keras  # Keras module
+
+# Use specific environment
+py_mods <- init_bf_python(envname = "r-rctbayespower")
 }
 }

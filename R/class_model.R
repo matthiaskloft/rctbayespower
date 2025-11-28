@@ -41,7 +41,7 @@ rctbp_model <- S7::new_class(
     backend_args_brms = S7::new_property(S7::class_list, default = list()),
     backend_args_bf = S7::new_property(
       S7::class_list,
-      default = list(batch_size = NULL, n_posterior_samples = 1000L)
+      default = list(batch_size = NULL, n_posterior_samples = 1000L, envname = NULL)
     ),
 
     # =========================================================================
@@ -290,8 +290,12 @@ get_model <- function(name, backend = c("brms", "bf")) {
 #'   (for bf backend).
 #' @param backend Which backend to use: "brms" (default) or "bf".
 #' @param backend_args_brms List of brms-specific arguments (chains, iter, etc.)
-#' @param backend_args_bf List of BayesFlow-specific arguments.
-#'   Default: list(batch_size = 64L, n_posterior_samples = 1000L)
+#' @param backend_args_bf List of BayesFlow-specific arguments:
+#'   \describe{
+#'     \item{batch_size}{Batch size for inference (default: NULL, uses n_sims)}
+#'     \item{n_posterior_samples}{Number of posterior samples (default: 1000)}
+#'     \item{envname}{Python virtual environment name to use (default: NULL for auto-detect)}
+#'   }
 #' @param n_endpoints Number of endpoints (positive integer)
 #' @param endpoint_types Character vector of endpoint types ("continuous", "binary", "count")
 #' @param n_arms Number of arms including control (positive integer)
@@ -321,7 +325,8 @@ build_model <- function(sim_fn = NULL,
                         backend_args_brms = list(),
                         backend_args_bf = list(
                           batch_size = NULL,
-                          n_posterior_samples = 1000L
+                          n_posterior_samples = 1000L,
+                          envname = NULL
                         ),
                         n_endpoints = NULL,
                         endpoint_types = NULL,

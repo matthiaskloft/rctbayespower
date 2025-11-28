@@ -218,6 +218,30 @@ worker_process_batch(work_units, design)
 - [ ] GPU support for large-scale simulations
 - [ ] Variable sample size support in BayesFlow models
 
+### Posterior Quality Diagnostics (All Backends)
+
+Note: Traditional MCMC diagnostics (ESS, R-hat) are not meaningful for BayesFlow since
+samples are IID by design. ESS can even exceed n_samples due to the posterior package's
+autocorrelation estimator behavior with IID data.
+
+Implement the following diagnostics that work for **both brms and BayesFlow** backends:
+
+- [ ] **Simulation-Based Calibration (SBC)**: Verify posterior coverage by checking that
+      rank statistics of true parameters within posteriors are uniformly distributed.
+      Reference: Talts et al. (2018) "Validating Bayesian Inference Algorithms with SBC"
+
+- [ ] **Posterior Predictive Checks**: Generate data from posterior predictive distribution
+      and compare to observed data statistics. Useful for model misspecification detection.
+
+- [ ] **Coverage Analysis**: For each condition, compute empirical coverage of credible
+      intervals (e.g., 50%, 80%, 95% CIs) and compare to nominal levels.
+
+- [ ] **Calibration Plots**: Plot posterior mean vs true parameter across simulations;
+      should show 1:1 relationship with appropriate uncertainty bands.
+
+These diagnostics are particularly important for NPE (BayesFlow) where traditional
+convergence metrics don't apply, but are also valuable for validating brms results.
+
 ---
 
 ## Answered Questions

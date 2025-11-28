@@ -4,7 +4,11 @@
 \alias{bf_status}
 \title{Show Python Environment Status}
 \usage{
-bf_status()
+bf_status(envname = NULL)
+}
+\arguments{
+\item{envname}{Optional name of Python virtual environment to check.
+If NULL (default), uses the currently active environment or auto-detects.}
 }
 \value{
 Invisibly returns list with status results
@@ -15,6 +19,10 @@ Automatically initializes Python if not already active.
 }
 \examples{
 \dontrun{
+# Check current/default environment
 bf_status()
+
+# Check specific environment
+bf_status(envname = "r-rctbayespower")
 }
 }
