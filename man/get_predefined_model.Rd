@@ -2,18 +2,19 @@
 % Please edit documentation in R/class_model.R
 \name{get_predefined_model}
 \alias{get_predefined_model}
-\title{Get a predefined model by name}
+\title{Get a Predefined Model (Legacy)}
 \usage{
-get_predefined_model(model_name)
+get_predefined_model(model_name, backend = "brms")
 }
 \arguments{
-\item{model_name}{Character scalar, name of the predefined model.}
+\item{model_name}{Name of the predefined model}
+
+\item{backend}{Backend to use}
 }
 \value{
-The model object (rctbp_model).
+Legacy rctbp_model object
 }
 \description{
-Builds a predefined model, caching the compiled brmsfit for efficiency.
-On first use, compiles the brms model and caches it locally.
-On subsequent uses, loads the cached brmsfit and creates a fresh rctbp_model.
+Internal function to build legacy rctbp_model objects for backward compatibility.
 }
+\keyword{internal}

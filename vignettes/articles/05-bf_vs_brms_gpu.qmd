@@ -24,13 +24,14 @@ execute:
 #| message: false
 
 library(rctbayespower)
-library(dplyr)
+library(tidyverse)
+library(ggplot2)
 library(pander)
 
 # Initialize BayesFlow Python environment
 init_bf_python("rctbp-3-12-gpu")
 
-n_sims <- 500
+n_sims <- 1000L
 n_cores <- parallel::detectCores() - 1
 ```
 
@@ -238,6 +239,27 @@ paste0(
   cat("brms:", format_time(brms_time), "\n"),
   cat("Speedup:", round(speedup, 1), "x\n")
 )
+```
+
+## Compare Power Curves
+```{r}
+results_bf <- power_bf@results_conditions %>%
+  mutate(Backend = "BayesFlow")
+results_brms <- power_brms@results_conditions %>%
+  mutate(Backend = "brms")
+combined_results <- rbind(results_bf, results_brms) |>
+  pivot_longer(
+    cols = c(pwr_scs, pr_scs),
+    names_to = "Criterion",
+    values_to = "Value"
+  )
+ggplot(combined_results, aes(x = n_total, y = Value, color = Backend)) +
+  geom_line() +
+  geom_point() +
+  scale_y_continuous(limits = c(0, 1), breaks = seq(0, 1, by = 0.1)) +
+  facet_wrap(~ Criterion) +
+  labs(title = "Power Curves: BayesFlow vs brms", x = "Total Sample Size", y = "Power (Success Criterion)") +
+  theme_minimal()
 ```
 
 

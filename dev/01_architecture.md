@@ -1,14 +1,16 @@
 # Package Architecture
 
-**Last Updated:** 2025-11-27
+**Last Updated:** 2025-11-29
 
 ## Overview
 
 `rctbayespower` uses a **pipeline architecture** where users progressively construct objects:
 
 ```
-Model → Design → Conditions → Power Analysis → Results
+Design → Conditions → Power Analysis → Results
 ```
+
+The `rctbp_design` class now contains all model properties (simulation function, inference model, backend selection). The previous `rctbp_model` class is deprecated.
 
 The package supports **dual backends** for posterior estimation:
 - **brms/Stan**: Traditional MCMC-based Bayesian inference
@@ -26,14 +28,14 @@ The package supports **dual backends** for posterior estimation:
 ## Class Hierarchy
 
 ```
-rctbp_model (dual backend support)
-    ↓ (contained by)
-rctbp_design
+rctbp_design (contains merged model properties)
     ↓ (contained by)
 rctbp_conditions
     ↓ (contained by)
 rctbp_power_analysis
 ```
+
+Note: `rctbp_model` is deprecated. All model properties (sim_fn, inference_model, backend) are now part of `rctbp_design`.
 
 ## File Organization
 
@@ -41,11 +43,10 @@ rctbp_power_analysis
 
 | File | Purpose |
 |------|---------|
-| `R/class_model.R` | Model class (dual backend: brms + BayesFlow) |
-| `R/class_design.R` | Design class definition |
+| `R/class_design.R` | Design class with merged model properties (dual backend) |
 | `R/class_conditions.R` | Conditions class definition |
 | `R/class_power_analysis.R` | Power analysis + run() method |
-| `R/class_interim.R` | Interim analysis class (placeholder) |
+| `R/class_model.R` | **DEPRECATED** - Legacy model class for backward compatibility |
 
 ### Backend Files
 
@@ -84,35 +85,30 @@ rctbp_power_analysis
 | `R/s3_wrappers.R` | S3 method wrappers for compatibility |
 | `R/S7_helpers.R` | S7 utility functions |
 
-### Deprecated Files (Empty, Kept for Reference)
+### Archived/Legacy Files
 
-| File | Replaced By |
-|------|-------------|
-| `R/backends.R` | `R/backend_brms.R`, `R/backend_bf.R` |
-| `R/estimation_single.R` | `R/backend_*.R` |
-| `R/estimation_sequential.R` | `R/backend_*.R` |
-| `R/simulate_single_run.R` | `R/worker_functions.R` |
+Legacy code is archived in `R/legacy/` for reference. These files are NOT loaded by the package.
 
 ## Backend Architecture
 
 ### Dual Backend Design
 
-The `rctbp_model` class supports **both backends simultaneously**:
+The `rctbp_design` class (with merged model properties) supports **both backends**:
 
 ```r
-rctbp_model
-├── brms_model          # brmsfit template (for brms backend)
-├── bayesflow_model     # Keras model (for BayesFlow backend)
-├── backend             # "brms", "bf", or "auto"
-├── active_backend      # Computed: resolves "auto" to actual backend
-├── backend_args_brms   # brms-specific config (chains, iter, etc.)
-└── backend_args_bf     # BayesFlow config (batch_size, n_posterior_samples)
+rctbp_design
+├── sim_fn              # Data simulation function
+├── inference_model     # brmsfit template (for brms backend)
+├── bf_model            # Keras/BayesFlow model (for bf backend)
+├── backend             # "brms" or "bf"
+├── target_params       # Parameters to analyze
+├── par_names_inference # Parameter names in inference model
+└── par_names_sim       # Parameter names in simulation function
 ```
 
-**Backend Selection**:
-- `"brms"`: Force brms backend
-- `"bf"`: Force BayesFlow backend
-- `"auto"`: Prefer BayesFlow if available (faster), else brms
+**Backend Selection** (specified via `build_design(backend = ...)`):
+- `"brms"`: Use brms/Stan backend (default, always available)
+- `"bf"`: Use BayesFlow backend (requires Python + BayesFlow)
 
 ### Backend Files
 
@@ -149,7 +145,7 @@ rctbp_model
 
 ```r
 worker_process_single(id_cond, id_iter, condition_args, design)
-├── Extract backend from design@model@active_backend
+├── Extract backend from design@backend
 ├── if (backend == "brms")
 │   └── estimate_single_brms(...)
 ├── else if (backend == "bf")
@@ -166,7 +162,7 @@ worker_process_batch(work_units, design)  # BayesFlow batch processing
 
 ### 1. Data Simulation Functions
 
-- Embedded in `rctbp_model` objects
+- Embedded in `rctbp_design` objects (via `sim_fn` property)
 - Generate trial data for given parameters
 - **Required signature**: Must accept `n_total`, `p_alloc`, plus model-specific parameters
 - **Batch versions**: `simulate_data_ancova_cont_2arms_batch()` for BayesFlow
@@ -186,12 +182,12 @@ simulate_data_ancova(
 ### 2. Backend-Specific Models
 
 **brms Models**:
-- Pre-compiled and stored in `rctbp_model@brms_model`
+- Pre-compiled and stored in `rctbp_design@inference_model`
 - Compiled once with `chains=0` to avoid recompilation during simulations
 - **Critical for performance**: Compilation takes 30-60 seconds
 
 **BayesFlow Models**:
-- Stored in `rctbp_model@bayesflow_model`
+- Stored in `rctbp_design@bf_model`
 - Loaded via Python/reticulate
 - Supports: BasicWorkflow, Approximator, raw Keras models
 - **Much faster**: Single forward pass for batch of simulations
@@ -229,14 +225,11 @@ Computed by backend-specific summarization functions:
 ```r
 # In prepare_design_for_workers()
 design_components <- list(
-  model_data_simulation_fn = design@model@data_simulation_fn,
-  model_backend = design@model@active_backend,  # Resolved, not "auto"
-  model_brms_model = design@model@brms_model,
-  model_bayesflow_model = design@model@bayesflow_model,
-  model_backend_args = backend_args,
-  target_params = design@target_params,
-  p_sig_scs = design@p_sig_scs,
-  p_sig_ftl = design@p_sig_ftl
+  sim_fn = design@sim_fn,
+  backend = design@backend,
+  inference_model = design@inference_model,
+  bf_model = design@bf_model,
+  target_params = design@target_params
 )
 ```
 
@@ -278,15 +271,18 @@ Sys.setenv(RCTBP_MOCK_BF = "TRUE")
 # BayesFlow calls return mock samples based on data
 ```
 
-## Architecture Decision: Model/Design Separation
+## Architecture Decision: Model/Design Merger
 
-**Decision**: Keep `rctbp_model` and `rctbp_design` as separate classes.
+**Decision** (2025-11): Merge `rctbp_model` properties into `rctbp_design`.
 
 **Rationale**:
-1. **Model compilation is expensive** (2+ minutes) - separation allows reusing compiled models
-2. **Clean separation of concerns** - Model = WHAT; Design = HOW to analyze
-3. **Future flexibility** - Same model with different analysis strategies
-4. **Single Responsibility Principle** - Each class has one job
-5. **Dual backend support** - Model holds both backends; design selects which to use
+1. **Simpler API**: Users only need `build_design()` instead of `build_model()` + `build_design()`
+2. **Predefined models**: Most users use predefined models via `model_name` parameter
+3. **Reduced complexity**: Fewer S7 classes to understand and maintain
+4. **Model caching**: Pre-compiled models are cached on disk, not in objects
 
-See `archive/model_design_merge_analysis.md` for full analysis.
+**Migration**:
+- Old: `model <- get_model("ancova_cont_2arms"); design <- build_design(model, ...)`
+- New: `design <- build_design(model_name = "ancova_cont_2arms", ...)`
+
+The deprecated `rctbp_model` class is kept in `R/class_model.R` for backward compatibility during development.

@@ -9,8 +9,8 @@ estimate_single_brms(
   model,
   backend_args,
   target_params,
-  thresholds_success,
-  thresholds_futility,
+  thresh_scs,
+  thresh_ftl,
   p_sig_scs,
   p_sig_ftl,
   id_iter,
@@ -26,9 +26,9 @@ estimate_single_brms(
 
 \item{target_params}{Character vector of parameter names}
 
-\item{thresholds_success}{Numeric vector of success thresholds}
+\item{thresh_scs}{Numeric vector of success thresholds (ROPE)}
 
-\item{thresholds_futility}{Numeric vector of futility thresholds}
+\item{thresh_ftl}{Numeric vector of futility thresholds (ROPE)}
 
 \item{p_sig_scs}{Probability threshold for success}
 

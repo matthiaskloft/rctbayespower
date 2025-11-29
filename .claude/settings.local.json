@@ -47,7 +47,10 @@
       "WebFetch(domain:rstudio.github.io)",
       "WebFetch(domain:keras3.posit.co)",
       "WebFetch(domain:r-pkgs.org)",
-      "Bash(nvidia-smi:*)"
+      "Bash(nvidia-smi:*)",
+      "WebFetch(domain:www.rpact.org)",
+      "WebFetch(domain:online.stat.psu.edu)",
+      "WebFetch(domain:keaven.github.io)"
     ],
     "deny": []
   }

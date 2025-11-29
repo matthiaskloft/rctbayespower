@@ -11,7 +11,7 @@ worker_process_single(id_cond, id_iter, condition_args, design)
 
 \item{id_iter}{Iteration identifier (within condition)}
 
-\item{condition_args}{Condition arguments with sim_args}
+\item{condition_args}{Condition arguments with sim_args and decision_args}
 
 \item{design}{Design object (S7 or list for parallel workers)}
 }

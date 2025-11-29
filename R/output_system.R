@@ -92,8 +92,10 @@ with_output_mode <- function(mode = c("cli", "markdown"), code) {
 #'
 #' @examples
 #' \dontrun{
-#' model <- build_model("ancova_cont_2arms")
-#' export_report(model, "model_report.md")
+#' design <- build_design(model_name = "ancova_cont_2arms",
+#'                        target_params = "b_arm2",
+#'                        p_sig_scs = 0.975, p_sig_ftl = 0.5)
+#' export_report(design, "design_report.md")
 #' }
 #'
 export_report <- function(object, file, format = "markdown") {

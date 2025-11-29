@@ -34,7 +34,7 @@ The returned function accepts the standard interim function parameters:
 \dontrun{
 design <- build_design(
   model = my_model,
-  target_params = "b_armtreat_1",
+  target_params = "b_arm2",
   p_sig_scs = 0.975,
   p_sig_ftl = 0.5,
   analysis_at = c(50, 100, 150),

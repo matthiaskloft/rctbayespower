@@ -1,0 +1,86 @@
+analytical_power_ancova_cont_2arms
+                        Power Calculation for ANCOVA with Continuous
+                        Covariate and Two Groups
+bf_status               Show Python Environment Status
+boundary_constant       Constant Boundary
+boundary_hsd            Hwang-Shih-DeCani Boundary
+boundary_linear         Linear Boundary
+boundary_obf            O'Brien-Fleming Boundary
+boundary_pocock         Pocock Boundary
+boundary_power          Power Family Boundary
+build_conditions        Build Conditions for Power Analysis
+build_design            Build a Design for Power Analysis
+build_model_ancova      Create General ANCOVA Model with Flexible
+                        Specifications
+build_model_ancova_cont_2arms
+                        Create 2-Arm ANCOVA Model for Continuous
+                        Outcomes
+build_model_ancova_cont_3arms
+                        Create 3-Arm ANCOVA Model for Continuous
+                        Outcomes
+check_bf_available      Check BayesFlow Availability
+check_python_sims_available
+                        Check if Python Simulators are Available
+clear_model_cache       Clear Model Cache
+compare_boundaries      Compare Multiple Boundary Configurations
+compare_power_methods   Compare Power Calculation Methods
+create_python_sim_fn    Create Python Simulation Function for Model
+detect_cuda_version     Detect CUDA Version from System
+export_report           Export Report to File
+f2_from_params_ancova_cont_2arms
+                        Compute Cohen's f-squared for Group Effect in
+                        Linear Model
+get_bf_env_info         Get BayesFlow Environment Information
+get_cache_size          Get Cache Size
+get_output_mode         Get Current Output Mode
+get_python_simulator    Get Python Simulator Class
+get_verbosity           Get Current Verbosity Level
+init_bf_python          Initialize BayesFlow Python Environment
+install_bf_dependencies
+                        Install BayesFlow Dependencies
+interim_continue        Default Interim Function: Always Continue
+interim_futility_only   Interim Function Factory: Futility Stopping
+                        Only
+interim_success_futility
+                        Interim Function Factory: Success and Futility
+                        Stopping
+link                    Link Parameters for Co-variation
+list_models             List Available Models
+load_bf_model           Load Pre-trained BayesFlow Model
+load_brms_model         Load Pre-compiled brms Model
+load_python_simulators
+                        Load Python Simulators Module
+plot.rctbp_power_analysis
+                        Plot Power Analysis Results
+power_analysis          Build Power Analysis Configuration
+print.rctbp_conditions
+                        Print Method for rctbp_conditions Objects
+print.rctbp_design      Print Method for rctbp_design Objects
+print.rctbp_model       Print Method for rctbp_model Objects
+print.rctbp_power_analysis
+                        Print Method for rctbp_power_analysis Objects
+report                  Generate Topic-Specific Reports
+report_power            Report on Power Metrics per Condition
+report_stopping         Report on Early Stopping Metrics per Condition
+report_stopping_by_look
+                        Report on Early Stopping per Look and Condition
+resummarize_boundaries
+                        Re-summarize Results with Different Boundaries
+run                     Run Analysis Objects
+run.rctbp_power_analysis
+                        Run Power Analysis
+set_output_mode         Set Output Mode
+set_verbosity           Set Verbosity Level
+setup_bf_python         Set Up Python Environment for BayesFlow
+should_show             Check if Message Should Be Displayed
+show_boundaries         Show Available Boundary Functions
+show_condition_args     Show Required Arguments for build_conditions()
+show_predefined_models
+                        Show Predefined Models
+show_target_params      Show Available Target Parameters
+summary.rctbp_power_analysis
+                        Summary Method for rctbp_power_analysis Objects
+verify_bf_installation
+                        Verify BayesFlow Installation
+with_output_mode        Temporarily Change Output Mode
+with_verbosity          Temporarily Change Verbosity Level

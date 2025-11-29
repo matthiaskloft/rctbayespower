@@ -75,6 +75,85 @@ fmt_params <- function(params) {
   )
 }
 
+#' Get Threshold Display from Conditions
+#'
+#' Extracts a threshold parameter value from conditions and formats for display.
+#' Checks constant, crossed, and conditions_grid in order.
+#'
+#' @param conditions An rctbp_conditions object
+#' @param param_name Name of the threshold parameter (e.g., "p_sig_scs")
+#' @return Character string describing the threshold value(s)
+#' @keywords internal
+get_threshold_display <- function(conditions, param_name) {
+  # Check constant first
+  if (param_name %in% names(conditions@constant)) {
+    val <- conditions@constant[[param_name]]
+    return(format_boundary(val))
+  }
+
+  # Check crossed
+  if (param_name %in% names(conditions@crossed)) {
+    vals <- conditions@crossed[[param_name]]
+    if (is.function(vals)) {
+      return(format_boundary(vals))
+    } else if (is.numeric(vals)) {
+      if (length(vals) == 1) {
+        return(as.character(vals))
+      } else {
+        return(paste0(min(vals), "-", max(vals), " (varies)"))
+      }
+    }
+  }
+
+  # Check conditions_grid
+  if (param_name %in% names(conditions@conditions_grid)) {
+    vals <- unique(conditions@conditions_grid[[param_name]])
+    if (length(vals) == 1) {
+      return(format_boundary(vals))
+    } else {
+      return(paste0(min(vals), "-", max(vals), " (varies)"))
+    }
+  }
+
+  # Not found
+  "(not specified)"
+}
+
+#' Get Original Threshold Value from Conditions
+#'
+#' Extracts the original threshold parameter value from conditions.
+#' Unlike get_threshold_display(), this returns the actual value, not a display string.
+#'
+#' @param conditions An rctbp_conditions object
+#' @param param_name Name of the threshold parameter (e.g., "p_sig_scs")
+#' @return The original threshold value (numeric, function, or NULL if not found)
+#' @keywords internal
+get_original_threshold <- function(conditions, param_name) {
+  # Check constant first
+  if (param_name %in% names(conditions@constant)) {
+    return(conditions@constant[[param_name]])
+  }
+
+  # Check crossed
+  if (param_name %in% names(conditions@crossed)) {
+    return(conditions@crossed[[param_name]])
+  }
+
+  # Check conditions_grid - return the first unique value
+  if (param_name %in% names(conditions@conditions_grid)) {
+    vals <- unique(conditions@conditions_grid[[param_name]])
+    if (length(vals) == 1) {
+      return(vals)
+    } else {
+      # Multiple values - return as vector
+      return(vals)
+    }
+  }
+
+  # Not found
+  NULL
+}
+
 #' Build Report for rctbp_model
 #'
 #' Creates structured report data for a model object.
@@ -127,54 +206,40 @@ build_report.rctbp_model <- function(x) {
 #' @keywords internal
 #'
 build_report.rctbp_design <- function(x) {
+  # NOTE: After API merge, model properties are directly on design (not x@model@*)
+  # NOTE: Decision parameters (p_sig_scs, p_sig_ftl, analysis_at, etc.) are now in conditions
   list(
     title = "S7 Object: rctbp_design",
     sections = list(
       list(
         name = "Model Specifications",
         items = list(
-          "Number of endpoints" = x@model@n_endpoints,
-          "Endpoint types" = paste(x@model@endpoint_types, collapse = ", "),
-          "Number of arms" = x@model@n_arms,
-          "Number of repeated measures" = if (is.null(x@model@n_repeated_measures)) "NULL" else x@model@n_repeated_measures,
-          "Parameter names - simulation" = paste(x@model@par_names_sim, collapse = ", "),
-          "Parameter names - inference" = paste(x@model@par_names_inference, collapse = ", ")
+          "Model name" = if (is.null(x@model_name)) "Custom" else x@model_name,
+          "Backend" = x@backend,
+          "Number of endpoints" = x@n_endpoints,
+          "Endpoint types" = paste(x@endpoint_types, collapse = ", "),
+          "Number of arms" = x@n_arms,
+          "Parameter names - simulation" = paste(x@par_names_sim, collapse = ", "),
+          "Parameter names - inference" = paste(x@par_names_inference, collapse = ", ")
         )
       ),
       list(
         name = "Design Specifications",
         items = list(
-          "Design name" = if (is.null(x@design_name)) "NULL" else x@design_name,
-          "Target parameters" = paste(x@target_params, collapse = ", "),
-          "Probability threshold for success" = format_boundary(x@p_sig_scs),
-          "Probability threshold for futility" = format_boundary(x@p_sig_ftl)
+          "Design name" = if (is.null(x@design_name)) "(not set)" else x@design_name,
+          "Target parameters" = paste(x@target_params, collapse = ", ")
         ),
-        note = "Effect size thresholds are specified per-condition in build_conditions()."
+        note = "Decision thresholds and analysis schedule are specified in build_conditions()."
       ),
-      list(
-        name = "Interim Analysis (Design Defaults)",
-        items = list(
-          "Analysis timepoints" = if (is.null(x@analysis_at)) "None (single-look)" else paste(x@analysis_at, collapse = ", "),
-          "Stopping rules" = if (is.null(x@interim_function)) {
-            if (is.null(x@analysis_at)) "N/A (single-look)" else "Default (dec_scs=1 or dec_ftl=1)"
-          } else {
-            "Custom (interim_function specified)"
-          },
-          "Adaptive design" = x@adaptive
-        ),
-        note = if (!is.null(x@analysis_at)) {
-          "These defaults apply to all conditions unless overridden."
-        } else NULL
-      ),
-      if (x@model@backend == "brms") {
+      if (x@backend == "brms") {
         list(
           name = "brms Model",
-          brms_model = x@model@inference_model
+          brms_model = x@inference_model
         )
-      } else if (x@model@backend == "bf") {
+      } else if (x@backend == "bf") {
         list(
           name = "BayesFlow Model",
-          bayesflow_model = x@model@inference_model
+          bayesflow_model = x@inference_model
         )
       }
     )
@@ -191,8 +256,16 @@ build_report.rctbp_design <- function(x) {
 #'
 build_report.rctbp_conditions <- function(x) {
   n_conditions <- nrow(x@conditions_grid)
-  n_params <- ncol(x@conditions_grid) - 1  # Subtract 1 for id_cond column
-  n_static_params <- length(x@static_values)
+  n_constant <- length(x@constant)
+
+  # Count regular params and link() groups in crossed
+  is_link <- function(obj) inherits(obj, "rctbp_link")
+  link_indices <- vapply(x@crossed, is_link, logical(1))
+  n_link_groups <- sum(link_indices)
+  n_regular_crossed <- sum(!link_indices)
+
+  # Count total unique params from link groups
+  n_linked_params <- sum(vapply(x@crossed[link_indices], length, integer(1)))
 
   target_pwr_display <- if (is.null(x@target_pwr)) {
     "Not set (will show highest power)"
@@ -200,17 +273,30 @@ build_report.rctbp_conditions <- function(x) {
     paste0(round(x@target_pwr * 100, 1), "%")
   }
 
+  # Build summary items
+  summary_items <- list(
+    "Number of conditions" = n_conditions,
+    "Crossed parameters" = n_regular_crossed,
+    "Constant parameters" = n_constant,
+    "Target power for optimal condition" = target_pwr_display
+  )
+
+  # Add link() info only if present
+
+  if (n_link_groups > 0) {
+    summary_items <- c(
+      summary_items[1:2],  # conditions, crossed
+      list("Linked groups (via link())" = paste0(n_link_groups, " (", n_linked_params, " params)")),
+      summary_items[3:4]   # constant, target_pwr
+    )
+  }
+
   list(
     title = "S7 Object: rctbp_conditions",
     sections = list(
       list(
         name = "Summary",
-        items = list(
-          "Number of conditions" = n_conditions,
-          "Number of varying parameters" = n_params,
-          "Number of static parameters" = n_static_params,
-          "Target power for optimal condition" = target_pwr_display
-        )
+        items = summary_items
       ),
       list(
         name = "Condition Grid",
@@ -239,6 +325,11 @@ build_report.rctbp_power_analysis <- function(x, target_pwr = NULL) {
     paste0(round(target_pwr * 100, 1), "%")
   }
 
+  # Get decision thresholds from conditions (in crossed or constant)
+  conditions <- x@conditions
+  p_sig_scs_display <- get_threshold_display(conditions, "p_sig_scs")
+  p_sig_ftl_display <- get_threshold_display(conditions, "p_sig_ftl")
+
   report <- list(
     title = "Power Analysis Summary",
     sections = list(
@@ -246,8 +337,8 @@ build_report.rctbp_power_analysis <- function(x, target_pwr = NULL) {
         name = "Design Summary",
         items = list(
           "Target parameters" = paste(design@target_params, collapse = ", "),
-          "Success probability threshold" = format_boundary(design@p_sig_scs),
-          "Futility probability threshold" = format_boundary(design@p_sig_ftl),
+          "Success probability threshold" = p_sig_scs_display,
+          "Futility probability threshold" = p_sig_ftl_display,
           "Target power" = target_pwr_display
         )
       )
@@ -408,7 +499,7 @@ build_report.rctbp_power_analysis <- function(x, target_pwr = NULL) {
         items = list(
           "Number of simulations per condition" = x@n_sims,
           "Number of cores for parallel execution" = x@n_cores,
-          "Verbose output" = x@verbose,
+          "Verbosity level" = x@verbosity,
           "Design prior" = if (is.null(x@design_prior)) {
             "None"
           } else if (is.function(x@design_prior)) {

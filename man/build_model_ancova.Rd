@@ -52,7 +52,7 @@ Vector length must equal n_arms - 1. Required parameter.}
 \item{sigma}{Residual standard deviation for data generation (must be > 0). Required parameter.}
 }
 \value{
-An S7 object of class "rctbp_model_ancova" ready for use with
+An S7 object of class "rctbp_model" (legacy) ready for use with
 \code{\link[=build_design]{build_design()}} and power analysis functions.
 }
 \description{
@@ -78,7 +78,7 @@ treatment effects, and residual standard deviation (sigma).
 \strong{Model Compilation:} The function compiles the brms model during creation,
 which may take some time but enables efficient power analysis later.
 
-\strong{Convenience Functions:} For common use cases, consider the wrapper functions that can be called via the 'predefined_model' argument in \code{\link[=build_model]{build_model()}}:
+\strong{Convenience Functions:} For common use cases, consider the wrapper functions that can be called via the 'model_name' argument in \code{\link[=build_design]{build_design()}}:
 \itemize{
 \item \code{\link[=build_model_ancova_cont_2arms]{build_model_ancova_cont_2arms()}} - 2-arm continuous ANCOVA
 \item \code{\link[=build_model_ancova_cont_3arms]{build_model_ancova_cont_3arms()}} - 3-arm continuous ANCOVA
@@ -99,6 +99,6 @@ model_2arm <- build_model_ancova(
 }
 }
 \seealso{
-\code{\link[=build_model]{build_model()}}, \code{\link[=build_design]{build_design()}}, \code{\link[=build_model_ancova_cont_2arms]{build_model_ancova_cont_2arms()}},
+\code{\link[=build_design]{build_design()}}, \code{\link[=build_model_ancova_cont_2arms]{build_model_ancova_cont_2arms()}},
 \code{\link[=build_model_ancova_cont_3arms]{build_model_ancova_cont_3arms()}}
 }

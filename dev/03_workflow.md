@@ -1,43 +1,41 @@
 # User Workflow & API Reference
 
-**Last Updated:** 2025-11-27
+**Last Updated:** 2025-11-29
 
-## Standard 4-Step Workflow (brms Backend)
+## Standard 3-Step Workflow (brms Backend)
 
 ```r
-# Step 1: Define the model
-model <- build_model(predefined_model = "ancova_cont_2arms")
-
-# Discover available parameter names (model-dependent)
-model@parameter_names_brms    # For target_params (e.g., "b_armtreat_1")
-model@parameter_names_sim_fn  # For simulation args (e.g., "b_arm_treat")
-
-# Step 2: Specify analysis design
+# Step 1: Build design with predefined model
+# NOTE: build_model() is deprecated - model is now merged into build_design()
 design <- build_design(
-  model = model,
-  target_params = "b_armtreat_1",  # Must match model@parameter_names_brms
+  model_name = "ancova_cont_2arms",
+  target_params = "b_arm2",  # Must match design@par_names_inference
   p_sig_scs = 0.975,
   p_sig_ftl = 0.5
 )
 
-# Step 3: Create conditions grid
+# Discover available parameter names (model-dependent)
+design@par_names_inference  # For target_params (e.g., "b_arm2")
+design@par_names_sim        # For simulation args (e.g., "b_arm_treat")
+
+# Step 2: Create conditions grid
 conditions <- build_conditions(
   design = design,
   condition_values = list(
     n_total = c(100, 150, 200),
-    b_arm_treat = c(0.2, 0.3, 0.5)  # Must match model@parameter_names_sim_fn
+    b_arm_treat = c(0.2, 0.3, 0.5)  # Must match design@par_names_sim
   ),
   static_values = list(
     p_alloc = list(c(0.5, 0.5)),
-    thresholds_success = 0.2,
-    thresholds_futility = 0,
+    thresh_scs = 0.2,      # Renamed from thresholds_success
+    thresh_ftl = 0,        # Renamed from thresholds_futility
     intercept = 0,
     b_covariate = 0.3,
     sigma = 1
   )
 )
 
-# Step 4: Run power analysis
+# Step 3: Run power analysis
 result <- power_analysis(
   conditions = conditions,
   n_sims = 100,
@@ -57,23 +55,19 @@ result@results_raw
 # Step 1: Check BayesFlow availability
 check_bf_available(silent = TRUE)  # Returns TRUE/FALSE
 
-# Step 2: Build model with BayesFlow backend
-model <- build_model(predefined_model = "ancova_cont_2arms")
-
-# Option A: Load pre-trained BayesFlow model
-bf_model <- load_bf_model("ancova_cont_2arms")
-model <- add_bf_backend(model, bf_model)
+# Step 2: Build design with BayesFlow backend
+design <- build_design(
+  model_name = "ancova_cont_2arms",
+  backend = "bf",  # Request BayesFlow (falls back to brms with warning if unavailable)
+  target_params = "b_arm2",
+  p_sig_scs = 0.975,
+  p_sig_ftl = 0.5
+)
 
 # Check active backend
-model@active_backend  # "bf" (prefers BayesFlow when available)
+design@backend  # "bf" or "brms"
 
-# Option B: Force specific backend
-model@backend <- "brms"  # Force brms
-model@backend <- "bf"    # Force BayesFlow
-model@backend <- "auto"  # Prefer BayesFlow, fallback to brms
-
-# Steps 2-4: Same as brms workflow
-design <- build_design(model = model, target_params = "b_armtreat_1", ...)
+# Steps 2-3: Same as brms workflow
 conditions <- build_conditions(design = design, ...)
 result <- power_analysis(conditions = conditions, n_sims = 1000, n_cores = 4)
 ```
@@ -115,20 +109,24 @@ power_config <- run(power_config)
 
 | Function | Purpose | Returns |
 |----------|---------|---------|
-| `build_model()` | Create or retrieve model | `rctbp_model` |
-| `build_design()` | Configure analysis criteria | `rctbp_design` |
+| `build_design()` | Create design with model (merged) | `rctbp_design` |
 | `build_conditions()` | Generate condition grid | `rctbp_conditions` |
 | `power_analysis()` | Configure/run power analysis | `rctbp_power_analysis` |
 | `run()` | Execute power analysis | `rctbp_power_analysis` (with results) |
 | `plot()` | Visualize results | plotly object |
+
+### Deprecated Functions
+
+| Function | Replacement |
+|----------|-------------|
+| `build_model()` | `build_design(model_name = ...)` |
+| `get_model()` | `build_design(model_name = ...)` |
 
 ### Backend Functions
 
 | Function | Purpose |
 |----------|---------|
 | `check_bf_available()` | Check if Python/BayesFlow available |
-| `add_bf_backend()` | Add BayesFlow backend to model |
-| `add_brms_backend()` | Add brms backend to model |
 | `load_bf_model()` | Load cached BayesFlow model |
 | `load_brms_model()` | Load cached brms model |
 
@@ -169,7 +167,7 @@ power_config <- run(power_config)
 
 ### Required Parameters for ANCOVA Models
 
-Use `required_fn_args(design)` to see required parameters. Use `model@parameter_names_sim_fn` to discover actual names.
+Use `required_fn_args(design)` to see required parameters. Use `design@par_names_sim` to discover actual names.
 
 **Simulation Function Parameters** (for condition_values/static_values):
 
@@ -186,10 +184,10 @@ Use `required_fn_args(design)` to see required parameters. Use `model@parameter_
 
 | Parameter | Description |
 |-----------|-------------|
-| `thresholds_success` | ROPE boundary for success decision |
-| `thresholds_futility` | ROPE boundary for futility decision |
+| `thresh_scs` | ROPE boundary for success decision |
+| `thresh_ftl` | ROPE boundary for futility decision |
 
-**Note**: The `target_params` in `build_design()` must match brms parameter names (use `model@parameter_names_brms`), which differ from simulation function parameter names.
+**Note**: The `target_params` in `build_design()` must match inference parameter names (use `design@par_names_inference`), which differ from simulation function parameter names.
 
 ### Condition Values vs Static Values
 

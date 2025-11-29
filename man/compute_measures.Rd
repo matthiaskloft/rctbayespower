@@ -7,8 +7,8 @@
 compute_measures(
   posterior_rvars,
   target_params,
-  thresholds_success,
-  thresholds_futility,
+  thresh_scs,
+  thresh_ftl,
   p_sig_scs,
   p_sig_ftl
 )
@@ -18,9 +18,9 @@ compute_measures(
 
 \item{target_params}{Character vector of parameter names to analyze}
 
-\item{thresholds_success}{Numeric vector of success thresholds (one per parameter)}
+\item{thresh_scs}{Numeric vector of success thresholds (ROPE, one per parameter)}
 
-\item{thresholds_futility}{Numeric vector of futility thresholds (one per parameter)}
+\item{thresh_ftl}{Numeric vector of futility thresholds (ROPE, one per parameter)}
 
 \item{p_sig_scs}{Probability threshold for declaring success}
 

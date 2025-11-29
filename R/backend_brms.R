@@ -98,23 +98,23 @@ estimate_posterior_brms <- function(data, brms_model, backend_args = list()) {
 #'
 #' @param posterior_rvars draws_rvars object from brms
 #' @param target_params Character vector of parameter names
-#' @param thresholds_success Numeric vector of success thresholds
-#' @param thresholds_futility Numeric vector of futility thresholds
+#' @param thresh_scs Numeric vector of success thresholds (ROPE)
+#' @param thresh_ftl Numeric vector of futility thresholds (ROPE)
 #' @param p_sig_scs Probability threshold for success
 #' @param p_sig_ftl Probability threshold for futility
 #'
 #' @return Data frame with package output schema
 #' @keywords internal
 summarize_post_brms <- function(posterior_rvars, target_params,
-                                 thresholds_success, thresholds_futility,
+                                 thresh_scs, thresh_ftl,
                                  p_sig_scs, p_sig_ftl) {
   # Delegate to existing compute_measures() function
   # which handles rvar operations
   compute_measures(
     posterior_rvars = posterior_rvars,
     target_params = target_params,
-    thresholds_success = thresholds_success,
-    thresholds_futility = thresholds_futility,
+    thresh_scs = thresh_scs,
+    thresh_ftl = thresh_ftl,
     p_sig_scs = p_sig_scs,
     p_sig_ftl = p_sig_ftl
   )
@@ -134,8 +134,8 @@ summarize_post_brms <- function(posterior_rvars, target_params,
 #' @param model brmsfit template model
 #' @param backend_args List of brms-specific arguments
 #' @param target_params Character vector of parameter names
-#' @param thresholds_success Numeric vector of success thresholds
-#' @param thresholds_futility Numeric vector of futility thresholds
+#' @param thresh_scs Numeric vector of success thresholds (ROPE)
+#' @param thresh_ftl Numeric vector of futility thresholds (ROPE)
 #' @param p_sig_scs Probability threshold for success
 #' @param p_sig_ftl Probability threshold for futility
 #' @param id_iter Iteration identifier
@@ -144,7 +144,7 @@ summarize_post_brms <- function(posterior_rvars, target_params,
 #' @return Data frame with 1 row containing measures and IDs
 #' @keywords internal
 estimate_single_brms <- function(data, model, backend_args, target_params,
-                                 thresholds_success, thresholds_futility,
+                                 thresh_scs, thresh_ftl,
                                  p_sig_scs, p_sig_ftl,
                                  id_iter, id_cond) {
 
@@ -195,8 +195,8 @@ estimate_single_brms <- function(data, model, backend_args, target_params,
     df <- summarize_post_brms(
       posterior_rvars = posterior_rvars,
       target_params = target_params,
-      thresholds_success = thresholds_success,
-      thresholds_futility = thresholds_futility,
+      thresh_scs = thresh_scs,
+      thresh_ftl = thresh_ftl,
       p_sig_scs = current_p_sig_scs,
       p_sig_ftl = current_p_sig_ftl
     ) |>
@@ -229,10 +229,10 @@ estimate_single_brms <- function(data, model, backend_args, target_params,
 #' @param model brmsfit template model
 #' @param backend_args List of brms-specific arguments
 #' @param target_params Character vector of parameter names
-#' @param thresholds_success Numeric vector of success thresholds
-#' @param thresholds_futility Numeric vector of futility thresholds
-#' @param p_sig_scs Probability threshold for success
-#' @param p_sig_ftl Probability threshold for futility
+#' @param thresh_scs Numeric vector of success thresholds (ROPE)
+#' @param thresh_ftl Numeric vector of futility thresholds (ROPE)
+#' @param p_sig_scs Probability threshold for success (numeric or pre-resolved vector)
+#' @param p_sig_ftl Probability threshold for futility (numeric or pre-resolved vector)
 #' @param analysis_at Vector of sample sizes for all analyses (including final at n_total)
 #' @param interim_function Function to make interim decisions
 #' @param id_iter Iteration identifier
@@ -242,7 +242,7 @@ estimate_single_brms <- function(data, model, backend_args, target_params,
 #' @importFrom dplyr if_else
 #' @keywords internal
 estimate_sequential_brms <- function(full_data, model, backend_args, target_params,
-                                     thresholds_success, thresholds_futility,
+                                     thresh_scs, thresh_ftl,
                                      p_sig_scs, p_sig_ftl,
                                      analysis_at, interim_function,
                                      id_iter, id_cond) {
@@ -320,8 +320,8 @@ estimate_sequential_brms <- function(full_data, model, backend_args, target_para
       summarize_post_brms(
         posterior_rvars = posterior_rvars,
         target_params = target_params,
-        thresholds_success = thresholds_success,
-        thresholds_futility = thresholds_futility,
+        thresh_scs = thresh_scs,
+        thresh_ftl = thresh_ftl,
         p_sig_scs = current_p_sig_scs,
         p_sig_ftl = current_p_sig_ftl
       ) |>

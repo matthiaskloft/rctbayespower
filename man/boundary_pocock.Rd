@@ -2,35 +2,60 @@
 % Please edit documentation in R/boundaries.R
 \name{boundary_pocock}
 \alias{boundary_pocock}
-\title{Pocock-like Boundary (Constant)}
+\alias{boundary_pocock_threshold}
+\title{Pocock Boundary}
 \usage{
-boundary_pocock(threshold = 0.99)
+boundary_pocock(alpha = NULL, threshold = NULL)
+
+boundary_pocock_threshold(threshold = 0.975)
 }
 \arguments{
-\item{threshold}{Fixed threshold for all looks. Default 0.99.}
+\item{alpha}{One-sided significance level for frequentist error control.
+Must be between 0 and 0.5. Mutually exclusive with \code{threshold}.}
+
+\item{threshold}{Probability threshold for Bayesian decision rules.
+Must be between 0 and 1. Returns constant threshold at all looks.
+Mutually exclusive with \code{alpha}.}
 }
 \value{
-A function that takes information fraction and returns threshold.
+A function that takes a vector of information fractions and returns
+a vector of thresholds (one per look).
 }
 \description{
-Creates a constant boundary function that returns the same threshold
-at all analysis timepoints. Equivalent to the Pocock spending function
-approach.
+Creates a Pocock-style boundary function with similar thresholds at all
+interim analyses. Specify either \code{alpha} for frequentist Type I error
+control, or \code{threshold} for Bayesian decision rules.
 }
 \details{
-Note: Using the same threshold at all interim analyses can inflate the
-overall Type I error rate compared to a single-look design. Consider using
-a higher threshold (e.g., 0.99) or \code{\link[=boundary_obf]{boundary_obf()}} for better error control.
+Pocock boundaries use similar thresholds at all interim analyses,
+making it easier to stop early compared to O'Brien-Fleming.
+
+\strong{Frequentist mode} (\code{alpha}): Uses the Lan-DeMets Pocock spending
+function to control Type I error:
+\deqn{\alpha(t) = \alpha \ln(1 + (e - 1) t)}
+When \code{gsDesign} is installed, computes exact boundaries. Otherwise uses
+a lookup table (accurate for equally spaced looks only).
+
+\strong{Bayesian mode} (\code{threshold}): Returns the same threshold at every
+analysis. Note that using the same threshold at multiple looks will have
+different operating characteristics than a single-look design.
 }
 \examples{
-# Create constant boundary
-pocock <- boundary_pocock(0.99)
+# Frequentist: control Type I error at 2.5\%
+pocock_freq <- boundary_pocock(alpha = 0.025)
+pocock_freq(c(0.5, 1.0))
 
-# Returns same value regardless of info_frac
-pocock(0.25)  # 0.99
-pocock(0.50)  # 0.99
-pocock(1.00)  # 0.99
+# Bayesian: constant 0.95 threshold at all looks
+pocock_bayes <- boundary_pocock(threshold = 0.95)
+pocock_bayes(c(0.5, 1.0))  # Returns c(0.95, 0.95)
+}
+\references{
+Pocock, S. J. (1977). Group sequential methods in the design and analysis
+of clinical trials. Biometrika 64: 191-199.
+
+Lan, K. K. G. and DeMets, D. L. (1983). Discrete sequential boundaries for
+clinical trials. Biometrika 70: 659-663.
 }
 \seealso{
-\code{\link[=boundary_obf]{boundary_obf()}}, \code{\link[=boundary_linear]{boundary_linear()}}, \code{\link[=boundary_power]{boundary_power()}}
+\code{\link[=boundary_obf]{boundary_obf()}}, \code{\link[=boundary_linear]{boundary_linear()}}, \code{\link[=boundary_constant]{boundary_constant()}}
 }

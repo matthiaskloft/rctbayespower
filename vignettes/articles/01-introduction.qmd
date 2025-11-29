@@ -51,36 +51,21 @@ The `rctbayespower` package provides tools for conducting Bayesian power analysi
 
 
 
-## Model
+## Design
 
 Show predefined models available in the package:
 ```{r}
-list_predefined_models()
+show_predefined_models()
+show_target_params("ancova_cont_2arms")
 ```
 
 
-Get the predefined ANCOVA model for continuous outcomes with two arms:
-```{r get_model_ancova}
-model_ancova <- get_model("ancova_cont_2arms")
-print(model_ancova)
-```
-
-## Design
-
-Find possible target parameters in the model.
-```{r}
-model_ancova@parameter_names_brms
-```
-
-Specify the study design with target parameter, thresholds for success and futility, and significance levels for frequentist-like power.
+Build a design using a predefined ANCOVA model for continuous outcomes with two arms:
 ```{r build_design}
+# Build design with predefined model (model is now merged into design)
 design <- build_design(
-  model = model_ancova,
-  target_params = "b_arm2",
-  p_sig_scs = boundary_obf(),
-  p_sig_ftl = boundary_obf(),
-  analysis_at = c(.3,.6,1),
-  adaptive = FALSE
+  model_name = "ancova_cont_2arms",
+  target_params = "b_arm2"
 )
 print(design)
 ```
@@ -90,29 +75,43 @@ print(design)
 
 Find parameters that need user specification for the design.
 ```{r}
-required_fn_args(design)
+show_condition_args(design)
 ```
+```{r}
+show_boundaries()
+```
+
 
 Specify conditions.
 ```{r build_conditions}
 conditions <- build_conditions(
   design = design,
-  condition_values = list(
+  crossed = list(
     # two sample sizes
+    link(
     n_total = seq(80, 160, by = 80),
-    # two effect sizes
-    b_arm_treat = c(0, 0.3)
+    analysis_at = list(c(40, 80),c(30,160))
+    ),
+    # link thresholds to effect sizes
+    link(
+      # two effect sizes
+      b_arm_treat = c(0, 0.3),
+      # corresponding thresholds for success and futility
+      p_sig_scs = c(0.95, boundary_pocock(alpha = .05)),
+      p_sig_ftl = c(0.5, boundary_pocock(alpha = .5))
+    )
   ),
-  static_values = list(
+  constant = list(
     # baseline effect
     b_covariate = 0,
-      thresholds_success = 0.1,
-  thresholds_futility = 0
+    thresh_scs = 0.1,
+    thresh_ftl = 0
   )
 )
 print(conditions, n = 100)
+conditions@condition_arguments
+conditions@conditions_grid
 ```
-
 
 ## Run Power Analysis
 
@@ -129,9 +128,6 @@ power <- power_analysis(
     warmup = 100
   )
 )
-res <- power@results_interim
-power2 <- resummarize_boundaries(power,p_sig_ftl = boundary_obf(), p_sig_scs = boundary_obf())
-res2 <- power2@results_interim
 ```
 
 ```{r}
@@ -165,6 +161,17 @@ plot(
   show_mcse = TRUE, 
   interactive = FALSE
 )
+```
+
+
+```{r}
+res <- power@results_interim
+power2 <- resummarize_boundaries(power,p_sig_ftl = boundary_obf(), p_sig_scs = boundary_obf())
+res2 <- power2@results_interim
+```
+
+```{r}
+plot(res2)
 ```
 
 

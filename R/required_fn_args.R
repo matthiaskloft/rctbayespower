@@ -1,34 +1,197 @@
-#' Identify Required Parameters for Design or Model Objects
+#' Show Available Target Parameters
 #'
-#' Generic wrapper function that identifies required parameters for either
-#' rctbp_design or rctbp_model objects by dispatching to the
-#' appropriate specific function.
+#' Displays the parameter names available for use as `target_params` in [build_design()].
+#' These are the model parameters that can be tested for success/futility.
 #'
-#' @param object Either an rctbp_design or rctbp_model object
-#' @param print Logical. If TRUE (default), prints the required parameters to console
+#' @param x One of: an rctbp_design object, a predefined model name (character),
+#'   a brmsfit object, or a BayesFlow model. If NULL, shows usage info.
 #'
-#' @return For design objects: a list with simulation, interim, and all parameters.
-#'   For model objects: a character vector of required parameters.
-#'   Both returned invisibly.
+#' @return A character vector of available parameter names (returned invisibly).
+#'   If x is NULL, returns NULL invisibly after showing usage info.
+#'
+#' @export
 #'
 #' @examples
 #' \dontrun{
-#' required_fn_args(my_object)
+#' # From a predefined model name
+#' show_target_params("ancova_cont_2arms")
+#'
+#' # From a design object
+#' design <- build_design(model_name = "ancova_cont_2arms", target_params = "b_arm2")
+#' show_target_params(design)
+#'
+#' # From a brmsfit object
+#' show_target_params(my_brmsfit)
+#' }
+show_target_params <- function(x = NULL) {
+  # Handle NULL - show usage info
+  if (is.null(x)) {
+    cli::cli_inform(c(
+      "i" = "Usage: {.fn show_target_params}(x)",
+      "i" = "Pass a model name, {.cls rctbp_design}, {.cls brmsfit}, or BayesFlow model"
+    ))
+    return(invisible(NULL))
+  }
+
+  # Handle character string (predefined model name)
+  if (is.character(x)) {
+    if (length(x) != 1) {
+      cli::cli_abort(c(
+        "{.arg x} must be a single model name",
+        "i" = "Use {.fn show_predefined_models} to see available models"
+      ))
+    }
+
+    # Load the model to get parameter names
+    model_components <- load_predefined_model_components(x, backend = "brms")
+    params <- grep("^b_", brms::variables(model_components$inference_model), value = TRUE)
+
+  # Handle rctbp_design object
+  } else if (inherits(x, "rctbayespower::rctbp_design") || inherits(x, "rctbp_design")) {
+    params <- x@par_names_inference
+
+  # Handle brmsfit object
+  } else if (inherits(x, "brmsfit")) {
+    params <- grep("^b_", brms::variables(x), value = TRUE)
+
+  # Handle BayesFlow model (Python object via reticulate)
+  } else if (inherits(x, "python.builtin.object")) {
+    params <- get_bf_parameter_names(x)
+
+  } else {
+    cli::cli_abort(c(
+      "{.arg x} must be a model name, rctbp_design, brmsfit, or BayesFlow model",
+      "x" = "You supplied {.cls {class(x)}}"
+    ))
+  }
+
+  cli::cli_h3("Available Target Parameters")
+  if (length(params) > 0) {
+    param_items <- params
+    names(param_items) <- rep("*", length(param_items))
+    cli::cli_bullets(param_items)
+  } else {
+    cli::cli_text("  {.emph (none available)}")
+  }
+
+  invisible(params)
+}
+
+
+#' Show Required Arguments for build_conditions()
+#'
+#' Displays the required arguments for [build_conditions()] based on a design object.
+#' This function helps users understand which parameters need to be specified
+#' in `crossed` or `constant` arguments. Use [link()] inside `crossed` for
+#' parameters that should co-vary 1-to-1.
+#'
+#' @param design An rctbp_design object (default NULL). If NULL, shows usage info.
+#' @param print Logical. If TRUE (default), prints the required parameters to console
+#'
+#' @return A list with simulation and decision parameters (returned invisibly).
+#'   If design is NULL, returns NULL invisibly after showing usage info.
+#'
+#' @examples
+#' \dontrun{
+#' # Show usage info
+#' show_condition_args()
+#'
+#' # Show required args for a design
+#' design <- build_design(model_name = "ancova_cont_2arms", target_params = "b_arm2")
+#' show_condition_args(design)
 #' }
 #'
 #' @export
-required_fn_args <- function(object, print = TRUE) {
-  if (inherits(object, "rctbayespower::rctbp_design") || inherits(object, "rctbp_design")) {
-    return(required_fn_args_design(object, print))
-  } else if (inherits(object, "rctbayespower::rctbp_model") || inherits(object, "rctbp_model")) {
-    return(required_fn_args_model(object, print))
-  } else {
+show_condition_args <- function(design = NULL, print = TRUE) {
+  # Handle NULL - show usage info
+  if (is.null(design)) {
+    if (print) {
+      cli::cli_inform(c(
+        "i" = "Usage: {.fn show_condition_args}(design)",
+        "i" = "Pass an {.cls rctbp_design} object to see required arguments for {.fn build_conditions}"
+      ))
+    }
+    return(invisible(NULL))
+  }
+
+  # Validate design object
+  if (!inherits(design, "rctbayespower::rctbp_design") && !inherits(design, "rctbp_design")) {
     cli::cli_abort(c(
-      "{.arg object} must be either an rctbp_design or rctbp_model object",
-      "x" = "You supplied {.cls {class(object)}}",
-      "i" = "Provide a design or model object created with {.fn build_design} or {.fn build_model}"
+      "{.arg design} must be an rctbp_design object",
+      "x" = "You supplied {.cls {class(design)}}",
+      "i" = "Create a design object using {.fn build_design}"
     ))
   }
+
+  # Get args without defaults for the data simulation function
+
+  params_sim <- get_args_without_defaults(design@sim_fn)
+
+  # Decision parameters (per-condition): thresholds, boundaries, analysis_at, interim
+  params_decision <- c("thresh_scs", "thresh_ftl", "p_sig_scs", "p_sig_ftl",
+                       "analysis_at", "interim_function", "adaptive")
+
+  params_all <- c(params_sim, params_decision)
+
+  # Print the parameters if requested
+  if (print) {
+    cli::cli_h3("Required Arguments for build_conditions()")
+    cli::cli_text("")
+
+    # Simulation parameters
+    cli::cli_text("{.strong Simulation parameters:}")
+    if (length(params_sim) > 0) {
+      param_items <- params_sim
+      names(param_items) <- rep("*", length(param_items))
+      cli::cli_bullets(param_items)
+    } else {
+      cli::cli_text("  {.emph (none required)}")
+    }
+    cli::cli_text("")
+
+    # Decision parameters
+    cli::cli_text("{.strong Decision parameters:}")
+    cli::cli_bullets(c(
+      "*" = "p_sig_scs {.emph (probability threshold for binary success; numeric or boundary function)}",
+      "*" = "p_sig_ftl {.emph (probability threshold for binary futility; numeric or boundary function)}",
+      "*" = "thresh_scs {.emph (effect threshold for probabilistic success)}",
+      "*" = "thresh_ftl {.emph (effect threshold for probabilistic futility)}"
+    ))
+    cli::cli_text("  {.emph See {.fn show_boundaries} for available boundary functions}")
+    cli::cli_text("")
+
+    # Optional sequential design parameters
+    cli::cli_text("{.strong Optional (sequential designs):}")
+    cli::cli_bullets(c(
+      "*" = "analysis_at {.emph (default NULL = single final analysis)}",
+      "*" = "adaptive {.emph (default FALSE; constant only)}"
+    ))
+    cli::cli_text("")
+
+    # Usage note
+    cli::cli_text("{.emph Parameters go into one of two arguments:}")
+    cli::cli_text("{.emph   - crossed: Cartesian product (all combinations)}")
+    cli::cli_text("{.emph   - constant: same value for all conditions}")
+    cli::cli_text("")
+    cli::cli_text("{.emph Use link() inside crossed for co-varying params:}")
+    cli::cli_text("{.emph   link(b_arm_treat = c(0, 0.3), p_sig_scs = c(0.95, boundary_pocock(.95)))}")
+  }
+
+  # Return the parameters needed
+  invisible(list(
+    params_sim = params_sim,
+    params_decision = params_decision,
+    params_all = params_all
+  ))
+}
+
+#' @rdname show_condition_args
+#' @export
+required_fn_args <- function(design = NULL, print = TRUE) {
+  cli::cli_inform(c(
+    "i" = "{.fn required_fn_args} is deprecated, use {.fn show_condition_args} instead"
+  ))
+  show_condition_args(design, print)
 }
 
 
@@ -82,115 +245,6 @@ get_arg_defaults <- function(fn) {
   }
 
   output
-}
-
-
-#' Identify Required Parameters for a Design
-#'
-#' Extracts the required parameters (those without default values) from the
-#' data simulation function and interim analysis function of an rctbayespower
-#' design object. This helps users identify which parameters must be specified
-#' before running simulations.
-#'
-#' @param design An rctbp_design object
-#' @param print Logical. If TRUE (default), prints the required parameters to console
-#'
-#' @return A character vector containing the names of all required parameters
-#'
-#' @keywords internal
-required_fn_args_design <- function(design, print = TRUE) {
-  # check that design is a valid rctbp_design object (allow both namespaced and non-namespaced for testing)
-  if (!inherits(design, "rctbayespower::rctbp_design") && !inherits(design, "rctbp_design")) {
-    cli::cli_abort(c(
-      "{.arg design} must be a valid rctbp_design object",
-      "x" = "You supplied {.cls {class(design)}}",
-      "i" = "Create a design object using {.fn build_design}"
-    ))
-  }
-
-  # get args without defaults for the data simulation function
-  params_sim <- get_args_without_defaults(design@model@sim_fn)
-
-  # Decision parameters (per-condition): thresholds, analysis_at, interim_function, adaptive
-  params_decision <- c("thresholds_success", "thresholds_futility", "analysis_at",
-                       "interim_function", "adaptive")
-
-  params_all <- c(params_sim, params_decision)
-
-  # print the parameters if requested
-  if (print) {
-    cli::cli_h3("Arguments that need user specification")
-    cli::cli_text("")
-
-    cli::cli_text("{.strong Simulation function parameters:}")
-    if (length(params_sim) > 0) {
-      param_items <- params_sim
-      names(param_items) <- rep("*", length(param_items))
-      cli::cli_bullets(param_items)
-    } else {
-      cli::cli_text("  {.emph (none)}")
-    }
-    cli::cli_text("")
-
-    cli::cli_text("{.strong Decision parameters (per-condition):}")
-    if (length(params_decision) > 0) {
-      param_items <- params_decision
-      names(param_items) <- rep("*", length(param_items))
-      cli::cli_bullets(param_items)
-    } else {
-      cli::cli_text("  {.emph (none)}")
-    }
-  }
-
-  # return the parameters needed for the design
-  invisible(list(
-    params_sim = params_sim,
-    params_decision = params_decision,
-    params_all = params_all
-  ))
-}
-
-
-#' Identify Required Parameters for a Model
-#'
-#' Extracts the required parameters (those without default values) from the
-#' data simulation function of an rctbayespower model object.
-#'
-#' @param model An rctbayespower_model object
-#' @param print Logical. If TRUE (default), prints the required parameters to console
-#'
-#' @return A character vector containing the names of required parameters (returned invisibly)
-#'
-#' @keywords internal
-required_fn_args_model <- function(model, print = TRUE) {
-  # check that model is a valid rctbayespower_model object (allow both namespaced and non-namespaced for testing)
-  if (!inherits(model, "rctbayespower::rctbp_model") && !inherits(model, "rctbp_model")) {
-    cli::cli_abort(c(
-      "{.arg model} must be a valid rctbp_model object",
-      "x" = "You supplied {.cls {class(model)}}",
-      "i" = "Create a model object using {.fn build_model}"
-    ))
-  }
-
-  # get args without defaults for the model
-  params <- get_args_without_defaults(model@sim_fn)
-
-  # print the parameters if requested
-  if (print) {
-    cli::cli_h3("Arguments that need user specification")
-    cli::cli_text("")
-
-    cli::cli_text("{.strong Simulation function parameters:}")
-    if (length(params) > 0) {
-      param_items <- params
-      names(param_items) <- rep("*", length(param_items))
-      cli::cli_bullets(param_items)
-    } else {
-      cli::cli_text("  {.emph (none)}")
-    }
-  }
-
-  invisible(params)
 }
 
 

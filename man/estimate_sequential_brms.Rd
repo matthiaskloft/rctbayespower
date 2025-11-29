@@ -9,8 +9,8 @@ estimate_sequential_brms(
   model,
   backend_args,
   target_params,
-  thresholds_success,
-  thresholds_futility,
+  thresh_scs,
+  thresh_ftl,
   p_sig_scs,
   p_sig_ftl,
   analysis_at,
@@ -28,13 +28,13 @@ estimate_sequential_brms(
 
 \item{target_params}{Character vector of parameter names}
 
-\item{thresholds_success}{Numeric vector of success thresholds}
+\item{thresh_scs}{Numeric vector of success thresholds (ROPE)}
 
-\item{thresholds_futility}{Numeric vector of futility thresholds}
+\item{thresh_ftl}{Numeric vector of futility thresholds (ROPE)}
 
-\item{p_sig_scs}{Probability threshold for success}
+\item{p_sig_scs}{Probability threshold for success (numeric or pre-resolved vector)}
 
-\item{p_sig_ftl}{Probability threshold for futility}
+\item{p_sig_ftl}{Probability threshold for futility (numeric or pre-resolved vector)}
 
 \item{analysis_at}{Vector of sample sizes for all analyses (including final at n_total)}
 

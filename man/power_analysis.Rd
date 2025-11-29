@@ -90,5 +90,5 @@ config <- run(config)  # Execute later
 }
 }
 \seealso{
-\code{\link[=build_conditions]{build_conditions()}}, \code{\link[=build_design]{build_design()}}, \code{\link[=build_model]{build_model()}}, \code{\link[=run]{run()}}
+\code{\link[=build_conditions]{build_conditions()}}, \code{\link[=build_design]{build_design()}}, \code{\link[=run]{run()}}
 }

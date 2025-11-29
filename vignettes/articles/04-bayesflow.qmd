@@ -141,10 +141,9 @@ cat("Backend:", model@backend, "\n")
 
 ```{r build-design}
 design <- build_design(
-  model = model,
-  target_params = "b_group",
-  p_sig_scs = 0.975,
-  p_sig_ftl = 0.5
+  model_name = "ancova_cont_2arms",
+  backend = "bf",
+  target_params = "b_group"
 )
 print(design)
 ```
@@ -154,14 +153,16 @@ print(design)
 ```{r build-conditions}
 conditions <- build_conditions(
   design = design,
-  condition_values = list(
+  crossed = list(
     n_total = seq(20, 300, 10),
     b_arm_treat = c(0, .3, 0.5)
   ),
-  static_values = list(
+  constant = list(
     b_covariate = 0.3,
-    thresholds_success = 0.1,
-    thresholds_futility = 0.1
+    thresh_scs = 0.1,
+    thresh_ftl = 0,
+    p_sig_scs = 0.95,
+    p_sig_ftl = 0.5
   )
 )
 print(conditions)
@@ -174,14 +175,14 @@ power_bf <- power_analysis(
   conditions,
   n_sims = n_sims,
   run = TRUE,
-  verbosity = 2,
+  verbosity = 0,
   bf_args = list(n_posterior_samples = 1000)
 )
+
+print(power_bf)
 ```
 
 ```{r power-results-bf}
-print(power_bf)
-
 power_bf@results_conditions |>
   select(id_cond, n_total, pwr_scs, pwr_ftl)
 ```

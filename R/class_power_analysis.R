@@ -66,6 +66,10 @@ rctbp_power_analysis <- S7::new_class(
     results_raw = S7::class_data.frame,
     elapsed_time = S7::new_property(class = S7::class_numeric, default = NA_real_),
 
+    # Backend environment info (populated after run() for BayesFlow)
+    bf_device = S7::new_property(class = S7::class_character | NULL, default = NULL),
+    bf_env_info = S7::class_list | NULL,  # Full env metadata from get_bf_env_info()
+
     # Computed property for interim analysis detection
     has_interim = S7::new_property(
       getter = function(self) nrow(self@results_interim) > 0
@@ -231,7 +235,7 @@ format_duration <- function(minutes) {
 #' for improved performance. The function validates that `n_cores` does
 #' not exceed available system cores.
 #'
-#' @seealso [build_conditions()], [build_design()], [build_model()], [run()]
+#' @seealso [build_conditions()], [build_design()], [run()]
 #'
 #' @export
 #' @examples
@@ -336,15 +340,14 @@ run <- S7::new_generic("run", "x")
 #' \strong{Result Aggregation:} Individual simulation results are aggregated
 #' into power curves and summary statistics.
 #'
-#' @return A list of class "rctbayespower_sim_result" containing:
-#' \itemize{
-#'   \item results_df: Aggregated power analysis results
-#'   \item results_df_raw: Raw simulation results from all runs
-#'   \item design: The design object used for analysis
-#'   \item conditions: The condition specifications used
-#'   \item n_sims: Number of simulations per condition
-#'   \item elapsed_time: Total analysis runtime
-#' }
+#' @return The modified S7 object of class "rctbp_power_analysis" with results
+#'   populated in the following properties:
+#'   \itemize{
+#'     \item results_conditions: Aggregated power analysis results (data.frame)
+#'     \item results_interim: Per-look interim results for sequential designs (data.frame)
+#'     \item results_raw: Raw per-simulation data (data.frame)
+#'     \item elapsed_time: Total analysis runtime (difftime)
+#'   }
 #'
 #' @export
 #' @importFrom parallel detectCores makeCluster stopCluster parLapply clusterEvalQ clusterExport
@@ -375,15 +378,18 @@ S7::method(run, rctbp_power_analysis) <- function(x, ...) {
 
   # Early status message - show immediately before any slow operations
   design <- x@conditions@design
-  backend <- design@model@backend
+  # NOTE: After API merge, model properties are directly on design (not design@model@*)
+  backend <- design@backend
   n_conditions <- nrow(x@conditions@conditions_grid)
   total_work_units <- x@n_sims * n_conditions
 
  # Calculate total model fits (including interim analyses)
-  # analysis_at can vary per condition, so check first condition as representative
+  # analysis_at is now in conditions (can vary per condition)
+  # Check first condition's decision_args as representative
   n_analyses <- 1L
-  if (!is.null(design@analysis_at)) {
-    n_analyses <- length(design@analysis_at)
+  first_decision_args <- x@conditions@condition_arguments[[1]]$decision_args
+  if (!is.null(first_decision_args$analysis_at)) {
+    n_analyses <- length(first_decision_args$analysis_at)
   }
   total_model_fits <- total_work_units * n_analyses
 
@@ -412,6 +418,11 @@ S7::method(run, rctbp_power_analysis) <- function(x, ...) {
     }
     cli::cli_dl(config_items)
     cli::cli_text("")
+
+    # Performance warning for interactive sessions
+    if (interactive()) {
+      cli::cli_alert_info("Tip: Console output can slow performance. Use {.code verbosity = 0} for faster execution.")
+    }
   }
 
   # Configure brms model with MCMC settings ----------------------------------
@@ -453,9 +464,10 @@ S7::method(run, rctbp_power_analysis) <- function(x, ...) {
     if (should_show(1)) {
       cli::cli_alert_info("Updating brms model with MCMC settings (chains={final_brms_args$chains}, iter={final_brms_args$iter}, warmup={final_brms_args$warmup})")
     }
-    x@conditions@design@model@inference_model <- suppressWarnings(
+    # NOTE: After API merge, inference_model is directly on design
+    x@conditions@design@inference_model <- suppressWarnings(
       do.call(function(...) {
-        stats::update(object = x@conditions@design@model@inference_model, ...)
+        stats::update(object = x@conditions@design@inference_model, ...)
       }, x@brms_args)
     )
     if (should_show(1)) {
@@ -470,7 +482,7 @@ S7::method(run, rctbp_power_analysis) <- function(x, ...) {
     }
 
     # Also store in backend_args for workers
-    x@conditions@design@model@backend_args_brms <- final_brms_args
+    x@conditions@design@backend_args_brms <- final_brms_args
 
   } else if (backend == "bf") {
     # For BayesFlow backend, merge user-provided bf_args with model defaults
@@ -480,9 +492,10 @@ S7::method(run, rctbp_power_analysis) <- function(x, ...) {
       envname = NULL
     )
     # Get model defaults, then override with user-provided args
-    model_bf_args <- design@model@backend_args_bf
-    if (length(model_bf_args) > 0) {
-      default_bf_args <- utils::modifyList(default_bf_args, model_bf_args)
+    # NOTE: After API merge, backend_args_bf is directly on design
+    design_bf_args <- design@backend_args_bf
+    if (length(design_bf_args) > 0) {
+      default_bf_args <- utils::modifyList(default_bf_args, design_bf_args)
     }
     if (!is.null(x@bf_args) && length(x@bf_args) > 0) {
       default_bf_args <- utils::modifyList(default_bf_args, x@bf_args)
@@ -496,30 +509,34 @@ S7::method(run, rctbp_power_analysis) <- function(x, ...) {
 
     x@bf_args <- final_bf_args
 
-    # Store in model for workers
-    x@conditions@design@model@backend_args_bf <- final_bf_args
+    # Store in design for workers
+    x@conditions@design@backend_args_bf <- final_bf_args
 
     # Initialize BayesFlow Python environment with specified envname
     init_bf_python(envname = final_bf_args$envname)
 
-    if (should_show(1)) {
-      # Get environment info for display
-      bf_info <- get_bf_env_info()
+    # Get environment info and store in object (always, not just for display)
+    bf_info <- get_bf_env_info()
 
-      if (!is.null(bf_info)) {
-        device_str <- if (bf_info$device == "GPU") {
-          paste0("GPU (", bf_info$device_name, ", CUDA ", bf_info$cuda_version, ")")
+    if (!is.null(bf_info)) {
+      device_str <- if (bf_info$device == "GPU") {
+        paste0("GPU (", bf_info$device_name, ", CUDA ", bf_info$cuda_version, ")")
+      } else {
+        # Use R-based CPU info for better names
+        cpu_name <- get_cpu_info()
+        if (!is.null(cpu_name)) {
+          paste0("CPU (", cpu_name, ")")
         } else {
-          # Use R-based CPU info for better names
-          cpu_name <- get_cpu_info()
-          if (!is.null(cpu_name)) {
-            paste0("CPU (", cpu_name, ")")
-          } else {
-            "CPU"
-          }
+          "CPU"
         }
-        env_str <- if (!is.null(bf_info$envname)) bf_info$envname else "default"
+      }
+      env_str <- if (!is.null(bf_info$envname)) bf_info$envname else "default"
 
+      # Store in object for later access
+      x@bf_device <- device_str
+      x@bf_env_info <- bf_info
+
+      if (should_show(1)) {
         cli::cli_alert_info("Using BayesFlow backend")
         cli::cli_dl(c(
           "Device" = device_str,
@@ -527,7 +544,9 @@ S7::method(run, rctbp_power_analysis) <- function(x, ...) {
           "Posterior samples" = as.character(final_bf_args$n_posterior_samples),
           "Batch size" = as.character(final_bf_args$batch_size)
         ))
-      } else {
+      }
+    } else {
+      if (should_show(1)) {
         cli::cli_alert_info("Using BayesFlow backend (n_posterior_samples={final_bf_args$n_posterior_samples}, batch_size={final_bf_args$batch_size})")
       }
     }
@@ -572,9 +591,10 @@ S7::method(run, rctbp_power_analysis) <- function(x, ...) {
   design_serialized <- prepare_design_for_workers(design)
 
   # Detect backend and batching strategy
-  backend <- design@model@backend
-  batch_size <- if (backend == "bf" && !is.null(design@model@backend_args_bf$batch_size)) {
-    design@model@backend_args_bf$batch_size
+  # NOTE: After API merge, properties are directly on design
+  backend <- design@backend
+  batch_size <- if (backend == "bf" && !is.null(design@backend_args_bf$batch_size)) {
+    design@backend_args_bf$batch_size
   } else {
     1L  # No batching for brms or when batch_size not specified
   }
@@ -593,7 +613,9 @@ S7::method(run, rctbp_power_analysis) <- function(x, ...) {
   work_units <- unlist(work_units, recursive = FALSE)
 
   # Execute simulations
-  if (requireNamespace("pbapply", quietly = TRUE)) {
+  # Note: should_show(1) check skips pbapply when verbosity=0 for performance
+  # (progress bar updates cause significant overhead in interactive sessions)
+  if (requireNamespace("pbapply", quietly = TRUE) && should_show(1)) {
     # set cl to NULL for default sequential execution
     cl <- NULL
     if (n_cores > 1) {
@@ -1053,8 +1075,14 @@ S7::method(run, rctbp_power_analysis) <- function(x, ...) {
       best_idx <- which.max(pwr_source$pwr_scs)
       if (length(best_idx) > 0) {
         best_pwr <- round(pwr_source$pwr_scs[best_idx] * 100, 1)
-        best_n <- pwr_source$n_total[best_idx]
-        cli::cli_alert_success("Highest power: {best_pwr}% at n_total = {best_n}")
+        # n_total may not exist if not in crossed/constant
+        if ("n_total" %in% names(pwr_source)) {
+          best_n <- pwr_source$n_total[best_idx]
+          cli::cli_alert_success("Highest power: {best_pwr}% at n_total = {best_n}")
+        } else {
+          best_cond <- pwr_source$id_cond[best_idx]
+          cli::cli_alert_success("Highest power: {best_pwr}% (condition {best_cond})")
+        }
       }
     }
 
@@ -1150,11 +1178,21 @@ S7::method(print, rctbp_power_analysis) <- function(x, ...) {
     # Design section
     cli::cli_h2("Design")
     target_params_str <- paste(design@target_params, collapse = ", ")
-    p_scs_str <- format_boundary(design@p_sig_scs)
-    p_ftl_str <- format_boundary(design@p_sig_ftl)
+    p_scs_str <- get_threshold_display(x@conditions, "p_sig_scs")
+    p_ftl_str <- get_threshold_display(x@conditions, "p_sig_ftl")
     cli::cli_text("Target: {.field {target_params_str}} | P(scs) >= {p_scs_str}, P(ftl) >= {p_ftl_str}")
     if (!is.null(target_pwr)) {
       cli::cli_text("Target power: {.strong {round(target_pwr * 100, 0)}%}")
+    }
+
+    # Backend and device info
+    # NOTE: After API merge, backend is directly on design
+    backend <- design@backend
+    if (backend == "bf" && !is.null(x@bf_device)) {
+      env_name <- if (!is.null(x@bf_env_info$envname)) x@bf_env_info$envname else "default"
+      cli::cli_text("Backend: {.field BayesFlow} | Device: {x@bf_device} | Env: {env_name}")
+    } else {
+      cli::cli_text("Backend: {.field {backend}}")
     }
 
     # Decision Rates section
@@ -1326,8 +1364,8 @@ S7::method(summary, rctbp_power_analysis) <- function(object, ...) {
     # Design section (more verbose than print)
     cli::cli_h2("Design")
     target_params_str <- paste(design@target_params, collapse = ", ")
-    p_scs_str <- format_boundary(design@p_sig_scs)
-    p_ftl_str <- format_boundary(design@p_sig_ftl)
+    p_scs_str <- get_threshold_display(object@conditions, "p_sig_scs")
+    p_ftl_str <- get_threshold_display(object@conditions, "p_sig_ftl")
 
     cli::cli_bullets(c(
       "*" = "Target parameters: {.field {target_params_str}}",
@@ -1335,18 +1373,40 @@ S7::method(summary, rctbp_power_analysis) <- function(object, ...) {
       "*" = paste0("Futility probability threshold: ", p_ftl_str)
     ))
 
-    if (!is.null(design@analysis_at)) {
-      # Don't add "1.0 (final)" if 1 is already in the list
-      if (1 %in% design@analysis_at) {
-        analysis_pts <- paste(design@analysis_at, collapse = ", ")
-      } else {
-        analysis_pts <- paste(c(design@analysis_at, "1.0 (final)"), collapse = ", ")
-      }
-      cli::cli_bullets(c("*" = "Analysis timepoints: {analysis_pts}"))
+    # analysis_at is now in conditions (crossed, linked, or constant)
+    analysis_at_display <- get_threshold_display(object@conditions, "analysis_at")
+    if (analysis_at_display != "(not specified)") {
+      cli::cli_bullets(c("*" = "Analysis timepoints: {analysis_at_display}"))
     }
 
     if (!is.null(target_pwr)) {
       cli::cli_bullets(c("*" = "Target power: {.strong {round(target_pwr * 100, 0)}%}"))
+    }
+
+    # Backend and device info
+    # NOTE: After API merge, backend is directly on design
+    backend <- design@backend
+    if (backend == "bf" && !is.null(object@bf_env_info)) {
+      bf_info <- object@bf_env_info
+      env_name <- bf_info$envname %||% "default"
+      py_ver <- bf_info$python_version %||% "unknown"
+      bf_ver <- bf_info$pkg_versions$bayesflow %||% "unknown"
+      torch_ver <- bf_info$pkg_versions$torch %||% "unknown"
+
+      cli::cli_bullets(c(
+        "*" = "Backend: {.field BayesFlow}",
+        "*" = "Device: {object@bf_device}",
+        "*" = "Python environment: {env_name}",
+        "*" = "Python version: {py_ver}",
+        "*" = "Package versions: bayesflow={bf_ver}, torch={torch_ver}"
+      ))
+    } else if (backend == "bf") {
+      cli::cli_bullets(c(
+        "*" = "Backend: {.field BayesFlow}",
+        "*" = "Device: {object@bf_device}"
+      ))
+    } else {
+      cli::cli_bullets(c("*" = "Backend: {.field {backend}}"))
     }
 
     # Decision Rates section
@@ -1533,27 +1593,24 @@ S7::method(summary, rctbp_power_analysis) <- function(object, ...) {
       "*" = "Conditions: {n_conditions}",
       "*" = "Simulations per condition: {object@n_sims}",
       "*" = "Cores: {object@n_cores}",
-      "*" = "Verbose: {object@verbose}"
+      "*" = "Verbosity: {object@verbosity}"
     ))
 
     # Show design details
     cli::cli_h2("Design")
     target_params_str <- paste(design@target_params, collapse = ", ")
-    p_scs_str <- format_boundary(design@p_sig_scs)
-    p_ftl_str <- format_boundary(design@p_sig_ftl)
+    p_scs_str <- get_threshold_display(object@conditions, "p_sig_scs")
+    p_ftl_str <- get_threshold_display(object@conditions, "p_sig_ftl")
     cli::cli_bullets(c(
       "*" = "Target parameters: {.field {target_params_str}}",
       "*" = paste0("Success threshold: ", p_scs_str),
       "*" = paste0("Futility threshold: ", p_ftl_str)
     ))
 
-    if (!is.null(design@analysis_at)) {
-      if (1 %in% design@analysis_at) {
-        analysis_pts <- paste(design@analysis_at, collapse = ", ")
-      } else {
-        analysis_pts <- paste(c(design@analysis_at, "1.0 (final)"), collapse = ", ")
-      }
-      cli::cli_bullets(c("*" = "Analysis timepoints: {analysis_pts}"))
+    # analysis_at is now in conditions
+    analysis_at_display <- get_threshold_display(object@conditions, "analysis_at")
+    if (analysis_at_display != "(not specified)") {
+      cli::cli_bullets(c("*" = "Analysis timepoints: {analysis_at_display}"))
     }
 
     # Show conditions grid preview

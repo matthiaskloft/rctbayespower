@@ -2,153 +2,109 @@
 % Please edit documentation in R/class_design.R
 \name{build_design}
 \alias{build_design}
-\title{Constructor for rctbp_design Objects}
+\title{Build a Design for Power Analysis}
 \usage{
 build_design(
-  model,
+  model_name = NULL,
+  sim_fn = NULL,
+  inference_model = NULL,
+  backend = c("brms", "bf"),
+  backend_args_brms = list(),
+  backend_args_bf = list(batch_size = NULL, n_posterior_samples = 1000L, envname = NULL),
+  n_endpoints = NULL,
+  endpoint_types = NULL,
+  n_arms = NULL,
+  n_repeated_measures = NULL,
   target_params,
-  p_sig_scs,
-  p_sig_ftl,
-  design_name = NULL,
-  analysis_at = NULL,
-  interim_function = NULL,
-  adaptive = FALSE
+  design_name = NULL
 )
 }
 \arguments{
-\item{model}{An S7 object of class "rctbp_model" created by \code{\link[=build_model]{build_model()}}}
+\item{model_name}{Character. Name of a predefined model. Use \code{\link[=show_predefined_models]{show_predefined_models()}}
+to see available options. If provided, model components are loaded automatically.
+Takes precedence over explicit component arguments.}
+
+\item{sim_fn}{A function that simulates trial data. Must accept parameters
+\code{n_total} and \code{p_alloc} at minimum. Required if \code{model_name} is NULL.}
+
+\item{inference_model}{A brmsfit object (for brms backend) or BayesFlow model
+(for bf backend). Required if \code{model_name} is NULL.}
+
+\item{backend}{Which backend to use: "brms" (default) or "bf".
+\itemize{
+\item "brms": Load brms model (default, always available)
+\item "bf": Try BayesFlow, fall back to brms with warning if unavailable
+}}
+
+\item{backend_args_brms}{List of brms-specific arguments (chains, iter, etc.)}
+
+\item{backend_args_bf}{List of BayesFlow-specific arguments:
+\describe{
+\item{batch_size}{Batch size for inference (default: NULL, uses n_sims)}
+\item{n_posterior_samples}{Number of posterior samples (default: 1000)}
+\item{envname}{Python virtual environment name to use (default: NULL for auto-detect)}
+}}
+
+\item{n_endpoints}{Number of endpoints (positive integer). Required if \code{model_name} is NULL.}
+
+\item{endpoint_types}{Character vector of endpoint types ("continuous", "binary", "count").
+Required if \code{model_name} is NULL.}
+
+\item{n_arms}{Number of arms including control (positive integer). Required if \code{model_name} is NULL.}
+
+\item{n_repeated_measures}{Number of repeated measures (NULL or 0 for single timepoint)}
 
 \item{target_params}{Character vector specifying which model parameters to
 analyze for power. Must be valid parameter names from the inference model.
-Use \code{model@par_names_inference} to discover available names. Required.}
+Use \code{design@par_names_inference} to discover available names. Required.}
 
-\item{p_sig_scs}{Probability threshold for declaring success. Can be:
-\itemize{
-\item A numeric value between 0 and 1 (same threshold at all looks)
-\item A boundary function from \code{\link[=boundary_obf]{boundary_obf()}}, \code{\link[=boundary_linear]{boundary_linear()}},
-\code{\link[=boundary_pocock]{boundary_pocock()}}, or \code{\link[=boundary_power]{boundary_power()}} that takes information
-fraction (current_n / n_total) and returns the threshold
-}
-For sequential designs, function-valued thresholds enable look-dependent
-stopping boundaries (e.g., O'Brien-Fleming-style: stringent early, relaxed late).
-Typically 0.975 or 0.95 for fixed threshold. Required.}
-
-\item{p_sig_ftl}{Probability threshold for declaring futility. Can be:
-\itemize{
-\item A numeric value between 0 and 1 (same threshold at all looks)
-\item A boundary function that takes information fraction and returns threshold
-}
-For sequential designs with futility monitoring, consider using
-\code{\link[=boundary_linear]{boundary_linear()}} with increasing thresholds (lenient early, stringent late).
-Typically 0.5 for fixed threshold. Required.}
-
-\item{design_name}{Optional character string providing a descriptive name for the
-design. Defaults to NULL.}
-
-\item{analysis_at}{Optional numeric vector of proportions in (0, 1] specifying
-when analyses occur as fractions of n_total. Example: \code{c(0.5, 0.75)} for
-interim analyses at 50\% and 75\% of n_total. The final analysis at 1 (100\%)
-is auto-appended if not included. Must be monotonically increasing.
-Converted to actual sample sizes in \code{\link[=build_conditions]{build_conditions()}} using n_total.
-Set to NULL (default) for single-look designs with no interim analyses.}
-
-\item{interim_function}{Optional function for custom interim stopping decisions. If NULL
-(default), the default stopping rule is used: stop for success when \code{dec_scs = 1}
-(i.e., \code{pr_scs >= p_sig_scs}) or stop for futility when \code{dec_ftl = 1}
-(i.e., \code{pr_ftl >= p_sig_ftl}).
-If provided, must accept parameters: \code{interim_summaries}, \code{current_n}, \code{analysis_at},
-\code{n_total}. Should return a list with \code{decision} ("continue", "stop_success",
-"stop_futility") and optionally \code{modified_params} (for adaptive designs).
-See \code{\link[=interim_futility_only]{interim_futility_only()}} and \code{\link[=interim_success_futility]{interim_success_futility()}} for helper factories
-that create custom stopping rules (e.g., different thresholds at different looks).}
-
-\item{adaptive}{Logical indicating whether the design allows parameter modification
-between interim looks (default FALSE). When TRUE, the \code{interim_function} can return
-modified simulation parameters (e.g., updated allocation ratios). Requires
-\code{interim_function} to be specified.}
+\item{design_name}{Optional character string providing a descriptive name.}
 }
 \value{
-An S7 object of class "rctbp_design" containing:
-\describe{
-\item{model}{The rctbp_model object}
-\item{target_params}{Target parameters for analysis}
-\item{p_sig_scs}{Success probability threshold}
-\item{p_sig_ftl}{Futility probability threshold}
-\item{design_name}{Optional descriptive name}
-\item{analysis_at}{Interim analysis sample sizes (NULL for single-look)}
-\item{interim_function}{Interim decision function (NULL if none)}
-\item{adaptive}{Whether design allows parameter modification}
-}
+An S7 object of class "rctbp_design"
 }
 \description{
-Creates an S7 rctbp_design object that combines a rctbp_model with analysis
-configuration parameters for Bayesian power analysis. This constructor function
-provides a user-friendly interface to the S7 class constructor.
+Creates an S7 rctbp_design object that encapsulates all components needed for
+Bayesian power analysis: simulation function, inference model, trial metadata,
+and analysis configuration.
 }
 \details{
-The rctbp_design class combines model specifications with global analysis
-configuration parameters. It defines WHICH parameters to analyze and WHAT
-probability thresholds to use for decision-making.
+This function creates a design object that contains the model specification
+(simulation function, inference model) and target parameters. Decision
+thresholds (\code{p_sig_scs}, \code{p_sig_ftl}, \code{thresh_scs}, \code{thresh_ftl}) and
+sequential analysis settings (\code{analysis_at}) are specified in \code{\link[=build_conditions]{build_conditions()}}.
 
-\strong{Important:} The actual success and futility thresholds (e.g., 0.2 for
-treatment effect) are NOT stored in the design object. They are specified
-per-condition when creating the conditions object using build_conditions().
-The design only stores the probability thresholds (p_sig_scs, p_sig_ftl)
-that determine how certain we need to be about exceeding those thresholds.
+\strong{Predefined Models:} For most users, specify \code{model_name} to use a
+predefined model configuration. Available models can be listed with
+\code{\link[=show_predefined_models]{show_predefined_models()}}.
 
-\strong{Model Integration:} Links to the rctbp_model object containing data
-simulation function and inference model (brms or BayesFlow).
-
-\strong{Target Parameters:} Specifies which model parameters to analyze for power.
-Parameter names are model-dependent. Use \code{model@par_names_inference} to discover
-available parameters for your specific model.
-
-\strong{Probability Thresholds:} The p_sig_scs and p_sig_ftl parameters
-control the certainty required for success/futility decisions. Higher values require
-stronger evidence.
-
-\strong{Interim Analysis:} The \code{analysis_at}, \code{interim_function}, and \code{adaptive} parameters
-specify design-level defaults for group sequential designs. These can be overridden
-per-condition in \code{\link[=build_conditions]{build_conditions()}} via \code{condition_values} or \code{static_values}.
-
-\strong{Design Types:}
-\itemize{
-\item \emph{Single-look:} \code{analysis_at = NULL} - analyze only at final n_total
-\item \emph{Sequential (default stopping):} \code{analysis_at} specified, \code{interim_function = NULL} -
-stops when \code{dec_scs = 1} or \code{dec_ftl = 1} (based on p_sig thresholds)
-\item \emph{Sequential (custom stopping):} \code{analysis_at} + \code{interim_function} - custom
-stopping rules (e.g., different thresholds at different looks)
-\item \emph{Adaptive:} \code{analysis_at} + \code{interim_function} + \code{adaptive = TRUE} - can
-modify simulation parameters between looks (e.g., response-adaptive randomization)
-}
-
-\strong{Validation:} All parameters are validated for consistency with the
-underlying model structure.
+\strong{Custom Models:} For custom analyses, provide explicit \code{sim_fn} and
+\code{inference_model} arguments along with trial metadata.
 }
 \examples{
 \dontrun{
-# Create an ANCOVA model
-ancova_model <- build_model("ancova_cont_2arms")
-
-# Simple design (no interim analysis)
-simple_design <- build_design(
-  model = ancova_model,
-  target_params = "b_armtreat_1",
-  p_sig_scs = 0.975,
-  p_sig_ftl = 0.5
+# Using a predefined model (recommended)
+design <- build_design(
+  model_name = "ancova_cont_2arms",
+  target_params = "b_arm2"
 )
 
-# Design with interim analysis (1 is auto-appended for final analysis)
-sequential_design <- build_design(
-  model = ancova_model,
-  target_params = "b_armtreat_1",
-  p_sig_scs = 0.975,
-  p_sig_ftl = 0.5,
-  analysis_at = c(0.5, 0.75),  # Interim at 50\%, 75\%; final at 100\% (auto-appended)
-  interim_function = interim_futility_only(futility_threshold = 0.90)
+# Check available parameter names
+design@par_names_inference
+design@par_names_sim
+
+# Custom model (advanced)
+design <- build_design(
+  sim_fn = my_sim_function,
+  inference_model = my_brmsfit,
+  backend = "brms",
+  n_endpoints = 1,
+  endpoint_types = "continuous",
+  n_arms = 2,
+  target_params = "b_treatment"
 )
 }
 }
 \seealso{
-\code{\link[=build_model]{build_model()}}, \code{\link[=build_conditions]{build_conditions()}}
+\code{\link[=build_conditions]{build_conditions()}}, \code{\link[=show_predefined_models]{show_predefined_models()}}, \code{\link[=power_analysis]{power_analysis()}}
 }

@@ -93,7 +93,9 @@ if (getRversion() >= "2.15.1") {
       "cumul_stp",
       # Overall stopping proportions
       "prop_stp_scs",
-      "prop_stp_ftl"
+      "prop_stp_ftl",
+      # rlang operator for tidyverse NSE
+      ":="
     )
   )
 }

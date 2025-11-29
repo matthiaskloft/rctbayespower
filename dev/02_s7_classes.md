@@ -1,79 +1,60 @@
 # S7 Class System
 
-**Last Updated:** 2025-11-27
+**Last Updated:** 2025-11-29
 
 ## Why S7?
 
-- **Property Access**: Clean `@` syntax (e.g., `model@data_simulation_fn`)
+- **Property Access**: Clean `@` syntax (e.g., `design@sim_fn`)
 - **Validation**: Built-in validators ensure object integrity
-- **Composition**: Easy nesting (design contains model, conditions contain design)
+- **Composition**: Easy nesting (conditions contain design)
 - **Modern R**: S7 is the recommended OOP system for new packages
 
 ## Class Definitions
 
-### `rctbp_model` (R/class_model.R)
+### `rctbp_design` (R/class_design.R) - Primary Class
 
-**Purpose**: Encapsulates everything needed to simulate data and fit a Bayesian model. Supports dual backends (brms + BayesFlow).
-
-| Property | Type | Description |
-|----------|------|-------------|
-| `data_simulation_fn` | function | Generates trial data |
-| `brms_model` | brmsfit/NULL | Pre-compiled brms template |
-| `bayesflow_model` | any/NULL | BayesFlow model (Keras/Workflow/Approximator) |
-| `backend` | character | "brms", "bf", or "auto" (default: "auto") |
-| `backend_args_brms` | list | brms config (chains, iter, etc.) |
-| `backend_args_bf` | list | BayesFlow config (batch_size, n_posterior_samples) |
-| `predefined_model` | character/NULL | Name if predefined |
-| `model_name` | character | Descriptive name |
-| `n_endpoints` | numeric | Number of outcomes |
-| `endpoint_types` | character | Types (continuous, binary) |
-| `n_arms` | numeric | Treatment arms |
-| `n_repeated_measures` | numeric/NULL | Time points |
-| `active_backend` | **computed** | Resolves "auto" → "bf" or "brms" |
-| `backend_args` | **computed** | Merged args for active backend |
-| `parameter_names_sim_fn` | **computed** | Auto-extracted from sim function |
-| `parameter_names_brms` | **computed** | Auto-extracted from brms model |
-
-**Backend Selection Logic** (in `active_backend` getter):
-```r
-if (backend != "auto") return(backend)
-if (!is.null(bayesflow_model)) return("bf")
-if (!is.null(brms_model)) return("brms")
-cli::cli_abort("No backend available")
-```
-
-**Constructor**: `build_model(predefined_model)` or direct construction for custom models
-
-**Helper Functions**:
-- `add_bf_backend(model, bf_model)`: Add BayesFlow backend to existing model
-- `add_brms_backend(model, brms_model)`: Add brms backend to existing model
-
-### `rctbp_design` (R/class_design.R)
-
-**Purpose**: Combines a model with analysis decision criteria.
+**Purpose**: The main user-facing class. Contains model properties (simulation function, inference model, backend) merged with analysis decision criteria.
 
 | Property | Type | Description |
 |----------|------|-------------|
-| `model` | rctbp_model | The statistical model |
+| `model_name` | character/NULL | Predefined model name (e.g., "ancova_cont_2arms") |
+| `sim_fn` | function | Data simulation function |
+| `inference_model` | brmsfit/NULL | Pre-compiled brms template |
+| `bf_model` | any/NULL | BayesFlow model (Keras/Workflow) |
+| `backend` | character | "brms" (default) or "bf" |
 | `target_params` | character | Parameters to analyze |
-| `p_sig_scs` | numeric/function | Probability threshold for success (default 0.975) |
-| `p_sig_ftl` | numeric/function | Probability threshold for futility (default 0.5) |
-| `analysis_at` | numeric/NULL | Interim analysis points (fractions of n_total) |
-| `design_name` | character/NULL | Optional name |
+| `par_names_inference` | **computed** | Parameters in inference model |
+| `par_names_sim` | **computed** | Parameters in simulation function |
 
-**Constructor**: `build_design(model, target_params, ...)`
+**Constructor**: `build_design(model_name, target_params, backend, ...)`
 
 **Validator**: Checks that `target_params` exist in the model's parameter names.
 
-**Look-Dependent Boundaries**: `p_sig_scs` and `p_sig_ftl` can be functions for sequential designs:
+**Example**:
 ```r
 design <- build_design(
-  model = model,
-  target_params = "b_armtreat_1",
-  p_sig_scs = boundary_obf(0.975),     # O'Brien-Fleming style
-  p_sig_ftl = boundary_linear(0.7, 0.9), # Linear interpolation
-  analysis_at = c(0.5, 0.75)           # Interim at 50%, 75%
+  model_name = "ancova_cont_2arms",
+  target_params = "b_arm2",
+  backend = "brms"  # or "bf"
 )
+
+# Discover available parameters
+design@par_names_inference  # For target_params
+design@par_names_sim        # For simulation args
+```
+
+### `rctbp_model` (R/class_model.R) - DEPRECATED
+
+> **Note**: This class is deprecated as of 2025-11. All model properties have been merged into `rctbp_design`. This file is kept only for backward compatibility.
+
+**Old API** (deprecated):
+```r
+# Old way (deprecated)
+model <- get_model("ancova_cont_2arms")
+design <- build_design(model = model, target_params = "b_arm2")
+
+# New way
+design <- build_design(model_name = "ancova_cont_2arms", target_params = "b_arm2")
 ```
 
 ### `rctbp_conditions` (R/class_conditions.R)
@@ -85,12 +66,34 @@ design <- build_design(
 | `design` | rctbp_design | The analysis design |
 | `conditions_grid` | data.frame | All condition combinations |
 | `condition_arguments` | list | Argument lists per condition |
-| `condition_values` | list | User-specified varying params |
-| `static_values` | list | User-specified constant params |
+| `crossed` | list | Varying params (Cartesian product) |
+| `linked` | list | Linked params (via `link()`) |
+| `constant` | list | Constant params for all conditions |
 
-**Constructor**: `build_conditions(design, condition_values, static_values)`
+**Constructor**: `build_conditions(design, crossed, linked, constant)`
 
-**Key Feature**: Separates arguments into `sim_args` and `decision_args` based on function signatures.
+**Key Features**:
+- Use `crossed` for parameters that vary across conditions (creates Cartesian product)
+- Use `link()` within crossed to co-vary parameters 1-to-1
+- Use `constant` for parameters that stay the same across all conditions
+- Separates arguments into `sim_args` and `decision_args` based on function signatures
+
+**Example**:
+```r
+conditions <- build_conditions(
+  design = design,
+  crossed = list(
+    n_total = c(100, 200),
+    b_arm_treat = c(0.3, 0.5)
+  ),
+  constant = list(
+    p_alloc = list(c(0.5, 0.5)),
+    intercept = 0, b_covariate = 0.3, sigma = 1,
+    p_sig_scs = 0.975, p_sig_ftl = 0.5,
+    thresh_scs = 0.2, thresh_ftl = 0
+  )
+)
+```
 
 ### `rctbp_power_analysis` (R/class_power_analysis.R)
 
@@ -101,17 +104,21 @@ design <- build_design(
 | `conditions` | rctbp_conditions | Conditions to evaluate |
 | `n_sims` | numeric | Simulations per condition (default: 1) |
 | `n_cores` | numeric | Parallel cores (default: 1) |
-| `verbose` | logical | Show progress (default: TRUE) |
+| `verbosity` | numeric | Verbosity level: 0, 1, or 2 (default: 1) |
 | `brms_args` | list/NULL | Arguments passed to brms |
+| `bf_args` | list/NULL | Arguments passed to BayesFlow |
 | `design_prior` | character/function/NULL | Optional design prior |
 | `design` | **computed** | Convenience access to conditions@design |
-| `results_summ` | data.frame | Aggregated results (filled after run) |
+| `results_conditions` | data.frame | Aggregated results (filled after run) |
+| `results_interim` | data.frame | Per-look interim results (sequential designs) |
 | `results_raw` | data.frame | Individual simulation results (filled after run) |
-| `elapsed_time` | numeric | Runtime in minutes (filled after run) |
+| `elapsed_time` | difftime | Runtime (filled after run) |
 
 **Constructor**: `power_analysis(conditions, n_sims, n_cores, ..., run = TRUE)`
 
 **Execution**: `run(power_object)` - S7 generic method
+
+**Returns**: Modified S7 object with results populated in properties
 
 ## S7 Package Integration
 
@@ -191,20 +198,21 @@ S7::method(print, MyClass) <- function(x, ...) {
 
 ```r
 # Access via @
-model@data_simulation_fn
-design@model@brms_model
-model@active_backend  # Computed property
+design@sim_fn
+design@inference_model
+design@par_names_inference  # Computed property
+result@results_conditions   # After run()
 
 # NOT $ (that's S3/list syntax)
-# model$data_simulation_fn  # WRONG
+# design$sim_fn  # WRONG
 ```
 
 ### Checking Class
 
 ```r
 # Use S7_inherits or inherits with class name
-if (S7::S7_inherits(obj, rctbp_model)) { ... }
-if (inherits(obj, "rctbp_model")) { ... }
+if (S7::S7_inherits(obj, rctbp_design)) { ... }
+if (inherits(obj, "rctbp_design")) { ... }
 ```
 
 ## Migration from S3

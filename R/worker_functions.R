@@ -8,7 +8,7 @@
 #'
 #' @param id_cond Condition identifier
 #' @param id_iter Iteration identifier (within condition)
-#' @param condition_args Condition arguments with sim_args
+#' @param condition_args Condition arguments with sim_args and decision_args
 #' @param design Design object (S7 or list for parallel workers)
 #'
 #' @return Data frame with results for all analyses (1 row for single, n rows for sequential)
@@ -16,23 +16,20 @@
 worker_process_single <- function(id_cond, id_iter, condition_args, design) {
 
   # Extract design components (handle S7 and list)
+  # NOTE: After merge, model properties are directly on design (not design@model@*)
   if (inherits(design, "rctbayespower::rctbp_design") || inherits(design, "rctbp_design")) {
-    sim_fn <- design@model@sim_fn
-    backend <- design@model@backend
-    estimation_model <- design@model@inference_model
-    backend_args <- if (backend == "brms") design@model@backend_args_brms else design@model@backend_args_bf
+    sim_fn <- design@sim_fn
+    backend <- design@backend
+    estimation_model <- design@inference_model
+    backend_args <- if (backend == "brms") design@backend_args_brms else design@backend_args_bf
     target_params <- design@target_params
-    p_sig_scs <- design@p_sig_scs
-    p_sig_ftl <- design@p_sig_ftl
   } else if (is.list(design)) {
     # Regular list for parallel workers
-    sim_fn <- design$model_sim_fn
-    backend <- design$model_backend
-    estimation_model <- design$model_inference_model
-    backend_args <- design$model_backend_args
+    sim_fn <- design$sim_fn
+    backend <- design$backend
+    estimation_model <- design$inference_model
+    backend_args <- design$backend_args
     target_params <- design$target_params
-    p_sig_scs <- design$p_sig_scs
-    p_sig_ftl <- design$p_sig_ftl
   } else {
     cli::cli_abort(c(
       "Invalid design object",
@@ -41,9 +38,12 @@ worker_process_single <- function(id_cond, id_iter, condition_args, design) {
   }
 
   # Extract decision parameters from condition_args
+  # NOTE: p_sig_scs, p_sig_ftl now come from decision_args (not design)
   decision_args <- condition_args$decision_args
-  thresholds_success <- decision_args$thresholds_success
-  thresholds_futility <- decision_args$thresholds_futility
+  thresh_scs <- decision_args$thresh_scs
+  thresh_ftl <- decision_args$thresh_ftl
+  p_sig_scs <- decision_args$p_sig_scs
+  p_sig_ftl <- decision_args$p_sig_ftl
   analysis_at <- decision_args$analysis_at
   interim_function <- decision_args$interim_function
   adaptive <- decision_args$adaptive %||% FALSE
@@ -100,8 +100,8 @@ worker_process_single <- function(id_cond, id_iter, condition_args, design) {
           model = estimation_model,
           backend_args = backend_args,
           target_params = target_params,
-          thresholds_success = thresholds_success,
-          thresholds_futility = thresholds_futility,
+          thresh_scs = thresh_scs,
+          thresh_ftl = thresh_ftl,
           p_sig_scs = p_sig_scs,
           p_sig_ftl = p_sig_ftl,
           id_iter = id_iter,
@@ -113,8 +113,8 @@ worker_process_single <- function(id_cond, id_iter, condition_args, design) {
           model = estimation_model,
           backend_args = backend_args,
           target_params = target_params,
-          thresholds_success = thresholds_success,
-          thresholds_futility = thresholds_futility,
+          thresh_scs = thresh_scs,
+          thresh_ftl = thresh_ftl,
           p_sig_scs = p_sig_scs,
           p_sig_ftl = p_sig_ftl,
           id_iter = id_iter,
@@ -134,8 +134,8 @@ worker_process_single <- function(id_cond, id_iter, condition_args, design) {
           model = estimation_model,
           backend_args = backend_args,
           target_params = target_params,
-          thresholds_success = thresholds_success,
-          thresholds_futility = thresholds_futility,
+          thresh_scs = thresh_scs,
+          thresh_ftl = thresh_ftl,
           p_sig_scs = p_sig_scs,
           p_sig_ftl = p_sig_ftl,
           analysis_at = analysis_at,
@@ -150,8 +150,8 @@ worker_process_single <- function(id_cond, id_iter, condition_args, design) {
           model = estimation_model,
           backend_args = backend_args,
           target_params = target_params,
-          thresholds_success = thresholds_success,
-          thresholds_futility = thresholds_futility,
+          thresh_scs = thresh_scs,
+          thresh_ftl = thresh_ftl,
           p_sig_scs = p_sig_scs,
           p_sig_ftl = p_sig_ftl,
           analysis_at = analysis_at,
@@ -194,22 +194,19 @@ worker_process_batch <- function(work_units, design) {
   batch_size <- length(work_units)
 
   # Extract design components
+  # NOTE: After merge, model properties are directly on design
   if (inherits(design, "rctbayespower::rctbp_design") || inherits(design, "rctbp_design")) {
-    sim_fn <- design@model@sim_fn
-    backend <- design@model@backend
-    estimation_model <- design@model@inference_model  # Must be BayesFlow
-    backend_args <- design@model@backend_args_bf
+    sim_fn <- design@sim_fn
+    backend <- design@backend
+    estimation_model <- design@inference_model
+    backend_args <- design@backend_args_bf
     target_params <- design@target_params
-    p_sig_scs <- design@p_sig_scs
-    p_sig_ftl <- design@p_sig_ftl
   } else if (is.list(design)) {
-    sim_fn <- design$model_sim_fn
-    backend <- design$model_backend
-    estimation_model <- design$model_inference_model
-    backend_args <- design$model_backend_args  # Already selected in prepare_design_for_workers
+    sim_fn <- design$sim_fn
+    backend <- design$backend
+    estimation_model <- design$inference_model
+    backend_args <- design$backend_args  # Already selected in prepare_design_for_workers
     target_params <- design$target_params
-    p_sig_scs <- design$p_sig_scs
-    p_sig_ftl <- design$p_sig_ftl
   } else {
     cli::cli_abort(c(
       "Invalid design object",
@@ -231,10 +228,12 @@ worker_process_batch <- function(work_units, design) {
   id_iter_vec <- sapply(work_units, function(wu) wu$id_iter)
 
   # Extract decision parameters from first work unit (assume homogenous batch)
-  # Note: For batching to work efficiently, all work units should have same decision_args
+  # NOTE: p_sig_scs, p_sig_ftl now come from decision_args
   decision_args <- work_units[[1]]$condition_args$decision_args
-  thresholds_success <- decision_args$thresholds_success
-  thresholds_futility <- decision_args$thresholds_futility
+  thresh_scs <- decision_args$thresh_scs
+  thresh_ftl <- decision_args$thresh_ftl
+  p_sig_scs <- decision_args$p_sig_scs
+  p_sig_ftl <- decision_args$p_sig_ftl
   analysis_at <- decision_args$analysis_at
   interim_function <- decision_args$interim_function
   adaptive <- decision_args$adaptive %||% FALSE
@@ -299,8 +298,8 @@ worker_process_batch <- function(work_units, design) {
         model = estimation_model,
         backend_args = backend_args,
         target_params = target_params,
-        thresholds_success = thresholds_success,
-        thresholds_futility = thresholds_futility,
+        thresh_scs = thresh_scs,
+        thresh_ftl = thresh_ftl,
         p_sig_scs = p_sig_scs,
         p_sig_ftl = p_sig_ftl,
         id_iter = id_iter_vec,
@@ -313,8 +312,8 @@ worker_process_batch <- function(work_units, design) {
         model = estimation_model,
         backend_args = backend_args,
         target_params = target_params,
-        thresholds_success = thresholds_success,
-        thresholds_futility = thresholds_futility,
+        thresh_scs = thresh_scs,
+        thresh_ftl = thresh_ftl,
         p_sig_scs = p_sig_scs,
         p_sig_ftl = p_sig_ftl,
         analysis_at = analysis_at,
@@ -344,31 +343,28 @@ worker_process_batch <- function(work_units, design) {
 #' @return Named list with all necessary design components
 #' @keywords internal
 prepare_design_for_workers <- function(design) {
-  # Backend is already resolved at model creation time (never "auto")
-  backend <- design@model@backend
+  # Backend is already resolved at design creation time (never "auto")
+  # NOTE: After merge, all properties are directly on design
+  backend <- design@backend
 
   # Select appropriate backend_args based on backend
   backend_args <- if (backend == "brms") {
-    design@model@backend_args_brms
+    design@backend_args_brms
   } else {
-    design@model@backend_args_bf
+    design@backend_args_bf
   }
 
   list(
-    # Model components
-    model_sim_fn = design@model@sim_fn,
-    model_backend = backend,
-    model_inference_model = design@model@inference_model,
-    model_backend_args = backend_args,
-    model_backend_args_brms = design@model@backend_args_brms,
-    model_backend_args_bf = design@model@backend_args_bf,
+    # Model components (directly on design after merge)
+    sim_fn = design@sim_fn,
+    backend = backend,
+    inference_model = design@inference_model,
+    backend_args = backend_args,
+    backend_args_brms = design@backend_args_brms,
+    backend_args_bf = design@backend_args_bf,
     # Design parameters
-    target_params = design@target_params,
-    p_sig_scs = design@p_sig_scs,
-    p_sig_ftl = design@p_sig_ftl,
-    # Interim analysis parameters (design-level defaults)
-    analysis_at = design@analysis_at,
-    interim_function = design@interim_function,
-    adaptive = design@adaptive
+    target_params = design@target_params
+    # NOTE: p_sig_scs, p_sig_ftl, analysis_at, interim_function, adaptive
+    # are now in conditions (via decision_args), not design
   )
 }

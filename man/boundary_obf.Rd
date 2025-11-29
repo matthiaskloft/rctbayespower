@@ -2,55 +2,56 @@
 % Please edit documentation in R/boundaries.R
 \name{boundary_obf}
 \alias{boundary_obf}
-\title{O'Brien-Fleming-like Bayesian Boundary}
+\alias{boundary_obf_threshold}
+\title{O'Brien-Fleming Boundary}
 \usage{
-boundary_obf(base = 0.975)
+boundary_obf(alpha = NULL, threshold = NULL)
+
+boundary_obf_threshold(threshold = 0.975)
 }
 \arguments{
-\item{base}{Threshold at final analysis (info_frac = 1). Default 0.975.}
+\item{alpha}{One-sided significance level for frequentist error control.
+Must be between 0 and 0.5. Mutually exclusive with \code{threshold}.}
+
+\item{threshold}{Final probability threshold for Bayesian decision rules.
+Must be between 0.5 and 1 (exclusive). Mutually exclusive with \code{alpha}.}
 }
 \value{
-A function that takes information fraction and returns threshold.
+A function that takes a vector of information fractions and returns
+a vector of probability thresholds (one per look).
 }
 \description{
-Creates a boundary function that is stringent at early looks and relaxes
-toward the final analysis. Approximates O'Brien-Fleming spending function
-behavior in a Bayesian context.
+Creates a boundary function with O'Brien-Fleming shape (very conservative
+early, relaxing toward final analysis). Specify either \code{alpha} for
+frequentist Type I error control, or \code{threshold} for Bayesian decision rules.
 }
 \details{
-Formula: \code{threshold = 1 - (1 - base) * sqrt(info_frac)}
+O'Brien-Fleming boundaries are very conservative at early looks (hard to
+stop for success) but relax toward the final analysis. This preserves
+most of the sample size and statistical power for the final look.
 
-Example values for \code{base = 0.975}:
-\itemize{
-\item info_frac = 0.25 → threshold = 0.9875
-\item info_frac = 0.50 → threshold = 0.9823
-\item info_frac = 0.75 → threshold = 0.9783
+\strong{Frequentist mode} (\code{alpha}): Uses the Lan-DeMets spending function
+to control Type I error. The spending function is:
+\deqn{\alpha(t) = 2 - 2\Phi(\Phi^{-1}(1 - \alpha/2) / \sqrt{t})}
+When \code{gsDesign} is installed, computes exact boundaries using multivariate
+normal integration.
 
-\item info_frac = 1.00 → threshold = 0.9750
-}
-
-This boundary is very conservative at early looks (hard to stop early for
-success) but relaxes to the nominal threshold at the final analysis.
+\strong{Bayesian mode} (\code{threshold}): Uses the OBF shape but scales it to
+end at the specified probability threshold. Early looks are very stringent
+(close to 1.0), relaxing to exactly \code{threshold} at the final analysis.
 }
 \examples{
-# Create OBF-style boundary
-obf <- boundary_obf(0.975)
+# Frequentist: control Type I error at 2.5\%
+obf_freq <- boundary_obf(alpha = 0.025)
+obf_freq(c(0.5, 1.0))
 
-# Evaluate at different information fractions
-obf(0.25)  # Early look: ~0.9875
-obf(0.50)  # Midpoint: ~0.9823
-obf(1.00)  # Final: 0.975
-
-# Use in design
-\dontrun{
-design <- build_design(
-  model = my_model,
-  target_params = "b_armtreat_1",
-  p_sig_scs = boundary_obf(0.975),
-  p_sig_ftl = 0.90,
-  analysis_at = c(0.5, 0.75)
-)
+# Bayesian: OBF shape ending at 0.95 threshold
+obf_bayes <- boundary_obf(threshold = 0.95)
+obf_bayes(c(0.5, 1.0))
 }
+\references{
+Lan, K. K. G. and DeMets, D. L. (1983). Discrete sequential boundaries for
+clinical trials. Biometrika 70: 659-663.
 }
 \seealso{
 \code{\link[=boundary_pocock]{boundary_pocock()}}, \code{\link[=boundary_linear]{boundary_linear()}}, \code{\link[=boundary_power]{boundary_power()}}

@@ -7,6 +7,7 @@
 create_power_curve_plot(
   plot_data,
   design,
+  conditions,
   analysis_type,
   effect_col,
   metric,
@@ -23,7 +24,9 @@ create_power_curve_plot(
 \arguments{
 \item{plot_data}{Data frame with power analysis results}
 
-\item{design}{Design object with p_sig_scs and p_sig_ftl}
+\item{design}{Design object}
+
+\item{conditions}{Conditions object with threshold values (p_sig_scs, p_sig_ftl)}
 
 \item{analysis_type}{One of "sample_only", "effect_only", or "both"}
 
@@ -46,7 +49,7 @@ create_power_curve_plot(
 "effect_size", or "sample_size"}
 
 \item{target_power}{Optional numeric value (0-1) for target power line.
-If NULL, uses design thresholds when group_by = "decision".}
+If NULL, uses thresholds from conditions when group_by = "decision".}
 
 \item{...}{Additional arguments (ignored)}
 }

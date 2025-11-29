@@ -51,6 +51,8 @@
 #'     \item `cpu_name`: CPU processor name or NULL if unavailable
 #'     \item `envname`: Name of the Python virtual environment or NULL
 #'     \item `python_path`: Path to Python executable
+#'     \item `python_version`: Python version string (e.g., "3.12.0")
+#'     \item `pkg_versions`: Named list of package versions (bayesflow, keras, torch, numpy)
 #'   }
 #'   Returns NULL if BayesFlow is not available.
 #' @export
@@ -61,6 +63,8 @@
 #' if (!is.null(info)) {
 #'   cat("Device:", info$device_name, "\n")
 #'   cat("Environment:", info$envname, "\n")
+#'   cat("Python:", info$python_version, "\n")
+#'   cat("BayesFlow:", info$pkg_versions$bayesflow, "\n")
 #' }
 #'
 #' # Check specific environment
@@ -111,7 +115,14 @@ get_bf_env_info <- function(envname = NULL) {
     cuda_version = NULL,
     cpu_name = NULL,
     envname = NULL,
-    python_path = NULL
+    python_path = NULL,
+    python_version = NULL,
+    pkg_versions = list(
+      bayesflow = NULL,
+      keras = NULL,
+      torch = NULL,
+      numpy = NULL
+    )
   )
 
   # Get Python configuration
@@ -133,7 +144,7 @@ get_bf_env_info <- function(envname = NULL) {
     }
   }
 
-  # Get CPU info via Python platform module
+  # Get CPU info and Python version via platform module
   tryCatch({
     platform <- reticulate::import("platform", delay_load = FALSE)
     cpu_name <- platform$processor()
@@ -144,9 +155,27 @@ get_bf_env_info <- function(envname = NULL) {
     if (!is.null(cpu_name) && nchar(cpu_name) > 0) {
       info$cpu_name <- cpu_name
     }
+    # Get Python version
+    info$python_version <- platform$python_version()
   }, error = function(e) {
-    # Platform module not available - leave cpu_name as NULL
+    # Platform module not available - leave cpu_name/python_version as NULL
+  })
 
+  # Get package versions using importlib.metadata (Python 3.8+)
+  tryCatch({
+    importlib_metadata <- reticulate::import("importlib.metadata", delay_load = FALSE)
+    get_version <- function(pkg) {
+      tryCatch(
+        importlib_metadata$version(pkg),
+        error = function(e) NULL
+      )
+    }
+    info$pkg_versions$bayesflow <- get_version("bayesflow")
+    info$pkg_versions$keras <- get_version("keras")
+    info$pkg_versions$torch <- get_version("torch")
+    info$pkg_versions$numpy <- get_version("numpy")
+  }, error = function(e) {
+    # importlib.metadata not available - leave versions as NULL
   })
 
   # Check GPU availability via PyTorch
@@ -1044,8 +1073,8 @@ estimate_batch_bf <- function(data_batch, bf_model, backend_args, target_params)
 #' @param model BayesFlow/Keras model (Python object)
 #' @param backend_args List of BayesFlow-specific arguments
 #' @param target_params Character vector of parameter names
-#' @param thresholds_success Numeric vector of success thresholds
-#' @param thresholds_futility Numeric vector of futility thresholds
+#' @param thresh_scs Numeric vector of success thresholds (ROPE)
+#' @param thresh_ftl Numeric vector of futility thresholds (ROPE)
 #' @param p_sig_scs Probability threshold for success
 #' @param p_sig_ftl Probability threshold for futility
 #' @param id_iter Iteration identifier (scalar or vector for batch)
@@ -1054,7 +1083,7 @@ estimate_batch_bf <- function(data_batch, bf_model, backend_args, target_params)
 #' @return Data frame with results (1 row per simulation in batch)
 #' @keywords internal
 estimate_single_bf <- function(data, model, backend_args, target_params,
-                                thresholds_success, thresholds_futility,
+                                thresh_scs, thresh_ftl,
                                 p_sig_scs, p_sig_ftl, id_iter, id_cond) {
 
   # Detect data format:
@@ -1141,8 +1170,8 @@ estimate_single_bf <- function(data, model, backend_args, target_params,
   result <- summarize_post_bf(
     draws_mat = draws_matrix,
     target_param = target_params[1],  # Single param for now
-    thr_scs = thresholds_success[1],
-    thr_ftl = thresholds_futility[1],
+    thr_scs = thresh_scs[1],
+    thr_ftl = thresh_ftl[1],
     p_sig_scs = current_p_sig_scs,
     p_sig_ftl = current_p_sig_ftl,
     id_iter = id_iter,
@@ -1170,10 +1199,10 @@ estimate_single_bf <- function(data, model, backend_args, target_params,
 #' @param model BayesFlow/Keras model (Python object)
 #' @param backend_args List of BayesFlow-specific arguments
 #' @param target_params Character vector of parameter names
-#' @param thresholds_success Numeric vector of success thresholds
-#' @param thresholds_futility Numeric vector of futility thresholds
-#' @param p_sig_scs Probability threshold for success
-#' @param p_sig_ftl Probability threshold for futility
+#' @param thresh_scs Numeric vector of success thresholds (ROPE)
+#' @param thresh_ftl Numeric vector of futility thresholds (ROPE)
+#' @param p_sig_scs Probability threshold for success (numeric or pre-resolved vector)
+#' @param p_sig_ftl Probability threshold for futility (numeric or pre-resolved vector)
 #' @param analysis_at Vector of sample sizes for all analyses (including final)
 #' @param interim_function Function to make interim decisions (optional)
 #' @param id_iter Vector of iteration identifiers (one per sim in batch)
@@ -1182,7 +1211,7 @@ estimate_single_bf <- function(data, model, backend_args, target_params,
 #' @return Data frame with (batch_size x n_analyses) rows
 #' @keywords internal
 estimate_sequential_bf <- function(full_data_list, model, backend_args, target_params,
-                                    thresholds_success, thresholds_futility,
+                                    thresh_scs, thresh_ftl,
                                     p_sig_scs, p_sig_ftl, analysis_at,
                                     interim_function, id_iter, id_cond) {
 
@@ -1241,8 +1270,8 @@ estimate_sequential_bf <- function(full_data_list, model, backend_args, target_p
     batch_results <- summarize_post_bf(
       draws_mat = draws_matrix,
       target_param = target_params[1],
-      thr_scs = thresholds_success[1],
-      thr_ftl = thresholds_futility[1],
+      thr_scs = thresh_scs[1],
+      thr_ftl = thresh_ftl[1],
       p_sig_scs = current_p_sig_scs,
       p_sig_ftl = current_p_sig_ftl,
       id_iter = id_iter[active_idx],

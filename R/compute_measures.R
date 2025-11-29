@@ -6,16 +6,16 @@
 #'
 #' @param posterior_rvars A draws_rvars object containing posterior samples for target parameters
 #' @param target_params Character vector of parameter names to analyze
-#' @param thresholds_success Numeric vector of success thresholds (one per parameter)
-#' @param thresholds_futility Numeric vector of futility thresholds (one per parameter)
+#' @param thresh_scs Numeric vector of success thresholds (ROPE, one per parameter)
+#' @param thresh_ftl Numeric vector of futility thresholds (ROPE, one per parameter)
 #' @param p_sig_scs Probability threshold for declaring success
 #' @param p_sig_ftl Probability threshold for declaring futility
 #'
 #' @return A data frame containing power analysis measures
 #' @importFrom stats median
 #' @keywords internal
-compute_measures <- function(posterior_rvars, target_params, thresholds_success,
-                             thresholds_futility, p_sig_scs, p_sig_ftl) {
+compute_measures <- function(posterior_rvars, target_params, thresh_scs,
+                             thresh_ftl, p_sig_scs, p_sig_ftl) {
 
   # Compute measures for each parameter
   measures_list <- purrr::map(target_params, function(param) {
@@ -24,19 +24,19 @@ compute_measures <- function(posterior_rvars, target_params, thresholds_success,
 
     # extract thresholds
     if (length(target_params) > 1) {
-      threshold_success <- thresholds_success[which(target_params == param)]
+      threshold_success <- thresh_scs[which(target_params == param)]
       # if the threshold is NA, use the first one
       if (is.na(threshold_success)) {
-        threshold_success <- thresholds_success[1]
+        threshold_success <- thresh_scs[1]
       }
-      threshold_futility <- thresholds_futility[which(target_params == param)]
+      threshold_futility <- thresh_ftl[which(target_params == param)]
       # if the threshold is NA, use the first one
       if (is.na(threshold_futility)) {
-        threshold_futility <- thresholds_futility[1]
+        threshold_futility <- thresh_ftl[1]
       }
     } else {
-      threshold_success <- thresholds_success
-      threshold_futility <- thresholds_futility
+      threshold_success <- thresh_scs
+      threshold_futility <- thresh_ftl
     }
     # calculate the probability of success / futility
     success_prob <- posterior::Pr(param_rvar > threshold_success)
@@ -87,15 +87,15 @@ compute_measures <- function(posterior_rvars, target_params, thresholds_success,
     posterior_samples <- do.call(cbind, posterior_matrix_list)
 
     # extract thresholds and broadcast if necessary
-    if (length(target_params) > length(thresholds_success)) {
-      thresholds_success_combined <- rep(thresholds_success[1], length(target_params))
+    if (length(target_params) > length(thresh_scs)) {
+      thresh_scs_combined <- rep(thresh_scs[1], length(target_params))
     } else {
-      thresholds_success_combined <- thresholds_success
+      thresh_scs_combined <- thresh_scs
     }
-    if (length(target_params) > length(thresholds_futility)) {
-      thresholds_futility_combined <- rep(thresholds_futility[1], length(target_params))
+    if (length(target_params) > length(thresh_ftl)) {
+      thresh_ftl_combined <- rep(thresh_ftl[1], length(target_params))
     } else {
-      thresholds_futility_combined <- thresholds_futility
+      thresh_ftl_combined <- thresh_ftl
     }
 
     # Combined probability algorithm (AND decision rule for multiple parameters)
@@ -106,10 +106,10 @@ compute_measures <- function(posterior_rvars, target_params, thresholds_success,
     #   3. Average across draws to get probability
     # Example: P(param1 > 0.2 AND param2 > 0.3 AND param3 > 0.1)
     combined_success_prob <- mean(apply(ifelse(
-      posterior_samples > thresholds_success_combined, 1, 0
+      posterior_samples > thresh_scs_combined, 1, 0
     ), 1, min))
     combined_futility_prob <- mean(apply(
-      ifelse(posterior_samples < thresholds_futility_combined, 1, 0),
+      ifelse(posterior_samples < thresh_ftl_combined, 1, 0),
       1,
       min
     ))
@@ -583,19 +583,19 @@ summarize_sims_with_interim <- function(results_df_raw, n_sims) {
     dplyr::filter(.data$id_look == final_look_id) |>
     dplyr::select("id_cond", "pwr_scs", "pwr_ftl", "se_pwr_scs", "se_pwr_ftl")
 
-  # Add n_total (max n_analyzed per condition)
-  n_total_df <- results_df_raw |>
-    dplyr::group_by(.data$id_cond) |>
-    dplyr::summarise(n_total = max(.data$n_analyzed, na.rm = TRUE), .groups = "drop")
-
   # Merge and reorder columns logically
+
+  # NOTE: We do NOT add n_total here because conditions_grid already has it.
+  # Adding it here would cause duplicate columns (n_total.x, n_total.y) after
+
+  # the join in power_analysis(), breaking column access. The n_total from
+  # conditions_grid is the authoritative simulation parameter.
   overall <- overall |>
     dplyr::left_join(final_power, by = "id_cond") |>
-    dplyr::left_join(n_total_df, by = "id_cond") |>
     dplyr::select(
       "id_cond",
-      # Sample size metrics
-      "n_total", "n_planned", "n_mn", "n_mdn", "n_mode", "se_n_mn", "prop_at_mode",
+      # Sample size metrics (n_total comes from conditions_grid via join)
+      "n_planned", "n_mn", "n_mdn", "n_mode", "se_n_mn", "prop_at_mode",
       # Power metrics
       "pwr_scs", "pwr_ftl", "se_pwr_scs", "se_pwr_ftl",
       # Stopping proportions
@@ -697,9 +697,13 @@ resummarize_boundaries <- function(power_result,
 
   n_total <- max(look_info$n_analyzed)
 
-  # Use original thresholds if not specified
-  if (is.null(p_sig_scs)) p_sig_scs <- power_result@design@p_sig_scs
-  if (is.null(p_sig_ftl)) p_sig_ftl <- power_result@design@p_sig_ftl
+  # Use original thresholds if not specified (now from conditions, not design)
+  if (is.null(p_sig_scs)) {
+    p_sig_scs <- get_original_threshold(power_result@conditions, "p_sig_scs")
+  }
+  if (is.null(p_sig_ftl)) {
+    p_sig_ftl <- get_original_threshold(power_result@conditions, "p_sig_ftl")
+  }
 
   # Resolve boundaries to per-look values
   scs_thresholds <- resolve_boundary_vector(p_sig_scs, look_info, n_total)

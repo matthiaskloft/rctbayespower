@@ -8,13 +8,14 @@
 #' Internal function to create heatmap visualizations using ggplot2.
 #'
 #' @param plot_data Data frame with power analysis results
-#' @param design Design object with p_sig_scs and p_sig_ftl
+#' @param design Design object
+#' @param conditions Conditions object with threshold values (p_sig_scs, p_sig_ftl)
 #' @param analysis_type Must be "both" for heatmap
 #' @param effect_col Column name for effect size (from condition_values)
 #' @param metric Filter: "power", "prob", or "both"
 #' @param decision Filter: "success", "futility", or "both"
 #' @param show_target Whether to show target power contour lines
-#' @param target_power Target power level for contour (default: design@p_sig_scs)
+#' @param target_power Target power level for contour (default from conditions)
 #' @param ... Additional arguments (ignored)
 #'
 #' @return A ggplot2 object
@@ -22,6 +23,7 @@
 #' @importFrom rlang .data
 create_heatmap_plot <- function(plot_data,
                                 design,
+                                conditions,
                                 analysis_type,
                                 effect_col,
                                 metric,
@@ -69,9 +71,10 @@ create_heatmap_plot <- function(plot_data,
     ))
   }
 
-  # Set default target power from design if not specified
+  # Set default target power from conditions if not specified
   if (is.null(target_power)) {
-    target_power <- design@p_sig_scs
+    target_power <- get_original_threshold(conditions, "p_sig_scs")
+    if (is.null(target_power)) target_power <- 0.8  # Fallback default
   }
 
   # Build ggplot heatmap
@@ -97,9 +100,9 @@ create_heatmap_plot <- function(plot_data,
       title = "Power Analysis Heatmap",
       subtitle = paste(
         "Targets - Success:",
-        scales::percent(design@p_sig_scs, accuracy = 0.1),
+        get_threshold_display(conditions, "p_sig_scs"),
         "| Futility:",
-        scales::percent(design@p_sig_ftl, accuracy = 0.1)
+        get_threshold_display(conditions, "p_sig_ftl")
       )
     ) +
     rctbp_theme() +

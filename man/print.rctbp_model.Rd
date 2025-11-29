@@ -9,9 +9,8 @@
 \item{...}{Additional arguments (currently unused)}
 }
 \value{
-Invisibly returns the input object. Used for side effects (printing).
+Invisibly returns the input object
 }
 \description{
-Displays a summary of a rctbp_model object, including model specifications,
-parameter information, and function details.
+Print Method for rctbp_model Objects
 }

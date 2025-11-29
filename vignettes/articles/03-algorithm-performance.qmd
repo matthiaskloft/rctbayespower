@@ -62,30 +62,21 @@ The `rctbayespower` package supports multiple algorithms via `brms` / `Stan`:
 
 Show predefined models available in the package:
 ```{r}
-list_predefined_models()
+show_predefined_models()
 ```
 
 
-Get the predefined ANCOVA model for continuous outcomes with two arms:
-```{r get_model_ancova}
-model_ancova <- get_model("ancova_cont_2arms")
-model_ancova@parameter_names_brms
-```
-
-### Design
-
+Build a design using the predefined ANCOVA model for continuous outcomes with two arms:
 ```{r build_design}
+# Build design with predefined model (model merged into design)
 design <- build_design(
-  model = model_ancova,
-  target_params = "b_arm2",
-  thresholds_success = 0.1,
-  thresholds_futility = 0,
-  p_sig_scs = 0.975,
-  p_sig_ftl = 0.5
+  model_name = "ancova_cont_2arms",
+  target_params = "b_arm2"
 )
-# check the required parameters for the design
-required_fn_args(design)
-
+# Check available parameter names
+design@par_names_inference
+# Check the required parameters for conditions
+show_condition_args(design)
 ```
 
 
@@ -94,17 +85,22 @@ required_fn_args(design)
 ```{r build_conditions}
 conditions <- build_conditions(
   design = design,
-  condition_values = list(
-    # two sample sizes
+  crossed = list(
+    # sample size
     n_total = 400,
-      # two effect sizes
-    b_arm_treat = c(0,0.3)
+    # two effect sizes
+    b_arm_treat = c(0, 0.3)
   ),
-  static_values = list(
+  constant = list(
     # equal allocation
     p_alloc = c(0.5, 0.5),
-          # baseline effect
-    b_covariate = 0
+    # baseline effect
+    b_covariate = 0,
+    # decision thresholds
+    p_sig_scs = 0.975,
+    p_sig_ftl = 0.5,
+    thresh_scs = 0.1,
+    thresh_ftl = 0
   )
 )
 ```

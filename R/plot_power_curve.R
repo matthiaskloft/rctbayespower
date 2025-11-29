@@ -8,7 +8,8 @@
 #' Internal function to create power curve visualizations using ggplot2.
 #'
 #' @param plot_data Data frame with power analysis results
-#' @param design Design object with p_sig_scs and p_sig_ftl
+#' @param design Design object
+#' @param conditions Conditions object with threshold values (p_sig_scs, p_sig_ftl)
 #' @param analysis_type One of "sample_only", "effect_only", or "both"
 #' @param effect_col Column name for effect size (from condition_values)
 #' @param metric Filter: "power", "prob", or "both"
@@ -21,7 +22,7 @@
 #' @param group_by Variable to use for line coloring: "decision", "metric",
 #'   "effect_size", or "sample_size"
 #' @param target_power Optional numeric value (0-1) for target power line.
-#'   If NULL, uses design thresholds when group_by = "decision".
+#'   If NULL, uses thresholds from conditions when group_by = "decision".
 #' @param ... Additional arguments (ignored)
 #'
 #' @return A ggplot2 object
@@ -29,6 +30,7 @@
 #' @importFrom rlang .data
 create_power_curve_plot <- function(plot_data,
                                     design,
+                                    conditions,
                                     analysis_type,
                                     effect_col,
                                     metric,
@@ -307,12 +309,16 @@ create_power_curve_plot <- function(plot_data,
       )
   }
 
-  # Case 2: No explicit target_power and group_by == "decision" - show design thresholds
+  # Case 2: No explicit target_power and group_by == "decision" - show thresholds from conditions
   # Note: Skip target lines when boundary functions are used (thresholds vary by look)
   if (show_target && is.null(target_power) && (metric == "power" || metric == "both") && group_by == "decision") {
+    # Get threshold values from conditions
+    p_sig_scs <- get_original_threshold(conditions, "p_sig_scs")
+    p_sig_ftl <- get_original_threshold(conditions, "p_sig_ftl")
+
     # Only add target lines for numeric thresholds, not boundary functions
-    p_scs_numeric <- is.numeric(design@p_sig_scs)
-    p_ftl_numeric <- is.numeric(design@p_sig_ftl)
+    p_scs_numeric <- is.numeric(p_sig_scs) && length(p_sig_scs) == 1
+    p_ftl_numeric <- is.numeric(p_sig_ftl) && length(p_sig_ftl) == 1
 
     if (p_scs_numeric || p_ftl_numeric) {
       outcomes <- character()
@@ -320,11 +326,11 @@ create_power_curve_plot <- function(plot_data,
 
       if (p_scs_numeric && (decision == "success" || decision == "both")) {
         outcomes <- c(outcomes, "Success")
-        yintercepts <- c(yintercepts, design@p_sig_scs)
+        yintercepts <- c(yintercepts, p_sig_scs)
       }
       if (p_ftl_numeric && (decision == "futility" || decision == "both")) {
         outcomes <- c(outcomes, "Futility")
-        yintercepts <- c(yintercepts, design@p_sig_ftl)
+        yintercepts <- c(yintercepts, p_sig_ftl)
       }
 
       if (length(outcomes) > 0) {

@@ -7,6 +7,7 @@
 create_heatmap_plot(
   plot_data,
   design,
+  conditions,
   analysis_type,
   effect_col,
   metric,
@@ -19,7 +20,9 @@ create_heatmap_plot(
 \arguments{
 \item{plot_data}{Data frame with power analysis results}
 
-\item{design}{Design object with p_sig_scs and p_sig_ftl}
+\item{design}{Design object}
+
+\item{conditions}{Conditions object with threshold values (p_sig_scs, p_sig_ftl)}
 
 \item{analysis_type}{Must be "both" for heatmap}
 
@@ -31,7 +34,7 @@ create_heatmap_plot(
 
 \item{show_target}{Whether to show target power contour lines}
 
-\item{target_power}{Target power level for contour (default: design@p_sig_scs)}
+\item{target_power}{Target power level for contour (default from conditions)}
 
 \item{...}{Additional arguments (ignored)}
 }

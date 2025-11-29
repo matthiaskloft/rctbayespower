@@ -4,75 +4,95 @@
 \alias{build_conditions}
 \title{Build Conditions for Power Analysis}
 \usage{
-build_conditions(design, condition_values, static_values, target_pwr = NULL)
+build_conditions(
+  design,
+  crossed = NULL,
+  constant = NULL,
+  target_pwr = NULL,
+  condition_values = NULL,
+  static_values = NULL,
+  linked = NULL
+)
 }
 \arguments{
 \item{design}{An rctbp_design object that defines the study design}
 
-\item{condition_values}{A named list where each element contains vectors of
-parameter values to vary across conditions. All combinations will be created.}
+\item{crossed}{A named list of parameter vectors. All combinations (Cartesian
+product) will be created. Use \code{\link[=link]{link()}} to group parameters that should
+co-vary instead of cross.}
 
-\item{static_values}{A named list of parameter values that remain constant
-across all conditions}
+\item{constant}{A named list of parameter values that remain constant across
+all conditions.}
 
 \item{target_pwr}{Target power level for identifying optimal conditions
 (default NULL). If NULL, the condition with highest power is shown.
 If specified (0 to 1), finds the smallest sample size achieving at
 least this power when displaying results.}
+
+\item{condition_values}{Deprecated. Use \code{crossed} instead.}
+
+\item{static_values}{Deprecated. Use \code{constant} instead.}
+
+\item{linked}{Deprecated. Use \code{\link[=link]{link()}} inside \code{crossed} instead.}
 }
 \value{
 An S7 object of class "rctbp_conditions" containing:
 \item{conditions_grid}{A data.frame with all parameter combinations}
 \item{condition_arguments}{A list of argument lists for each condition,
-separated into simulation and interim analysis arguments}
+separated into simulation and decision arguments}
 \item{design}{The original rctbp_design object}
-\item{condition_values}{The original condition_values list}
-\item{static_values}{The original static_values list}
+\item{crossed}{The original crossed specification (may contain link() groups)}
+\item{constant}{Constant parameters across all conditions}
 \item{target_pwr}{Target power level for optimal condition identification}
 }
 \description{
 Creates a structured set of conditions and argument lists for power analysis
-simulations. This function takes varying condition parameters and static
-parameters, validates them against the design requirements, and creates
-all necessary argument combinations for simulation runs.
+simulations. Parameters are organized into two categories: \code{crossed} (varying)
+and \code{constant} (fixed). Use \code{\link[=link]{link()}} within \code{crossed} to make parameters
+co-vary 1-to-1 instead of forming a Cartesian product.
 }
 \details{
-The function performs several validation steps:
+\strong{Parameter Categories:}
 \itemize{
-\item Checks that condition_values and static_values don't have overlapping names
-\item Validates that all required parameters are provided
-\item Ensures p_alloc is properly specified as a list
-\item Creates expanded grid of all condition combinations
+\item \code{crossed}: Cartesian product - all combinations created
+\item \code{link()}: Within crossed, marks params to co-vary (1-to-1)
+\item \code{constant}: Same value for all conditions
 }
 
-\strong{Interim Analysis Inheritance:}
-Interim analysis parameters (\code{analysis_at}, \code{interim_function}, \code{adaptive}) are
-inherited from the design object as defaults. This means:
-\itemize{
-\item If specified in \code{build_design()}, they apply to all conditions automatically
-\item Users can override per-condition via \code{condition_values} or \code{static_values}
-\item If not specified anywhere, defaults to single-look design (no interim analyses)
+\strong{Example with linked parameters:}
+\preformatted{
+crossed = list(
+  link(
+    n_total = c(80, 160),
+    analysis_at = list(c(40, 80), c(80, 160))
+  ),
+  b_arm_treat = c(0, 0.3)
+)
 }
-This allows specifying interim specs once at design level while still permitting
-condition-specific overrides when needed.
+Here, \code{n_total} and \code{analysis_at} co-vary (80 with c(40,80), 160 with c(80,160)),
+and both are crossed with \code{b_arm_treat}, creating 4 conditions.
 }
 \examples{
 \dontrun{
-# Create conditions for sample size and effect size analysis
+# Simple example without link()
 conditions <- build_conditions(
   design = my_design,
-  condition_values = list(
-    n_total = c(100, 200, 300),
-    effect_size = c(0.2, 0.5, 0.8)
-  ),
-  static_values = list(
-    p_alloc = list(c(0.5, 0.5)),
-    baseline_effect = 0.1
+  crossed = list(n_total = c(100, 200), b_arm_treat = c(0.3, 0.5)),
+  constant = list(
+    p_sig_scs = 0.975, p_sig_ftl = 0.5,
+    thresh_scs = 0.2, thresh_ftl = 0
   )
 )
 
-# Print the conditions
-print(conditions)
+# With link() for co-varying parameters
+conditions <- build_conditions(
+  design = my_design,
+  crossed = list(
+    link(n_total = c(80, 160), analysis_at = list(c(40,80), c(80,160))),
+    b_arm_treat = c(0, 0.3)
+  ),
+  constant = list(p_sig_scs = 0.975, p_sig_ftl = 0.5)
+)
 }
 
 }

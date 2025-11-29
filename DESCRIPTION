@@ -40,7 +40,8 @@ Suggests:
     pbapply,
     rappdirs,
     matrixStats,
-    reticulate (>= 1.41)
+    reticulate (>= 1.41),
+    gsDesign
 SystemRequirements: Python (>= 3.10) for BayesFlow backend (optional)
 Config/reticulate:
   list(

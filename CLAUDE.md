@@ -30,16 +30,17 @@ Documentation is organized in `dev/` as numbered topic files:
 
 Archived files in `dev/archive/`.
 
-## Current Status (2025-11-28)
+## Current Status (2025-11-29)
 
-**Core Package State**: Functional with dual-backend support. Code consistency review completed.
+**Core Package State**: Functional with dual-backend support. API refactoring completed (model merged into design).
 
 ### Implemented
 
 | Feature | Status |
 |---------|--------|
-| Core workflow (`build_model` → `build_design` → `build_conditions` → `power_analysis`) | ✅ |
-| S7 class system (`rctbp_model`, `rctbp_design`, `rctbp_conditions`, `rctbp_power_analysis`) | ✅ |
+| Core workflow (`build_design` → `build_conditions` → `power_analysis`) | ✅ |
+| S7 class system (`rctbp_design`, `rctbp_conditions`, `rctbp_power_analysis`) | ✅ |
+| **API refactoring: model merged into design** | ✅ |
 | ANCOVA continuous models (2-arm and 3-arm) | ✅ |
 | Design prior integration | ✅ |
 | Parallelization with model caching | ✅ |
@@ -59,7 +60,8 @@ Archived files in `dev/archive/`.
 | brms backend | `R/backend_brms.R` | ✅ Complete |
 | BayesFlow backend | `R/backend_bf.R` | ✅ Complete (reticulate calls) |
 | Model caching | `R/model_cache.R` | ✅ Complete |
-| Dual-backend model class | `R/class_model.R` | ✅ Complete |
+| Merged design class | `R/class_design.R` | ✅ Complete (model properties merged) |
+| Legacy model class | `R/class_model.R` | ✅ Deprecated (backward compat) |
 | Worker dispatch | `R/worker_functions.R` | ✅ Complete |
 | Batch simulation | `R/models_ancova.R` | ✅ Complete |
 | Shared utilities | `R/utils_results.R` | ✅ Complete |
@@ -76,30 +78,36 @@ Archived files in `dev/archive/`.
 ### Quick Workflow Example
 
 ```r
-# Get predefined model (defaults to brms backend)
-model <- build_model("ancova_cont_2arms")
-
-# Discover available parameter names for target_params
-model@parameter_names_brms    # brms parameters (for target_params)
-model@parameter_names_sim_fn  # simulation function parameters
-model@backend                 # "brms" or "bf"
-
+# Build design with predefined model (defaults to brms backend)
 design <- build_design(
-  model = model,
-  target_params = "b_arm2",  # Must match model@parameter_names_brms
-  p_sig_scs = 0.975,
-  p_sig_ftl = 0.5
+  model_name = "ancova_cont_2arms",
+  target_params = "b_arm2"  # Use design@par_names_inference to discover
 )
+
+# Discover available parameter names
+design@par_names_inference    # Parameters available for target_params
+design@par_names_sim          # Simulation function parameters
+design@backend                # "brms" or "bf"
+show_condition_args(design)   # Show required arguments for build_conditions()
+
+# Build conditions with three parameter types:
+# - crossed: Cartesian product (all combinations)
+# - linked: vary 1-to-1 with a crossed parameter
+# - constant: same value for all conditions
 conditions <- build_conditions(
   design = design,
-  condition_values = list(n_total = c(100, 200), b_arm_treat = c(0.3, 0.5)),
-  static_values = list(
+  crossed = list(n_total = c(100, 200), b_arm_treat = c(0.3, 0.5)),
+  constant = list(
+    # Simulation parameters
     p_alloc = list(c(0.5, 0.5)),
-    thresholds_success = 0.2,
-    thresholds_futility = 0,
     intercept = 0,
     b_covariate = 0.3,
-    sigma = 1
+    sigma = 1,
+    # Decision parameters
+    p_sig_scs = 0.975,      # Probability threshold for success
+    p_sig_ftl = 0.5,        # Probability threshold for futility
+    thresh_scs = 0.2,       # Effect size threshold for success
+    thresh_ftl = 0          # Effect size threshold for futility
   )
 )
 result <- power_analysis(conditions = conditions, n_sims = 100, n_cores = 4)
@@ -128,21 +136,22 @@ get_bf_env_info()                        # Get device (CPU/GPU) and environment 
 check_bf_available(silent = TRUE)
 
 # Backend options:
-# - "auto": Load BOTH models, prefer BayesFlow (allows quick switching)
-# - "bf": Try BayesFlow, fall back to brms WITH WARNING (loads only one)
-# - "brms": Load brms only, never try BayesFlow
+# - "brms": Load brms model (default, always available)
+# - "bf": Try BayesFlow, fall back to brms WITH WARNING if unavailable
 
-# Auto-selection: loads BOTH models, prefers bf, allows switching
-model <- build_model("ancova_cont_2arms")  # backend = "auto" (default)
-model@backend      # "bf" if available, "brms" otherwise
-model@inference_model_brms   # Also available for quick switching
-model@backend <- "brms"  # Switch to brms without reloading
+# brms backend (default)
+design <- build_design(
+  model_name = "ancova_cont_2arms",
+  target_params = "b_arm2"
+)
+design@backend  # "brms"
 
-# BayesFlow only (falls back to brms with warning if unavailable)
-model <- build_model("ancova_cont_2arms", backend = "bf")
-
-# brms only (never tries BayesFlow)
-model <- build_model("ancova_cont_2arms", backend = "brms")
+# BayesFlow backend (falls back to brms with warning if unavailable)
+design <- build_design(
+  model_name = "ancova_cont_2arms",
+  backend = "bf",
+  target_params = "b_arm2"
+)
 
 # Specify Python environment for BayesFlow
 result <- power_analysis(
@@ -160,38 +169,66 @@ Sys.setenv(RCTBP_MOCK_BF = "TRUE")
 # BayesFlow calls will return mock samples
 ```
 
-**Note**: Parameter names vary by model. Use `model@parameter_names_brms` to discover available `target_params` and `model@parameter_names_sim_fn` for simulation arguments.
+**Note**: Parameter names vary by model. Use `design@par_names_inference` to discover available `target_params` and `design@par_names_sim` for simulation arguments.
 
 ### Sequential Design with Look-Dependent Boundaries
 
 ```r
-# Create design with O'Brien-Fleming-style stopping boundaries
+# Create design
 design <- build_design(
-  model = model,
-  target_params = "b_arm2",
-  p_sig_scs = boundary_obf(0.975),        # Function: stringent early, relaxed late
-  p_sig_ftl = boundary_linear(0.70, 0.90), # Function: lenient early, strict late
-  analysis_at = c(0.5, 0.75)               # Interim at 50%, 75%; final at 100%
+  model_name = "ancova_cont_2arms",
+  target_params = "b_arm2"
 )
 
-# Available boundary functions:
-# - boundary_obf(base)        O'Brien-Fleming-style (most conservative early)
-# - boundary_pocock(threshold) Constant threshold (same at all looks)
-# - boundary_linear(start, end) Linear interpolation
-# - boundary_power(base, rho)  Power family (rho controls curve shape)
+# Create conditions with sequential analysis and boundary functions
+# Use link() to co-vary analysis_at with n_total
+conditions <- build_conditions(
+  design = design,
+  crossed = list(
+    link(
+      n_total = c(100, 200),
+      # analysis_at accepts:
+      # - Proportions (0, 1]: e.g., c(0.5, 1) means 50% and 100% of n_total
+      # - Absolute integers: e.g., c(50, 100) for n_total=100
+      # n_total is auto-appended if not the last element
+      analysis_at = list(c(50, 100), c(100, 200))  # Absolute sample sizes
+      # Or equivalently: list(c(0.5), c(0.5))  # Proportions (n_total auto-appended)
+    )
+  ),
+  constant = list(
+    b_arm_treat = 0.5,
+    p_alloc = list(c(0.5, 0.5)),
+    intercept = 0, b_covariate = 0.3, sigma = 1,
+    thresh_scs = 0.2, thresh_ftl = 0,
+    # Sequential analysis settings (Bayesian: use threshold parameter)
+    p_sig_scs = boundary_obf(threshold = 0.95), # OBF shape ending at 0.95
+    p_sig_ftl = boundary_linear(0.30, 0.50)     # Linear from 0.3 to 0.5
+  )
+)
+
+# Available boundary functions (specify either alpha OR threshold):
+#
+# - boundary_obf(alpha=0.025)      Frequentist: OBF alpha-spending
+# - boundary_obf(threshold=0.95)   Bayesian: OBF shape ending at threshold
+# - boundary_pocock(alpha=0.025)   Frequentist: Pocock alpha-spending
+# - boundary_pocock(threshold=0.95) Bayesian: constant threshold at all looks
+# - boundary_hsd(alpha, gamma)     Hwang-Shih-DeCani family (requires gsDesign)
+# - boundary_linear(start, end)    Linear interpolation between thresholds
+# - boundary_power(base, rho)      Power family (rho=2: OBF-like shape)
+# - boundary_constant(threshold)   Simple fixed threshold
 
 # Post-hoc boundary comparison (no re-simulation needed)
 result <- power_analysis(conditions, n_sims = 500)
 comparison <- compare_boundaries(result, list(
-  "Fixed 0.975" = list(success = 0.975, futility = 0.90),
-  "OBF-style" = list(success = boundary_obf(0.975), futility = 0.90),
-  "Stringent" = list(success = 0.99, futility = 0.95)
+  "Fixed 0.95" = list(success = 0.95, futility = 0.50),
+  "OBF-shape" = list(success = boundary_obf(threshold = 0.95), futility = 0.50),
+  "Stringent" = list(success = 0.99, futility = 0.70)
 ))
 
 # Re-analyze with new boundaries (returns modified power_analysis object)
 result_obf <- resummarize_boundaries(result,
-  p_sig_scs = boundary_obf(0.975),
-  p_sig_ftl = boundary_linear(0.70, 0.90)
+  p_sig_scs = boundary_obf(threshold = 0.95),
+  p_sig_ftl = boundary_linear(0.30, 0.50)
 )
 ```
 
@@ -201,8 +238,8 @@ result_obf <- resummarize_boundaries(result,
 
 | File | Purpose |
 |------|---------|
-| `R/class_model.R` | Model class (dual backend support) |
-| `R/class_design.R` | Design class definition |
+| `R/class_design.R` | Merged design class (includes model properties, dual backend) |
+| `R/class_model.R` | Legacy model class (backward compatibility, see note below) |
 | `R/class_conditions.R` | Conditions class definition |
 | `R/class_power_analysis.R` | Power analysis + run() + print/summary methods |
 | `R/models_ancova.R` | ANCOVA model builders + batch simulation |
@@ -240,6 +277,15 @@ result_obf <- resummarize_boundaries(result,
 | `R/report_builders.R` | Build structured report data + topic reports |
 | `R/report_renderers.R` | CLI/Markdown table rendering |
 
+### Discovery/Helper Functions
+
+| Function | File | Purpose |
+|----------|------|---------|
+| `show_predefined_models()` | `R/class_design.R` | List available predefined models |
+| `show_target_params(model_name)` | `R/required_fn_args.R` | Show available target parameters for a model |
+| `show_condition_args(design)` | `R/required_fn_args.R` | Show required arguments for build_conditions() |
+| `show_boundaries()` | `R/boundaries.R` | List available boundary functions |
+
 ### Utilities
 
 | File | Purpose |
@@ -248,7 +294,7 @@ result_obf <- resummarize_boundaries(result,
 | `R/verbosity.R` | Three-level verbosity control (0, 1, 2) |
 | `R/output_system.R` | CLI/Markdown dual-mode output system |
 | `R/MCSE.R` | Monte Carlo standard error calculations |
-| `R/required_fn_args.R` | Parameter requirement analysis |
+| `R/required_fn_args.R` | Helper functions for parameter discovery |
 | `R/S7_helpers.R` | S7 utility functions |
 | `R/s3_wrappers.R` | S3 method wrappers for S7 classes |
 
@@ -266,15 +312,18 @@ result_obf <- resummarize_boundaries(result,
 | `R/zzz.R` | .onLoad hook (S7 method registration) |
 | `R/rctbayespower-package.R` | Package documentation + globalVariables |
 
-### Deprecated Files (Empty, Kept for Reference)
+### Legacy Files
 
-| File | Replacement |
-|------|-------------|
-| `R/backends.R` | `R/backend_brms.R`, `R/backend_bf.R` |
-| `R/estimation_single.R` | `R/backend_*.R` |
-| `R/estimation_sequential.R` | `R/backend_*.R` |
-| `R/simulate_single_run.R` | `R/worker_functions.R` |
-| `R/class_interim.R` | Deprecated (interim handling in backends) |
+| File/Directory | Status |
+|------|--------|
+| `R/class_model.R` | Deprecated - legacy model class kept for backward compat |
+| `R/legacy/` | Archive of old API implementations (NOT loaded by package) |
+
+### Deprecation Policy
+
+**Package not yet released**: Since the package has not been released to CRAN yet, deprecated functions are removed rather than issuing deprecation warnings. Legacy code is archived in `R/legacy/` for reference.
+
+**When package is released**: Add `lifecycle::deprecate_warn()` calls to any remaining legacy functions before removal.
 
 ## Development Practices
 
@@ -300,14 +349,15 @@ See [`dev/11_code_consistency_review.md`](dev/11_code_consistency_review.md) for
 
 | Element | Convention | Examples |
 |---------|------------|----------|
-| S7 classes | `rctbp_*` prefix | `rctbp_model`, `rctbp_design` |
+| S7 classes | `rctbp_*` prefix | `rctbp_design`, `rctbp_conditions` |
 | Power columns | `pwr_*` prefix | `pwr_scs`, `pwr_ftl` |
 | Probability columns | `pr_*` prefix | `pr_scs`, `pr_ftl` |
 | Decision columns | `dec_*` prefix | `dec_scs`, `dec_ftl` |
+| ROPE threshold cols | `thresh_*` or `thr_*` | `thresh_scs`, `thresh_ftl`, `thr_scs` |
 | Standard error cols | `se_*` prefix | `se_pwr_scs`, `se_pr_ftl` |
-| Success suffix | `_scs` | `pwr_scs`, `pr_scs` |
-| Futility suffix | `_ftl` | `pwr_ftl`, `pr_ftl` |
-| Functions | snake_case | `build_model`, `power_analysis` |
+| Success suffix | `_scs` | `pwr_scs`, `pr_scs`, `thresh_scs` |
+| Futility suffix | `_ftl` | `pwr_ftl`, `pr_ftl`, `thresh_ftl` |
+| Functions | snake_case | `build_design`, `power_analysis` |
 | Parameters | snake_case | `n_total`, `p_sig_scs` |
 
 #### Error Handling Pattern

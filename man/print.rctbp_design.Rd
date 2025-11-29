@@ -13,5 +13,5 @@ Invisibly returns the input object. Used for side effects (printing).
 }
 \description{
 Displays a comprehensive summary of a rctbp_design object, showing
-both model specifications and analysis configuration in an organized format.
+model specifications and analysis configuration.
 }

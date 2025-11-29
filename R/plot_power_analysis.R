@@ -144,11 +144,11 @@ create_power_plot <- function(x,
   # =============================================================================
   # DETECT EFFECT SIZE COLUMN FROM CONDITIONS
   # =============================================================================
-  # The effect size column name comes from condition_values, not target_params.
-  # target_params contains brms parameter names (e.g., "b_armtreat_1"),
-  # but condition_values uses user-specified names (e.g., "b_arm_treat").
-  condition_value_names <- names(conditions@condition_values)
-  effect_cols <- setdiff(condition_value_names, "n_total")
+  # The effect size column name comes from crossed params, not target_params.
+  # target_params contains brms parameter names (e.g., "b_arm2"),
+  # but crossed uses user-specified names (e.g., "b_arm_treat").
+  crossed_param_names <- names(conditions@crossed)
+  effect_cols <- setdiff(crossed_param_names, "n_total")
 
   # Use first effect column if available, otherwise NULL
   effect_col <- if (length(effect_cols) > 0) effect_cols[1] else NULL
@@ -247,6 +247,7 @@ create_power_plot <- function(x,
     p <- create_power_curve_plot(
       plot_data,
       design,
+      x@conditions,
       analysis_type,
       effect_col,
       metric,
@@ -263,6 +264,7 @@ create_power_plot <- function(x,
     p <- create_heatmap_plot(
       plot_data,
       design,
+      x@conditions,
       analysis_type,
       effect_col,
       metric,

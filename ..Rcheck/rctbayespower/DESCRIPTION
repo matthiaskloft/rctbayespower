@@ -14,20 +14,18 @@ Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.3
 Depends: R (>= 4.1.0)
 Imports: brms (>= 2.20.0), posterior, ggplot2, plotly, scales, dplyr,
-        tidyr, tibble, parallel, rlang, stringr, purrr, S7, pwr, cli
-        (>= 3.6.0)
+        tidyr, tibble, parallel, rlang, purrr, S7, pwr, cli (>= 3.6.0)
 Suggests: testthat (>= 3.0.0), withr, knitr, rmarkdown, quarto,
         kableExtra, colorspace, pbapply, rappdirs, matrixStats,
-        reticulate (>= 1.41)
+        reticulate (>= 1.41), gsDesign
 SystemRequirements: Python (>= 3.10) for BayesFlow backend (optional)
 Config/reticulate: list( packages = list( list(package = "bayesflow",
-        version = ">= 2.0", pip = TRUE), list(package = "keras",
-        version = ">= 3.0", pip = TRUE), list(package = "torch", pip =
-        TRUE), list(package = "numpy", pip = TRUE) ) )
+        pip = TRUE), list(package = "keras", pip = TRUE), list(package
+        = "torch", pip = TRUE), list(package = "numpy", pip = TRUE) ) )
 Config/testthat/edition: 3
 URL: https://matthiaskloft.github.io/rctbayespower/,
         https://github.com/matthiaskloft/rctbayespower
 Config/Needs/website: quarto-dev/quarto-r, r-lib/pkgdown, dplyr,
         kableExtra, pander
 LazyData: true
-Built: R 4.5.2; ; 2025-11-27 21:26:00 UTC; windows
+Built: R 4.5.2; ; 2025-11-29 07:21:23 UTC; windows

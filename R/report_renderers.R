@@ -53,9 +53,24 @@ format_table_cli <- function(df, max_rows = 20) {
         df[[col]] <- sprintf("%.0f", df[[col]])
       }
     } else if (is.list(df[[col]])) {
-      # Handle list columns (like par_name)
+      # Handle list columns (like par_name, boundary functions, vectors)
       df[[col]] <- sapply(df[[col]], function(x) {
-        if (is.null(x)) "NULL" else paste(x, collapse = ", ")
+        if (is.null(x)) {
+          "NULL"
+        } else if (is.function(x)) {
+          # Handle boundary functions
+          boundary_type <- attr(x, "boundary_type")
+          if (!is.null(boundary_type)) {
+            paste0("boundary_", boundary_type, "()")
+          } else {
+            "<function>"
+          }
+        } else if (is.numeric(x)) {
+          # Round numeric vectors for cleaner display
+          paste(round(x, 3), collapse = ", ")
+        } else {
+          paste(x, collapse = ", ")
+        }
       })
     } else {
       df[[col]] <- as.character(df[[col]])

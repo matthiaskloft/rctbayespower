@@ -42,19 +42,19 @@
 #' \strong{Model Compilation:} The function compiles the brms model during creation,
 #' which may take some time but enables efficient power analysis later.
 #'
-#' \strong{Convenience Functions:} For common use cases, consider the wrapper functions that can be called via the 'predefined_model' argument in [build_model()]:
+#' \strong{Convenience Functions:} For common use cases, consider the wrapper functions that can be called via the 'model_name' argument in [build_design()]:
 #' \itemize{
 #'   \item [build_model_ancova_cont_2arms()] - 2-arm continuous ANCOVA
 #'   \item [build_model_ancova_cont_3arms()] - 3-arm continuous ANCOVA
 #' }
 #'
-#' @return An S7 object of class "rctbp_model_ancova" ready for use with
+#' @return An S7 object of class "rctbp_model" (legacy) ready for use with
 #'   [build_design()] and power analysis functions.
 #'
 #' @export
 #' @importFrom brms set_prior brm
 #' @importFrom stats gaussian contrasts<- model.matrix
-#' @seealso [build_model()], [build_design()], [build_model_ancova_cont_2arms()],
+#' @seealso [build_design()], [build_model_ancova_cont_2arms()],
 #'   [build_model_ancova_cont_3arms()]
 #'
 #' @examples

@@ -9,14 +9,13 @@
 \item{...}{Additional arguments (currently unused)}
 }
 \value{
-A list of class "rctbayespower_sim_result" containing:
+The modified S7 object of class "rctbp_power_analysis" with results
+populated in the following properties:
 \itemize{
-\item results_df: Aggregated power analysis results
-\item results_df_raw: Raw simulation results from all runs
-\item design: The design object used for analysis
-\item conditions: The condition specifications used
-\item n_sims: Number of simulations per condition
-\item elapsed_time: Total analysis runtime
+\item results_conditions: Aggregated power analysis results (data.frame)
+\item results_interim: Per-look interim results for sequential designs (data.frame)
+\item results_raw: Raw per-simulation data (data.frame)
+\item elapsed_time: Total analysis runtime (difftime)
 }
 }
 \description{

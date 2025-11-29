@@ -19,6 +19,8 @@ A list with:
 \item \code{cpu_name}: CPU processor name or NULL if unavailable
 \item \code{envname}: Name of the Python virtual environment or NULL
 \item \code{python_path}: Path to Python executable
+\item \code{python_version}: Python version string (e.g., "3.12.0")
+\item \code{pkg_versions}: Named list of package versions (bayesflow, keras, torch, numpy)
 }
 Returns NULL if BayesFlow is not available.
 }
@@ -33,6 +35,8 @@ info <- get_bf_env_info()
 if (!is.null(info)) {
   cat("Device:", info$device_name, "\n")
   cat("Environment:", info$envname, "\n")
+  cat("Python:", info$python_version, "\n")
+  cat("BayesFlow:", info$pkg_versions$bayesflow, "\n")
 }
 
 # Check specific environment

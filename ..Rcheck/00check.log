@@ -29,18 +29,14 @@ Found the following hidden files and directories:
   .git
   .github
   vignettes/.quarto
-  vignettes/articles/.quarto
 These were most likely included in error. See section 'Package
 structure' in the 'Writing R Extensions' manual.
 * checking for portable file names ... NOTE
 Found the following non-portable file paths:
-  rctbayespower/.Rproj.user/shared/notebooks/02D52AB6-01-introduction/1/s/c0wf04knuu60s/000016.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/02D52AB6-01-introduction/1/s/cctr4h3y86qzl/000011.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/02D52AB6-01-introduction/1/s/cdfzwdd6di1sa/000010.metadata
   rctbayespower/.Rproj.user/shared/notebooks/02D52AB6-01-introduction/1/s/ckw6rfgwxs6po/000012.metadata
-  rctbayespower/.Rproj.user/shared/notebooks/02D52AB6-01-introduction/1/s/clboeochvl532/000010.metadata
-  rctbayespower/.Rproj.user/shared/notebooks/02D52AB6-01-introduction/1/s/cmba1olgrzdvx/000048.metadata
-  rctbayespower/.Rproj.user/shared/notebooks/02D52AB6-01-introduction/1/s/cmba1olgrzdvx/000048.snapshot
   rctbayespower/.Rproj.user/shared/notebooks/02D52AB6-01-introduction/1/s/ctxwkj5tk2tsh/00004e.metadata
-  rctbayespower/.Rproj.user/shared/notebooks/02D52AB6-01-introduction/1/s/cupj7xf4oyb8f/000022.metadata
   rctbayespower/.Rproj.user/shared/notebooks/02D52AB6-01-introduction/1/s/cwnfbljbxv0a4/000032.metadata
   rctbayespower/.Rproj.user/shared/notebooks/02D52AB6-01-introduction/1/s/cxnr5y8edgy07/000010.metadata
   rctbayespower/.Rproj.user/shared/notebooks/02D52AB6-01-introduction/1/s/lib/crosstalk-1.2.2/css/crosstalk.min.css
@@ -60,26 +56,98 @@ Found the following non-portable file paths:
   rctbayespower/.Rproj.user/shared/notebooks/02D52AB6-01-introduction/1/s/lib/typedarray-0.1/typedarray.min.js
   rctbayespower/.Rproj.user/shared/notebooks/34F51C84-02-prior-specification/1/0C02CFDCbabef74e/chunks.json
   rctbayespower/.Rproj.user/shared/notebooks/8B91AF45-99-model-validation/1/0C02CFDCbabef74e/chunks.json
+  rctbayespower/.Rproj.user/shared/notebooks/A8F4B08F-04-bayesflow/1/0C02CFDC5c6ca60d/cycbusbn692s0/00000f.csv
+  rctbayespower/.Rproj.user/shared/notebooks/A8F4B08F-04-bayesflow/1/0C02CFDC5c6ca60d/cycbusbn692s0/execution.lock
+  rctbayespower/.Rproj.user/shared/notebooks/A8F4B08F-04-bayesflow/1/0C02CFDC5c6ca60d/cycbusbn692s0/migration.target
+  rctbayespower/.Rproj.user/shared/notebooks/A8F4B08F-04-bayesflow/1/0C02CFDC5c6ca60d/cycbusbn692s0_t/execution.lock
+  rctbayespower/.Rproj.user/shared/notebooks/A8F4B08F-04-bayesflow/1/0C02CFDC5c6ca60d/cycbusbn692s0_t/migration.target
+  rctbayespower/.Rproj.user/shared/notebooks/A8F4B08F-04-bayesflow/1/s/lib/crosstalk-1.2.2/css/crosstalk.min.css
+  rctbayespower/.Rproj.user/shared/notebooks/A8F4B08F-04-bayesflow/1/s/lib/crosstalk-1.2.2/js/crosstalk.js
+  rctbayespower/.Rproj.user/shared/notebooks/A8F4B08F-04-bayesflow/1/s/lib/crosstalk-1.2.2/js/crosstalk.js.map
+  rctbayespower/.Rproj.user/shared/notebooks/A8F4B08F-04-bayesflow/1/s/lib/crosstalk-1.2.2/js/crosstalk.min.js
+  rctbayespower/.Rproj.user/shared/notebooks/A8F4B08F-04-bayesflow/1/s/lib/crosstalk-1.2.2/js/crosstalk.min.js.map
+  rctbayespower/.Rproj.user/shared/notebooks/A8F4B08F-04-bayesflow/1/s/lib/crosstalk-1.2.2/scss/crosstalk.scss
+  rctbayespower/.Rproj.user/shared/notebooks/A8F4B08F-04-bayesflow/1/s/lib/htmltools-fill-0.5.8.1/fill.css
+  rctbayespower/.Rproj.user/shared/notebooks/A8F4B08F-04-bayesflow/1/s/lib/htmlwidgets-1.6.4/htmlwidgets.js
+  rctbayespower/.Rproj.user/shared/notebooks/A8F4B08F-04-bayesflow/1/s/lib/jquery-3.5.1/jquery-AUTHORS.txt
+  rctbayespower/.Rproj.user/shared/notebooks/A8F4B08F-04-bayesflow/1/s/lib/plotly-binding-4.11.0/plotly.js
+  rctbayespower/.Rproj.user/shared/notebooks/A8F4B08F-04-bayesflow/1/s/lib/plotly-htmlwidgets-css-2.11.1/plotly-htmlwidgets.css
+  rctbayespower/.Rproj.user/shared/notebooks/A8F4B08F-04-bayesflow/1/s/lib/plotly-main-2.11.1/plotly-latest.min.js
+  rctbayespower/.Rproj.user/shared/notebooks/A8F4B08F-04-bayesflow/1/s/lib/typedarray-0.1/typedarray.min.js
+  rctbayespower/.Rproj.user/shared/notebooks/AB74AB20-05-bf_vs_brms_gpu/1/s/c9uu10fhkktng/000010.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/AB74AB20-05-bf_vs_brms_gpu/1/s/cjsadv549wqzc/000010.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/AB74AB20-05-bf_vs_brms_gpu/1/s/cmegs7b704pux/00001e.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/AB74AB20-05-bf_vs_brms_gpu/1/s/cut5lbp3y1pn4/000027.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/AB74AB20-05-bf_vs_brms_gpu/1/s/cut5lbp3y1pn4/000027.snapshot
+  rctbayespower/.Rproj.user/shared/notebooks/AB74AB20-05-bf_vs_brms_gpu/1/s/cyehknhw6b71s/000010.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/AB74AB20-05-bf_vs_brms_gpu/1/s/czqwd2sswkvv9/000010.metadata
   rctbayespower/.Rproj.user/shared/notebooks/E174AE75-03-algorithm-performance/1/0C02CFDCbabef74e/chunks.json
-  rctbayespower/.Rproj.user/shared/notebooks/ED3A19A3-04-bayesflow-backend/1/0C02CFDCca76367c/chunks.json
-  rctbayespower/.Rproj.user/shared/notebooks/ED3A19A3-04-bayesflow-backend/1/s/c4ee7pnudyy5k/00000f.csv
-  rctbayespower/.Rproj.user/shared/notebooks/ED3A19A3-04-bayesflow-backend/1/s/cgseianfq3lkv/00000f.csv
-  rctbayespower/.Rproj.user/shared/notebooks/ED3A19A3-04-bayesflow-backend/1/s/chztxjdwhe0bj/00000f.csv
-  rctbayespower/.Rproj.user/shared/notebooks/ED3A19A3-04-bayesflow-backend/1/s/cniak4kp9jnl7/000015.csv
-  rctbayespower/.Rproj.user/shared/notebooks/ED3A19A3-04-bayesflow-backend/1/s/csg8t1mcsaehx/00000f.csv
-  rctbayespower/.Rproj.user/shared/notebooks/ED3A19A3-04-bayesflow-backend/1/s/cyc0cl3owmbjk/00000f.csv
-  rctbayespower/vignettes/.quarto/_freeze/articles/02-prior-specification/libs/quarto-html/light-border.css
-  rctbayespower/vignettes/.quarto/_freeze/articles/02-prior-specification/libs/quarto-html/popper.min.js
-  rctbayespower/vignettes/.quarto/_freeze/articles/02-prior-specification/libs/quarto-html/tippy.umd.min.js
-  rctbayespower/vignettes/.quarto/_freeze/articles/03-algorithm-performance/libs/quarto-html/light-border.css
-  rctbayespower/vignettes/.quarto/_freeze/articles/03-algorithm-performance/libs/quarto-html/popper.min.js
-  rctbayespower/vignettes/.quarto/_freeze/articles/03-algorithm-performance/libs/quarto-html/tippy.umd.min.js
-  rctbayespower/vignettes/.quarto/_freeze/articles/99-model-validation/libs/quarto-html/light-border.css
-  rctbayespower/vignettes/.quarto/_freeze/articles/99-model-validation/libs/quarto-html/tippy.umd.min.js
+  rctbayespower/vignettes/.quarto/_freeze/articles/04-bayesflow-backend_cpu_1_core/execute-results/html.json
   rctbayespower/.Rproj.user/shared/notebooks/02D52AB6-01-introduction/1/s/lib/plotly-htmlwidgets-css-2.11.1
+  rctbayespower/.Rproj.user/shared/notebooks/A8F4B08F-04-bayesflow/1/s/lib/plotly-htmlwidgets-css-2.11.1
 
 Tarballs are only required to store paths of up to 100 bytes and cannot
 store those of more than 256 bytes, with restrictions including to 100
 bytes for the final component.
 See section 'Package structure' in the 'Writing R Extensions' manual.
-* checking whether package 'rctbayespower' can be installed ...
+* checking whether package 'rctbayespower' can be installed ... OK
+* checking installed package size ... OK
+* checking package directory ... OK
+* checking DESCRIPTION meta-information ... NOTE
+Checking should be performed on sources prepared by 'R CMD build'.
+* checking top-level files ... OK
+* checking for left-over files ... OK
+* checking index information ... OK
+* checking package subdirectories ... WARNING
+Found the following directories with names of check directories:
+  ./..Rcheck
+  ./rctbayespower.Rcheck
+Most likely, these were included erroneously.
+Subdirectory 'data' contains no data sets.
+* checking code files for non-ASCII characters ... OK
+* checking R files for syntax errors ... OK
+* checking whether the package can be loaded ... OK
+* checking whether the package can be loaded with stated dependencies ... OK
+* checking whether the package can be unloaded cleanly ... OK
+* checking whether the namespace can be loaded with stated dependencies ... OK
+* checking whether the namespace can be unloaded cleanly ... OK
+* checking loading without being on the library search path ... OK
+* checking whether startup messages can be suppressed ... OK
+* checking dependencies in R code ... OK
+* checking S3 generic/method consistency ... OK
+* checking replacement functions ... OK
+* checking foreign function calls ... OK
+* checking R code for possible problems ... OK
+* checking Rd files ... OK
+* checking Rd metadata ... OK
+* checking Rd cross-references ... OK
+* checking for missing documentation entries ... OK
+* checking for code/documentation mismatches ... OK
+* checking Rd \usage sections ... OK
+* checking Rd contents ... OK
+* checking for unstated dependencies in examples ... OK
+* checking contents of 'data' directory ... OK
+* checking data for non-ASCII characters ... OK
+* checking LazyData ... OK
+* checking data for ASCII and uncompressed saves ... OK
+* checking line endings in Makefiles ... OK
+* checking for GNU extensions in Makefiles ... OK
+* checking include directives in Makefiles ... OK
+* checking files in 'vignettes' ... WARNING
+Files in the 'vignettes' directory but no files in 'inst/doc':
+  '_quarto.yaml' 'articles/01-introduction.qmd'
+  'articles/02-prior-specification.qmd'
+  'articles/03-algorithm-performance.qmd' 'articles/04-bayesflow.qmd'
+  'articles/05-bf_vs_brms_cpu_1_core.qmd'
+  'articles/05-bf_vs_brms_gpu.html' 'articles/05-bf_vs_brms_gpu.qmd'
+  'articles/99-model-validation.qmd' 'rebuild.R'
+Package has no Sweave vignette sources and no VignetteBuilder field.
+* checking examples ... OK
+* checking for unstated dependencies in 'tests' ... OK
+* checking tests ... SKIPPED
+* checking package vignettes ... NOTE
+Package has 'vignettes' subdirectory but apparently no vignettes.
+Perhaps the 'VignetteBuilder' information is missing from the
+DESCRIPTION file?
+* DONE
+Status: 2 WARNINGs, 5 NOTEs

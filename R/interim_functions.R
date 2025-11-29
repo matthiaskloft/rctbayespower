@@ -41,7 +41,7 @@
 #' \dontrun{
 #' design <- build_design(
 #'   model = my_model,
-#'   target_params = "b_armtreat_1",
+#'   target_params = "b_arm2",
 #'   p_sig_scs = 0.975,
 #'   p_sig_ftl = 0.5,
 #'   analysis_at = c(50, 100, 150),
@@ -87,7 +87,7 @@ interim_continue <- function() {
 #' # Stop if P(futility) > 0.95
 #' design <- build_design(
 #'   model = my_model,
-#'   target_params = "b_armtreat_1",
+#'   target_params = "b_arm2",
 #'   p_sig_scs = 0.975,
 #'   p_sig_ftl = 0.5,
 #'   analysis_at = c(50, 100),
@@ -153,7 +153,7 @@ interim_futility_only <- function(futility_threshold = 0.90) {
 #' # Stop for overwhelming success or clear futility
 #' design <- build_design(
 #'   model = my_model,
-#'   target_params = "b_armtreat_1",
+#'   target_params = "b_arm2",
 #'   p_sig_scs = 0.975,
 #'   p_sig_ftl = 0.5,
 #'   analysis_at = c(50, 100),
@@ -195,7 +195,7 @@ interim_success_futility <- function(success_threshold = 0.99,
         "Conflicting stopping decisions: both success and futility criteria met",
         "x" = "At n = {current_n}: P(success) = {round(max_pr_scs, 3)} >= {success_threshold}, P(futility) = {round(max_pr_ftl, 3)} >= {futility_threshold}",
         "i" = "This indicates misconfigured decision thresholds. Consider:",
-        "*" = "Widening the gap between 'thresholds_success' and 'thresholds_futility' in conditions",
+        "*" = "Widening the gap between 'thresh_scs' and 'thresh_ftl' in conditions",
         "*" = "Increasing 'p_sig_scs' and/or 'p_sig_ftl' to require stronger evidence",
         "*" = "Reviewing priors to ensure posteriors aren't unreasonably wide"
       ))
