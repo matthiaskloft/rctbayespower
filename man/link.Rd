@@ -39,7 +39,7 @@ build_conditions(
     ),
     b_arm_treat = c(0, 0.3)
   ),
-  constant = list(p_sig_scs = 0.975, p_sig_ftl = 0.5)
+  constant = list(thr_dec_eff = 0.975, thr_dec_fut = 0.5)
 )
 # Creates 4 conditions: 2 (n_total × analysis_at linked) × 2 b_arm_treat
 }

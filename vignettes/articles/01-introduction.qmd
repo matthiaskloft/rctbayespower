@@ -97,20 +97,20 @@ conditions <- build_conditions(
       # two effect sizes
       b_arm_treat = c(0, 0.3),
       # corresponding thresholds for success and futility
-      p_sig_scs = c(0.95, boundary_pocock(alpha = .05)),
-      p_sig_ftl = c(0.5, boundary_pocock(alpha = .5))
+      thr_dec_eff = c(0.95, boundary_pocock(alpha = .05)),
+      thr_dec_fut = c(0.5, boundary_pocock(alpha = .5))
     )
   ),
   constant = list(
     # baseline effect
     b_covariate = 0,
-    thresh_scs = 0.1,
-    thresh_ftl = 0
+    thr_fx_eff = 0.1,
+    thr_fx_fut = 0
   )
 )
 print(conditions, n = 100)
-conditions@condition_arguments
-conditions@conditions_grid
+conditions@params_by_cond
+conditions@grid
 ```
 
 ## Run Power Analysis
@@ -120,7 +120,7 @@ Run the analysis using the `power_analysis` function. This will run the model fo
 power <- power_analysis(
   conditions = conditions,
   n_cores = n_cores,
-  n_sims = 1,
+  n_sims = 10,
   verbosity = 2,
   brms_args = list(
     chains = 1,
@@ -166,7 +166,7 @@ plot(
 
 ```{r}
 res <- power@results_interim
-power2 <- resummarize_boundaries(power,p_sig_ftl = boundary_obf(), p_sig_scs = boundary_obf())
+power2 <- resummarize_boundaries(power, thr_dec_fut = boundary_obf(), thr_dec_eff = boundary_obf())
 res2 <- power2@results_interim
 ```
 
@@ -182,14 +182,14 @@ power@results_summ |>
   select(
     n_total,
     b_arm_treat,
-    pr_scs,
-    se_pr_scs,
-    pwr_scs,
-    se_pwr_scs,
-    pr_ftl,
-    se_pr_ftl,
-    pwr_ftl,
-    se_pwr_ftl
+    pr_eff,
+    se_pr_eff,
+    pwr_eff,
+    se_pwr_eff,
+    pr_fut,
+    se_pr_fut,
+    pwr_fut,
+    se_pwr_fut
   ) |>
   dplyr::arrange(desc(b_arm_treat)) |>
   kableExtra::kable(digits = 3, format = "html")
@@ -206,14 +206,14 @@ power@results_summ |>
   select(
     n_total,
     b_arm_treat,
-    pr_scs,
-    se_pr_scs,
-    pwr_scs,
-    se_pwr_scs,
-    pwr_ftl,
-    se_pwr_ftl,
-    pr_ftl, 
-    prob_futility_se 
+    pr_eff,
+    se_pr_eff,
+    pwr_eff,
+    se_pwr_eff,
+    pwr_fut,
+    se_pwr_fut,
+    pr_fut,
+    se_pr_fut
   ) |>
   dplyr::arrange(desc(b_arm_treat)) |> 
   kableExtra::kable(digits = 3, 
@@ -226,7 +226,7 @@ power@results_summ |>
 #| code-fold: true
 
 
-n_runs <- nrow(power@conditions@conditions_grid) * power@n_sims
+n_runs <- nrow(power@conditions@grid) * power@n_sims
 cat("Total run time:", round(power@elapsed_time,1), "minutes for", n_runs, "total simulation repetitions using", power@n_cores, "cores.\n")
 ```
 

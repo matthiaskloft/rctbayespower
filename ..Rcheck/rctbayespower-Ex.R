@@ -192,8 +192,8 @@ flush(stderr()); flush(stdout())
 ##D   design = my_design,
 ##D   crossed = list(n_total = c(100, 200), b_arm_treat = c(0.3, 0.5)),
 ##D   constant = list(
-##D     p_sig_scs = 0.975, p_sig_ftl = 0.5,
-##D     thresh_scs = 0.2, thresh_ftl = 0
+##D     thr_dec_eff = 0.975, thr_dec_fut = 0.5,
+##D     thr_fx_eff = 0.2, thr_fx_fut = 0
 ##D   )
 ##D )
 ##D 
@@ -204,7 +204,7 @@ flush(stderr()); flush(stdout())
 ##D     link(n_total = c(80, 160), analysis_at = list(c(40,80), c(80,160))),
 ##D     b_arm_treat = c(0, 0.3)
 ##D   ),
-##D   constant = list(p_sig_scs = 0.975, p_sig_ftl = 0.5)
+##D   constant = list(thr_dec_eff = 0.975, thr_dec_fut = 0.5)
 ##D )
 ## End(Not run)
 
@@ -767,7 +767,7 @@ flush(stderr()); flush(stdout())
 ##D     ),
 ##D     b_arm_treat = c(0, 0.3)
 ##D   ),
-##D   constant = list(p_sig_scs = 0.975, p_sig_ftl = 0.5)
+##D   constant = list(thr_dec_eff = 0.975, thr_dec_fut = 0.5)
 ##D )
 ##D # Creates 4 conditions: 2 (n_total × analysis_at linked) × 2 b_arm_treat
 ## End(Not run)
@@ -1046,8 +1046,8 @@ flush(stderr()); flush(stdout())
 ##D # Re-analyze with O'Brien-Fleming-style boundaries
 ##D result_obf <- resummarize_boundaries(
 ##D   result,
-##D   p_sig_scs = boundary_obf(0.975),
-##D   p_sig_ftl = boundary_linear(0.70, 0.90)
+##D   thr_dec_eff = boundary_obf(0.975),
+##D   thr_dec_fut = boundary_linear(0.70, 0.90)
 ##D )
 ##D 
 ##D # Compare results

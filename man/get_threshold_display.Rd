@@ -9,13 +9,13 @@ get_threshold_display(conditions, param_name)
 \arguments{
 \item{conditions}{An rctbp_conditions object}
 
-\item{param_name}{Name of the threshold parameter (e.g., "p_sig_scs")}
+\item{param_name}{Name of the threshold parameter (e.g., "thr_dec_eff")}
 }
 \value{
 Character string describing the threshold value(s)
 }
 \description{
 Extracts a threshold parameter value from conditions and formats for display.
-Checks constant, crossed, and conditions_grid in order.
+Checks constant, crossed, and grid in order.
 }
 \keyword{internal}

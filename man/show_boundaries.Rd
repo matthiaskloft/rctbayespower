@@ -11,7 +11,7 @@ Invisibly returns a character vector of boundary function names.
 }
 \description{
 Displays information about the available boundary functions for sequential
-designs. These functions can be used with \code{p_sig_scs} and \code{p_sig_ftl} in
+designs. These functions can be used with \code{thr_dec_eff} and \code{thr_dec_fut} in
 \code{\link[=build_conditions]{build_conditions()}} to create look-dependent stopping thresholds.
 }
 \examples{

@@ -30,7 +30,7 @@ is only available for sequential designs with interim analyses.
 The report includes a table with per-condition statistics:
 \itemize{
 \item Sample sizes: \code{n_total}, \code{n_planned}, \code{n_mn}, \code{n_mdn}, \code{n_mode}
-\item Stopping proportions: \code{prop_stp_early}, \code{prop_stp_scs}, \code{prop_stp_ftl}
+\item Stopping proportions: \code{prop_stp_early}, \code{prop_stp_eff}, \code{prop_stp_fut}
 \item Modal stopping: \code{prop_at_mode} (proportion stopped at modal N)
 \item No decision rate: \code{prop_no_dec}
 }

@@ -104,10 +104,10 @@ conditions <- build_conditions(
     b_covariate = 0.3,
     sigma = 1,
     # Decision parameters
-    p_sig_scs = 0.975,      # Probability threshold for success
-    p_sig_ftl = 0.5,        # Probability threshold for futility
-    thresh_scs = 0.2,       # Effect size threshold for success
-    thresh_ftl = 0          # Effect size threshold for futility
+    thr_dec_eff = 0.975,    # Probability threshold for efficacy
+    thr_dec_fut = 0.5,      # Probability threshold for futility
+    thr_fx_eff = 0.2,       # Effect size threshold for efficacy
+    thr_fx_fut = 0          # Effect size threshold for futility
   )
 )
 result <- power_analysis(conditions = conditions, n_sims = 100, n_cores = 4)
@@ -199,10 +199,10 @@ conditions <- build_conditions(
     b_arm_treat = 0.5,
     p_alloc = list(c(0.5, 0.5)),
     intercept = 0, b_covariate = 0.3, sigma = 1,
-    thresh_scs = 0.2, thresh_ftl = 0,
+    thr_fx_eff = 0.2, thr_fx_fut = 0,
     # Sequential analysis settings (Bayesian: use threshold parameter)
-    p_sig_scs = boundary_obf(threshold = 0.95), # OBF shape ending at 0.95
-    p_sig_ftl = boundary_linear(0.30, 0.50)     # Linear from 0.3 to 0.5
+    thr_dec_eff = boundary_obf(threshold = 0.95), # OBF shape ending at 0.95
+    thr_dec_fut = boundary_linear(0.30, 0.50)     # Linear from 0.3 to 0.5
   )
 )
 
@@ -227,8 +227,8 @@ comparison <- compare_boundaries(result, list(
 
 # Re-analyze with new boundaries (returns modified power_analysis object)
 result_obf <- resummarize_boundaries(result,
-  p_sig_scs = boundary_obf(threshold = 0.95),
-  p_sig_ftl = boundary_linear(0.30, 0.50)
+  thr_dec_eff = boundary_obf(threshold = 0.95),
+  thr_dec_fut = boundary_linear(0.30, 0.50)
 )
 ```
 
@@ -350,15 +350,16 @@ See [`dev/11_code_consistency_review.md`](dev/11_code_consistency_review.md) for
 | Element | Convention | Examples |
 |---------|------------|----------|
 | S7 classes | `rctbp_*` prefix | `rctbp_design`, `rctbp_conditions` |
-| Power columns | `pwr_*` prefix | `pwr_scs`, `pwr_ftl` |
-| Probability columns | `pr_*` prefix | `pr_scs`, `pr_ftl` |
-| Decision columns | `dec_*` prefix | `dec_scs`, `dec_ftl` |
-| ROPE threshold cols | `thresh_*` or `thr_*` | `thresh_scs`, `thresh_ftl`, `thr_scs` |
-| Standard error cols | `se_*` prefix | `se_pwr_scs`, `se_pr_ftl` |
-| Success suffix | `_scs` | `pwr_scs`, `pr_scs`, `thresh_scs` |
-| Futility suffix | `_ftl` | `pwr_ftl`, `pr_ftl`, `thresh_ftl` |
+| Power columns | `pwr_*` prefix | `pwr_eff`, `pwr_fut` |
+| Probability columns | `pr_*` prefix | `pr_eff`, `pr_fut` |
+| Decision columns | `dec_*` prefix | `dec_eff`, `dec_fut` |
+| Effect threshold params | `thr_fx_*` | `thr_fx_eff`, `thr_fx_fut` |
+| Decision threshold params | `thr_dec_*` | `thr_dec_eff`, `thr_dec_fut` |
+| Standard error cols | `se_*` prefix | `se_pwr_eff`, `se_pr_fut` |
+| Efficacy suffix | `_eff` | `pwr_eff`, `pr_eff`, `thr_fx_eff` |
+| Futility suffix | `_fut` | `pwr_fut`, `pr_fut`, `thr_fx_fut` |
 | Functions | snake_case | `build_design`, `power_analysis` |
-| Parameters | snake_case | `n_total`, `p_sig_scs` |
+| Parameters | snake_case | `n_total`, `thr_dec_eff` |
 
 #### Error Handling Pattern
 ```r
@@ -410,12 +411,12 @@ rctbp_classname <- S7::new_class(
 **Example Fix**:
 ```r
 # BAD: Code has default = 0.975 but docs say 0.95
-#' @param p_sig_scs Probability threshold for success (default 0.95)
-my_function <- function(p_sig_scs = 0.975) { ... }
+#' @param thr_dec_eff Probability threshold for efficacy (default 0.95)
+my_function <- function(thr_dec_eff = 0.975) { ... }
 
 # GOOD: Documentation matches code
-#' @param p_sig_scs Probability threshold for success (default 0.975)
-my_function <- function(p_sig_scs = 0.975) { ... }
+#' @param thr_dec_eff Probability threshold for efficacy (default 0.975)
+my_function <- function(thr_dec_eff = 0.975) { ... }
 ```
 
 ### Documentation Conventions

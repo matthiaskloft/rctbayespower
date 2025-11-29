@@ -9,7 +9,7 @@ get_original_threshold(conditions, param_name)
 \arguments{
 \item{conditions}{An rctbp_conditions object}
 
-\item{param_name}{Name of the threshold parameter (e.g., "p_sig_scs")}
+\item{param_name}{Name of the threshold parameter (e.g., "thr_dec_eff")}
 }
 \value{
 The original threshold value (numeric, function, or NULL if not found)

@@ -511,10 +511,10 @@ compute_convergence_bf <- function(draws_mat) {
 #'
 #' @param draws_mat Matrix of posterior draws (n_sims x n_post_draws)
 #' @param target_param Parameter name (single string)
-#' @param thr_scs Success threshold (numeric)
-#' @param thr_ftl Futility threshold (numeric)
-#' @param p_sig_scs Success probability threshold
-#' @param p_sig_ftl Futility probability threshold
+#' @param thr_fx_eff Efficacy threshold (numeric)
+#' @param thr_fx_fut Futility threshold (numeric)
+#' @param thr_dec_eff Efficacy probability threshold
+#' @param thr_dec_fut Futility probability threshold
 #' @param id_iter Vector of iteration IDs (length = n_sims)
 #' @param id_cond Vector of condition IDs (length = n_sims)
 #' @param id_look Analysis look ID (integer)
@@ -526,7 +526,7 @@ compute_convergence_bf <- function(draws_mat) {
 #' @return Data frame with package output schema (n_sims rows)
 #' @keywords internal
 summarize_post_bf <- function(draws_mat, target_param,
-                               thr_scs, thr_ftl, p_sig_scs, p_sig_ftl,
+                               thr_fx_eff, thr_fx_fut, thr_dec_eff, thr_dec_fut,
                                id_iter, id_cond, id_look = 1L, n_analyzed,
                                skip_convergence = TRUE) {
 
@@ -541,10 +541,10 @@ summarize_post_bf <- function(draws_mat, target_param,
   n_sims <- nrow(draws_mat)
 
   # FAST vectorized operations using matrixStats
-  # Probability of exceeding success threshold
-  pr_scs <- rowMeans(draws_mat > thr_scs)
+  # Probability of exceeding efficacy threshold
+  pr_eff <- rowMeans(draws_mat > thr_fx_eff)
   # Probability below futility threshold
-  pr_ftl <- rowMeans(draws_mat < thr_ftl)
+  pr_fut <- rowMeans(draws_mat < thr_fx_fut)
 
   # Compute convergence diagnostics (optional - less informative for NPE)
   if (skip_convergence) {
@@ -560,14 +560,14 @@ summarize_post_bf <- function(draws_mat, target_param,
 
   data.frame(
     par_name = rep(target_param, n_sims),
-    thr_scs = rep(thr_scs, n_sims),
-    thr_ftl = rep(thr_ftl, n_sims),
-    p_sig_scs = rep(p_sig_scs, n_sims),
-    p_sig_ftl = rep(p_sig_ftl, n_sims),
-    pr_scs = pr_scs,
-    pr_ftl = pr_ftl,
-    dec_scs = as.integer(pr_scs >= p_sig_scs),
-    dec_ftl = as.integer(pr_ftl >= p_sig_ftl),
+    thr_fx_eff = rep(thr_fx_eff, n_sims),
+    thr_fx_fut = rep(thr_fx_fut, n_sims),
+    thr_dec_eff = rep(thr_dec_eff, n_sims),
+    thr_dec_fut = rep(thr_dec_fut, n_sims),
+    pr_eff = pr_eff,
+    pr_fut = pr_fut,
+    dec_eff = as.integer(pr_eff >= thr_dec_eff),
+    dec_fut = as.integer(pr_fut >= thr_dec_fut),
     post_med = matrixStats::rowMedians(draws_mat),
     post_mad = matrixStats::rowMads(draws_mat),
     post_mn = rowMeans(draws_mat),
@@ -1073,18 +1073,18 @@ estimate_batch_bf <- function(data_batch, bf_model, backend_args, target_params)
 #' @param model BayesFlow/Keras model (Python object)
 #' @param backend_args List of BayesFlow-specific arguments
 #' @param target_params Character vector of parameter names
-#' @param thresh_scs Numeric vector of success thresholds (ROPE)
-#' @param thresh_ftl Numeric vector of futility thresholds (ROPE)
-#' @param p_sig_scs Probability threshold for success
-#' @param p_sig_ftl Probability threshold for futility
+#' @param thr_fx_eff Numeric vector of efficacy thresholds (ROPE)
+#' @param thr_fx_fut Numeric vector of futility thresholds (ROPE)
+#' @param thr_dec_eff Probability threshold for efficacy
+#' @param thr_dec_fut Probability threshold for futility
 #' @param id_iter Iteration identifier (scalar or vector for batch)
 #' @param id_cond Condition identifier (scalar or vector for batch)
 #'
 #' @return Data frame with results (1 row per simulation in batch)
 #' @keywords internal
 estimate_single_bf <- function(data, model, backend_args, target_params,
-                                thresh_scs, thresh_ftl,
-                                p_sig_scs, p_sig_ftl, id_iter, id_cond) {
+                                thr_fx_eff, thr_fx_fut,
+                                thr_dec_eff, thr_dec_fut, id_iter, id_cond) {
 
   # Detect data format:
   # 1. R data.frame (single sim, rows=observations)
@@ -1163,17 +1163,17 @@ estimate_single_bf <- function(data, model, backend_args, target_params,
   }
 
   # Resolve probability thresholds (info_frac = 1 for single-look designs)
-  current_p_sig_scs <- resolve_threshold(p_sig_scs, 1)
-  current_p_sig_ftl <- resolve_threshold(p_sig_ftl, 1)
+  current_thr_dec_eff <- resolve_threshold(thr_dec_eff, 1)
+  current_thr_dec_fut <- resolve_threshold(thr_dec_fut, 1)
 
   # Fast direct summarization (NOT through compute_measures)
   result <- summarize_post_bf(
     draws_mat = draws_matrix,
     target_param = target_params[1],  # Single param for now
-    thr_scs = thresh_scs[1],
-    thr_ftl = thresh_ftl[1],
-    p_sig_scs = current_p_sig_scs,
-    p_sig_ftl = current_p_sig_ftl,
+    thr_fx_eff = thr_fx_eff[1],
+    thr_fx_fut = thr_fx_fut[1],
+    thr_dec_eff = current_thr_dec_eff,
+    thr_dec_fut = current_thr_dec_fut,
     id_iter = id_iter,
     id_cond = id_cond,
     id_look = 0L,
@@ -1199,10 +1199,10 @@ estimate_single_bf <- function(data, model, backend_args, target_params,
 #' @param model BayesFlow/Keras model (Python object)
 #' @param backend_args List of BayesFlow-specific arguments
 #' @param target_params Character vector of parameter names
-#' @param thresh_scs Numeric vector of success thresholds (ROPE)
-#' @param thresh_ftl Numeric vector of futility thresholds (ROPE)
-#' @param p_sig_scs Probability threshold for success (numeric or pre-resolved vector)
-#' @param p_sig_ftl Probability threshold for futility (numeric or pre-resolved vector)
+#' @param thr_fx_eff Numeric vector of efficacy thresholds (ROPE)
+#' @param thr_fx_fut Numeric vector of futility thresholds (ROPE)
+#' @param thr_dec_eff Probability threshold for efficacy (numeric or pre-resolved vector)
+#' @param thr_dec_fut Probability threshold for futility (numeric or pre-resolved vector)
 #' @param analysis_at Vector of sample sizes for all analyses (including final)
 #' @param interim_function Function to make interim decisions (optional)
 #' @param id_iter Vector of iteration identifiers (one per sim in batch)
@@ -1211,8 +1211,8 @@ estimate_single_bf <- function(data, model, backend_args, target_params,
 #' @return Data frame with (batch_size x n_analyses) rows
 #' @keywords internal
 estimate_sequential_bf <- function(full_data_list, model, backend_args, target_params,
-                                    thresh_scs, thresh_ftl,
-                                    p_sig_scs, p_sig_ftl, analysis_at,
+                                    thr_fx_eff, thr_fx_fut,
+                                    thr_dec_eff, thr_dec_fut, analysis_at,
                                     interim_function, id_iter, id_cond) {
 
   batch_size <- length(full_data_list)
@@ -1230,8 +1230,8 @@ estimate_sequential_bf <- function(full_data_list, model, backend_args, target_p
     info_frac <- current_n / n_total
 
     # Resolve probability thresholds for this analysis
-    current_p_sig_scs <- resolve_threshold(p_sig_scs, info_frac)
-    current_p_sig_ftl <- resolve_threshold(p_sig_ftl, info_frac)
+    current_thr_dec_eff <- resolve_threshold(thr_dec_eff, info_frac)
+    current_thr_dec_fut <- resolve_threshold(thr_dec_fut, info_frac)
 
     # Identify active (non-stopped) simulations
     active_idx <- which(!stopped)
@@ -1270,10 +1270,10 @@ estimate_sequential_bf <- function(full_data_list, model, backend_args, target_p
     batch_results <- summarize_post_bf(
       draws_mat = draws_matrix,
       target_param = target_params[1],
-      thr_scs = thresh_scs[1],
-      thr_ftl = thresh_ftl[1],
-      p_sig_scs = current_p_sig_scs,
-      p_sig_ftl = current_p_sig_ftl,
+      thr_fx_eff = thr_fx_eff[1],
+      thr_fx_fut = thr_fx_fut[1],
+      thr_dec_eff = current_thr_dec_eff,
+      thr_dec_fut = current_thr_dec_fut,
       id_iter = id_iter[active_idx],
       id_cond = id_cond[active_idx],
       id_look = id_analysis,
@@ -1284,16 +1284,16 @@ estimate_sequential_bf <- function(full_data_list, model, backend_args, target_p
     # Update stopping state (if not final)
     if (!is_final) {
       # Find newly stopped simulations
-      new_stops_scs <- which(batch_results$dec_scs == 1)
-      new_stops_ftl <- which(batch_results$dec_ftl == 1 & batch_results$dec_scs == 0)
+      new_stops_eff <- which(batch_results$dec_eff == 1)
+      new_stops_fut <- which(batch_results$dec_fut == 1 & batch_results$dec_eff == 0)
 
-      if (length(new_stops_scs) > 0) {
-        stopped[active_idx[new_stops_scs]] <- TRUE
-        stop_reason[active_idx[new_stops_scs]] <- "stop_success"
+      if (length(new_stops_eff) > 0) {
+        stopped[active_idx[new_stops_eff]] <- TRUE
+        stop_reason[active_idx[new_stops_eff]] <- "stop_efficacy"
       }
-      if (length(new_stops_ftl) > 0) {
-        stopped[active_idx[new_stops_ftl]] <- TRUE
-        stop_reason[active_idx[new_stops_ftl]] <- "stop_futility"
+      if (length(new_stops_fut) > 0) {
+        stopped[active_idx[new_stops_fut]] <- TRUE
+        stop_reason[active_idx[new_stops_fut]] <- "stop_futility"
       }
 
       # Update batch_results with stopping information

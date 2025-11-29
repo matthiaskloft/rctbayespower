@@ -22,7 +22,7 @@ create_heatmap_plot(
 
 \item{design}{Design object}
 
-\item{conditions}{Conditions object with threshold values (p_sig_scs, p_sig_ftl)}
+\item{conditions}{Conditions object with threshold values (thr_dec_eff, thr_dec_fut)}
 
 \item{analysis_type}{Must be "both" for heatmap}
 

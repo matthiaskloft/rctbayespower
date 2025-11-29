@@ -380,14 +380,14 @@ S7::method(run, rctbp_power_analysis) <- function(x, ...) {
   design <- x@conditions@design
   # NOTE: After API merge, model properties are directly on design (not design@model@*)
   backend <- design@backend
-  n_conditions <- nrow(x@conditions@conditions_grid)
+  n_conditions <- nrow(x@conditions@grid)
   total_work_units <- x@n_sims * n_conditions
 
  # Calculate total model fits (including interim analyses)
   # analysis_at is now in conditions (can vary per condition)
   # Check first condition's decision_args as representative
   n_analyses <- 1L
-  first_decision_args <- x@conditions@condition_arguments[[1]]$decision_args
+  first_decision_args <- x@conditions@params_by_cond[[1]]$decision_args
   if (!is.null(first_decision_args$analysis_at)) {
     n_analyses <- length(first_decision_args$analysis_at)
   }
@@ -606,7 +606,7 @@ S7::method(run, rctbp_power_analysis) <- function(x, ...) {
       list(
         id_cond = id_cond,
         id_iter = id_iter,
-        condition_args = conditions@condition_arguments[[id_cond]]
+        condition_args = conditions@params_by_cond[[id_cond]]
       )
     })
   })
@@ -1029,21 +1029,21 @@ S7::method(run, rctbp_power_analysis) <- function(x, ...) {
     # Sequential analysis results
     # results_interim = per-look metrics joined with conditions
     results_interim_df <- dplyr::full_join(
-      conditions@conditions_grid,
+      conditions@grid,
       results_summary$by_look,
       by = "id_cond"
     )
 
     # results_conditions = overall stopping stats joined with conditions
     results_conditions_df <- dplyr::full_join(
-      conditions@conditions_grid,
+      conditions@grid,
       results_summary$overall,
       by = "id_cond"
     )
   } else {
     # Standard single-look results
     results_conditions_df <- dplyr::full_join(
-      conditions@conditions_grid,
+      conditions@grid,
       results_summary,
       by = "id_cond"
     )
@@ -1058,23 +1058,23 @@ S7::method(run, rctbp_power_analysis) <- function(x, ...) {
   if (should_show(1)) {
     cli::cli_alert_success("Analysis complete in {format_duration(as.numeric(elapsed_time))}")
 
-    # Show power range (check both results_conditions and results_interim for pwr_scs)
-    pwr_source <- if ("pwr_scs" %in% names(results_conditions_df)) {
+    # Show power range (check both results_conditions and results_interim for pwr_eff)
+    pwr_source <- if ("pwr_eff" %in% names(results_conditions_df)) {
       results_conditions_df
-    } else if (nrow(results_interim_df) > 0 && "pwr_scs" %in% names(results_interim_df)) {
+    } else if (nrow(results_interim_df) > 0 && "pwr_eff" %in% names(results_interim_df)) {
       results_interim_df
     } else {
       NULL
     }
 
     if (!is.null(pwr_source)) {
-      pwr_range <- range(pwr_source$pwr_scs, na.rm = TRUE)
+      pwr_range <- range(pwr_source$pwr_eff, na.rm = TRUE)
       cli::cli_alert_info("Power range: {round(pwr_range[1] * 100, 1)}% - {round(pwr_range[2] * 100, 1)}%")
 
       # Show best condition (highest power)
-      best_idx <- which.max(pwr_source$pwr_scs)
+      best_idx <- which.max(pwr_source$pwr_eff)
       if (length(best_idx) > 0) {
-        best_pwr <- round(pwr_source$pwr_scs[best_idx] * 100, 1)
+        best_pwr <- round(pwr_source$pwr_eff[best_idx] * 100, 1)
         # n_total may not exist if not in crossed/constant
         if ("n_total" %in% names(pwr_source)) {
           best_n <- pwr_source$n_total[best_idx]
@@ -1161,7 +1161,7 @@ S7::method(print, rctbp_power_analysis) <- function(x, ...) {
   cli::cli_h1("Power Analysis Results")
 
   if (has_results) {
-    n_conditions <- nrow(x@conditions@conditions_grid)
+    n_conditions <- nrow(x@conditions@grid)
     has_interim <- x@has_interim
     # For sequential: power metrics in results_interim, overall stats in results_conditions
     # For single-look: power metrics in results_conditions
@@ -1178,9 +1178,9 @@ S7::method(print, rctbp_power_analysis) <- function(x, ...) {
     # Design section
     cli::cli_h2("Design")
     target_params_str <- paste(design@target_params, collapse = ", ")
-    p_scs_str <- get_threshold_display(x@conditions, "p_sig_scs")
-    p_ftl_str <- get_threshold_display(x@conditions, "p_sig_ftl")
-    cli::cli_text("Target: {.field {target_params_str}} | P(scs) >= {p_scs_str}, P(ftl) >= {p_ftl_str}")
+    p_eff_str <- get_threshold_display(x@conditions, "thr_dec_eff")
+    p_fut_str <- get_threshold_display(x@conditions, "thr_dec_fut")
+    cli::cli_text("Target: {.field {target_params_str}} | P(eff) >= {p_eff_str}, P(fut) >= {p_fut_str}")
     if (!is.null(target_pwr)) {
       cli::cli_text("Target power: {.strong {round(target_pwr * 100, 0)}%}")
     }
@@ -1197,11 +1197,11 @@ S7::method(print, rctbp_power_analysis) <- function(x, ...) {
 
     # Decision Rates section
     cli::cli_h2("Decision Rates {.emph (range across conditions)}")
-    pwr_scs_range <- safe_range(results_df$pwr_scs, pct = TRUE)
-    pwr_ftl_range <- safe_range(results_df$pwr_ftl, pct = TRUE)
+    pwr_eff_range <- safe_range(results_df$pwr_eff, pct = TRUE)
+    pwr_fut_range <- safe_range(results_df$pwr_fut, pct = TRUE)
     cli::cli_bullets(c(
-      "*" = "Success: {pwr_scs_range}",
-      "*" = "Futility: {pwr_ftl_range}"
+      "*" = "Efficacy: {pwr_eff_range}",
+      "*" = "Futility: {pwr_fut_range}"
     ))
     if (has_interim && !is.null(interim_overall) && "prop_no_dec" %in% names(interim_overall)) {
       no_dec_range <- safe_range(interim_overall$prop_no_dec, pct = TRUE)
@@ -1229,10 +1229,10 @@ S7::method(print, rctbp_power_analysis) <- function(x, ...) {
     # Find optimal condition
     optimal <- find_optimal_condition(
       results_summ = results_df,
-      conditions_grid = x@conditions@conditions_grid,
+      conditions_grid = x@conditions@grid,
       target_pwr = target_pwr,
       interim_overall = interim_overall,
-      power_col = "pwr_scs"
+      power_col = "pwr_eff"
     )
 
     # Optimal/Highest condition section
@@ -1278,7 +1278,7 @@ S7::method(print, rctbp_power_analysis) <- function(x, ...) {
 
   } else {
     # Pending analysis
-    n_conditions <- nrow(x@conditions@conditions_grid)
+    n_conditions <- nrow(x@conditions@grid)
     cli::cli_alert_warning("Analysis not yet run")
 
     cli::cli_h2("Configuration")
@@ -1350,7 +1350,7 @@ S7::method(summary, rctbp_power_analysis) <- function(object, ...) {
   cli::cli_h1("Power Analysis Summary")
 
   if (has_results) {
-    n_conditions <- nrow(object@conditions@conditions_grid)
+    n_conditions <- nrow(object@conditions@grid)
     has_interim <- object@has_interim
     results_df <- if (has_interim) object@results_interim else object@results_conditions
     interim_overall <- if (has_interim) object@results_conditions else NULL
@@ -1364,13 +1364,13 @@ S7::method(summary, rctbp_power_analysis) <- function(object, ...) {
     # Design section (more verbose than print)
     cli::cli_h2("Design")
     target_params_str <- paste(design@target_params, collapse = ", ")
-    p_scs_str <- get_threshold_display(object@conditions, "p_sig_scs")
-    p_ftl_str <- get_threshold_display(object@conditions, "p_sig_ftl")
+    p_eff_str <- get_threshold_display(object@conditions, "thr_dec_eff")
+    p_fut_str <- get_threshold_display(object@conditions, "thr_dec_fut")
 
     cli::cli_bullets(c(
       "*" = "Target parameters: {.field {target_params_str}}",
-      "*" = paste0("Success probability threshold: ", p_scs_str),
-      "*" = paste0("Futility probability threshold: ", p_ftl_str)
+      "*" = paste0("Efficacy probability threshold: ", p_eff_str),
+      "*" = paste0("Futility probability threshold: ", p_fut_str)
     ))
 
     # analysis_at is now in conditions (crossed, linked, or constant)
@@ -1411,11 +1411,11 @@ S7::method(summary, rctbp_power_analysis) <- function(object, ...) {
 
     # Decision Rates section
     cli::cli_h2("Decision Rates")
-    pwr_scs_range <- safe_range(results_df$pwr_scs, pct = TRUE)
-    pwr_ftl_range <- safe_range(results_df$pwr_ftl, pct = TRUE)
+    pwr_eff_range <- safe_range(results_df$pwr_eff, pct = TRUE)
+    pwr_fut_range <- safe_range(results_df$pwr_fut, pct = TRUE)
     cli::cli_bullets(c(
-      "*" = "Success rate (range): {pwr_scs_range}",
-      "*" = "Futility rate (range): {pwr_ftl_range}"
+      "*" = "Efficacy rate (range): {pwr_eff_range}",
+      "*" = "Futility rate (range): {pwr_fut_range}"
     ))
     if (has_interim && !is.null(interim_overall) && "prop_no_dec" %in% names(interim_overall)) {
       no_dec_range <- safe_range(interim_overall$prop_no_dec, pct = TRUE)
@@ -1431,13 +1431,13 @@ S7::method(summary, rctbp_power_analysis) <- function(object, ...) {
         stp_range <- safe_range(interim_overall$prop_stp_early, pct = TRUE)
         bullets <- c(bullets, "*" = "Stopped early (total): {stp_range}")
       }
-      if ("prop_stp_scs" %in% names(interim_overall)) {
-        stp_scs_range <- safe_range(interim_overall$prop_stp_scs, pct = TRUE)
-        bullets <- c(bullets, "*" = "Stopped for success: {stp_scs_range}")
+      if ("prop_stp_eff" %in% names(interim_overall)) {
+        stp_eff_range <- safe_range(interim_overall$prop_stp_eff, pct = TRUE)
+        bullets <- c(bullets, "*" = "Stopped for efficacy: {stp_eff_range}")
       }
-      if ("prop_stp_ftl" %in% names(interim_overall)) {
-        stp_ftl_range <- safe_range(interim_overall$prop_stp_ftl, pct = TRUE)
-        bullets <- c(bullets, "*" = "Stopped for futility: {stp_ftl_range}")
+      if ("prop_stp_fut" %in% names(interim_overall)) {
+        stp_fut_range <- safe_range(interim_overall$prop_stp_fut, pct = TRUE)
+        bullets <- c(bullets, "*" = "Stopped for futility: {stp_fut_range}")
       }
       if ("n_mn" %in% names(interim_overall) && "n_planned" %in% names(interim_overall)) {
         n_mn_range <- safe_range(interim_overall$n_mn, digits = 0)
@@ -1457,10 +1457,10 @@ S7::method(summary, rctbp_power_analysis) <- function(object, ...) {
     # Find optimal condition
     optimal <- find_optimal_condition(
       results_summ = results_df,
-      conditions_grid = object@conditions@conditions_grid,
+      conditions_grid = object@conditions@grid,
       target_pwr = target_pwr,
       interim_overall = interim_overall,
-      power_col = "pwr_scs"
+      power_col = "pwr_eff"
     )
 
     # Optimal/Highest condition section (more verbose than print)
@@ -1490,11 +1490,11 @@ S7::method(summary, rctbp_power_analysis) <- function(object, ...) {
         cli::cli_text("")
         cli::cli_text("{.emph Early stopping (this condition):}")
         bullets <- c("*" = "Stopped early: {round(int$prop_stp_early * 100, 1)}%")
-        if (!is.null(int$prop_stp_scs) && !is.na(int$prop_stp_scs)) {
-          bullets <- c(bullets, "*" = "Stopped for success: {round(int$prop_stp_scs * 100, 1)}%")
+        if (!is.null(int$prop_stp_eff) && !is.na(int$prop_stp_eff)) {
+          bullets <- c(bullets, "*" = "Stopped for efficacy: {round(int$prop_stp_eff * 100, 1)}%")
         }
-        if (!is.null(int$prop_stp_ftl) && !is.na(int$prop_stp_ftl)) {
-          bullets <- c(bullets, "*" = "Stopped for futility: {round(int$prop_stp_ftl * 100, 1)}%")
+        if (!is.null(int$prop_stp_fut) && !is.na(int$prop_stp_fut)) {
+          bullets <- c(bullets, "*" = "Stopped for futility: {round(int$prop_stp_fut * 100, 1)}%")
         }
         bullets <- c(bullets, "*" = "Mean N: {round(int$n_mn, 0)}, Median N: {round(int$n_mdn, 0)}, Mode N: {round(int$n_mode, 0)}")
         cli::cli_bullets(bullets)
@@ -1521,11 +1521,11 @@ S7::method(summary, rctbp_power_analysis) <- function(object, ...) {
         cli::cli_text("")
         cli::cli_text("{.emph Early stopping (this condition):}")
         bullets <- c("*" = "Stopped early: {round(int$prop_stp_early * 100, 1)}%")
-        if (!is.null(int$prop_stp_scs) && !is.na(int$prop_stp_scs)) {
-          bullets <- c(bullets, "*" = "Stopped for success: {round(int$prop_stp_scs * 100, 1)}%")
+        if (!is.null(int$prop_stp_eff) && !is.na(int$prop_stp_eff)) {
+          bullets <- c(bullets, "*" = "Stopped for efficacy: {round(int$prop_stp_eff * 100, 1)}%")
         }
-        if (!is.null(int$prop_stp_ftl) && !is.na(int$prop_stp_ftl)) {
-          bullets <- c(bullets, "*" = "Stopped for futility: {round(int$prop_stp_ftl * 100, 1)}%")
+        if (!is.null(int$prop_stp_fut) && !is.na(int$prop_stp_fut)) {
+          bullets <- c(bullets, "*" = "Stopped for futility: {round(int$prop_stp_fut * 100, 1)}%")
         }
         bullets <- c(bullets, "*" = "Mean N: {round(int$n_mn, 0)}, Median N: {round(int$n_mdn, 0)}, Mode N: {round(int$n_mode, 0)}")
         cli::cli_bullets(bullets)
@@ -1538,7 +1538,7 @@ S7::method(summary, rctbp_power_analysis) <- function(object, ...) {
       # For sequential: get power from final look of results_interim, merge with interim_overall
       final_look <- max(results_df$id_look)
       final_power <- results_df[results_df$id_look == final_look,
-                                c("id_cond", "pwr_scs", "pwr_ftl"), drop = FALSE]
+                                c("id_cond", "pwr_eff", "pwr_fut"), drop = FALSE]
 
       # Merge with interim_overall stats
       if (!is.null(interim_overall) && nrow(interim_overall) > 0) {
@@ -1550,23 +1550,23 @@ S7::method(summary, rctbp_power_analysis) <- function(object, ...) {
           all.x = TRUE
         )
         # Reorder columns
-        col_order <- c("id_cond", "n_total", "pwr_scs", "pwr_ftl", "prop_stp_early", "n_mn")
+        col_order <- c("id_cond", "n_total", "pwr_eff", "pwr_fut", "prop_stp_early", "n_mn")
         col_order <- intersect(col_order, names(cond_table))
         cond_table <- cond_table[, col_order, drop = FALSE]
         # Sort by power
-        if ("pwr_scs" %in% names(cond_table)) {
-          cond_table <- cond_table[order(-cond_table$pwr_scs), , drop = FALSE]
+        if ("pwr_eff" %in% names(cond_table)) {
+          cond_table <- cond_table[order(-cond_table$pwr_eff), , drop = FALSE]
         }
       } else {
         cond_table <- final_power
       }
     } else {
       # Single-look results
-      cols <- c("id_cond", "n_total", "pwr_scs", "pwr_ftl")
+      cols <- c("id_cond", "n_total", "pwr_eff", "pwr_fut")
       cols_available <- intersect(cols, names(results_df))
       cond_table <- results_df[, cols_available, drop = FALSE]
-      if ("pwr_scs" %in% names(cond_table)) {
-        cond_table <- cond_table[order(-cond_table$pwr_scs), , drop = FALSE]
+      if ("pwr_eff" %in% names(cond_table)) {
+        cond_table <- cond_table[order(-cond_table$pwr_eff), , drop = FALSE]
       }
     }
     table_lines <- format_table_cli(cond_table)
@@ -1585,7 +1585,7 @@ S7::method(summary, rctbp_power_analysis) <- function(object, ...) {
 
   } else {
     # Pending analysis
-    n_conditions <- nrow(object@conditions@conditions_grid)
+    n_conditions <- nrow(object@conditions@grid)
     cli::cli_alert_warning("Analysis not yet run")
 
     cli::cli_h2("Configuration")
@@ -1599,12 +1599,12 @@ S7::method(summary, rctbp_power_analysis) <- function(object, ...) {
     # Show design details
     cli::cli_h2("Design")
     target_params_str <- paste(design@target_params, collapse = ", ")
-    p_scs_str <- get_threshold_display(object@conditions, "p_sig_scs")
-    p_ftl_str <- get_threshold_display(object@conditions, "p_sig_ftl")
+    p_eff_str <- get_threshold_display(object@conditions, "thr_dec_eff")
+    p_fut_str <- get_threshold_display(object@conditions, "thr_dec_fut")
     cli::cli_bullets(c(
       "*" = "Target parameters: {.field {target_params_str}}",
-      "*" = paste0("Success threshold: ", p_scs_str),
-      "*" = paste0("Futility threshold: ", p_ftl_str)
+      "*" = paste0("Efficacy threshold: ", p_eff_str),
+      "*" = paste0("Futility threshold: ", p_fut_str)
     ))
 
     # analysis_at is now in conditions
@@ -1615,7 +1615,7 @@ S7::method(summary, rctbp_power_analysis) <- function(object, ...) {
 
     # Show conditions grid preview
     cli::cli_h2("Conditions Grid")
-    grid_preview <- object@conditions@conditions_grid
+    grid_preview <- object@conditions@grid
     table_lines <- format_table_cli(grid_preview)
     cat(paste(table_lines, collapse = "\n"), "\n")
 

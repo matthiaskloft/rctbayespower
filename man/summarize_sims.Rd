@@ -11,12 +11,12 @@ summarize_sims(results_df_raw, n_sims)
 \itemize{
 \item \code{id_cond}: Condition identifier
 \item \code{par_name}: Parameter name
-\item \code{thr_scs}: Success threshold for the parameter
-\item \code{thr_ftl}: Futility threshold for the parameter
-\item \code{pr_scs}: Probability of success for each simulation
-\item \code{pr_ftl}: Probability of futility for each simulation
-\item \code{dec_scs}: Binary success decision indicator
-\item \code{dec_ftl}: Binary futility decision indicator
+\item \code{thr_fx_eff}: Efficacy threshold for the parameter
+\item \code{thr_fx_fut}: Futility threshold for the parameter
+\item \code{pr_eff}: Probability of efficacy for each simulation
+\item \code{pr_fut}: Probability of futility for each simulation
+\item \code{dec_eff}: Binary efficacy decision indicator
+\item \code{dec_fut}: Binary futility decision indicator
 \item \code{post_med}: Posterior median estimates
 \item \code{post_mad}: Posterior median absolute deviation
 \item \code{post_mn}: Posterior mean estimates
@@ -34,8 +34,8 @@ summarize_sims(results_df_raw, n_sims)
 A data frame with summarized results grouped by condition and parameter,
 containing mean estimates and Monte Carlo standard errors (MCSE) for all metrics:
 \itemize{
-\item Probability estimates: \code{pr_scs_mean}, \code{pr_ftl_mean} with \verb{*_mcse}
-\item Power estimates: \code{pwr_scs_mean}, \code{pwr_ftl_mean} with \verb{*_mcse}
+\item Probability estimates: \code{pr_eff_mean}, \code{pr_fut_mean} with \verb{*_mcse}
+\item Power estimates: \code{pwr_eff_mean}, \code{pwr_fut_mean} with \verb{*_mcse}
 \item Parameter estimates: \code{post_med_mean}, \code{post_mn_mean}, \code{post_mad_mean}, \code{post_sd_mean}
 \item Convergence metrics: \code{rhat_mean}, \code{ess_bulk_mean}, \code{ess_tail_mean}, \code{conv_rate_mean}
 }

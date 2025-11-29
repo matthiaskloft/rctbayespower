@@ -7,10 +7,10 @@
 compute_measures(
   posterior_rvars,
   target_params,
-  thresh_scs,
-  thresh_ftl,
-  p_sig_scs,
-  p_sig_ftl
+  thr_fx_eff,
+  thr_fx_fut,
+  thr_dec_eff,
+  thr_dec_fut
 )
 }
 \arguments{
@@ -18,13 +18,13 @@ compute_measures(
 
 \item{target_params}{Character vector of parameter names to analyze}
 
-\item{thresh_scs}{Numeric vector of success thresholds (ROPE, one per parameter)}
+\item{thr_fx_eff}{Numeric vector of efficacy thresholds (ROPE, one per parameter)}
 
-\item{thresh_ftl}{Numeric vector of futility thresholds (ROPE, one per parameter)}
+\item{thr_fx_fut}{Numeric vector of futility thresholds (ROPE, one per parameter)}
 
-\item{p_sig_scs}{Probability threshold for declaring success}
+\item{thr_dec_eff}{Probability threshold for declaring efficacy}
 
-\item{p_sig_ftl}{Probability threshold for declaring futility}
+\item{thr_dec_fut}{Probability threshold for declaring futility}
 }
 \value{
 A data frame containing power analysis measures

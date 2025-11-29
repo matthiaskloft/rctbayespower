@@ -128,7 +128,7 @@ show_condition_args <- function(design = NULL, print = TRUE) {
   params_sim <- get_args_without_defaults(design@sim_fn)
 
   # Decision parameters (per-condition): thresholds, boundaries, analysis_at, interim
-  params_decision <- c("thresh_scs", "thresh_ftl", "p_sig_scs", "p_sig_ftl",
+  params_decision <- c("thr_fx_eff", "thr_fx_fut", "thr_dec_eff", "thr_dec_fut",
                        "analysis_at", "interim_function", "adaptive")
 
   params_all <- c(params_sim, params_decision)
@@ -152,10 +152,10 @@ show_condition_args <- function(design = NULL, print = TRUE) {
     # Decision parameters
     cli::cli_text("{.strong Decision parameters:}")
     cli::cli_bullets(c(
-      "*" = "p_sig_scs {.emph (probability threshold for binary success; numeric or boundary function)}",
-      "*" = "p_sig_ftl {.emph (probability threshold for binary futility; numeric or boundary function)}",
-      "*" = "thresh_scs {.emph (effect threshold for probabilistic success)}",
-      "*" = "thresh_ftl {.emph (effect threshold for probabilistic futility)}"
+      "*" = "thr_dec_eff {.emph (probability threshold for efficacy decision; numeric or boundary function)}",
+      "*" = "thr_dec_fut {.emph (probability threshold for futility decision; numeric or boundary function)}",
+      "*" = "thr_fx_eff {.emph (effect size threshold for efficacy; ROPE lower bound)}",
+      "*" = "thr_fx_fut {.emph (effect size threshold for futility; ROPE upper bound)}"
     ))
     cli::cli_text("  {.emph See {.fn show_boundaries} for available boundary functions}")
     cli::cli_text("")
@@ -174,7 +174,7 @@ show_condition_args <- function(design = NULL, print = TRUE) {
     cli::cli_text("{.emph   - constant: same value for all conditions}")
     cli::cli_text("")
     cli::cli_text("{.emph Use link() inside crossed for co-varying params:}")
-    cli::cli_text("{.emph   link(b_arm_treat = c(0, 0.3), p_sig_scs = c(0.95, boundary_pocock(.95)))}")
+    cli::cli_text("{.emph   link(b_arm_treat = c(0, 0.3), thr_dec_eff = c(0.95, boundary_pocock(.95)))}")
   }
 
   # Return the parameters needed

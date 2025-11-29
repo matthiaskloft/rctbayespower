@@ -44,7 +44,7 @@
 #'     \item "sample_size" - Color by sample size values
 #'   }
 #' @param target_power Optional numeric value (0-1) for drawing contour lines on heatmaps
-#'   at the specified target power level. If NULL (default), uses the design's p_sig_scs.
+#'   at the specified target power level. If NULL (default), uses the design's thr_dec_eff.
 #' @param interactive Whether to return an interactive plotly object (TRUE, default) or
 #'   a static ggplot2 object (FALSE).
 #' @param ... Additional arguments passed to plotting functions
@@ -131,7 +131,7 @@ create_power_plot <- function(x,
   conditions <- x@conditions
 
   # Check for missing essential columns
-  required_cols <- c("pwr_scs", "pwr_ftl", "pr_scs", "pr_ftl")
+  required_cols <- c("pwr_eff", "pwr_fut", "pr_eff", "pr_fut")
   missing_cols <- setdiff(required_cols, names(plot_data))
   if (length(missing_cols) > 0) {
     cli::cli_abort(c(

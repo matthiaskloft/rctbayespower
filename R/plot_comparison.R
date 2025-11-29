@@ -8,7 +8,7 @@
 #' Internal function to create power vs posterior probability comparison plots.
 #'
 #' @param plot_data Data frame with power analysis results
-#' @param design Design object with p_sig_scs and p_sig_ftl
+#' @param design Design object with thr_dec_eff and thr_dec_fut
 #' @param analysis_type One of "sample_only" or "effect_only"
 #' @param effect_col Column name for effect size (from condition_values)
 #' @param metric Ignored (always shows both power and probability)

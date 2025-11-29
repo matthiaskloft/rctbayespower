@@ -144,8 +144,8 @@ cat("Backend:", model@backend, "\n")
 design <- build_design(
   model = model,
   target_params = "b_group",
-  p_sig_scs = 0.975,
-  p_sig_ftl = 0.5
+  thr_dec_eff = 0.975,
+  thr_dec_fut = 0.5
 )
 print(design)
 ```
@@ -185,7 +185,7 @@ power_bf <- power_analysis(
 print(power_bf)
 
 power_bf@results_conditions |>
-  select(id_cond, n_total, pwr_scs, pwr_ftl, post_mn)
+  select(id_cond, n_total, pwr_eff, pwr_fut, post_mn)
 ```
 
 ***
@@ -199,8 +199,8 @@ model_brms <- get_model("ancova_cont_2arms", backend = "brms")
 design_brms <- build_design(
   model = model_brms,
   target_params = "b_arm2",
-  p_sig_scs = 0.975,
-  p_sig_ftl = 0.5
+  thr_dec_eff = 0.975,
+  thr_dec_fut = 0.5
 )
 conditions_brms <- conditions
 conditions_brms@design <- design_brms
@@ -249,7 +249,7 @@ results_brms <- power_brms@results_conditions %>%
   mutate(Backend = "brms")
 combined_results <- rbind(results_bf, results_brms) |>
   pivot_longer(
-    cols = c(pwr_scs, pr_scs),
+    cols = c(pwr_eff, pr_eff),
     names_to = "Criterion",
     values_to = "Value"
   )

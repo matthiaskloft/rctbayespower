@@ -159,10 +159,10 @@ conditions <- build_conditions(
   ),
   constant = list(
     b_covariate = 0.3,
-    thresh_scs = 0.1,
-    thresh_ftl = 0,
-    p_sig_scs = 0.95,
-    p_sig_ftl = 0.5
+    thr_fx_eff = 0.1,
+    thr_fx_fut = 0,
+    thr_dec_eff = 0.95,
+    thr_dec_fut = 0.5
   )
 )
 print(conditions)
@@ -184,7 +184,7 @@ print(power_bf)
 
 ```{r power-results-bf}
 power_bf@results_conditions |>
-  select(id_cond, n_total, pwr_scs, pwr_ftl)
+  select(id_cond, n_total, pwr_eff, pwr_fut)
 ```
 
 ```{r fig.height=7}

@@ -50,7 +50,13 @@
       "Bash(nvidia-smi:*)",
       "WebFetch(domain:www.rpact.org)",
       "WebFetch(domain:online.stat.psu.edu)",
-      "WebFetch(domain:keaven.github.io)"
+      "WebFetch(domain:keaven.github.io)",
+      "WebFetch(domain:mlr3mbo.mlr-org.com)",
+      "WebFetch(domain:mlr3book.mlr-org.com)",
+      "WebFetch(domain:onlinelibrary.wiley.com)",
+      "WebFetch(domain:pmc.ncbi.nlm.nih.gov)",
+      "WebFetch(domain:paradox.mlr-org.com)",
+      "WebFetch(domain:cran.r-project.org)"
     ],
     "deny": []
   }

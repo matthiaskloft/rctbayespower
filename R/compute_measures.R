@@ -6,16 +6,16 @@
 #'
 #' @param posterior_rvars A draws_rvars object containing posterior samples for target parameters
 #' @param target_params Character vector of parameter names to analyze
-#' @param thresh_scs Numeric vector of success thresholds (ROPE, one per parameter)
-#' @param thresh_ftl Numeric vector of futility thresholds (ROPE, one per parameter)
-#' @param p_sig_scs Probability threshold for declaring success
-#' @param p_sig_ftl Probability threshold for declaring futility
+#' @param thr_fx_eff Numeric vector of efficacy thresholds (ROPE, one per parameter)
+#' @param thr_fx_fut Numeric vector of futility thresholds (ROPE, one per parameter)
+#' @param thr_dec_eff Probability threshold for declaring efficacy
+#' @param thr_dec_fut Probability threshold for declaring futility
 #'
 #' @return A data frame containing power analysis measures
 #' @importFrom stats median
 #' @keywords internal
-compute_measures <- function(posterior_rvars, target_params, thresh_scs,
-                             thresh_ftl, p_sig_scs, p_sig_ftl) {
+compute_measures <- function(posterior_rvars, target_params, thr_fx_eff,
+                             thr_fx_fut, thr_dec_eff, thr_dec_fut) {
 
   # Compute measures for each parameter
   measures_list <- purrr::map(target_params, function(param) {
@@ -24,26 +24,26 @@ compute_measures <- function(posterior_rvars, target_params, thresh_scs,
 
     # extract thresholds
     if (length(target_params) > 1) {
-      threshold_success <- thresh_scs[which(target_params == param)]
+      threshold_efficacy <- thr_fx_eff[which(target_params == param)]
       # if the threshold is NA, use the first one
-      if (is.na(threshold_success)) {
-        threshold_success <- thresh_scs[1]
+      if (is.na(threshold_efficacy)) {
+        threshold_efficacy <- thr_fx_eff[1]
       }
-      threshold_futility <- thresh_ftl[which(target_params == param)]
+      threshold_futility <- thr_fx_fut[which(target_params == param)]
       # if the threshold is NA, use the first one
       if (is.na(threshold_futility)) {
-        threshold_futility <- thresh_ftl[1]
+        threshold_futility <- thr_fx_fut[1]
       }
     } else {
-      threshold_success <- thresh_scs
-      threshold_futility <- thresh_ftl
+      threshold_efficacy <- thr_fx_eff
+      threshold_futility <- thr_fx_fut
     }
-    # calculate the probability of success / futility
-    success_prob <- posterior::Pr(param_rvar > threshold_success)
+    # calculate the probability of efficacy / futility
+    efficacy_prob <- posterior::Pr(param_rvar > threshold_efficacy)
     futility_prob <- posterior::Pr(param_rvar < threshold_futility)
     # significance
-    sig_success <- as.numeric(success_prob >= p_sig_scs, na.rm = TRUE)
-    sig_futility <- as.numeric(futility_prob >= p_sig_ftl, na.rm = TRUE)
+    sig_efficacy <- as.numeric(efficacy_prob >= thr_dec_eff, na.rm = TRUE)
+    sig_futility <- as.numeric(futility_prob >= thr_dec_fut, na.rm = TRUE)
     # parameter estimates
     est_median <- stats::median(param_rvar)
     est_mad <- posterior::mad(param_rvar)
@@ -57,14 +57,14 @@ compute_measures <- function(posterior_rvars, target_params, thresh_scs,
     # combine results into a list
     out_list <- list(
       par_name = param,
-      thr_scs = threshold_success,
-      thr_ftl = threshold_futility,
-      p_sig_scs = p_sig_scs,
-      p_sig_ftl = p_sig_ftl,
-      pr_scs = success_prob,
-      pr_ftl = futility_prob,
-      dec_scs = sig_success,
-      dec_ftl = sig_futility,
+      thr_fx_eff = threshold_efficacy,
+      thr_fx_fut = threshold_futility,
+      thr_dec_eff = thr_dec_eff,
+      thr_dec_fut = thr_dec_fut,
+      pr_eff = efficacy_prob,
+      pr_fut = futility_prob,
+      dec_eff = sig_efficacy,
+      dec_fut = sig_futility,
       post_med = est_median,
       post_mad = est_mad,
       post_mn = est_mean,
@@ -87,15 +87,15 @@ compute_measures <- function(posterior_rvars, target_params, thresh_scs,
     posterior_samples <- do.call(cbind, posterior_matrix_list)
 
     # extract thresholds and broadcast if necessary
-    if (length(target_params) > length(thresh_scs)) {
-      thresh_scs_combined <- rep(thresh_scs[1], length(target_params))
+    if (length(target_params) > length(thr_fx_eff)) {
+      thr_fx_eff_combined <- rep(thr_fx_eff[1], length(target_params))
     } else {
-      thresh_scs_combined <- thresh_scs
+      thr_fx_eff_combined <- thr_fx_eff
     }
-    if (length(target_params) > length(thresh_ftl)) {
-      thresh_ftl_combined <- rep(thresh_ftl[1], length(target_params))
+    if (length(target_params) > length(thr_fx_fut)) {
+      thr_fx_fut_combined <- rep(thr_fx_fut[1], length(target_params))
     } else {
-      thresh_ftl_combined <- thresh_ftl
+      thr_fx_fut_combined <- thr_fx_fut
     }
 
     # Combined probability algorithm (AND decision rule for multiple parameters)
@@ -105,30 +105,30 @@ compute_measures <- function(posterior_rvars, target_params, thresh_scs,
     #   2. Take minimum across parameters for each draw (AND operation)
     #   3. Average across draws to get probability
     # Example: P(param1 > 0.2 AND param2 > 0.3 AND param3 > 0.1)
-    combined_success_prob <- mean(apply(ifelse(
-      posterior_samples > thresh_scs_combined, 1, 0
+    combined_efficacy_prob <- mean(apply(ifelse(
+      posterior_samples > thr_fx_eff_combined, 1, 0
     ), 1, min))
     combined_futility_prob <- mean(apply(
-      ifelse(posterior_samples < thresh_ftl_combined, 1, 0),
+      ifelse(posterior_samples < thr_fx_fut_combined, 1, 0),
       1,
       min
     ))
 
     # calculate combined significance
-    combined_sig_success <- as.numeric(combined_success_prob >= p_sig_scs, na.rm = TRUE)
-    combined_sig_futility <- as.numeric(combined_futility_prob >= p_sig_ftl, na.rm = TRUE)
+    combined_sig_efficacy <- as.numeric(combined_efficacy_prob >= thr_dec_eff, na.rm = TRUE)
+    combined_sig_futility <- as.numeric(combined_futility_prob >= thr_dec_fut, na.rm = TRUE)
 
     # combine results into a list
     measures_list_combined <- list(
       par_name = "union",
-      thr_scs = NA,
-      thr_ftl = NA,
-      p_sig_scs = p_sig_scs,
-      p_sig_ftl = p_sig_ftl,
-      pr_scs = combined_success_prob,
-      pr_ftl = combined_futility_prob,
-      dec_scs = combined_sig_success,
-      dec_ftl = combined_sig_futility,
+      thr_fx_eff = NA,
+      thr_fx_fut = NA,
+      thr_dec_eff = thr_dec_eff,
+      thr_dec_fut = thr_dec_fut,
+      pr_eff = combined_efficacy_prob,
+      pr_fut = combined_futility_prob,
+      dec_eff = combined_sig_efficacy,
+      dec_fut = combined_sig_futility,
       post_med = NA,
       post_mad = NA,
       post_mn = NA,
@@ -172,12 +172,12 @@ compute_measures <- function(posterior_rvars, target_params, thresh_scs,
 #'   \itemize{
 #'     \item `id_cond`: Condition identifier
 #'     \item `par_name`: Parameter name
-#'     \item `thr_scs`: Success threshold for the parameter
-#'     \item `thr_ftl`: Futility threshold for the parameter
-#'     \item `pr_scs`: Probability of success for each simulation
-#'     \item `pr_ftl`: Probability of futility for each simulation
-#'     \item `dec_scs`: Binary success decision indicator
-#'     \item `dec_ftl`: Binary futility decision indicator
+#'     \item `thr_fx_eff`: Efficacy threshold for the parameter
+#'     \item `thr_fx_fut`: Futility threshold for the parameter
+#'     \item `pr_eff`: Probability of efficacy for each simulation
+#'     \item `pr_fut`: Probability of futility for each simulation
+#'     \item `dec_eff`: Binary efficacy decision indicator
+#'     \item `dec_fut`: Binary futility decision indicator
 #'     \item `post_med`: Posterior median estimates
 #'     \item `post_mad`: Posterior median absolute deviation
 #'     \item `post_mn`: Posterior mean estimates
@@ -193,8 +193,8 @@ compute_measures <- function(posterior_rvars, target_params, thresh_scs,
 #' @return A data frame with summarized results grouped by condition and parameter,
 #'   containing mean estimates and Monte Carlo standard errors (MCSE) for all metrics:
 #'   \itemize{
-#'     \item Probability estimates: `pr_scs_mean`, `pr_ftl_mean` with `*_mcse`
-#'     \item Power estimates: `pwr_scs_mean`, `pwr_ftl_mean` with `*_mcse`
+#'     \item Probability estimates: `pr_eff_mean`, `pr_fut_mean` with `*_mcse`
+#'     \item Power estimates: `pwr_eff_mean`, `pwr_fut_mean` with `*_mcse`
 #'     \item Parameter estimates: `post_med_mean`, `post_mn_mean`, `post_mad_mean`, `post_sd_mean`
 #'     \item Convergence metrics: `rhat_mean`, `ess_bulk_mean`, `ess_tail_mean`, `conv_rate_mean`
 #'   }
@@ -262,27 +262,27 @@ summarize_sims <- function(results_df_raw, n_sims) {
     return(data.frame(
       id_cond = integer(),
       par_name = character(),
-      thr_scs = numeric(),
-      thr_ftl = numeric(),
-      p_sig_scs = numeric(),
-      p_sig_ftl = numeric(),
-      pwr_scs = numeric(),
-      pwr_ftl = numeric(),
+      thr_fx_eff = numeric(),
+      thr_fx_fut = numeric(),
+      thr_dec_eff = numeric(),
+      thr_dec_fut = numeric(),
+      pwr_eff = numeric(),
+      pwr_fut = numeric(),
       stringsAsFactors = FALSE
     ))
   }
 
   results_summarized <- results_df_raw |>
-    dplyr::group_by(id_cond, par_name, thr_scs, thr_ftl, p_sig_scs, p_sig_ftl) |>
+    dplyr::group_by(id_cond, par_name, thr_fx_eff, thr_fx_fut, thr_dec_eff, thr_dec_fut) |>
     dplyr::summarise(
-      pr_scs_mean = mean(pr_scs, na.rm = TRUE),
-      pr_scs_mcse = calculate_mcse_mean(pr_scs, n_sims),
-      pr_ftl_mean = mean(pr_ftl, na.rm = TRUE),
-      pr_ftl_mcse = calculate_mcse_mean(pr_ftl, n_sims),
-      pwr_scs_mean = mean(dec_scs, na.rm = TRUE),
-      pwr_scs_mcse = calculate_mcse_power(dec_scs, n_sims),
-      pwr_ftl_mean = mean(dec_ftl, na.rm = TRUE),
-      pwr_ftl_mcse = calculate_mcse_power(dec_ftl, n_sims),
+      pr_eff_mean = mean(pr_eff, na.rm = TRUE),
+      pr_eff_mcse = calculate_mcse_mean(pr_eff, n_sims),
+      pr_fut_mean = mean(pr_fut, na.rm = TRUE),
+      pr_fut_mcse = calculate_mcse_mean(pr_fut, n_sims),
+      pwr_eff_mean = mean(dec_eff, na.rm = TRUE),
+      pwr_eff_mcse = calculate_mcse_power(dec_eff, n_sims),
+      pwr_fut_mean = mean(dec_fut, na.rm = TRUE),
+      pwr_fut_mcse = calculate_mcse_power(dec_fut, n_sims),
       post_med_mean = mean(.data$post_med, na.rm = TRUE),
       post_med_mcse = calculate_mcse_mean(.data$post_med, n_sims),
       post_mad_mean = mean(.data$post_mad, na.rm = TRUE),
@@ -303,14 +303,14 @@ summarize_sims <- function(results_df_raw, n_sims) {
     ) |>
     # make shorter names
     dplyr::rename(
-      pr_scs = pr_scs_mean,
-      se_pr_scs = pr_scs_mcse,
-      pr_ftl = pr_ftl_mean,
-      se_pr_ftl = pr_ftl_mcse,
-      pwr_scs = pwr_scs_mean,
-      se_pwr_scs = pwr_scs_mcse,
-      pwr_ftl = pwr_ftl_mean,
-      se_pwr_ftl = pwr_ftl_mcse,
+      pr_eff = pr_eff_mean,
+      se_pr_eff = pr_eff_mcse,
+      pr_fut = pr_fut_mean,
+      se_pr_fut = pr_fut_mcse,
+      pwr_eff = pwr_eff_mean,
+      se_pwr_eff = pwr_eff_mcse,
+      pwr_fut = pwr_fut_mean,
+      se_pwr_fut = pwr_fut_mcse,
       post_med = post_med_mean,
       se_post_med = post_med_mcse,
       post_mad = post_mad_mean,
@@ -354,10 +354,10 @@ summarize_sims <- function(results_df_raw, n_sims) {
 #'
 #' \strong{Per-Look Metrics (by_look):}
 #' \itemize{
-#'   \item Power metrics: `pr_scs`, `pr_ftl`, `pwr_scs`, `pwr_ftl` (with SEs)
+#'   \item Power metrics: `pr_eff`, `pr_fut`, `pwr_eff`, `pwr_fut` (with SEs)
 #'   \item Posterior estimates: `post_med`, `post_mn`, `post_sd` (with SEs)
 #'   \item Convergence: `rhat`, `ess_bulk`, `conv_rate`
-#'   \item Stopping at this look: `prop_stp_look`, `prop_scs_look`, `prop_ftl_look`
+#'   \item Stopping at this look: `prop_stp_look`, `prop_eff_look`, `prop_fut_look`
 #'   \item Cumulative stopping: `cumul_stp`
 #' }
 #'
@@ -369,9 +369,9 @@ summarize_sims <- function(results_df_raw, n_sims) {
 #'   \item `n_mode`: Modal sample size (most frequent stopping point)
 #'   \item `prop_at_mode`: Proportion of trials at modal N
 #'   \item `prop_stp_early`: Proportion stopped before final look
-#'   \item `prop_stp_scs`: Proportion stopped for success
-#'   \item `prop_stp_ftl`: Proportion stopped for futility
-#'   \item `prop_no_dec`: Proportion with no decision (= 1 - prop_stp_scs - prop_stp_ftl)
+#'   \item `prop_stp_eff`: Proportion stopped for efficacy
+#'   \item `prop_stp_fut`: Proportion stopped for futility
+#'   \item `prop_no_dec`: Proportion with no decision (= 1 - prop_stp_eff - prop_stp_fut)
 #' }
 #'
 #' @seealso [summarize_sims()]
@@ -415,15 +415,15 @@ summarize_sims_with_interim <- function(results_df_raw, n_sims) {
       by_look = data.frame(
         id_cond = integer(),
         id_look = integer(),
-        pwr_scs = numeric(),
-        pwr_ftl = numeric(),
+        pwr_eff = numeric(),
+        pwr_fut = numeric(),
         stringsAsFactors = FALSE
       ),
       overall = data.frame(
         id_cond = integer(),
         n_planned = integer(),
-        pwr_scs = numeric(),
-        pwr_ftl = numeric(),
+        pwr_eff = numeric(),
+        pwr_fut = numeric(),
         stringsAsFactors = FALSE
       )
     ))
@@ -445,35 +445,35 @@ summarize_sims_with_interim <- function(results_df_raw, n_sims) {
     dplyr::group_by(id_cond, id_look, n_analyzed) |>
     dplyr::summarise(
       n_stp_look = dplyr::n_distinct(id_iter),
-      n_scs_look = sum(stop_reason == "stop_success", na.rm = TRUE),
-      n_ftl_look = sum(stop_reason == "stop_futility", na.rm = TRUE),
+      n_eff_look = sum(stop_reason == "stop_efficacy", na.rm = TRUE),
+      n_fut_look = sum(stop_reason == "stop_futility", na.rm = TRUE),
       .groups = "drop"
     ) |>
     dplyr::left_join(n_total_sims, by = "id_cond") |>
     dplyr::mutate(
       prop_stp_look = n_stp_look / n_total_sims,
-      prop_scs_look = n_scs_look / n_total_sims,
-      prop_ftl_look = n_ftl_look / n_total_sims
+      prop_eff_look = n_eff_look / n_total_sims,
+      prop_fut_look = n_fut_look / n_total_sims
     ) |>
     dplyr::group_by(id_cond) |>
     dplyr::arrange(id_look) |>
     dplyr::mutate(cumul_stp = cumsum(prop_stp_look)) |>
     dplyr::ungroup() |>
-    dplyr::select(id_cond, id_look, prop_stp_look, prop_scs_look, prop_ftl_look, cumul_stp)
+    dplyr::select(id_cond, id_look, prop_stp_look, prop_eff_look, prop_fut_look, cumul_stp)
 
   # Group by condition, parameter, threshold, AND analysis look for power metrics
   by_look <- results_df_raw |>
-    dplyr::group_by(id_cond, par_name, thr_scs, thr_ftl, p_sig_scs, p_sig_ftl, id_look, n_analyzed) |>
+    dplyr::group_by(id_cond, par_name, thr_fx_eff, thr_fx_fut, thr_dec_eff, thr_dec_fut, id_look, n_analyzed) |>
     dplyr::summarise(
       # Standard metrics
-      pr_scs = mean(pr_scs, na.rm = TRUE),
-      se_pr_scs = calculate_mcse_mean(pr_scs, n_sims),
-      pr_ftl = mean(pr_ftl, na.rm = TRUE),
-      se_pr_ftl = calculate_mcse_mean(pr_ftl, n_sims),
-      pwr_scs = mean(dec_scs, na.rm = TRUE),
-      se_pwr_scs = calculate_mcse_power(dec_scs, n_sims),
-      pwr_ftl = mean(dec_ftl, na.rm = TRUE),
-      se_pwr_ftl = calculate_mcse_power(dec_ftl, n_sims),
+      pr_eff = mean(pr_eff, na.rm = TRUE),
+      se_pr_eff = calculate_mcse_mean(pr_eff, n_sims),
+      pr_fut = mean(pr_fut, na.rm = TRUE),
+      se_pr_fut = calculate_mcse_mean(pr_fut, n_sims),
+      pwr_eff = mean(dec_eff, na.rm = TRUE),
+      se_pwr_eff = calculate_mcse_power(dec_eff, n_sims),
+      pwr_fut = mean(dec_fut, na.rm = TRUE),
+      se_pwr_fut = calculate_mcse_power(dec_fut, n_sims),
       post_med = mean(.data$post_med, na.rm = TRUE),
       se_post_med = calculate_mcse_mean(.data$post_med, n_sims),
       post_mn = mean(.data$post_mn, na.rm = TRUE),
@@ -491,8 +491,8 @@ summarize_sims_with_interim <- function(results_df_raw, n_sims) {
     # Fill NA stopping stats with 0 (looks where no trials stopped)
     dplyr::mutate(
       prop_stp_look = dplyr::if_else(is.na(prop_stp_look), 0, prop_stp_look),
-      prop_scs_look = dplyr::if_else(is.na(prop_scs_look), 0, prop_scs_look),
-      prop_ftl_look = dplyr::if_else(is.na(prop_ftl_look), 0, prop_ftl_look),
+      prop_eff_look = dplyr::if_else(is.na(prop_eff_look), 0, prop_eff_look),
+      prop_fut_look = dplyr::if_else(is.na(prop_fut_look), 0, prop_fut_look),
       cumul_stp = dplyr::if_else(is.na(cumul_stp), 0, cumul_stp)
     )
 
@@ -571,9 +571,9 @@ summarize_sims_with_interim <- function(results_df_raw, n_sims) {
       n_mode = calc_mode(effective_n),
       prop_at_mode = calc_prop_at_mode(effective_n),
       prop_stp_early = mean(stopped_early, na.rm = TRUE),
-      prop_stp_scs = mean(stop_reason == "stop_success", na.rm = TRUE),
-      prop_stp_ftl = mean(stop_reason == "stop_futility", na.rm = TRUE),
-      prop_no_dec = 1 - prop_stp_scs - prop_stp_ftl,
+      prop_stp_eff = mean(stop_reason == "stop_efficacy", na.rm = TRUE),
+      prop_stp_fut = mean(stop_reason == "stop_futility", na.rm = TRUE),
+      prop_no_dec = 1 - prop_stp_eff - prop_stp_fut,
       .groups = "drop"
     )
 
@@ -581,25 +581,25 @@ summarize_sims_with_interim <- function(results_df_raw, n_sims) {
   final_look_id <- max(by_look$id_look)
   final_power <- by_look |>
     dplyr::filter(.data$id_look == final_look_id) |>
-    dplyr::select("id_cond", "pwr_scs", "pwr_ftl", "se_pwr_scs", "se_pwr_ftl")
+    dplyr::select("id_cond", "pwr_eff", "pwr_fut", "se_pwr_eff", "se_pwr_fut")
 
   # Merge and reorder columns logically
 
-  # NOTE: We do NOT add n_total here because conditions_grid already has it.
+  # NOTE: We do NOT add n_total here because grid already has it.
   # Adding it here would cause duplicate columns (n_total.x, n_total.y) after
 
   # the join in power_analysis(), breaking column access. The n_total from
-  # conditions_grid is the authoritative simulation parameter.
+  # grid is the authoritative simulation parameter.
   overall <- overall |>
     dplyr::left_join(final_power, by = "id_cond") |>
     dplyr::select(
       "id_cond",
-      # Sample size metrics (n_total comes from conditions_grid via join)
+      # Sample size metrics (n_total comes from grid via join)
       "n_planned", "n_mn", "n_mdn", "n_mode", "se_n_mn", "prop_at_mode",
       # Power metrics
-      "pwr_scs", "pwr_ftl", "se_pwr_scs", "se_pwr_ftl",
+      "pwr_eff", "pwr_fut", "se_pwr_eff", "se_pwr_fut",
       # Stopping proportions
-      "prop_stp_early", "prop_stp_scs", "prop_stp_ftl", "prop_no_dec"
+      "prop_stp_early", "prop_stp_eff", "prop_stp_fut", "prop_no_dec"
     )
 
   return(list(
@@ -620,14 +620,14 @@ summarize_sims_with_interim <- function(results_df_raw, n_sims) {
 #' configurations without re-running simulations.
 #'
 #' @param power_result An rctbp_power_analysis object with completed results
-#' @param p_sig_scs New success boundary specification. Can be:
+#' @param thr_dec_eff New efficacy boundary specification. Can be:
 #'   \itemize{
 #'     \item NULL to keep original thresholds
 #'     \item A single numeric value (same threshold at all looks)
 #'     \item A numeric vector (one threshold per look)
 #'     \item A boundary function from [boundary_obf()], [boundary_linear()], etc.
 #'   }
-#' @param p_sig_ftl New futility boundary specification (same format as p_sig_scs)
+#' @param thr_dec_fut New futility boundary specification (same format as thr_dec_eff)
 #'
 #' @return A new rctbp_power_analysis object with recomputed:
 #'   \itemize{
@@ -637,9 +637,9 @@ summarize_sims_with_interim <- function(results_df_raw, n_sims) {
 #'   }
 #'
 #' @details
-#' This function takes the raw posterior probabilities (`pr_scs`, `pr_ftl`) from
-#' existing simulation results and recomputes the binary decisions (`dec_scs`,
-#' `dec_ftl`) and stopping behavior using new probability thresholds.
+#' This function takes the raw posterior probabilities (`pr_eff`, `pr_fut`) from
+#' existing simulation results and recomputes the binary decisions (`dec_eff`,
+#' `dec_fut`) and stopping behavior using new probability thresholds.
 #'
 #' Since posterior probabilities are stored in results_raw, different threshold
 #' configurations can be explored without re-running the computationally expensive
@@ -656,8 +656,8 @@ summarize_sims_with_interim <- function(results_df_raw, n_sims) {
 #' # Re-analyze with O'Brien-Fleming-style boundaries
 #' result_obf <- resummarize_boundaries(
 #'   result,
-#'   p_sig_scs = boundary_obf(0.975),
-#'   p_sig_ftl = boundary_linear(0.70, 0.90)
+#'   thr_dec_eff = boundary_obf(0.975),
+#'   thr_dec_fut = boundary_linear(0.70, 0.90)
 #' )
 #'
 #' # Compare results
@@ -665,8 +665,8 @@ summarize_sims_with_interim <- function(results_df_raw, n_sims) {
 #' print(result_obf)  # OBF boundaries
 #' }
 resummarize_boundaries <- function(power_result,
-                                    p_sig_scs = NULL,
-                                    p_sig_ftl = NULL) {
+                                    thr_dec_eff = NULL,
+                                    thr_dec_fut = NULL) {
 
   # Validate input
  if (!inherits(power_result, "rctbayespower::rctbp_power_analysis") &&
@@ -698,22 +698,22 @@ resummarize_boundaries <- function(power_result,
   n_total <- max(look_info$n_analyzed)
 
   # Use original thresholds if not specified (now from conditions, not design)
-  if (is.null(p_sig_scs)) {
-    p_sig_scs <- get_original_threshold(power_result@conditions, "p_sig_scs")
+  if (is.null(thr_dec_eff)) {
+    thr_dec_eff <- get_original_threshold(power_result@conditions, "thr_dec_eff")
   }
-  if (is.null(p_sig_ftl)) {
-    p_sig_ftl <- get_original_threshold(power_result@conditions, "p_sig_ftl")
+  if (is.null(thr_dec_fut)) {
+    thr_dec_fut <- get_original_threshold(power_result@conditions, "thr_dec_fut")
   }
 
   # Resolve boundaries to per-look values
-  scs_thresholds <- resolve_boundary_vector(p_sig_scs, look_info, n_total)
-  ftl_thresholds <- resolve_boundary_vector(p_sig_ftl, look_info, n_total)
+  eff_thresholds <- resolve_boundary_vector(thr_dec_eff, look_info, n_total)
+  fut_thresholds <- resolve_boundary_vector(thr_dec_fut, look_info, n_total)
 
   # Create threshold lookup
   threshold_df <- look_info |>
     dplyr::mutate(
-      p_sig_scs_new = scs_thresholds,
-      p_sig_ftl_new = ftl_thresholds
+      thr_dec_eff_new = eff_thresholds,
+      thr_dec_fut_new = fut_thresholds
     )
 
   # Recompute decisions with new thresholds
@@ -723,24 +723,24 @@ resummarize_boundaries <- function(power_result,
     dplyr::arrange(.data$id_look) |>
     dplyr::mutate(
       # Recompute binary decisions
-      dec_scs = as.integer(.data$pr_scs >= .data$p_sig_scs_new),
-      dec_ftl = as.integer(.data$pr_ftl >= .data$p_sig_ftl_new),
-      # Update p_sig columns to show what was applied
-      p_sig_scs = .data$p_sig_scs_new,
-      p_sig_ftl = .data$p_sig_ftl_new,
+      dec_eff = as.integer(.data$pr_eff >= .data$thr_dec_eff_new),
+      dec_fut = as.integer(.data$pr_fut >= .data$thr_dec_fut_new),
+      # Update thr_dec columns to show what was applied
+      thr_dec_eff = .data$thr_dec_eff_new,
+      thr_dec_fut = .data$thr_dec_fut_new,
       # Recompute stopping
-      triggers_stop = (.data$dec_scs == 1) | (.data$dec_ftl == 1 & .data$dec_scs == 0),
+      triggers_stop = (.data$dec_eff == 1) | (.data$dec_fut == 1 & .data$dec_eff == 0),
       already_stopped = cumsum(dplyr::lag(.data$triggers_stop, default = FALSE)) > 0,
       is_stop_point = .data$triggers_stop & !.data$already_stopped,
       stopped = cumsum(.data$is_stop_point) > 0,
       stop_reason = dplyr::case_when(
-        .data$is_stop_point & .data$dec_scs == 1 ~ "stop_success",
-        .data$is_stop_point & .data$dec_ftl == 1 ~ "stop_futility",
+        .data$is_stop_point & .data$dec_eff == 1 ~ "stop_efficacy",
+        .data$is_stop_point & .data$dec_fut == 1 ~ "stop_futility",
         TRUE ~ NA_character_
       )
     ) |>
     dplyr::ungroup() |>
-    dplyr::select(-"p_sig_scs_new", -"p_sig_ftl_new", -"triggers_stop",
+    dplyr::select(-"thr_dec_eff_new", -"thr_dec_fut_new", -"triggers_stop",
                   -"already_stopped", -"is_stop_point")
 
   # Summarize with existing function
@@ -821,8 +821,8 @@ compare_boundaries <- function(power_result, boundaries) {
 
     reanalyzed <- resummarize_boundaries(
       power_result,
-      p_sig_scs = b$success,
-      p_sig_ftl = b$futility
+      thr_dec_eff = b$success,
+      thr_dec_fut = b$futility
     )
 
     # Extract overall summary and add boundary name

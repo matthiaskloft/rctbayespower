@@ -9,10 +9,10 @@ estimate_single_bf(
   model,
   backend_args,
   target_params,
-  thresh_scs,
-  thresh_ftl,
-  p_sig_scs,
-  p_sig_ftl,
+  thr_fx_eff,
+  thr_fx_fut,
+  thr_dec_eff,
+  thr_dec_fut,
   id_iter,
   id_cond
 )
@@ -26,13 +26,13 @@ estimate_single_bf(
 
 \item{target_params}{Character vector of parameter names}
 
-\item{thresh_scs}{Numeric vector of success thresholds (ROPE)}
+\item{thr_fx_eff}{Numeric vector of efficacy thresholds (ROPE)}
 
-\item{thresh_ftl}{Numeric vector of futility thresholds (ROPE)}
+\item{thr_fx_fut}{Numeric vector of futility thresholds (ROPE)}
 
-\item{p_sig_scs}{Probability threshold for success}
+\item{thr_dec_eff}{Probability threshold for efficacy}
 
-\item{p_sig_ftl}{Probability threshold for futility}
+\item{thr_dec_fut}{Probability threshold for futility}
 
 \item{id_iter}{Iteration identifier (scalar or vector for batch)}
 

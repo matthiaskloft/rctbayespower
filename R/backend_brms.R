@@ -98,25 +98,25 @@ estimate_posterior_brms <- function(data, brms_model, backend_args = list()) {
 #'
 #' @param posterior_rvars draws_rvars object from brms
 #' @param target_params Character vector of parameter names
-#' @param thresh_scs Numeric vector of success thresholds (ROPE)
-#' @param thresh_ftl Numeric vector of futility thresholds (ROPE)
-#' @param p_sig_scs Probability threshold for success
-#' @param p_sig_ftl Probability threshold for futility
+#' @param thr_fx_eff Numeric vector of efficacy thresholds (ROPE)
+#' @param thr_fx_fut Numeric vector of futility thresholds (ROPE)
+#' @param thr_dec_eff Probability threshold for efficacy
+#' @param thr_dec_fut Probability threshold for futility
 #'
 #' @return Data frame with package output schema
 #' @keywords internal
 summarize_post_brms <- function(posterior_rvars, target_params,
-                                 thresh_scs, thresh_ftl,
-                                 p_sig_scs, p_sig_ftl) {
+                                 thr_fx_eff, thr_fx_fut,
+                                 thr_dec_eff, thr_dec_fut) {
   # Delegate to existing compute_measures() function
   # which handles rvar operations
   compute_measures(
     posterior_rvars = posterior_rvars,
     target_params = target_params,
-    thresh_scs = thresh_scs,
-    thresh_ftl = thresh_ftl,
-    p_sig_scs = p_sig_scs,
-    p_sig_ftl = p_sig_ftl
+    thr_fx_eff = thr_fx_eff,
+    thr_fx_fut = thr_fx_fut,
+    thr_dec_eff = thr_dec_eff,
+    thr_dec_fut = thr_dec_fut
   )
 }
 
@@ -134,18 +134,18 @@ summarize_post_brms <- function(posterior_rvars, target_params,
 #' @param model brmsfit template model
 #' @param backend_args List of brms-specific arguments
 #' @param target_params Character vector of parameter names
-#' @param thresh_scs Numeric vector of success thresholds (ROPE)
-#' @param thresh_ftl Numeric vector of futility thresholds (ROPE)
-#' @param p_sig_scs Probability threshold for success
-#' @param p_sig_ftl Probability threshold for futility
+#' @param thr_fx_eff Numeric vector of efficacy thresholds (ROPE)
+#' @param thr_fx_fut Numeric vector of futility thresholds (ROPE)
+#' @param thr_dec_eff Probability threshold for efficacy
+#' @param thr_dec_fut Probability threshold for futility
 #' @param id_iter Iteration identifier
 #' @param id_cond Condition identifier
 #'
 #' @return Data frame with 1 row containing measures and IDs
 #' @keywords internal
 estimate_single_brms <- function(data, model, backend_args, target_params,
-                                 thresh_scs, thresh_ftl,
-                                 p_sig_scs, p_sig_ftl,
+                                 thr_fx_eff, thr_fx_fut,
+                                 thr_dec_eff, thr_dec_fut,
                                  id_iter, id_cond) {
 
   # Estimate posterior
@@ -187,18 +187,18 @@ estimate_single_brms <- function(data, model, backend_args, target_params,
   }
 
   # Resolve probability thresholds (info_frac = 1 for single-look designs)
-  current_p_sig_scs <- resolve_threshold(p_sig_scs, 1)
-  current_p_sig_ftl <- resolve_threshold(p_sig_ftl, 1)
+  current_thr_dec_eff <- resolve_threshold(thr_dec_eff, 1)
+  current_thr_dec_fut <- resolve_threshold(thr_dec_fut, 1)
 
   # Compute measures using brms summarization
   result <- tryCatch({
     df <- summarize_post_brms(
       posterior_rvars = posterior_rvars,
       target_params = target_params,
-      thresh_scs = thresh_scs,
-      thresh_ftl = thresh_ftl,
-      p_sig_scs = current_p_sig_scs,
-      p_sig_ftl = current_p_sig_ftl
+      thr_fx_eff = thr_fx_eff,
+      thr_fx_fut = thr_fx_fut,
+      thr_dec_eff = current_thr_dec_eff,
+      thr_dec_fut = current_thr_dec_fut
     ) |>
       dplyr::mutate(dplyr::across(-par_name, as.numeric))
     df |> dplyr::mutate(
@@ -229,10 +229,10 @@ estimate_single_brms <- function(data, model, backend_args, target_params,
 #' @param model brmsfit template model
 #' @param backend_args List of brms-specific arguments
 #' @param target_params Character vector of parameter names
-#' @param thresh_scs Numeric vector of success thresholds (ROPE)
-#' @param thresh_ftl Numeric vector of futility thresholds (ROPE)
-#' @param p_sig_scs Probability threshold for success (numeric or pre-resolved vector)
-#' @param p_sig_ftl Probability threshold for futility (numeric or pre-resolved vector)
+#' @param thr_fx_eff Numeric vector of efficacy thresholds (ROPE)
+#' @param thr_fx_fut Numeric vector of futility thresholds (ROPE)
+#' @param thr_dec_eff Probability threshold for efficacy (numeric or pre-resolved vector)
+#' @param thr_dec_fut Probability threshold for futility (numeric or pre-resolved vector)
 #' @param analysis_at Vector of sample sizes for all analyses (including final at n_total)
 #' @param interim_function Function to make interim decisions
 #' @param id_iter Iteration identifier
@@ -242,8 +242,8 @@ estimate_single_brms <- function(data, model, backend_args, target_params,
 #' @importFrom dplyr if_else
 #' @keywords internal
 estimate_sequential_brms <- function(full_data, model, backend_args, target_params,
-                                     thresh_scs, thresh_ftl,
-                                     p_sig_scs, p_sig_ftl,
+                                     thr_fx_eff, thr_fx_fut,
+                                     thr_dec_eff, thr_dec_fut,
                                      analysis_at, interim_function,
                                      id_iter, id_cond) {
 
@@ -263,8 +263,8 @@ estimate_sequential_brms <- function(full_data, model, backend_args, target_para
     info_frac <- current_n / n_total
 
     # Resolve probability thresholds (handle function or numeric)
-    current_p_sig_scs <- resolve_threshold(p_sig_scs, info_frac)
-    current_p_sig_ftl <- resolve_threshold(p_sig_ftl, info_frac)
+    current_thr_dec_eff <- resolve_threshold(thr_dec_eff, info_frac)
+    current_thr_dec_fut <- resolve_threshold(thr_dec_fut, info_frac)
 
     # Subset data to current analysis point
     analysis_data <- full_data[1:current_n, ]
@@ -320,10 +320,10 @@ estimate_sequential_brms <- function(full_data, model, backend_args, target_para
       summarize_post_brms(
         posterior_rvars = posterior_rvars,
         target_params = target_params,
-        thresh_scs = thresh_scs,
-        thresh_ftl = thresh_ftl,
-        p_sig_scs = current_p_sig_scs,
-        p_sig_ftl = current_p_sig_ftl
+        thr_fx_eff = thr_fx_eff,
+        thr_fx_fut = thr_fx_fut,
+        thr_dec_eff = current_thr_dec_eff,
+        thr_dec_fut = current_thr_dec_fut
       ) |>
         dplyr::mutate(dplyr::across(-par_name, as.numeric))
     }, error = function(e) {
@@ -367,14 +367,14 @@ estimate_sequential_brms <- function(full_data, model, backend_args, target_para
           list(decision = "continue", modified_params = NULL)
         })
       } else {
-        # Default stopping rule: stop when dec_scs = 1 or dec_ftl = 1
+        # Default stopping rule: stop when dec_eff = 1 or dec_fut = 1
         # Check the first target parameter (or union if multiple)
-        dec_scs_val <- measures$dec_scs[1]
-        dec_ftl_val <- measures$dec_ftl[1]
+        dec_eff_val <- measures$dec_eff[1]
+        dec_fut_val <- measures$dec_fut[1]
 
-        if (!is.na(dec_scs_val) && dec_scs_val == 1) {
-          interim_decision <- list(decision = "stop_success", modified_params = NULL)
-        } else if (!is.na(dec_ftl_val) && dec_ftl_val == 1) {
+        if (!is.na(dec_eff_val) && dec_eff_val == 1) {
+          interim_decision <- list(decision = "stop_efficacy", modified_params = NULL)
+        } else if (!is.na(dec_fut_val) && dec_fut_val == 1) {
           interim_decision <- list(decision = "stop_futility", modified_params = NULL)
         } else {
           interim_decision <- list(decision = "continue", modified_params = NULL)
@@ -382,7 +382,7 @@ estimate_sequential_brms <- function(full_data, model, backend_args, target_para
       }
 
       # Record stopping decision (loop continues but no more decisions made)
-      if (interim_decision$decision %in% c("stop_success", "stop_futility")) {
+      if (interim_decision$decision %in% c("stop_efficacy", "stop_futility")) {
         stopped <- TRUE
         stop_reason <- interim_decision$decision
       }

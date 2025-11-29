@@ -9,10 +9,10 @@ estimate_sequential_bf(
   model,
   backend_args,
   target_params,
-  thresh_scs,
-  thresh_ftl,
-  p_sig_scs,
-  p_sig_ftl,
+  thr_fx_eff,
+  thr_fx_fut,
+  thr_dec_eff,
+  thr_dec_fut,
   analysis_at,
   interim_function,
   id_iter,
@@ -28,13 +28,13 @@ estimate_sequential_bf(
 
 \item{target_params}{Character vector of parameter names}
 
-\item{thresh_scs}{Numeric vector of success thresholds (ROPE)}
+\item{thr_fx_eff}{Numeric vector of efficacy thresholds (ROPE)}
 
-\item{thresh_ftl}{Numeric vector of futility thresholds (ROPE)}
+\item{thr_fx_fut}{Numeric vector of futility thresholds (ROPE)}
 
-\item{p_sig_scs}{Probability threshold for success (numeric or pre-resolved vector)}
+\item{thr_dec_eff}{Probability threshold for efficacy (numeric or pre-resolved vector)}
 
-\item{p_sig_ftl}{Probability threshold for futility (numeric or pre-resolved vector)}
+\item{thr_dec_fut}{Probability threshold for futility (numeric or pre-resolved vector)}
 
 \item{analysis_at}{Vector of sample sizes for all analyses (including final)}
 

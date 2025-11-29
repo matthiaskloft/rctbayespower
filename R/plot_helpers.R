@@ -17,14 +17,14 @@
 #' @keywords internal
 pivot_plot_data_long <- function(plot_data, decision, metric, include_se = FALSE) {
   # Determine columns to pivot
-  value_cols <- c("pwr_scs", "pwr_ftl", "pr_scs", "pr_ftl")
+  value_cols <- c("pwr_eff", "pwr_fut", "pr_eff", "pr_fut")
 
   # Pivot power and probability columns to long format
   plot_data_long <- plot_data |>
     tidyr::pivot_longer(
       cols = dplyr::all_of(value_cols),
       names_to = c("measure", "outcome"),
-      names_pattern = "(pwr|pr)_(scs|ftl)",
+      names_pattern = "(pwr|pr)_(eff|fut)",
       values_to = "value"
     ) |>
     dplyr::mutate(
@@ -35,14 +35,14 @@ pivot_plot_data_long <- function(plot_data, decision, metric, include_se = FALSE
       ),
       outcome = dplyr::case_match(
         .data$outcome,
-        "scs" ~ "Success",
-        "ftl" ~ "Futility"
+        "eff" ~ "Efficacy",
+        "fut" ~ "Futility"
       )
     )
 
   # Add standard errors if requested and available
   if (include_se) {
-    se_cols <- c("se_pwr_scs", "se_pwr_ftl", "se_pr_scs", "se_pr_ftl")
+    se_cols <- c("se_pwr_eff", "se_pwr_fut", "se_pr_eff", "se_pr_fut")
     available_se_cols <- se_cols[se_cols %in% names(plot_data)]
 
     if (length(available_se_cols) == 0) {
@@ -64,12 +64,12 @@ pivot_plot_data_long <- function(plot_data, decision, metric, include_se = FALSE
         tidyr::pivot_longer(
           cols = dplyr::all_of(available_se_cols),
           names_to = c("se_measure", "se_outcome"),
-          names_pattern = "se_(pwr|pr)_(scs|ftl)",
+          names_pattern = "se_(pwr|pr)_(eff|fut)",
           values_to = "se"
         ) |>
         dplyr::mutate(
           se_measure = dplyr::case_match(.data$se_measure, "pwr" ~ "Power", "pr" ~ "Probability"),
-          se_outcome = dplyr::case_match(.data$se_outcome, "scs" ~ "Success", "ftl" ~ "Futility")
+          se_outcome = dplyr::case_match(.data$se_outcome, "eff" ~ "Efficacy", "fut" ~ "Futility")
         ) |>
         dplyr::select(-dplyr::any_of(value_cols))
 
@@ -87,7 +87,7 @@ pivot_plot_data_long <- function(plot_data, decision, metric, include_se = FALSE
 
   # Filter based on decision parameter
   if (decision == "success") {
-    plot_data_long <- dplyr::filter(plot_data_long, .data$outcome == "Success")
+    plot_data_long <- dplyr::filter(plot_data_long, .data$outcome == "Efficacy")
   } else if (decision == "futility") {
     plot_data_long <- dplyr::filter(plot_data_long, .data$outcome == "Futility")
   }
@@ -104,13 +104,13 @@ pivot_plot_data_long <- function(plot_data, decision, metric, include_se = FALSE
 
 #' Standard color palette for power analysis plots
 #'
-#' Returns named vector of colors for success/futility outcomes.
+#' Returns named vector of colors for efficacy/futility outcomes.
 #'
 #' @return Named character vector of colors
 #' @keywords internal
 rctbp_colors <- function() {
   c(
-    "Success" = "steelblue",
+    "Efficacy" = "steelblue",
     "Futility" = "darkred"
   )
 }

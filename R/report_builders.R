@@ -78,10 +78,10 @@ fmt_params <- function(params) {
 #' Get Threshold Display from Conditions
 #'
 #' Extracts a threshold parameter value from conditions and formats for display.
-#' Checks constant, crossed, and conditions_grid in order.
+#' Checks constant, crossed, and grid in order.
 #'
 #' @param conditions An rctbp_conditions object
-#' @param param_name Name of the threshold parameter (e.g., "p_sig_scs")
+#' @param param_name Name of the threshold parameter (e.g., "thr_dec_eff")
 #' @return Character string describing the threshold value(s)
 #' @keywords internal
 get_threshold_display <- function(conditions, param_name) {
@@ -105,9 +105,9 @@ get_threshold_display <- function(conditions, param_name) {
     }
   }
 
-  # Check conditions_grid
-  if (param_name %in% names(conditions@conditions_grid)) {
-    vals <- unique(conditions@conditions_grid[[param_name]])
+  # Check grid
+  if (param_name %in% names(conditions@grid)) {
+    vals <- unique(conditions@grid[[param_name]])
     if (length(vals) == 1) {
       return(format_boundary(vals))
     } else {
@@ -125,7 +125,7 @@ get_threshold_display <- function(conditions, param_name) {
 #' Unlike get_threshold_display(), this returns the actual value, not a display string.
 #'
 #' @param conditions An rctbp_conditions object
-#' @param param_name Name of the threshold parameter (e.g., "p_sig_scs")
+#' @param param_name Name of the threshold parameter (e.g., "thr_dec_eff")
 #' @return The original threshold value (numeric, function, or NULL if not found)
 #' @keywords internal
 get_original_threshold <- function(conditions, param_name) {
@@ -139,9 +139,9 @@ get_original_threshold <- function(conditions, param_name) {
     return(conditions@crossed[[param_name]])
   }
 
-  # Check conditions_grid - return the first unique value
-  if (param_name %in% names(conditions@conditions_grid)) {
-    vals <- unique(conditions@conditions_grid[[param_name]])
+  # Check grid - return the first unique value
+  if (param_name %in% names(conditions@grid)) {
+    vals <- unique(conditions@grid[[param_name]])
     if (length(vals) == 1) {
       return(vals)
     } else {
@@ -207,7 +207,7 @@ build_report.rctbp_model <- function(x) {
 #'
 build_report.rctbp_design <- function(x) {
   # NOTE: After API merge, model properties are directly on design (not x@model@*)
-  # NOTE: Decision parameters (p_sig_scs, p_sig_ftl, analysis_at, etc.) are now in conditions
+  # NOTE: Decision parameters (thr_dec_eff, thr_dec_fut, analysis_at, etc.) are now in conditions
   list(
     title = "S7 Object: rctbp_design",
     sections = list(
@@ -255,7 +255,7 @@ build_report.rctbp_design <- function(x) {
 #' @keywords internal
 #'
 build_report.rctbp_conditions <- function(x) {
-  n_conditions <- nrow(x@conditions_grid)
+  n_conditions <- nrow(x@grid)
   n_constant <- length(x@constant)
 
   # Count regular params and link() groups in crossed
@@ -300,7 +300,7 @@ build_report.rctbp_conditions <- function(x) {
       ),
       list(
         name = "Condition Grid",
-        grid = x@conditions_grid
+        grid = x@grid
       )
     )
   )
@@ -327,8 +327,8 @@ build_report.rctbp_power_analysis <- function(x, target_pwr = NULL) {
 
   # Get decision thresholds from conditions (in crossed or constant)
   conditions <- x@conditions
-  p_sig_scs_display <- get_threshold_display(conditions, "p_sig_scs")
-  p_sig_ftl_display <- get_threshold_display(conditions, "p_sig_ftl")
+  thr_dec_eff_display <- get_threshold_display(conditions, "thr_dec_eff")
+  thr_dec_fut_display <- get_threshold_display(conditions, "thr_dec_fut")
 
   report <- list(
     title = "Power Analysis Summary",
@@ -337,8 +337,8 @@ build_report.rctbp_power_analysis <- function(x, target_pwr = NULL) {
         name = "Design Summary",
         items = list(
           "Target parameters" = paste(design@target_params, collapse = ", "),
-          "Success probability threshold" = p_sig_scs_display,
-          "Futility probability threshold" = p_sig_ftl_display,
+          "Efficacy probability threshold" = thr_dec_eff_display,
+          "Futility probability threshold" = thr_dec_fut_display,
           "Target power" = target_pwr_display
         )
       )
@@ -347,7 +347,7 @@ build_report.rctbp_power_analysis <- function(x, target_pwr = NULL) {
 
   if (has_results) {
     # Completed analysis
-    n_conditions <- nrow(x@conditions@conditions_grid)
+    n_conditions <- nrow(x@conditions@grid)
 
     # Check for interim analysis results (via S7 property)
     has_interim <- x@has_interim
@@ -358,7 +358,7 @@ build_report.rctbp_power_analysis <- function(x, target_pwr = NULL) {
 
     # Power ranges
     power_ranges <- NULL
-    power_cols <- intersect(names(results_df), c("pwr_scs", "pwr_ftl"))
+    power_cols <- intersect(names(results_df), c("pwr_eff", "pwr_fut"))
     if (length(power_cols) > 0) {
       power_ranges <- lapply(power_cols, function(col) {
         power_range <- range(results_df[[col]], na.rm = TRUE)
@@ -387,10 +387,10 @@ build_report.rctbp_power_analysis <- function(x, target_pwr = NULL) {
     # Find optimal condition for target power
     optimal <- find_optimal_condition(
       results_summ = results_df,
-      conditions_grid = x@conditions@conditions_grid,
+      conditions_grid = x@conditions@grid,
       target_pwr = target_pwr,
       interim_overall = interim_overall,
-      power_col = "pwr_scs"
+      power_col = "pwr_eff"
     )
 
     # Helper to format condition parameters
@@ -414,8 +414,8 @@ build_report.rctbp_power_analysis <- function(x, target_pwr = NULL) {
         n_mode = round(interim$n_mode, 0),
         prop_at_mode = paste0(round(interim$prop_at_mode * 100, 1), "%"),
         prop_stp_early = paste0(round(interim$prop_stp_early * 100, 1), "%"),
-        prop_stp_scs = paste0(round(interim$prop_stp_scs * 100, 1), "%"),
-        prop_stp_ftl = paste0(round(interim$prop_stp_ftl * 100, 1), "%"),
+        prop_stp_eff = paste0(round(interim$prop_stp_eff * 100, 1), "%"),
+        prop_stp_fut = paste0(round(interim$prop_stp_fut * 100, 1), "%"),
         prop_no_dec = paste0(round(interim$prop_no_dec * 100, 1), "%")
       )
     }
@@ -489,7 +489,7 @@ build_report.rctbp_power_analysis <- function(x, target_pwr = NULL) {
     ))
   } else {
     # Pending analysis
-    n_conditions <- nrow(x@conditions@conditions_grid)
+    n_conditions <- nrow(x@conditions@grid)
     total_sims <- n_conditions * x@n_sims
 
     report$status <- "PENDING"
@@ -540,7 +540,7 @@ build_report.rctbp_power_analysis <- function(x, target_pwr = NULL) {
 #' @param conditions_grid A data.frame with condition parameter combinations
 #' @param target_pwr Target power level (0 to 1), or NULL for highest power
 #' @param interim_overall Optional data.frame with interim analysis stats
-#' @param power_col Column name for power values (default "pwr_scs")
+#' @param power_col Column name for power values (default "pwr_eff")
 #'
 #' @return A list with:
 #'   \item{found}{Logical indicating if an optimal condition was found}
@@ -557,7 +557,7 @@ build_report.rctbp_power_analysis <- function(x, target_pwr = NULL) {
 #'
 find_optimal_condition <- function(results_summ, conditions_grid, target_pwr,
                                     interim_overall = NULL,
-                                    power_col = "pwr_scs") {
+                                    power_col = "pwr_eff") {
   # Default return for cases where no optimal found
   not_found <- list(
     found = FALSE,
@@ -637,8 +637,8 @@ find_optimal_condition <- function(results_summ, conditions_grid, target_pwr,
       n_mode = row$n_mode[1],
       prop_at_mode = row$prop_at_mode[1],
       prop_stp_early = row$prop_stp_early[1],
-      prop_stp_scs = row$prop_stp_scs[1],
-      prop_stp_ftl = row$prop_stp_ftl[1],
+      prop_stp_eff = row$prop_stp_eff[1],
+      prop_stp_fut = row$prop_stp_fut[1],
       prop_no_dec = row$prop_no_dec[1]
     )
   }
@@ -734,7 +734,7 @@ find_optimal_condition <- function(results_summ, conditions_grid, target_pwr,
 #' The report includes a table with:
 #' \itemize{
 #'   \item Condition identifiers and sample sizes
-#'   \item Power metrics: `pwr_scs` (success rate), `pwr_ftl` (futility rate)
+#'   \item Power metrics: `pwr_eff` (efficacy rate), `pwr_fut` (futility rate)
 #'   \item Posterior estimates: `post_mn`, `post_sd`
 #'   \item Convergence: `rhat`, `ess_bulk`
 #' }
@@ -783,14 +783,14 @@ report_power <- function(x, format = c("cli", "markdown"), heading_level = 2L) {
   }
 
   # Select relevant columns
-  cols <- c("id_cond", "n_total", "par_name", "pwr_scs", "se_pwr_scs",
-            "pwr_ftl", "se_pwr_ftl", "post_mn", "post_sd", "rhat", "ess_bulk")
+  cols <- c("id_cond", "n_total", "par_name", "pwr_eff", "se_pwr_eff",
+            "pwr_fut", "se_pwr_fut", "post_mn", "post_sd", "rhat", "ess_bulk")
   cols_available <- intersect(cols, names(power_df))
   power_table <- power_df[, cols_available, drop = FALSE]
 
   # Sort by power (descending)
-  if ("pwr_scs" %in% names(power_table)) {
-    power_table <- power_table[order(-power_table$pwr_scs), ]
+  if ("pwr_eff" %in% names(power_table)) {
+    power_table <- power_table[order(-power_table$pwr_eff), ]
   }
 
   # Build report
@@ -827,7 +827,7 @@ report_power <- function(x, format = c("cli", "markdown"), heading_level = 2L) {
 #' The report includes a table with per-condition statistics:
 #' \itemize{
 #'   \item Sample sizes: `n_total`, `n_planned`, `n_mn`, `n_mdn`, `n_mode`
-#'   \item Stopping proportions: `prop_stp_early`, `prop_stp_scs`, `prop_stp_ftl`
+#'   \item Stopping proportions: `prop_stp_early`, `prop_stp_eff`, `prop_stp_fut`
 #'   \item Modal stopping: `prop_at_mode` (proportion stopped at modal N)
 #'   \item No decision rate: `prop_no_dec`
 #' }
@@ -874,8 +874,8 @@ report_stopping <- function(x, format = c("cli", "markdown"), heading_level = 2L
 
   # Select relevant columns
   cols <- c("id_cond", "n_total", "n_planned", "n_mn", "se_n_mn", "n_mdn",
-            "n_mode", "prop_at_mode", "prop_stp_early", "prop_stp_scs",
-            "prop_stp_ftl", "prop_no_dec")
+            "n_mode", "prop_at_mode", "prop_stp_early", "prop_stp_eff",
+            "prop_stp_fut", "prop_no_dec")
   cols_available <- intersect(cols, names(stopping_df))
   stopping_table <- stopping_df[, cols_available, drop = FALSE]
 
@@ -913,8 +913,8 @@ report_stopping <- function(x, format = c("cli", "markdown"), heading_level = 2L
 #' The report includes a table with per-look × per-condition statistics:
 #' \itemize{
 #'   \item Look identifiers: `id_cond`, `id_look`, `n_analyzed`
-#'   \item Power at this look: `pwr_scs`, `pwr_ftl`
-#'   \item Stopping at this look: `prop_stp_look`, `prop_scs_look`, `prop_ftl_look`
+#'   \item Power at this look: `pwr_eff`, `pwr_fut`
+#'   \item Stopping at this look: `prop_stp_look`, `prop_eff_look`, `prop_fut_look`
 #'   \item Cumulative stopping: `cumul_stp`
 #' }
 #'
@@ -961,8 +961,8 @@ report_stopping_by_look <- function(x, format = c("cli", "markdown"),
   n_looks <- length(unique(look_df$id_look))
 
   # Select relevant columns
-  cols <- c("id_cond", "id_look", "n_analyzed", "pwr_scs", "pwr_ftl",
-            "prop_stp_look", "prop_scs_look", "prop_ftl_look", "cumul_stp")
+  cols <- c("id_cond", "id_look", "n_analyzed", "pwr_eff", "pwr_fut",
+            "prop_stp_look", "prop_eff_look", "prop_fut_look", "cumul_stp")
   cols_available <- intersect(cols, names(look_df))
   look_table <- look_df[, cols_available, drop = FALSE]
 

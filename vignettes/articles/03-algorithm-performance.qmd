@@ -97,10 +97,10 @@ conditions <- build_conditions(
     # baseline effect
     b_covariate = 0,
     # decision thresholds
-    p_sig_scs = 0.975,
-    p_sig_ftl = 0.5,
-    thresh_scs = 0.1,
-    thresh_ftl = 0
+    thr_dec_eff = 0.975,
+    thr_dec_fut = 0.5,
+    thr_fx_eff = 0.1,
+    thr_fx_fut = 0
   )
 )
 ```
@@ -175,10 +175,10 @@ results_summary |>
     Algorithm,
     n_total,
     b_arm_treat,
-    pr_scs,
-    pr_ftl,
-    pwr_scs,
-    pwr_ftl
+    pr_eff,
+    pr_fut,
+    pwr_eff,
+    pwr_fut
   ) |>
   dplyr::arrange(desc(b_arm_treat)) |> 
   kableExtra::kable(digits = 2)

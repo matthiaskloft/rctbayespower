@@ -29,10 +29,10 @@ results are detected. It computes:
 
 \strong{Per-Look Metrics (by_look):}
 \itemize{
-\item Power metrics: \code{pr_scs}, \code{pr_ftl}, \code{pwr_scs}, \code{pwr_ftl} (with SEs)
+\item Power metrics: \code{pr_eff}, \code{pr_fut}, \code{pwr_eff}, \code{pwr_fut} (with SEs)
 \item Posterior estimates: \code{post_med}, \code{post_mn}, \code{post_sd} (with SEs)
 \item Convergence: \code{rhat}, \code{ess_bulk}, \code{conv_rate}
-\item Stopping at this look: \code{prop_stp_look}, \code{prop_scs_look}, \code{prop_ftl_look}
+\item Stopping at this look: \code{prop_stp_look}, \code{prop_eff_look}, \code{prop_fut_look}
 \item Cumulative stopping: \code{cumul_stp}
 }
 
@@ -44,9 +44,9 @@ results are detected. It computes:
 \item \code{n_mode}: Modal sample size (most frequent stopping point)
 \item \code{prop_at_mode}: Proportion of trials at modal N
 \item \code{prop_stp_early}: Proportion stopped before final look
-\item \code{prop_stp_scs}: Proportion stopped for success
-\item \code{prop_stp_ftl}: Proportion stopped for futility
-\item \code{prop_no_dec}: Proportion with no decision (= 1 - prop_stp_scs - prop_stp_ftl)
+\item \code{prop_stp_eff}: Proportion stopped for efficacy
+\item \code{prop_stp_fut}: Proportion stopped for futility
+\item \code{prop_no_dec}: Proportion with no decision (= 1 - prop_stp_eff - prop_stp_fut)
 }
 }
 \seealso{

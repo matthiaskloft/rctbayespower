@@ -7,10 +7,10 @@
 summarize_post_bf(
   draws_mat,
   target_param,
-  thr_scs,
-  thr_ftl,
-  p_sig_scs,
-  p_sig_ftl,
+  thr_fx_eff,
+  thr_fx_fut,
+  thr_dec_eff,
+  thr_dec_fut,
   id_iter,
   id_cond,
   id_look = 1L,
@@ -23,13 +23,13 @@ summarize_post_bf(
 
 \item{target_param}{Parameter name (single string)}
 
-\item{thr_scs}{Success threshold (numeric)}
+\item{thr_fx_eff}{Efficacy threshold (numeric)}
 
-\item{thr_ftl}{Futility threshold (numeric)}
+\item{thr_fx_fut}{Futility threshold (numeric)}
 
-\item{p_sig_scs}{Success probability threshold}
+\item{thr_dec_eff}{Efficacy probability threshold}
 
-\item{p_sig_ftl}{Futility probability threshold}
+\item{thr_dec_fut}{Futility probability threshold}
 
 \item{id_iter}{Vector of iteration IDs (length = n_sims)}
 

@@ -21,14 +21,14 @@ See also: [`11_code_consistency_review.md`](11_code_consistency_review.md) for d
 | Element | Convention | Examples |
 |---------|------------|----------|
 | S7 classes | `rctbp_*` prefix | `rctbp_model`, `rctbp_design` |
-| Power columns | `pwr_*` prefix | `pwr_scs`, `pwr_ftl` |
-| Probability columns | `pr_*` prefix | `pr_scs`, `pr_ftl` |
-| Decision columns | `dec_*` prefix | `dec_scs`, `dec_ftl` |
-| Standard error cols | `se_*` prefix | `se_pwr_scs`, `se_pr_ftl` |
-| Success suffix | `_scs` | `pwr_scs`, `pr_scs` |
-| Futility suffix | `_ftl` | `pwr_ftl`, `pr_ftl` |
+| Power columns | `pwr_*` prefix | `pwr_eff`, `pwr_fut` |
+| Probability columns | `pr_*` prefix | `pr_eff`, `pr_fut` |
+| Decision columns | `dec_*` prefix | `dec_eff`, `dec_fut` |
+| Standard error cols | `se_*` prefix | `se_pwr_eff`, `se_pr_fut` |
+| Efficacy suffix | `_eff` | `pwr_eff`, `pr_eff` |
+| Futility suffix | `_fut` | `pwr_fut`, `pr_fut` |
 | Functions | snake_case | `build_model`, `power_analysis` |
-| Parameters | snake_case | `n_total`, `p_sig_scs` |
+| Parameters | snake_case | `n_total`, `thr_dec_eff` |
 
 ### File Structure
 

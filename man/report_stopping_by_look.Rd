@@ -27,8 +27,8 @@ and condition. This report is only available for sequential designs.
 The report includes a table with per-look × per-condition statistics:
 \itemize{
 \item Look identifiers: \code{id_cond}, \code{id_look}, \code{n_analyzed}
-\item Power at this look: \code{pwr_scs}, \code{pwr_ftl}
-\item Stopping at this look: \code{prop_stp_look}, \code{prop_scs_look}, \code{prop_ftl_look}
+\item Power at this look: \code{pwr_eff}, \code{pwr_fut}
+\item Stopping at this look: \code{prop_stp_look}, \code{prop_eff_look}, \code{prop_fut_look}
 \item Cumulative stopping: \code{cumul_stp}
 }
 }

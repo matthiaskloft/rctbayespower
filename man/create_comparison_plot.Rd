@@ -17,7 +17,7 @@ create_comparison_plot(
 \arguments{
 \item{plot_data}{Data frame with power analysis results}
 
-\item{design}{Design object with p_sig_scs and p_sig_ftl}
+\item{design}{Design object with thr_dec_eff and thr_dec_fut}
 
 \item{analysis_type}{One of "sample_only" or "effect_only"}
 

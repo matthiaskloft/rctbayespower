@@ -36,7 +36,7 @@
 #'     ),
 #'     b_arm_treat = c(0, 0.3)
 #'   ),
-#'   constant = list(p_sig_scs = 0.975, p_sig_ftl = 0.5)
+#'   constant = list(thr_dec_eff = 0.975, thr_dec_fut = 0.5)
 #' )
 #' # Creates 4 conditions: 2 (n_total × analysis_at linked) × 2 b_arm_treat
 #' }
@@ -83,8 +83,8 @@ link <- function(...) {
 #' @importFrom S7 new_class class_list class_any class_data.frame new_property
 rctbp_conditions <- S7::new_class("rctbp_conditions",
   properties = list(
-    conditions_grid = S7::class_data.frame,       # All parameter combinations
-    condition_arguments = S7::class_list,         # Structured args per condition
+    grid = S7::class_data.frame,                  # All parameter combinations
+    params_by_cond = S7::class_list,              # Structured args per condition
     design = S7::class_any,                       # rctbp_design object
     crossed = S7::class_list,                     # Cartesian product params (may include link() groups)
     constant = S7::class_list,                    # Constant params across conditions
@@ -99,14 +99,14 @@ rctbp_conditions <- S7::new_class("rctbp_conditions",
   ),
   # Validator ensures grid and arguments are consistent
   validator = function(self) {
-    # Validate conditions_grid has rows
-    if (nrow(self@conditions_grid) == 0) {
-      return("'conditions_grid' must have at least one row.")
+    # Validate grid has rows
+    if (nrow(self@grid) == 0) {
+      return("'grid' must have at least one row.")
     }
 
     # Validate one argument set per condition row
-    if (length(self@condition_arguments) != nrow(self@conditions_grid)) {
-      return("'condition_arguments' length must match 'conditions_grid' rows.")
+    if (length(self@params_by_cond) != nrow(self@grid)) {
+      return("'params_by_cond' length must match 'grid' rows.")
     }
 
     # Validate design object
@@ -155,8 +155,8 @@ rctbp_conditions <- S7::new_class("rctbp_conditions",
 #' @param linked Deprecated. Use [link()] inside `crossed` instead.
 #'
 #' @return An S7 object of class "rctbp_conditions" containing:
-#'   \item{conditions_grid}{A data.frame with all parameter combinations}
-#'   \item{condition_arguments}{A list of argument lists for each condition,
+#'   \item{grid}{A data.frame with all parameter combinations}
+#'   \item{params_by_cond}{A list of argument lists for each condition,
 #'     separated into simulation and decision arguments}
 #'   \item{design}{The original rctbp_design object}
 #'   \item{crossed}{The original crossed specification (may contain link() groups)}
@@ -191,8 +191,8 @@ rctbp_conditions <- S7::new_class("rctbp_conditions",
 #'   design = my_design,
 #'   crossed = list(n_total = c(100, 200), b_arm_treat = c(0.3, 0.5)),
 #'   constant = list(
-#'     p_sig_scs = 0.975, p_sig_ftl = 0.5,
-#'     thresh_scs = 0.2, thresh_ftl = 0
+#'     thr_dec_eff = 0.975, thr_dec_fut = 0.5,
+#'     thr_fx_eff = 0.2, thr_fx_fut = 0
 #'   )
 #' )
 #'
@@ -203,7 +203,7 @@ rctbp_conditions <- S7::new_class("rctbp_conditions",
 #'     link(n_total = c(80, 160), analysis_at = list(c(40,80), c(80,160))),
 #'     b_arm_treat = c(0, 0.3)
 #'   ),
-#'   constant = list(p_sig_scs = 0.975, p_sig_ftl = 0.5)
+#'   constant = list(thr_dec_eff = 0.975, thr_dec_fut = 0.5)
 #' )
 #' }
 #'
@@ -567,17 +567,17 @@ build_conditions <- function(design,
     # Calculate information fractions for boundary resolution
     info_fracs <- analysis_points / n_total
 
-    # Pre-resolve p_sig_scs if it's a function
+    # Pre-resolve thr_dec_eff if it's a function
     # Boundary functions accept vector of info_fracs and return vector of thresholds
-    if (is.function(decision_args$p_sig_scs)) {
-      decision_args$p_sig_scs_display <- "boundary_function"
-      decision_args$p_sig_scs <- decision_args$p_sig_scs(info_fracs)
+    if (is.function(decision_args$thr_dec_eff)) {
+      decision_args$thr_dec_eff_display <- "boundary_function"
+      decision_args$thr_dec_eff <- decision_args$thr_dec_eff(info_fracs)
     }
 
-    # Pre-resolve p_sig_ftl if it's a function
-    if (is.function(decision_args$p_sig_ftl)) {
-      decision_args$p_sig_ftl_display <- "boundary_function"
-      decision_args$p_sig_ftl <- decision_args$p_sig_ftl(info_fracs)
+    # Pre-resolve thr_dec_fut if it's a function
+    if (is.function(decision_args$thr_dec_fut)) {
+      decision_args$thr_dec_fut_display <- "boundary_function"
+      decision_args$thr_dec_fut <- decision_args$thr_dec_fut(info_fracs)
     }
 
     # Return both sets of args
@@ -593,12 +593,12 @@ build_conditions <- function(design,
   # ===========================================================================
   # Replace boundary functions in grid with their resolved numerical values
   # so the display shows actual thresholds, not function objects.
-  for (col in c("p_sig_scs", "p_sig_ftl")) {
+  for (col in c("thr_dec_eff", "thr_dec_fut")) {
     if (col %in% names(df_grid) && is.list(df_grid[[col]])) {
       df_grid[[col]] <- lapply(seq_along(df_grid[[col]]), function(i) {
         original_val <- df_grid[[col]][[i]]
         if (is.function(original_val)) {
-          # Get resolved value from condition_arguments
+          # Get resolved value from params_by_cond
           condition_arguments[[i]]$decision_args[[col]]
         } else {
           original_val
@@ -610,8 +610,8 @@ build_conditions <- function(design,
   # Create S7 object - validation happens automatically
   # Store crossed_original to preserve user's input (including link() objects)
   conditions_obj <- rctbp_conditions(
-    conditions_grid = df_grid,
-    condition_arguments = condition_arguments,
+    grid = df_grid,
+    params_by_cond = condition_arguments,
     design = design,
     crossed = crossed_original,
     constant = constant,

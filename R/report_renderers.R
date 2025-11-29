@@ -40,7 +40,7 @@ format_table_cli <- function(df, max_rows = 20) {
     if (is.numeric(df[[col]])) {
       # Detect if likely a proportion based on column name AND value range
       # Only format as percentage if column name suggests it's a proportion/probability
-      is_proportion_col <- grepl("^(pwr_|prop_|p_sig_|se_pwr_)", col, ignore.case = TRUE)
+      is_proportion_col <- grepl("^(pwr_|prop_|thr_dec_|se_pwr_|pr_|se_pr_)", col, ignore.case = TRUE)
       vals <- df[[col]][!is.na(df[[col]])]
       if (is_proportion_col && length(vals) > 0 && all(vals >= 0 & vals <= 1)) {
         # Format as percentage
@@ -145,7 +145,7 @@ format_table_markdown <- function(df, max_rows = 20) {
     if (is.numeric(df[[col]])) {
       # Detect if likely a proportion based on column name AND value range
       # Only format as percentage if column name suggests it's a proportion/probability
-      is_proportion_col <- grepl("^(pwr_|prop_|p_sig_|se_pwr_)", col, ignore.case = TRUE)
+      is_proportion_col <- grepl("^(pwr_|prop_|thr_dec_|se_pwr_|pr_|se_pr_)", col, ignore.case = TRUE)
       vals <- df[[col]][!is.na(df[[col]])]
       if (is_proportion_col && length(vals) > 0 && all(vals >= 0 & vals <= 1)) {
         df[[col]] <- sprintf("%.1f%%", df[[col]] * 100)
@@ -284,8 +284,8 @@ render_cli <- function(report) {
             "*" = paste0("{.field Median N}: ", oc$interim$n_mdn),
             "*" = paste0("{.field Mode N}: ", oc$interim$n_mode, " (", oc$interim$prop_at_mode, " of trials)"),
             "*" = paste0("{.field Stopped early}: ", oc$interim$prop_stp_early),
-            "*" = paste0("{.field Stopped for success}: ", oc$interim$prop_stp_scs),
-            "*" = paste0("{.field Stopped for futility}: ", oc$interim$prop_stp_ftl),
+            "*" = paste0("{.field Stopped for efficacy}: ", oc$interim$prop_stp_eff),
+            "*" = paste0("{.field Stopped for futility}: ", oc$interim$prop_stp_fut),
             "*" = paste0("{.field No decision}: ", oc$interim$prop_no_dec)
           ))
         }
@@ -307,8 +307,8 @@ render_cli <- function(report) {
             "*" = paste0("{.field Median N}: ", oc$interim$n_mdn),
             "*" = paste0("{.field Mode N}: ", oc$interim$n_mode, " (", oc$interim$prop_at_mode, " of trials)"),
             "*" = paste0("{.field Stopped early}: ", oc$interim$prop_stp_early),
-            "*" = paste0("{.field Stopped for success}: ", oc$interim$prop_stp_scs),
-            "*" = paste0("{.field Stopped for futility}: ", oc$interim$prop_stp_ftl),
+            "*" = paste0("{.field Stopped for efficacy}: ", oc$interim$prop_stp_eff),
+            "*" = paste0("{.field Stopped for futility}: ", oc$interim$prop_stp_fut),
             "*" = paste0("{.field No decision}: ", oc$interim$prop_no_dec)
           ))
         }
@@ -456,8 +456,8 @@ render_markdown <- function(report, heading_level = 2L) {
             paste0("- Median N: ", oc$interim$n_mdn),
             paste0("- Mode N: ", oc$interim$n_mode, " (", oc$interim$prop_at_mode, " of trials)"),
             paste0("- Stopped early: ", oc$interim$prop_stp_early),
-            paste0("- Stopped for success: ", oc$interim$prop_stp_scs),
-            paste0("- Stopped for futility: ", oc$interim$prop_stp_ftl),
+            paste0("- Stopped for efficacy: ", oc$interim$prop_stp_eff),
+            paste0("- Stopped for futility: ", oc$interim$prop_stp_fut),
             paste0("- No decision: ", oc$interim$prop_no_dec)
           )
         }
@@ -481,8 +481,8 @@ render_markdown <- function(report, heading_level = 2L) {
             paste0("- Median N: ", oc$interim$n_mdn),
             paste0("- Mode N: ", oc$interim$n_mode, " (", oc$interim$prop_at_mode, " of trials)"),
             paste0("- Stopped early: ", oc$interim$prop_stp_early),
-            paste0("- Stopped for success: ", oc$interim$prop_stp_scs),
-            paste0("- Stopped for futility: ", oc$interim$prop_stp_ftl),
+            paste0("- Stopped for efficacy: ", oc$interim$prop_stp_eff),
+            paste0("- Stopped for futility: ", oc$interim$prop_stp_fut),
             paste0("- No decision: ", oc$interim$prop_no_dec)
           )
         }

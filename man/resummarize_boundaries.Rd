@@ -4,12 +4,12 @@
 \alias{resummarize_boundaries}
 \title{Re-summarize Results with Different Boundaries}
 \usage{
-resummarize_boundaries(power_result, p_sig_scs = NULL, p_sig_ftl = NULL)
+resummarize_boundaries(power_result, thr_dec_eff = NULL, thr_dec_fut = NULL)
 }
 \arguments{
 \item{power_result}{An rctbp_power_analysis object with completed results}
 
-\item{p_sig_scs}{New success boundary specification. Can be:
+\item{thr_dec_eff}{New efficacy boundary specification. Can be:
 \itemize{
 \item NULL to keep original thresholds
 \item A single numeric value (same threshold at all looks)
@@ -17,7 +17,7 @@ resummarize_boundaries(power_result, p_sig_scs = NULL, p_sig_ftl = NULL)
 \item A boundary function from \code{\link[=boundary_obf]{boundary_obf()}}, \code{\link[=boundary_linear]{boundary_linear()}}, etc.
 }}
 
-\item{p_sig_ftl}{New futility boundary specification (same format as p_sig_scs)}
+\item{thr_dec_fut}{New futility boundary specification (same format as thr_dec_eff)}
 }
 \value{
 A new rctbp_power_analysis object with recomputed:
@@ -33,9 +33,9 @@ a new power_analysis object with updated results. Useful for comparing boundary
 configurations without re-running simulations.
 }
 \details{
-This function takes the raw posterior probabilities (\code{pr_scs}, \code{pr_ftl}) from
-existing simulation results and recomputes the binary decisions (\code{dec_scs},
-\code{dec_ftl}) and stopping behavior using new probability thresholds.
+This function takes the raw posterior probabilities (\code{pr_eff}, \code{pr_fut}) from
+existing simulation results and recomputes the binary decisions (\code{dec_eff},
+\code{dec_fut}) and stopping behavior using new probability thresholds.
 
 Since posterior probabilities are stored in results_raw, different threshold
 configurations can be explored without re-running the computationally expensive
@@ -49,8 +49,8 @@ result <- power_analysis(conditions, n_sims = 500, analysis_at = c(0.5, 0.75))
 # Re-analyze with O'Brien-Fleming-style boundaries
 result_obf <- resummarize_boundaries(
   result,
-  p_sig_scs = boundary_obf(0.975),
-  p_sig_ftl = boundary_linear(0.70, 0.90)
+  thr_dec_eff = boundary_obf(0.975),
+  thr_dec_fut = boundary_linear(0.70, 0.90)
 )
 
 # Compare results

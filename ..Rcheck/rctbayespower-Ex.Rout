@@ -222,8 +222,8 @@ Type 'q()' to quit R.
 > ##D   design = my_design,
 > ##D   crossed = list(n_total = c(100, 200), b_arm_treat = c(0.3, 0.5)),
 > ##D   constant = list(
-> ##D     p_sig_scs = 0.975, p_sig_ftl = 0.5,
-> ##D     thresh_scs = 0.2, thresh_ftl = 0
+> ##D     thr_dec_eff = 0.975, thr_dec_fut = 0.5,
+> ##D     thr_fx_eff = 0.2, thr_fx_fut = 0
 > ##D   )
 > ##D )
 > ##D 
@@ -234,7 +234,7 @@ Type 'q()' to quit R.
 > ##D     link(n_total = c(80, 160), analysis_at = list(c(40,80), c(80,160))),
 > ##D     b_arm_treat = c(0, 0.3)
 > ##D   ),
-> ##D   constant = list(p_sig_scs = 0.975, p_sig_ftl = 0.5)
+> ##D   constant = list(thr_dec_eff = 0.975, thr_dec_fut = 0.5)
 > ##D )
 > ## End(Not run)
 > 
@@ -384,7 +384,6 @@ Type 'q()' to quit R.
 > if (check_python_sims_available(silent = TRUE)) {
 +   message("Python simulators available!")
 + }
-Python simulators available!
 > 
 > 
 > 
@@ -800,7 +799,7 @@ Python simulators available!
 > ##D     ),
 > ##D     b_arm_treat = c(0, 0.3)
 > ##D   ),
-> ##D   constant = list(p_sig_scs = 0.975, p_sig_ftl = 0.5)
+> ##D   constant = list(thr_dec_eff = 0.975, thr_dec_fut = 0.5)
 > ##D )
 > ##D # Creates 4 conditions: 2 (n_total × analysis_at linked) × 2 b_arm_treat
 > ## End(Not run)
@@ -1079,8 +1078,8 @@ Python simulators available!
 > ##D # Re-analyze with O'Brien-Fleming-style boundaries
 > ##D result_obf <- resummarize_boundaries(
 > ##D   result,
-> ##D   p_sig_scs = boundary_obf(0.975),
-> ##D   p_sig_ftl = boundary_linear(0.70, 0.90)
+> ##D   thr_dec_eff = boundary_obf(0.975),
+> ##D   thr_dec_fut = boundary_linear(0.70, 0.90)
 > ##D )
 > ##D 
 > ##D # Compare results
@@ -1243,9 +1242,9 @@ Same threshold at all looks
 Example usage in build_conditions():
   constant = list(
     # Bayesian: OBF shape ending at 0.95 threshold
-    p_sig_scs = boundary_obf(threshold = 0.95),
+    thr_dec_eff = boundary_obf(threshold = 0.95),
     # Linear futility: lenient early (0.3), stricter late (0.5)
-    p_sig_ftl = boundary_linear(0.30, 0.50)
+    thr_dec_fut = boundary_linear(0.30, 0.50)
   )
 > 
 > 
@@ -1442,7 +1441,7 @@ Example usage in build_conditions():
 > cleanEx()
 > options(digits = 7L)
 > base::cat("Time elapsed: ", proc.time() - base::get("ptime", pos = 'CheckExEnv'),"\n")
-Time elapsed:  2.16 1.78 4.27 NA NA 
+Time elapsed:  2.28 1.99 4.23 NA NA 
 > grDevices::dev.off()
 null device 
           1 

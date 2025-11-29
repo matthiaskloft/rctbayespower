@@ -53,7 +53,7 @@ Examples: \code{facet_by = "decision"} for 1D faceting,
 }}
 
 \item{target_power}{Optional numeric value (0-1) for drawing contour lines on heatmaps
-at the specified target power level. If NULL (default), uses the design's p_sig_scs.}
+at the specified target power level. If NULL (default), uses the design's thr_dec_eff.}
 
 \item{interactive}{Whether to return an interactive plotly object (TRUE, default) or
 a static ggplot2 object (FALSE).}

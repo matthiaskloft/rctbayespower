@@ -5,8 +5,8 @@
 # These functions return boundary functions that take information fraction
 # (current_n / n_total) and return the threshold to use at that look.
 #
-# Usage in build_design():
-#   build_design(..., p_sig_scs = boundary_obf(0.975))
+# Usage in build_conditions():
+#   build_conditions(..., thr_dec_eff = boundary_obf(0.975))
 
 #' O'Brien-Fleming Boundary
 #'
@@ -634,7 +634,7 @@ resolve_boundary_vector <- function(boundary, look_info, n_total) {
 #' Show Available Boundary Functions
 #'
 #' Displays information about the available boundary functions for sequential
-#' designs. These functions can be used with `p_sig_scs` and `p_sig_ftl` in
+#' designs. These functions can be used with `thr_dec_eff` and `thr_dec_fut` in
 #' [build_conditions()] to create look-dependent stopping thresholds.
 #'
 #' @return Invisibly returns a character vector of boundary function names.
@@ -698,9 +698,9 @@ show_boundaries <- function() {
   cli::cli_verbatim(
     "  constant = list(",
     "    # Bayesian: OBF shape ending at 0.95 threshold",
-    "    p_sig_scs = boundary_obf(threshold = 0.95),",
+    "    thr_dec_eff = boundary_obf(threshold = 0.95),",
     "    # Linear futility: lenient early (0.3), stricter late (0.5)",
-    "    p_sig_ftl = boundary_linear(0.30, 0.50)",
+    "    thr_dec_fut = boundary_linear(0.30, 0.50)",
     "  )"
   )
 

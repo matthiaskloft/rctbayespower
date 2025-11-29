@@ -9,7 +9,7 @@
 #'
 #' @param plot_data Data frame with power analysis results
 #' @param design Design object
-#' @param conditions Conditions object with threshold values (p_sig_scs, p_sig_ftl)
+#' @param conditions Conditions object with threshold values (thr_dec_eff, thr_dec_fut)
 #' @param analysis_type Must be "both" for heatmap
 #' @param effect_col Column name for effect size (from condition_values)
 #' @param metric Filter: "power", "prob", or "both"
@@ -73,7 +73,7 @@ create_heatmap_plot <- function(plot_data,
 
   # Set default target power from conditions if not specified
   if (is.null(target_power)) {
-    target_power <- get_original_threshold(conditions, "p_sig_scs")
+    target_power <- get_original_threshold(conditions, "thr_dec_eff")
     if (is.null(target_power)) target_power <- 0.8  # Fallback default
   }
 
@@ -99,10 +99,10 @@ create_heatmap_plot <- function(plot_data,
       fill = "Value",
       title = "Power Analysis Heatmap",
       subtitle = paste(
-        "Targets - Success:",
-        get_threshold_display(conditions, "p_sig_scs"),
+        "Targets - Efficacy:",
+        get_threshold_display(conditions, "thr_dec_eff"),
         "| Futility:",
-        get_threshold_display(conditions, "p_sig_ftl")
+        get_threshold_display(conditions, "thr_dec_fut")
       )
     ) +
     rctbp_theme() +

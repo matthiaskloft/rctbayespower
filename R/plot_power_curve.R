@@ -9,7 +9,7 @@
 #'
 #' @param plot_data Data frame with power analysis results
 #' @param design Design object
-#' @param conditions Conditions object with threshold values (p_sig_scs, p_sig_ftl)
+#' @param conditions Conditions object with threshold values (thr_dec_eff, thr_dec_fut)
 #' @param analysis_type One of "sample_only", "effect_only", or "both"
 #' @param effect_col Column name for effect size (from condition_values)
 #' @param metric Filter: "power", "prob", or "both"
@@ -313,24 +313,24 @@ create_power_curve_plot <- function(plot_data,
   # Note: Skip target lines when boundary functions are used (thresholds vary by look)
   if (show_target && is.null(target_power) && (metric == "power" || metric == "both") && group_by == "decision") {
     # Get threshold values from conditions
-    p_sig_scs <- get_original_threshold(conditions, "p_sig_scs")
-    p_sig_ftl <- get_original_threshold(conditions, "p_sig_ftl")
+    thr_dec_eff <- get_original_threshold(conditions, "thr_dec_eff")
+    thr_dec_fut <- get_original_threshold(conditions, "thr_dec_fut")
 
     # Only add target lines for numeric thresholds, not boundary functions
-    p_scs_numeric <- is.numeric(p_sig_scs) && length(p_sig_scs) == 1
-    p_ftl_numeric <- is.numeric(p_sig_ftl) && length(p_sig_ftl) == 1
+    p_eff_numeric <- is.numeric(thr_dec_eff) && length(thr_dec_eff) == 1
+    p_fut_numeric <- is.numeric(thr_dec_fut) && length(thr_dec_fut) == 1
 
-    if (p_scs_numeric || p_ftl_numeric) {
+    if (p_eff_numeric || p_fut_numeric) {
       outcomes <- character()
       yintercepts <- numeric()
 
-      if (p_scs_numeric && (decision == "success" || decision == "both")) {
-        outcomes <- c(outcomes, "Success")
-        yintercepts <- c(yintercepts, p_sig_scs)
+      if (p_eff_numeric && (decision == "success" || decision == "both")) {
+        outcomes <- c(outcomes, "Efficacy")
+        yintercepts <- c(yintercepts, thr_dec_eff)
       }
-      if (p_ftl_numeric && (decision == "futility" || decision == "both")) {
+      if (p_fut_numeric && (decision == "futility" || decision == "both")) {
         outcomes <- c(outcomes, "Futility")
-        yintercepts <- c(yintercepts, p_sig_ftl)
+        yintercepts <- c(yintercepts, thr_dec_fut)
       }
 
       if (length(outcomes) > 0) {
@@ -340,8 +340,8 @@ create_power_curve_plot <- function(plot_data,
           stringsAsFactors = FALSE
         )
         target_data$line_color <- ifelse(
-          target_data$outcome == "Success",
-          rctbp_colors()["Success"],
+          target_data$outcome == "Efficacy",
+          rctbp_colors()["Efficacy"],
           rctbp_colors()["Futility"]
         )
 

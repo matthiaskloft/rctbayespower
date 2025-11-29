@@ -9,7 +9,7 @@ find_optimal_condition(
   conditions_grid,
   target_pwr,
   interim_overall = NULL,
-  power_col = "pwr_scs"
+  power_col = "pwr_eff"
 )
 }
 \arguments{
@@ -21,7 +21,7 @@ find_optimal_condition(
 
 \item{interim_overall}{Optional data.frame with interim analysis stats}
 
-\item{power_col}{Column name for power values (default "pwr_scs")}
+\item{power_col}{Column name for power values (default "pwr_eff")}
 }
 \value{
 A list with:

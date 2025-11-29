@@ -30,7 +30,7 @@ success/futility rates, posterior estimates, and convergence diagnostics.
 The report includes a table with:
 \itemize{
 \item Condition identifiers and sample sizes
-\item Power metrics: \code{pwr_scs} (success rate), \code{pwr_ftl} (futility rate)
+\item Power metrics: \code{pwr_eff} (efficacy rate), \code{pwr_fut} (futility rate)
 \item Posterior estimates: \code{post_mn}, \code{post_sd}
 \item Convergence: \code{rhat}, \code{ess_bulk}
 }

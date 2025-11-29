@@ -10,6 +10,6 @@ rctbp_colors()
 Named character vector of colors
 }
 \description{
-Returns named vector of colors for success/futility outcomes.
+Returns named vector of colors for efficacy/futility outcomes.
 }
 \keyword{internal}

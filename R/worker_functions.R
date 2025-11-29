@@ -38,12 +38,12 @@ worker_process_single <- function(id_cond, id_iter, condition_args, design) {
   }
 
   # Extract decision parameters from condition_args
-  # NOTE: p_sig_scs, p_sig_ftl now come from decision_args (not design)
+  # NOTE: thr_dec_eff, thr_dec_fut now come from decision_args (not design)
   decision_args <- condition_args$decision_args
-  thresh_scs <- decision_args$thresh_scs
-  thresh_ftl <- decision_args$thresh_ftl
-  p_sig_scs <- decision_args$p_sig_scs
-  p_sig_ftl <- decision_args$p_sig_ftl
+  thr_fx_eff <- decision_args$thr_fx_eff
+  thr_fx_fut <- decision_args$thr_fx_fut
+  thr_dec_eff <- decision_args$thr_dec_eff
+  thr_dec_fut <- decision_args$thr_dec_fut
   analysis_at <- decision_args$analysis_at
   interim_function <- decision_args$interim_function
   adaptive <- decision_args$adaptive %||% FALSE
@@ -100,10 +100,10 @@ worker_process_single <- function(id_cond, id_iter, condition_args, design) {
           model = estimation_model,
           backend_args = backend_args,
           target_params = target_params,
-          thresh_scs = thresh_scs,
-          thresh_ftl = thresh_ftl,
-          p_sig_scs = p_sig_scs,
-          p_sig_ftl = p_sig_ftl,
+          thr_fx_eff = thr_fx_eff,
+          thr_fx_fut = thr_fx_fut,
+          thr_dec_eff = thr_dec_eff,
+          thr_dec_fut = thr_dec_fut,
           id_iter = id_iter,
           id_cond = id_cond
         )
@@ -113,10 +113,10 @@ worker_process_single <- function(id_cond, id_iter, condition_args, design) {
           model = estimation_model,
           backend_args = backend_args,
           target_params = target_params,
-          thresh_scs = thresh_scs,
-          thresh_ftl = thresh_ftl,
-          p_sig_scs = p_sig_scs,
-          p_sig_ftl = p_sig_ftl,
+          thr_fx_eff = thr_fx_eff,
+          thr_fx_fut = thr_fx_fut,
+          thr_dec_eff = thr_dec_eff,
+          thr_dec_fut = thr_dec_fut,
           id_iter = id_iter,
           id_cond = id_cond
         )
@@ -134,10 +134,10 @@ worker_process_single <- function(id_cond, id_iter, condition_args, design) {
           model = estimation_model,
           backend_args = backend_args,
           target_params = target_params,
-          thresh_scs = thresh_scs,
-          thresh_ftl = thresh_ftl,
-          p_sig_scs = p_sig_scs,
-          p_sig_ftl = p_sig_ftl,
+          thr_fx_eff = thr_fx_eff,
+          thr_fx_fut = thr_fx_fut,
+          thr_dec_eff = thr_dec_eff,
+          thr_dec_fut = thr_dec_fut,
           analysis_at = analysis_at,
           interim_function = interim_function,
           id_iter = id_iter,
@@ -150,10 +150,10 @@ worker_process_single <- function(id_cond, id_iter, condition_args, design) {
           model = estimation_model,
           backend_args = backend_args,
           target_params = target_params,
-          thresh_scs = thresh_scs,
-          thresh_ftl = thresh_ftl,
-          p_sig_scs = p_sig_scs,
-          p_sig_ftl = p_sig_ftl,
+          thr_fx_eff = thr_fx_eff,
+          thr_fx_fut = thr_fx_fut,
+          thr_dec_eff = thr_dec_eff,
+          thr_dec_fut = thr_dec_fut,
           analysis_at = analysis_at,
           interim_function = interim_function,
           id_iter = id_iter,
@@ -228,12 +228,12 @@ worker_process_batch <- function(work_units, design) {
   id_iter_vec <- sapply(work_units, function(wu) wu$id_iter)
 
   # Extract decision parameters from first work unit (assume homogenous batch)
-  # NOTE: p_sig_scs, p_sig_ftl now come from decision_args
+  # NOTE: thr_dec_eff, thr_dec_fut now come from decision_args
   decision_args <- work_units[[1]]$condition_args$decision_args
-  thresh_scs <- decision_args$thresh_scs
-  thresh_ftl <- decision_args$thresh_ftl
-  p_sig_scs <- decision_args$p_sig_scs
-  p_sig_ftl <- decision_args$p_sig_ftl
+  thr_fx_eff <- decision_args$thr_fx_eff
+  thr_fx_fut <- decision_args$thr_fx_fut
+  thr_dec_eff <- decision_args$thr_dec_eff
+  thr_dec_fut <- decision_args$thr_dec_fut
   analysis_at <- decision_args$analysis_at
   interim_function <- decision_args$interim_function
   adaptive <- decision_args$adaptive %||% FALSE
@@ -298,10 +298,10 @@ worker_process_batch <- function(work_units, design) {
         model = estimation_model,
         backend_args = backend_args,
         target_params = target_params,
-        thresh_scs = thresh_scs,
-        thresh_ftl = thresh_ftl,
-        p_sig_scs = p_sig_scs,
-        p_sig_ftl = p_sig_ftl,
+        thr_fx_eff = thr_fx_eff,
+        thr_fx_fut = thr_fx_fut,
+        thr_dec_eff = thr_dec_eff,
+        thr_dec_fut = thr_dec_fut,
         id_iter = id_iter_vec,
         id_cond = id_cond_vec
       )
@@ -312,10 +312,10 @@ worker_process_batch <- function(work_units, design) {
         model = estimation_model,
         backend_args = backend_args,
         target_params = target_params,
-        thresh_scs = thresh_scs,
-        thresh_ftl = thresh_ftl,
-        p_sig_scs = p_sig_scs,
-        p_sig_ftl = p_sig_ftl,
+        thr_fx_eff = thr_fx_eff,
+        thr_fx_fut = thr_fx_fut,
+        thr_dec_eff = thr_dec_eff,
+        thr_dec_fut = thr_dec_fut,
         analysis_at = analysis_at,
         interim_function = interim_function,
         id_iter = id_iter_vec,

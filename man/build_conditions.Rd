@@ -37,8 +37,8 @@ least this power when displaying results.}
 }
 \value{
 An S7 object of class "rctbp_conditions" containing:
-\item{conditions_grid}{A data.frame with all parameter combinations}
-\item{condition_arguments}{A list of argument lists for each condition,
+\item{grid}{A data.frame with all parameter combinations}
+\item{params_by_cond}{A list of argument lists for each condition,
 separated into simulation and decision arguments}
 \item{design}{The original rctbp_design object}
 \item{crossed}{The original crossed specification (may contain link() groups)}
@@ -79,8 +79,8 @@ conditions <- build_conditions(
   design = my_design,
   crossed = list(n_total = c(100, 200), b_arm_treat = c(0.3, 0.5)),
   constant = list(
-    p_sig_scs = 0.975, p_sig_ftl = 0.5,
-    thresh_scs = 0.2, thresh_ftl = 0
+    thr_dec_eff = 0.975, thr_dec_fut = 0.5,
+    thr_fx_eff = 0.2, thr_fx_fut = 0
   )
 )
 
@@ -91,7 +91,7 @@ conditions <- build_conditions(
     link(n_total = c(80, 160), analysis_at = list(c(40,80), c(80,160))),
     b_arm_treat = c(0, 0.3)
   ),
-  constant = list(p_sig_scs = 0.975, p_sig_ftl = 0.5)
+  constant = list(thr_dec_eff = 0.975, thr_dec_fut = 0.5)
 )
 }
 
