@@ -4,7 +4,10 @@
 \alias{clear_gpu_memory}
 \title{Clear GPU Memory Cache}
 \usage{
-clear_gpu_memory()
+clear_gpu_memory(r_gc = TRUE)
+}
+\arguments{
+\item{r_gc}{Logical, whether to also run R garbage collection (default TRUE)}
 }
 \value{
 Invisible NULL
@@ -17,8 +20,9 @@ power analysis with many simulations.
 \details{
 This function:
 \enumerate{
-\item Runs Python garbage collection
+\item Runs Python garbage collection (multiple passes for cyclic references)
 \item Calls torch.cuda.empty_cache() if CUDA is available
+\item Synchronizes CUDA to ensure all operations complete
+\item Optionally runs R garbage collection
 }
 }
-\keyword{internal}

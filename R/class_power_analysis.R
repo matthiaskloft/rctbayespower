@@ -203,8 +203,9 @@ format_duration <- function(minutes) {
 #'       \itemize{
 #'         \item n_posterior_samples: Number of posterior samples (default: 1000)
 #'         \item batch_size: Batch size for inference (default: n_sims)
-#'         \item envname: Python virtual environment name (default: NULL for auto-detect)
 #'       }
+#'       Note: Set Python environment before analysis via [bf_status()] or
+#'       [setup_bf_python()], not at runtime.
 #'     }
 #'     \item{design_prior}{Prior specification (NULL, brms syntax string, or function)}
 #'   }
@@ -488,8 +489,7 @@ S7::method(run, rctbp_power_analysis) <- function(x, ...) {
     # For BayesFlow backend, merge user-provided bf_args with model defaults
     default_bf_args <- list(
       n_posterior_samples = 1000L,
-      batch_size = NULL,
-      envname = NULL
+      batch_size = NULL
     )
     # Get model defaults, then override with user-provided args
     # NOTE: After API merge, backend_args_bf is directly on design
@@ -512,8 +512,8 @@ S7::method(run, rctbp_power_analysis) <- function(x, ...) {
     # Store in design for workers
     x@conditions@design@backend_args_bf <- final_bf_args
 
-    # Initialize BayesFlow Python environment with specified envname
-    init_bf_python(envname = final_bf_args$envname)
+    # Initialize BayesFlow Python environment (uses current or default env)
+    init_bf_python()
 
     # Get environment info and store in object (always, not just for display)
     bf_info <- get_bf_env_info()

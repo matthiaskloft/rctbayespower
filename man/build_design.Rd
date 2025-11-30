@@ -10,7 +10,7 @@ build_design(
   inference_model = NULL,
   backend = c("brms", "bf"),
   backend_args_brms = list(),
-  backend_args_bf = list(batch_size = NULL, n_posterior_samples = 1000L, envname = NULL),
+  backend_args_bf = list(batch_size = NULL, n_posterior_samples = 1000L),
   n_endpoints = NULL,
   endpoint_types = NULL,
   n_arms = NULL,
@@ -42,8 +42,9 @@ Takes precedence over explicit component arguments.}
 \describe{
 \item{batch_size}{Batch size for inference (default: NULL, uses n_sims)}
 \item{n_posterior_samples}{Number of posterior samples (default: 1000)}
-\item{envname}{Python virtual environment name to use (default: NULL for auto-detect)}
-}}
+}
+Note: Python environment should be set before using BayesFlow via
+\code{\link[=bf_status]{bf_status()}} or \code{\link[=setup_bf_python]{setup_bf_python()}}, not at runtime.}
 
 \item{n_endpoints}{Number of endpoints (positive integer). Required if \code{model_name} is NULL.}
 

@@ -21,8 +21,9 @@ conditions and design parameters for the power analysis. Created by
 \itemize{
 \item n_posterior_samples: Number of posterior samples (default: 1000)
 \item batch_size: Batch size for inference (default: n_sims)
-\item envname: Python virtual environment name (default: NULL for auto-detect)
 }
+Note: Set Python environment before analysis via \code{\link[=bf_status]{bf_status()}} or
+\code{\link[=setup_bf_python]{setup_bf_python()}}, not at runtime.
 }
 \item{design_prior}{Prior specification (NULL, brms syntax string, or function)}
 }}

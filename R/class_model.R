@@ -39,7 +39,7 @@ rctbp_model <- S7::new_class(
     backend_args_brms = S7::new_property(S7::class_list, default = list()),
     backend_args_bf = S7::new_property(
       S7::class_list,
-      default = list(batch_size = NULL, n_posterior_samples = 1000L, envname = NULL)
+      default = list(batch_size = NULL, n_posterior_samples = 1000L)
     ),
 
     # =========================================================================

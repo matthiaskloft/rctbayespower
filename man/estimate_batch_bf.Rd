@@ -12,7 +12,7 @@ Must contain: outcome (matrix), covariate (matrix), group (matrix), N (int)}
 
 \item{bf_model}{BayesFlow/Keras model (Python object via reticulate)}
 
-\item{backend_args}{List with n_posterior_samples (default 1000), etc.}
+\item{backend_args}{List with n_posterior_samples (default 1000).}
 
 \item{target_params}{Character vector of parameter names (first used for single-param models)}
 }
@@ -30,5 +30,9 @@ We pass raw data (outcome, covariate, group, N, p_alloc) to the model.
 
 Mock Mode: Set environment variable RCTBP_MOCK_BF=TRUE to use mock samples
 instead of actual BayesFlow inference. Useful for testing R infrastructure.
+
+\strong{GPU Memory Management}: Batch size is controlled at the \code{power_analysis()} level
+via \code{bf_args$batch_size}. This determines how many simulations are grouped together
+before being sent to the GPU. Reduce \code{batch_size} if encountering OOM errors.
 }
 \keyword{internal}

@@ -203,6 +203,40 @@ function_name <- function(x, y) {
 | `zzz.R` | .onLoad hook (S7 registration) |
 | `rctbayespower-package.R` | Package docs + globalVariables |
 
+### 8. Memory Efficiency Patterns (BayesFlow Backend)
+
+For batch data operations, use **pre-allocation** to achieve O(n) memory complexity:
+
+```r
+# ✅ CORRECT: Pre-allocate, then fill
+batch_size <- length(data_list)
+n_obs <- nrow(data_list[[1]])
+
+result <- matrix(NA_real_, nrow = batch_size, ncol = n_obs)  # Pre-allocate
+for (i in seq_len(batch_size)) {
+  result[i, ] <- data_list[[i]]$outcome  # Direct row assignment
+}
+
+# ❌ INCORRECT: do.call(rbind, lapply(...)) - O(n²) memory
+result <- do.call(rbind, lapply(data_list, function(d) d$outcome))
+```
+
+**Field map registry** pattern for extensible batch preparation:
+
+```r
+# Define field mappings for different model types
+field_map <- list(
+  outcome = list(source = "outcome"),
+  covariate = list(source = "covariate"),
+  group = list(source = c("group", "arm"), transform = "factor_to_numeric")
+)
+
+# Use get_batch_field_map() for standard model types:
+# - "ancova": outcome, covariate, group
+# - "binary": outcome, covariate, group
+# - "survival": time, event, covariate, group
+```
+
 ## Minor Inconsistencies
 
 ### 1. Verbosity Property Naming

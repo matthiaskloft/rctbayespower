@@ -38,6 +38,126 @@ The BayesFlow backend (`R/backend_bf.R`) is now fully implemented with:
    - `mock_bf_samples()` - Generates data-driven mock posterior samples
    - Enables R CMD check and unit tests without Python
 
+5. **GPU/RAM Memory Management**
+   - `clear_gpu_memory()` - Comprehensive cleanup (Python gc + CUDA cache + R gc)
+   - Explicit object deletion after inference and summarization
+   - Critical for optimization loops with many evaluations
+
+---
+
+## GPU and RAM Memory Management
+
+### Problem
+
+During optimization or large power analyses, GPU memory and RAM can accumulate if not properly released:
+- PyTorch caches GPU memory even after tensors are deleted
+- Python objects may hold references preventing garbage collection
+- R's gc() doesn't know about Python/PyTorch memory
+- Reticulate references can prevent Python object cleanup
+
+### Solution: Multi-Level Cleanup
+
+Memory is cleaned up at three levels:
+
+#### 1. After BayesFlow Inference (`estimate_batch_bf()`)
+
+```r
+# Convert to R BEFORE deleting Python objects
+samples_r <- reticulate::py_to_r(samples_py)
+
+# Explicitly remove Python references
+rm(samples_py, data_cond)
+
+# Comprehensive cleanup
+clear_gpu_memory(r_gc = TRUE)
+```
+
+#### 2. After Posterior Summarization (`estimate_single_bf()`, `estimate_sequential_bf()`)
+
+```r
+# Summarize posteriors
+result <- summarize_post_bf(draws_mat = draws_matrix, ...)
+
+# Clean up large R objects
+rm(draws_matrix, data_batch)
+```
+
+#### 3. After Each Optimization Evaluation (objective function)
+
+```r
+# Remove power_analysis result and conditions
+rm(pa_result, conditions)
+
+# Backend-specific cleanup
+if (design@backend == "bf") {
+  clear_gpu_memory(r_gc = TRUE)
+} else {
+  gc(verbose = FALSE, full = TRUE)
+}
+```
+
+### The `clear_gpu_memory()` Function
+
+```r
+clear_gpu_memory <- function(r_gc = TRUE) {
+  # 1. Python garbage collection (twice for cyclic refs)
+  gc_mod <- reticulate::import("gc")
+  gc_mod$collect()
+  gc_mod$collect()
+
+  # 2. CUDA cache cleanup
+  torch <- reticulate::import("torch")
+  if (torch$cuda$is_available()) {
+    torch$cuda$synchronize()
+    torch$cuda$empty_cache()
+    torch$cuda$synchronize()
+  }
+
+  # 3. R garbage collection
+  if (r_gc) gc(verbose = FALSE, full = TRUE)
+}
+```
+
+### Memory Cleanup Flow
+
+```
+optimization eval
+  └─> power_analysis
+        └─> estimate_*_bf()
+              └─> estimate_batch_bf()
+                    ├─> BayesFlow inference (GPU tensors created)
+                    ├─> py_to_r() conversion
+                    ├─> rm(samples_py, data_cond)
+                    └─> clear_gpu_memory()
+              └─> summarize_post_bf()
+              └─> rm(draws_matrix, data_batch)
+        └─> (results returned)
+  └─> rm(pa_result, conditions)
+  └─> clear_gpu_memory()  # or gc() for brms
+```
+
+### Best Practices for Users
+
+1. **Set batch_size appropriately** for GPU memory:
+   ```r
+   # Reduce batch_size for limited GPU memory (e.g., 6GB)
+   result <- optimization(obj, bf_args = list(batch_size = 64))
+   ```
+
+2. **Configure PyTorch memory allocator** before running:
+   ```r
+   Sys.setenv(PYTORCH_CUDA_ALLOC_CONF = "expandable_segments:True")
+   ```
+
+3. **Monitor GPU memory** with `nvidia-smi` during long runs
+
+4. **Call `clear_gpu_memory()` manually** if needed between analyses:
+   ```r
+   result1 <- power_analysis(cond1, ...)
+   clear_gpu_memory()
+   result2 <- power_analysis(cond2, ...)
+   ```
+
 ---
 
 ## BayesFlow Model Interface

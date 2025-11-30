@@ -8,7 +8,11 @@ init_bf_python(envname = NULL)
 }
 \arguments{
 \item{envname}{Optional name of Python virtual environment to use.
-If NULL (default), uses the currently active environment or auto-detects.}
+If NULL (default), uses the currently active environment or auto-detects.
+\strong{Important}: This can only activate an environment BEFORE Python is initialized
+in the R session. If Python is already running, a warning is issued and the
+current environment continues to be used. For environment selection, use
+\code{\link[=bf_status]{bf_status()}} or \code{\link[=setup_bf_python]{setup_bf_python()}} before any BayesFlow operations.}
 }
 \value{
 List with bf, np, and keras Python modules
@@ -20,8 +24,8 @@ Called automatically by estimation functions.
 \details{
 This function:
 \enumerate{
-\item Activates the specified virtual environment if provided
-\item Returns cached modules if already initialized (and envname matches)
+\item Activates the specified virtual environment if provided (only before Python init)
+\item Returns cached modules if already initialized
 \item Declares Python dependencies via py_require() for automatic venv provisioning
 \item Sets KERAS_BACKEND=torch before importing keras (required for PyTorch backend)
 \item Imports modules with delay_load for CRAN compatibility
@@ -29,11 +33,12 @@ This function:
 }
 \examples{
 \dontrun{
+# Recommended: Set environment first via bf_status()
+bf_status(envname = "r-rctbayespower")
+
+# Then init (auto-detects current env)
 py_mods <- init_bf_python()
 py_mods$bf  # BayesFlow module
 py_mods$keras  # Keras module
-
-# Use specific environment
-py_mods <- init_bf_python(envname = "r-rctbayespower")
 }
 }
