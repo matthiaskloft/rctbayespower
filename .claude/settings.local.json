@@ -62,7 +62,13 @@
       "Bash(git add:*)",
       "WebFetch(domain:mlr3.mlr-org.com)",
       "WebFetch(domain:www.rdocumentation.org)",
-      "Bash(dpkg:*)"
+      "Bash(dpkg:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(git -C /home/matthias/rctbayespower commit -m \"$(cat <<''EOF''\nUpdate BayesFlow vignettes and fix conditions grid property\n\n- Fix property name from conditions_grid to grid in power analysis print\n- Update BayesFlow vignettes to use current API (build_design directly)\n- Add automatic venv setup in vignettes for reproducibility\n- Add update_S7_with_dots documentation\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(git -C /home/matthias/rctbayespower status)",
+      "Bash(git -C /home/matthias/rctbayespower add .claude/settings.local.json)",
+      "Bash(git -C /home/matthias/rctbayespower commit -m \"$(cat <<''EOF''\nAdd git commit and push to allowed tools\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")"
     ],
     "deny": []
   }
