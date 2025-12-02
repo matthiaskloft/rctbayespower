@@ -52,10 +52,16 @@
 <td>Create 2-Arm ANCOVA Model for Continuous Outcomes</td></tr>
 <tr><td style="width: 25%;"><a href="build_model_ancova_cont_3arms.html">build_model_ancova_cont_3arms</a></td>
 <td>Create 3-Arm ANCOVA Model for Continuous Outcomes</td></tr>
+<tr><td style="width: 25%;"><a href="build_objectives.html">build_objectives</a></td>
+<td>Build Optimization Objectives</td></tr>
+<tr><td style="width: 25%;"><a href="build_sim_fn.html">build_sim_fn</a></td>
+<td>Build Simulation Function Object</td></tr>
 <tr><td style="width: 25%;"><a href="check_bf_available.html">check_bf_available</a></td>
 <td>Check BayesFlow Availability</td></tr>
 <tr><td style="width: 25%;"><a href="check_python_sims_available.html">check_python_sims_available</a></td>
 <td>Check if Python Simulators are Available</td></tr>
+<tr><td style="width: 25%;"><a href="clear_gpu_memory.html">clear_gpu_memory</a></td>
+<td>Clear GPU Memory Cache</td></tr>
 <tr><td style="width: 25%;"><a href="clear_model_cache.html">clear_model_cache</a></td>
 <td>Clear Model Cache</td></tr>
 <tr><td style="width: 25%;"><a href="compare_boundaries.html">compare_boundaries</a></td>
@@ -102,8 +108,24 @@
 <td>Load Pre-compiled brms Model</td></tr>
 <tr><td style="width: 25%;"><a href="load_python_simulators.html">load_python_simulators</a></td>
 <td>Load Python Simulators Module</td></tr>
+<tr><td style="width: 25%;"><a href="obj_max_power.html">obj_max_power</a></td>
+<td>Objective Specification: Maximize Power</td></tr>
+<tr><td style="width: 25%;"><a href="obj_min_n_for_power.html">obj_min_n_for_power</a></td>
+<td>Objective Specification: Minimize N for Target Power</td></tr>
+<tr><td style="width: 25%;"><a href="obj_pareto_power_n.html">obj_pareto_power_n</a></td>
+<td>Objective Specification: Pareto Power vs Sample Size</td></tr>
+<tr><td style="width: 25%;"><a href="optimization.html">optimization</a></td>
+<td>Execute Bayesian Optimization</td></tr>
+<tr><td style="width: 25%;"><a href="plot.rctbp_optimization_result.html">plot.rctbp_optimization_result</a></td>
+<td>Plot Optimization Results</td></tr>
 <tr><td style="width: 25%;"><a href="plot.rctbp_power_analysis.html">plot.rctbp_power_analysis</a></td>
 <td>Plot Power Analysis Results</td></tr>
+<tr><td style="width: 25%;"><a href="plot_optimization_convergence.html">plot_optimization_convergence</a></td>
+<td>Plot Optimization Convergence</td></tr>
+<tr><td style="width: 25%;"><a href="plot_optimization_pareto.html">plot_optimization_pareto</a></td>
+<td>Plot Pareto Front</td></tr>
+<tr><td style="width: 25%;"><a href="plot_optimization_search.html">plot_optimization_search</a></td>
+<td>Plot Search Space Exploration</td></tr>
 <tr><td style="width: 25%;"><a href="power_analysis.html">power_analysis</a></td>
 <td>Build Power Analysis Configuration</td></tr>
 <tr><td style="width: 25%;"><a href="print.rctbp_conditions.html">print.rctbp_conditions</a></td>
@@ -112,6 +134,10 @@
 <td>Print Method for rctbp_design Objects</td></tr>
 <tr><td style="width: 25%;"><a href="print.rctbp_model.html">print.rctbp_model</a></td>
 <td>Print Method for rctbp_model Objects</td></tr>
+<tr><td style="width: 25%;"><a href="print.rctbp_objectives.html">print.rctbp_objectives</a></td>
+<td>Print Method for rctbp_objectives</td></tr>
+<tr><td style="width: 25%;"><a href="print.rctbp_optimization_result.html">print.rctbp_optimization_result</a></td>
+<td>Print Method for rctbp_optimization_result</td></tr>
 <tr><td style="width: 25%;"><a href="print.rctbp_power_analysis.html">print.rctbp_power_analysis</a></td>
 <td>Print Method for rctbp_power_analysis Objects</td></tr>
 <tr><td style="width: 25%;"><a href="report.html">report</a></td>
@@ -134,6 +160,10 @@
 <td>Run Analysis Objects</td></tr>
 <tr><td style="width: 25%;"><a href="run.rctbp_power_analysis.html">run.rctbp_power_analysis</a></td>
 <td>Run Power Analysis</td></tr>
+<tr><td style="width: 25%;"><a href="search_looks.html">search_looks</a></td>
+<td>Specify Interim Look Timing Search</td></tr>
+<tr><td style="width: 25%;"><a href="search_p_alloc.html">search_p_alloc</a></td>
+<td>Specify Allocation Probability Search</td></tr>
 <tr><td style="width: 25%;"><a href="setup_bf_python.html">setup_bf_python</a></td>
 <td>Set Up Python Environment for BayesFlow</td></tr>
 <tr><td style="width: 25%;"><a href="set_output_mode.html">set_output_mode</a></td>
@@ -146,12 +176,18 @@
 <td>Show Available Boundary Functions</td></tr>
 <tr><td style="width: 25%;"><a href="show_condition_args.html">show_condition_args</a></td>
 <td>Show Required Arguments for build_conditions()</td></tr>
+<tr><td style="width: 25%;"><a href="show_objective_fns.html">show_objective_fns</a></td>
+<td>Show Available Objective Functions</td></tr>
+<tr><td style="width: 25%;"><a href="show_optimization_args.html">show_optimization_args</a></td>
+<td>Show Available Optimization Arguments</td></tr>
 <tr><td style="width: 25%;"><a href="show_predefined_models.html">show_predefined_models</a></td>
 <td>Show Predefined Models</td></tr>
 <tr><td style="width: 25%;"><a href="show_target_params.html">show_target_params</a></td>
 <td>Show Available Target Parameters</td></tr>
 <tr><td style="width: 25%;"><a href="summary.rctbp_power_analysis.html">summary.rctbp_power_analysis</a></td>
 <td>Summary Method for rctbp_power_analysis Objects</td></tr>
+<tr><td style="width: 25%;"><a href="target.html">target</a></td>
+<td>Create a Target Constraint for Optimization</td></tr>
 <tr><td style="width: 25%;"><a href="verify_bf_installation.html">verify_bf_installation</a></td>
 <td>Verify BayesFlow Installation</td></tr>
 <tr><td style="width: 25%;"><a href="with_output_mode.html">with_output_mode</a></td>

@@ -16,7 +16,8 @@ estimate_sequential_bf(
   analysis_at,
   interim_function,
   id_iter,
-  id_cond
+  id_cond,
+  sim_fn = NULL
 )
 }
 \arguments{
@@ -43,6 +44,9 @@ estimate_sequential_bf(
 \item{id_iter}{Vector of iteration identifiers (one per sim in batch)}
 
 \item{id_cond}{Vector of condition identifiers (one per sim in batch)}
+
+\item{sim_fn}{Optional rctbp_sim_fn object for schema-based batch preparation.
+If provided, uses sim_fn@output_schema for field mapping.}
 }
 \value{
 Data frame with (batch_size x n_analyses) rows

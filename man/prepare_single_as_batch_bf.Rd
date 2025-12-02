@@ -4,12 +4,18 @@
 \alias{prepare_single_as_batch_bf}
 \title{Prepare Single data.frame as Batch Format for BayesFlow}
 \usage{
-prepare_single_as_batch_bf(data, backend_args)
+prepare_single_as_batch_bf(data, backend_args, field_map = NULL, sim_fn = NULL)
 }
 \arguments{
 \item{data}{Single data.frame OR Python batch dict}
 
 \item{backend_args}{List containing p_alloc and other settings}
+
+\item{field_map}{Optional field mapping (see \code{\link[=get_batch_field_map]{get_batch_field_map()}}).
+If NULL and sim_fn not provided, uses "ancova" mapping.}
+
+\item{sim_fn}{Optional rctbp_sim_fn object. If provided and has output_schema,
+uses that instead of field_map.}
 }
 \value{
 List with batch-formatted arrays (n_sims = 1)

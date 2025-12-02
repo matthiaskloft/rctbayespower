@@ -18,9 +18,12 @@ build_model_ancova_cont_2arms
 build_model_ancova_cont_3arms
                         Create 3-Arm ANCOVA Model for Continuous
                         Outcomes
+build_objectives        Build Optimization Objectives
+build_sim_fn            Build Simulation Function Object
 check_bf_available      Check BayesFlow Availability
 check_python_sims_available
                         Check if Python Simulators are Available
+clear_gpu_memory        Clear GPU Memory Cache
 clear_model_cache       Clear Model Cache
 compare_boundaries      Compare Multiple Boundary Configurations
 compare_power_methods   Compare Power Calculation Methods
@@ -50,13 +53,31 @@ load_bf_model           Load Pre-trained BayesFlow Model
 load_brms_model         Load Pre-compiled brms Model
 load_python_simulators
                         Load Python Simulators Module
+obj_max_power           Objective Specification: Maximize Power
+obj_min_n_for_power     Objective Specification: Minimize N for Target
+                        Power
+obj_pareto_power_n      Objective Specification: Pareto Power vs Sample
+                        Size
+optimization            Execute Bayesian Optimization
+plot.rctbp_optimization_result
+                        Plot Optimization Results
 plot.rctbp_power_analysis
                         Plot Power Analysis Results
+plot_optimization_convergence
+                        Plot Optimization Convergence
+plot_optimization_pareto
+                        Plot Pareto Front
+plot_optimization_search
+                        Plot Search Space Exploration
 power_analysis          Build Power Analysis Configuration
 print.rctbp_conditions
                         Print Method for rctbp_conditions Objects
 print.rctbp_design      Print Method for rctbp_design Objects
 print.rctbp_model       Print Method for rctbp_model Objects
+print.rctbp_objectives
+                        Print Method for rctbp_objectives
+print.rctbp_optimization_result
+                        Print Method for rctbp_optimization_result
 print.rctbp_power_analysis
                         Print Method for rctbp_power_analysis Objects
 report                  Generate Topic-Specific Reports
@@ -69,17 +90,23 @@ resummarize_boundaries
 run                     Run Analysis Objects
 run.rctbp_power_analysis
                         Run Power Analysis
+search_looks            Specify Interim Look Timing Search
+search_p_alloc          Specify Allocation Probability Search
 set_output_mode         Set Output Mode
 set_verbosity           Set Verbosity Level
 setup_bf_python         Set Up Python Environment for BayesFlow
 should_show             Check if Message Should Be Displayed
 show_boundaries         Show Available Boundary Functions
 show_condition_args     Show Required Arguments for build_conditions()
+show_objective_fns      Show Available Objective Functions
+show_optimization_args
+                        Show Available Optimization Arguments
 show_predefined_models
                         Show Predefined Models
 show_target_params      Show Available Target Parameters
 summary.rctbp_power_analysis
                         Summary Method for rctbp_power_analysis Objects
+target                  Create a Target Constraint for Optimization
 verify_bf_installation
                         Verify BayesFlow Installation
 with_output_mode        Temporarily Change Output Mode

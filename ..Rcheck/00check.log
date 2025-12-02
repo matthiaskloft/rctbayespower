@@ -6,14 +6,13 @@
     GNU Fortran (GCC) 14.3.0
 * running under: Windows 11 x64 (build 26200)
 * using session charset: UTF-8
-* using options '--no-tests --no-manual --no-vignettes'
+* using options '--no-examples --no-tests --no-manual --no-vignettes'
 * checking for file './DESCRIPTION' ... OK
 * this is package 'rctbayespower' version '0.0.0.9000'
 * package encoding: UTF-8
 * checking package namespace information ... OK
 * checking package dependencies ... OK
-* checking if this is a source package ... NOTE
-Subdirectory 'rctbayespower.Rcheck/rctbayespower' seems to contain an installed version of the package.
+* checking if this is a source package ... OK
 * checking if there is a namespace ... OK
 * checking for executable files ... OK
 * checking for hidden files and directories ... NOTE
@@ -33,6 +32,7 @@ These were most likely included in error. See section 'Package
 structure' in the 'Writing R Extensions' manual.
 * checking for portable file names ... NOTE
 Found the following non-portable file paths:
+  rctbayespower/.Rproj.user/shared/notebooks/02D52AB6-01-introduction/1/s/cbizpr180uk0v/000010.metadata
   rctbayespower/.Rproj.user/shared/notebooks/02D52AB6-01-introduction/1/s/cctr4h3y86qzl/000011.metadata
   rctbayespower/.Rproj.user/shared/notebooks/02D52AB6-01-introduction/1/s/cdfzwdd6di1sa/000010.metadata
   rctbayespower/.Rproj.user/shared/notebooks/02D52AB6-01-introduction/1/s/ckw6rfgwxs6po/000012.metadata
@@ -77,9 +77,58 @@ Found the following non-portable file paths:
   rctbayespower/.Rproj.user/shared/notebooks/AB74AB20-05-bf_vs_brms_gpu/1/s/cyehknhw6b71s/000010.metadata
   rctbayespower/.Rproj.user/shared/notebooks/AB74AB20-05-bf_vs_brms_gpu/1/s/czqwd2sswkvv9/000010.metadata
   rctbayespower/.Rproj.user/shared/notebooks/E174AE75-03-algorithm-performance/1/0C02CFDCbabef74e/chunks.json
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/0C02CFDC740c501d/chunks.json
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/0C02CFDC740c501d/cn3tfrsupg2op/execution.lock
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/0C02CFDC740c501d/cn3tfrsupg2op/migration.target
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/0C02CFDC740c501d/cn3tfrsupg2op_t/execution.lock
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/0C02CFDC740c501d/cn3tfrsupg2op_t/migration.target
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/0C02CFDC8977e3a2/c90lkt1ksx3og/000011.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/0C02CFDC8977e3a2/cf4rlkb02tquj/0002f5.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/0C02CFDC8977e3a2/chunks.json
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/0C02CFDC8977e3a2/ctypqb341wmzu/000023.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/0C02CFDC8977e3a2/ctypqb341wmzu/000024.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/0C02CFDC8977e3a2/ctypqb341wmzu/000024.png
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/0C02CFDC8977e3a2/ctypqb341wmzu/000024.snapshot
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/0C02CFDC8977e3a2/ctypqb341wmzu/000025.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/0C02CFDC8977e3a2/ctypqb341wmzu/000026.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/0C02CFDC8977e3a2/ctypqb341wmzu/000026.png
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/0C02CFDC8977e3a2/ctypqb341wmzu/000026.snapshot
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/c3jx08bmxaxcp/000025.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/c3jx08bmxaxcp/000026.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/c3jx08bmxaxcp/000026.png
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/c3jx08bmxaxcp/000026.snapshot
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/c3jx08bmxaxcp/000027.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/c3jx08bmxaxcp/000028.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/c3jx08bmxaxcp/000028.png
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/c3jx08bmxaxcp/000028.snapshot
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/c4czcy7k3ass2/000015.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/c90lkt1ksx3og/000011.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0002f5.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/chbllpe8594xs/000011.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/clycx0eqv1o59/00000f.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cr7ai86mnlp3p/00000f.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cr7ai86mnlp3p/000010.error
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/csd1dzx237f2x/00000f.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/csetup_chunk/00000f.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cspn5cfugq03j/000011.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cspn5cfugq03j/000012.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cspn5cfugq03j/000012.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/ctypqb341wmzu/000017.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/ctypqb341wmzu/000018.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/ctypqb341wmzu/000018.png
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/ctypqb341wmzu/000018.snapshot
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/ctypqb341wmzu/000019.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/ctypqb341wmzu/00001a.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/ctypqb341wmzu/00001a.png
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/ctypqb341wmzu/00001a.snapshot
   rctbayespower/vignettes/.quarto/_freeze/articles/04-bayesflow-backend_cpu_1_core/execute-results/html.json
   rctbayespower/.Rproj.user/shared/notebooks/02D52AB6-01-introduction/1/s/lib/plotly-htmlwidgets-css-2.11.1
   rctbayespower/.Rproj.user/shared/notebooks/A8F4B08F-04-bayesflow/1/s/lib/plotly-htmlwidgets-css-2.11.1
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/0C02CFDC740c501d/cn3tfrsupg2op
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/0C02CFDC740c501d/cn3tfrsupg2op_t
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/0C02CFDC8977e3a2/c90lkt1ksx3og
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/0C02CFDC8977e3a2/cf4rlkb02tquj
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/0C02CFDC8977e3a2/ctypqb341wmzu
 
 Tarballs are only required to store paths of up to 100 bytes and cannot
 store those of more than 256 bytes, with restrictions including to 100
@@ -94,9 +143,8 @@ Checking should be performed on sources prepared by 'R CMD build'.
 * checking for left-over files ... OK
 * checking index information ... OK
 * checking package subdirectories ... WARNING
-Found the following directories with names of check directories:
+Found the following directory with the name of a check directory:
   ./..Rcheck
-  ./rctbayespower.Rcheck
 Most likely, these were included erroneously.
 Subdirectory 'data' contains no data sets.
 * checking code files for non-ASCII characters ... OK
@@ -135,9 +183,10 @@ Files in the 'vignettes' directory but no files in 'inst/doc':
   'articles/03-algorithm-performance.qmd' 'articles/04-bayesflow.qmd'
   'articles/05-bf_vs_brms_cpu_1_core.qmd'
   'articles/05-bf_vs_brms_gpu.html' 'articles/05-bf_vs_brms_gpu.qmd'
+  'articles/06-bayesian-optimization.qmd'
   'articles/99-model-validation.qmd' 'rebuild.R'
 Package has no Sweave vignette sources and no VignetteBuilder field.
-* checking examples ... OK
+* checking examples ... SKIPPED
 * checking for unstated dependencies in 'tests' ... OK
 * checking tests ... SKIPPED
 * checking package vignettes ... NOTE
@@ -145,4 +194,4 @@ Package has 'vignettes' subdirectory but apparently no vignettes.
 Perhaps the 'VignetteBuilder' information is missing from the
 DESCRIPTION file?
 * DONE
-Status: 2 WARNINGs, 5 NOTEs
+Status: 2 WARNINGs, 4 NOTEs

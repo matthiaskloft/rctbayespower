@@ -14,7 +14,8 @@ estimate_single_bf(
   thr_dec_eff,
   thr_dec_fut,
   id_iter,
-  id_cond
+  id_cond,
+  sim_fn = NULL
 )
 }
 \arguments{
@@ -37,6 +38,9 @@ estimate_single_bf(
 \item{id_iter}{Iteration identifier (scalar or vector for batch)}
 
 \item{id_cond}{Condition identifier (scalar or vector for batch)}
+
+\item{sim_fn}{Optional rctbp_sim_fn object for schema-based batch preparation.
+If provided, uses sim_fn@output_schema for field mapping.}
 }
 \value{
 Data frame with results (1 row per simulation in batch)

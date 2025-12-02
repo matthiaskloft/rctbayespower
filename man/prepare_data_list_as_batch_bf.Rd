@@ -4,22 +4,63 @@
 \alias{prepare_data_list_as_batch_bf}
 \title{Prepare List of data.frames as Batch Format for BayesFlow}
 \usage{
-prepare_data_list_as_batch_bf(data_list, backend_args)
+prepare_data_list_as_batch_bf(
+  data_list,
+  backend_args,
+  field_map = NULL,
+  sim_fn = NULL
+)
 }
 \arguments{
 \item{data_list}{List of data.frames OR Python batch dicts}
 
 \item{backend_args}{List containing p_alloc and other settings}
+
+\item{field_map}{Optional field mapping specification (see \code{\link[=get_batch_field_map]{get_batch_field_map()}}).
+If NULL and sim_fn not provided, uses "ancova" mapping.
+Can also be a model type string like "survival".}
+
+\item{sim_fn}{Optional rctbp_sim_fn object. If provided and has output_schema,
+uses that instead of field_map. This is the preferred method.}
 }
 \value{
-List with batch-formatted arrays
+List with batch-formatted arrays:
+\itemize{
+\item Numeric matrices for each field (batch_size x n_obs)
+\item N: integer sample size per simulation
+\item p_alloc: allocation probability
+}
 }
 \description{
-Converts a list of simulation data to the batch format expected
-by BayesFlow models. Handles both:
-\itemize{
-\item R data.frames (rows=observations)
-\item Python batch dicts (matrices with rows=simulations)
+Converts a list of simulation data to the batch format expected by BayesFlow
+models. Uses pre-allocated matrices for O(n) memory complexity instead of
+incremental rbind which has O(n²) complexity.
+}
+\details{
+\strong{Memory efficiency}: This function pre-allocates all output matrices
+before filling, achieving O(n) memory complexity. The previous implementation
+using do.call(rbind, lapply(...)) had O(n²) complexity due to repeated
+reallocation.
+
+\strong{Schema derivation}: When sim_fn is an rctbp_sim_fn object, the schema
+is derived from its output_schema property. This provides automatic column
+discovery and transformation specification without hardcoding.
+}
+\examples{
+\dontrun{
+# Using sim_fn@output_schema (preferred)
+batch <- prepare_data_list_as_batch_bf(data_list, backend_args, sim_fn = my_sim_fn)
+
+# ANCOVA data (default fallback)
+batch <- prepare_data_list_as_batch_bf(data_list, backend_args)
+
+# Custom field mapping
+custom_map <- list(
+  y = list(source = "response"),
+  x = list(source = "predictor"),
+  trt = list(source = "treatment", transform = "factor_to_numeric")
+)
+batch <- prepare_data_list_as_batch_bf(data_list, backend_args, custom_map)
 }
 }
 \keyword{internal}

@@ -40,6 +40,25 @@ print.rctbp_model <- function(x, ...) {
 }
 
 #' @export
+print.rctbp_sim_fn <- function(x, ...) {
+  S7::method(print, rctbp_sim_fn)(x, ...)
+}
+
+#' @export
 run.rctbp_power_analysis <- function(x, ...) {
   S7::method(run, rctbp_power_analysis)(x, ...)
+}
+
+# =============================================================================
+# OPTIMIZATION CLASSES
+# =============================================================================
+
+#' @export
+print.rctbp_objectives <- function(x, ...) {
+  S7::method(print, rctbp_objectives)(x, ...)
+}
+
+#' @export
+print.rctbp_optimization_result <- function(x, ...) {
+  S7::method(print, rctbp_optimization_result)(x, ...)
 }

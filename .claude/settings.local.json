@@ -56,7 +56,12 @@
       "WebFetch(domain:onlinelibrary.wiley.com)",
       "WebFetch(domain:pmc.ncbi.nlm.nih.gov)",
       "WebFetch(domain:paradox.mlr-org.com)",
-      "WebFetch(domain:cran.r-project.org)"
+      "WebFetch(domain:cran.r-project.org)",
+      "WebFetch(domain:bbotk.mlr-org.com)",
+      "WebFetch(domain:arxiv.org)",
+      "Bash(git add:*)",
+      "WebFetch(domain:mlr3.mlr-org.com)",
+      "WebFetch(domain:www.rdocumentation.org)"
     ],
     "deny": []
   }

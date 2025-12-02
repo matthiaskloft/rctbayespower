@@ -41,7 +41,15 @@ Suggests:
     rappdirs,
     matrixStats,
     reticulate (>= 1.41),
-    gsDesign
+    gsDesign,
+    mlr3mbo (>= 0.2.0),
+    bbotk (>= 0.7.0),
+    paradox (>= 0.11.0),
+    mlr3learners,
+    DiceKriging,
+    ranger,
+    lgr,
+    data.table
 SystemRequirements: Python (>= 3.10) for BayesFlow backend (optional)
 Config/reticulate:
   list(

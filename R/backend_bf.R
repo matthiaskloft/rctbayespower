@@ -245,136 +245,291 @@ check_bf_available <- function(silent = FALSE) {
 }
 
 
+#' Check if Cached Python Objects are Still Valid
+#'
+#' Verifies that cached Python module references are still alive.
+#' Python objects can become stale if the Python session restarts.
+#'
+#' @return Logical TRUE if cache is valid, FALSE otherwise
+#' @keywords internal
+is_bf_cache_valid <- function() {
+  if (!isTRUE(.bf_cache$initialized)) {
+    return(FALSE)
+  }
+
+  # Check if Python is still available
+  if (!reticulate::py_available(initialize = FALSE)) {
+    return(FALSE)
+  }
+
+  # Try to access a simple attribute on the cached module
+  # This will fail if the Python object reference is stale
+  tryCatch({
+    # Access __name__ attribute - all modules have this
+    if (!is.null(.bf_cache$bf)) {
+      .bf_cache$bf$`__name__`
+    }
+    TRUE
+  }, error = function(e) {
+    FALSE
+  })
+}
+
+
+#' Require BayesFlow Initialization (Internal)
+#'
+#' Checks that BayesFlow has been initialized via [init_bf_python()].
+#' Used internally by functions that need Python modules.
+#' Errors with helpful message if not initialized.
+#'
+#' @return List with bf, np, and keras Python modules
+#' @keywords internal
+require_bf_init <- function() {
+  if (!is_bf_cache_valid()) {
+    cli::cli_abort(c(
+      "BayesFlow not initialized",
+      "i" = "Call {.code init_bf_python()} at the start of your script",
+      "i" = "See {.code ?init_bf_python} for setup instructions"
+    ))
+  }
+  list(bf = .bf_cache$bf, np = .bf_cache$np, keras = .bf_cache$keras)
+}
+
+
+#' Check All BayesFlow Dependencies
+#'
+#' Validates that all required Python packages are available.
+#' More comprehensive than [check_bf_available()] which only checks bayesflow.
+#'
+#' @param silent If TRUE, return FALSE instead of error (default FALSE)
+#'
+#' @return TRUE if all dependencies available, FALSE or error otherwise
+#' @keywords internal
+check_bf_dependencies <- function(silent = FALSE) {
+  # First check basic availability
+  if (!check_bf_available(silent = TRUE)) {
+    if (silent) return(FALSE)
+    check_bf_available(silent = FALSE)  # Will error with details
+  }
+
+  # Check each required package
+  required_pkgs <- c("torch", "keras", "numpy", "bayesflow")
+  missing <- character()
+
+  for (pkg in required_pkgs) {
+    if (!reticulate::py_module_available(pkg)) {
+      missing <- c(missing, pkg)
+    }
+  }
+
+  if (length(missing) > 0) {
+    if (silent) return(FALSE)
+    cli::cli_abort(c(
+      "Missing required Python packages: {.val {missing}}",
+      "i" = "Run {.code setup_bf_python()} to install all dependencies",
+      "i" = "Or install manually: {.code pip install {paste(missing, collapse = ' ')}}"
+    ))
+  }
+
+  TRUE
+}
+
+
 #' Initialize BayesFlow Python Environment
 #'
 #' Imports BayesFlow, Keras, and NumPy modules, caching them for reuse.
-#' Called automatically by estimation functions.
+#' This should be called at the beginning of scripts using the BayesFlow backend.
+#'
+#' **Recommended workflow:**
+#' 1. First time: Run `setup_bf_python()` to create dedicated virtual environment
+#' 2. Each session: Call `init_bf_python()` at script start (uses default env)
 #'
 #' This function:
-#' 1. Activates the specified virtual environment if provided
-#' 2. Returns cached modules if already initialized (and envname matches)
-#' 3. Declares Python dependencies via py_require() for automatic venv provisioning
-#' 4. Sets KERAS_BACKEND=torch before importing keras (required for PyTorch backend)
-#' 5. Imports modules with delay_load for CRAN compatibility
+#' 1. Sets KERAS_BACKEND=torch via R environment variable (before Python init)
+#' 2. Activates the specified virtual environment (only before Python init)
+#' 3. Returns cached modules if already initialized and valid
+#' 4. Imports modules eagerly to surface errors immediately
+#' 5. Validates all dependencies (torch, keras, numpy, bayesflow)
 #'
-#' @param envname Optional name of Python virtual environment to use.
-#'   If NULL (default), uses the currently active environment or auto-detects.
+#' @param envname Name of Python virtual environment to use.
+#'   Default is "r-rctbayespower" (created by [setup_bf_python()]).
+#'   Set to NULL to use the currently active Python environment.
+#'   **Important**: Environment can only be set BEFORE Python is initialized
+#'   in the R session. Restart R to switch environments.
+#' @param verbose If TRUE (default), print initialization status message.
 #'
-#' @return List with bf, np, and keras Python modules
+#' @return List with bf, np, and keras Python modules (invisibly)
 #' @export
 #'
 #' @examples
 #' \dontrun{
-#' py_mods <- init_bf_python()
-#' py_mods$bf  # BayesFlow module
-#' py_mods$keras  # Keras module
+#' # Recommended: Initialize at the start of your script
+#' init_bf_python()  # Uses default "r-rctbayespower" environment
 #'
-#' # Use specific environment
-#' py_mods <- init_bf_python(envname = "r-rctbayespower")
+#' # Or specify environment explicitly
+#' init_bf_python("r-rctbayespower")
+#'
+#' # Then use BayesFlow backend in design
+#' design <- build_design(
+#'   model_name = "ancova_cont_2arms",
+#'   backend = "bf",
+#'   target_params = "b_arm2"
+#' )
 #' }
-init_bf_python <- function(envname = NULL) {
-  # Check if Python is already initialized
- python_already_initialized <- reticulate::py_available(initialize = FALSE)
+init_bf_python <- function(envname = "r-rctbayespower", verbose = TRUE) {
 
-  # If envname specified and Python already initialized, check compatibility
-  if (!is.null(envname) && nchar(envname) > 0 && python_already_initialized) {
-    # Get current Python path
-    current_config <- reticulate::py_config()
-    current_path <- normalizePath(current_config$python, winslash = "/", mustWork = FALSE)
+  # ==========================================================================
+  # STEP 1: Set KERAS_BACKEND before ANY Python initialization
+  # ==========================================================================
+  # Must happen via R's Sys.setenv() BEFORE reticulate touches Python,
+  # otherwise Keras may initialize with wrong backend
+  if (Sys.getenv("KERAS_BACKEND") == "") {
+    Sys.setenv(KERAS_BACKEND = "torch")
+  }
 
-    # Get requested environment path
-    requested_path <- tryCatch({
-      venv_python <- reticulate::virtualenv_python(envname)
-      normalizePath(venv_python, winslash = "/", mustWork = FALSE)
-    }, error = function(e) NULL)
+  # ==========================================================================
+  # STEP 2: Check cache validity FIRST (before environment checks)
+  # ==========================================================================
+  # If Python objects are alive and working, use them regardless of envname.
+  # The envname parameter only matters for FIRST initialization.
+  # This prevents repeated warnings when internal code calls init_bf_python().
+  if (is_bf_cache_valid()) {
+    if (verbose) {
+      info <- get_bf_env_info()
+      device_str <- if (!is.null(info) && info$device == "GPU") {
+        paste0("GPU (", info$device_name, ")")
+      } else {
+        "CPU"
+      }
+      cli::cli_alert_success("BayesFlow ready: {device_str}")
+    }
+    return(invisible(list(bf = .bf_cache$bf, np = .bf_cache$np, keras = .bf_cache$keras)))
+  }
 
-    if (!is.null(requested_path) && !identical(current_path, requested_path)) {
-      # Extract current env name from path for clearer message
-      current_envname <- basename(dirname(dirname(current_path)))
+  # ==========================================================================
+  # STEP 3: Environment activation (only possible before Python init)
+  # ==========================================================================
+  python_already_initialized <- reticulate::py_available(initialize = FALSE)
 
-      cli::cli_warn(c(
-        "Cannot switch Python environment in active R session",
-        "x" = "Requested: {.val {envname}}",
-        "!" = "Currently using: {.val {current_envname}}",
-        "i" = "Restart R session to use a different Python environment",
-        "i" = "Continuing with current environment..."
-      ))
-      # Don't try to switch - use current environment
-      envname <- NULL
+  if (!is.null(envname) && nchar(envname) > 0) {
+    if (python_already_initialized) {
+      # Check if we're already in the requested environment
+      current_config <- reticulate::py_config()
+      current_path <- normalizePath(current_config$python, winslash = "/", mustWork = FALSE)
+
+      requested_path <- tryCatch({
+        venv_python <- reticulate::virtualenv_python(envname)
+        normalizePath(venv_python, winslash = "/", mustWork = FALSE)
+      }, error = function(e) NULL)
+
+      if (!is.null(requested_path) && !identical(current_path, requested_path)) {
+        current_envname <- basename(dirname(dirname(current_path)))
+        cli::cli_warn(c(
+          "Cannot switch Python environment in active R session",
+          "x" = "Requested: {.val {envname}}",
+          "!" = "Currently using: {.val {current_envname}}",
+          "i" = "Restart R session to use a different Python environment"
+        ))
+        envname <- NULL
+      }
+    } else {
+      # Python not yet initialized - activate the environment
+      tryCatch({
+        reticulate::use_virtualenv(envname, required = TRUE)
+      }, error = function(e) {
+        cli::cli_abort(c(
+          "Could not activate virtual environment {.val {envname}}",
+          "x" = conditionMessage(e),
+          "i" = "Run {.code setup_bf_python()} to create the environment",
+          "i" = "Or use {.code init_bf_python(envname = NULL)} for current Python"
+        ))
+      })
     }
   }
 
-  # Activate specified environment if provided (only if Python not yet initialized)
-  if (!is.null(envname) && nchar(envname) > 0 && !python_already_initialized) {
-    tryCatch({
-      reticulate::use_virtualenv(envname, required = TRUE)
-    }, error = function(e) {
-      cli::cli_warn(c(
-        "Could not activate virtual environment {.val {envname}}",
-        "i" = "Using current Python environment instead",
-        "x" = conditionMessage(e)
-      ))
-    })
+  # ==========================================================================
+  # STEP 4: Validate all dependencies (not just bayesflow)
+  # ==========================================================================
+  check_bf_dependencies(silent = FALSE)
+
+  # ==========================================================================
+  # STEP 5: Import modules EAGERLY (no delay_load)
+  # ==========================================================================
+  # Eager loading surfaces errors immediately at init time, not later during use
+  if (verbose) {
+    cli::cli_alert_info("Initializing BayesFlow Python environment...")
   }
 
-  # Check if cache is valid (same environment)
-  cached_envname <- .bf_cache$envname %||% ""
-  current_envname <- envname %||% ""
-
-  if (exists("bf", envir = .bf_cache) &&
-      exists("np", envir = .bf_cache) &&
-      exists("keras", envir = .bf_cache) &&
-      !is.null(.bf_cache$bf) &&
-      cached_envname == current_envname) {
-    return(list(bf = .bf_cache$bf, np = .bf_cache$np, keras = .bf_cache$keras))
-  }
-
-  # Ensure availability
-  check_bf_available(silent = FALSE)
-
-  # Declare Python dependencies for automatic provisioning
-
-  # py_require() triggers automatic virtual environment setup if needed
-  tryCatch({
-    reticulate::py_require(
-      c("bayesflow>=2.0", "keras>=3.0", "torch", "numpy"),
-      python_version = "3.12"
-    )
+  # Import in correct order: numpy -> torch -> keras -> bayesflow
+  .bf_cache$np <- tryCatch({
+    reticulate::import("numpy", convert = FALSE)
   }, error = function(e) {
-    cli::cli_warn(c(
-      "Could not configure Python environment automatically",
-      "i" = "You may need to install packages manually:",
-      " " = "pip install bayesflow keras torch numpy"
+    cli::cli_abort(c(
+      "Failed to import NumPy",
+      "x" = conditionMessage(e),
+      "i" = "Run {.code setup_bf_python()} to install dependencies"
     ))
   })
 
-  # Set KERAS_BACKEND before importing keras (critical for PyTorch backend)
-  # Only set if not already configured by user
-  if (Sys.getenv("KERAS_BACKEND") == "") {
-    os <- reticulate::import("os")
-    os$environ$`__setitem__`("KERAS_BACKEND", "torch")
-    cli::cli_alert_info("Set KERAS_BACKEND=torch for BayesFlow")
-  }
+  # torch import (validates CUDA if available)
+  tryCatch({
+    torch <- reticulate::import("torch")
+    # Quick CUDA check (no GPU memory allocation)
+    .bf_cache$has_cuda <- torch$cuda$is_available()
+  }, error = function(e) {
+    cli::cli_abort(c(
+      "Failed to import PyTorch",
+      "x" = conditionMessage(e),
+      "i" = "Run {.code setup_bf_python()} to install dependencies"
+    ))
+  })
 
- # Suggest PYTORCH_CUDA_ALLOC_CONF for GPU memory management
-  if (Sys.getenv("PYTORCH_CUDA_ALLOC_CONF") == "") {
-    tryCatch({
-      torch <- reticulate::import("torch", delay_load = FALSE)
-      if (torch$cuda$is_available()) {
-        cli::cli_alert_info(
-          "Tip: Set {.code Sys.setenv(PYTORCH_CUDA_ALLOC_CONF = \"expandable_segments:True\")} before running to reduce GPU memory fragmentation"
-        )
+  .bf_cache$keras <- tryCatch({
+    reticulate::import("keras")
+  }, error = function(e) {
+    cli::cli_abort(c(
+      "Failed to import Keras",
+      "x" = conditionMessage(e),
+      "i" = "Ensure KERAS_BACKEND=torch is set before importing",
+      "i" = "Run {.code setup_bf_python()} to install dependencies"
+    ))
+  })
+
+  .bf_cache$bf <- tryCatch({
+    reticulate::import("bayesflow")
+  }, error = function(e) {
+    cli::cli_abort(c(
+      "Failed to import BayesFlow",
+      "x" = conditionMessage(e),
+      "i" = "Run {.code setup_bf_python()} to install dependencies"
+    ))
+  })
+
+  .bf_cache$envname <- envname
+  .bf_cache$initialized <- TRUE
+
+  # ==========================================================================
+  # STEP 6: Report status
+  # ==========================================================================
+  if (verbose) {
+    info <- get_bf_env_info()
+    if (!is.null(info)) {
+      device_str <- if (info$device == "GPU") {
+        paste0("GPU (", info$device_name, ")")
+      } else {
+        "CPU"
       }
-    }, error = function(e) NULL)
+      env_str <- info$envname %||% "system"
+      bf_ver <- info$pkg_versions$bayesflow %||% "unknown"
+      cli::cli_alert_success(
+        "BayesFlow {.val {bf_ver}} initialized: {device_str}, env: {.val {env_str}}"
+      )
+    } else {
+      cli::cli_alert_success("BayesFlow initialized")
+    }
   }
 
-  # Import modules with delay_load for CRAN compatibility
-  .bf_cache$bf <- reticulate::import("bayesflow", delay_load = TRUE)
-  .bf_cache$np <- reticulate::import("numpy", convert = FALSE, delay_load = TRUE)
-  .bf_cache$keras <- reticulate::import("keras", delay_load = TRUE)
-  .bf_cache$envname <- envname  # Store envname for cache validation
-
-  list(bf = .bf_cache$bf, np = .bf_cache$np, keras = .bf_cache$keras)
+  invisible(list(bf = .bf_cache$bf, np = .bf_cache$np, keras = .bf_cache$keras))
 }
 
 
@@ -397,8 +552,8 @@ load_bf_model_python <- function(model_path) {
     cli::cli_abort("Model file not found: {.path {model_path}}")
   }
 
-  # Initialize Python environment (includes cached keras)
-  py_mods <- init_bf_python()
+  # Require BayesFlow to be initialized (user must call init_bf_python() first)
+  py_mods <- require_bf_init()
 
   ext <- tools::file_ext(model_path)
 
@@ -646,8 +801,102 @@ compute_summaries_batch_ancova <- function(data_batch) {
 
 
 # =============================================================================
-# DATA PREPARATION
+# DATA PREPARATION (Pre-allocated for O(n) memory complexity)
 # =============================================================================
+
+#' Get Batch Field Map for Model Type
+#'
+#' Returns the field mapping specification for a given model type. Each spec
+#' defines how to extract and transform fields from simulation data into
+#' batch format for BayesFlow inference.
+#'
+#' @param model_type Character string identifying the model type.
+#'   Supported types: "ancova" (default), "binary", "survival".
+#'
+#' @return Named list where each element specifies:
+#'   \itemize{
+#'     \item source: Character vector of field names to try (in order)
+#'     \item transform: Optional transformation name ("factor_to_numeric", "logical_to_int")
+#'   }
+#'
+#' @details
+#' Field maps define the schema for batch data preparation:
+#' \itemize{
+#'   \item \strong{ancova}: outcome, covariate, group (continuous outcomes)
+#'   \item \strong{binary}: outcome, covariate, group (binary outcomes)
+#'   \item \strong{survival}: time, event, covariate, group (time-to-event)
+#' }
+#'
+#' @keywords internal
+#'
+#' @examples
+#' \dontrun{
+#' # Get field map for ANCOVA models
+#' field_map <- get_batch_field_map("ancova")
+#' names(field_map)  # "outcome", "covariate", "group"
+#'
+#' # Get field map for survival models (planned)
+#' field_map <- get_batch_field_map("survival")
+#' names(field_map)  # "time", "event", "covariate", "group"
+#' }
+get_batch_field_map <- function(model_type = "ancova") {
+  maps <- list(
+    # ANCOVA models (continuous outcome)
+    ancova = list(
+      outcome = list(source = "outcome"),
+      covariate = list(source = "covariate"),
+      group = list(source = c("group", "arm"), transform = "factor_to_numeric")
+    ),
+
+    # Binary outcome models (planned)
+    binary = list(
+      outcome = list(source = c("outcome", "response", "y")),
+      covariate = list(source = "covariate"),
+      group = list(source = c("group", "arm"), transform = "factor_to_numeric")
+    ),
+
+    # Survival models (planned) - time-to-event data
+    survival = list(
+      time = list(source = c("time", "survival_time", "t")),
+      event = list(source = c("event", "status", "delta"), transform = "logical_to_int"),
+      covariate = list(source = "covariate"),
+      group = list(source = c("group", "arm"), transform = "factor_to_numeric")
+    )
+  )
+
+  if (!model_type %in% names(maps)) {
+    cli::cli_abort(c(
+      "Unknown model type for batch field mapping: {.val {model_type}}",
+      "i" = "Available types: {.val {names(maps)}}",
+      "i" = "Use {.arg field_map} parameter to provide custom mapping"
+    ))
+  }
+
+  maps[[model_type]]
+}
+
+
+#' Apply Field Transformation
+#'
+#' Applies a named transformation to a vector during batch preparation.
+#'
+#' @param val Vector to transform
+#' @param transform_name Name of transformation: "factor_to_numeric", "logical_to_int"
+#'
+#' @return Transformed vector
+#' @keywords internal
+apply_batch_field_transform <- function(val, transform_name) {
+  switch(transform_name,
+    "factor_to_numeric" = {
+      if (is.factor(val)) as.numeric(val) - 1L else val
+    },
+    "logical_to_int" = {
+      as.integer(val)
+    },
+    val  # Default: return unchanged
+ )
+}
+
 
 #' Prepare Single data.frame as Batch Format for BayesFlow
 #'
@@ -658,87 +907,220 @@ compute_summaries_batch_ancova <- function(data_batch) {
 #'
 #' @param data Single data.frame OR Python batch dict
 #' @param backend_args List containing p_alloc and other settings
+#' @param field_map Optional field mapping (see [get_batch_field_map()]).
+#'   If NULL and sim_fn not provided, uses "ancova" mapping.
+#' @param sim_fn Optional rctbp_sim_fn object. If provided and has output_schema,
+#'   uses that instead of field_map.
 #'
 #' @return List with batch-formatted arrays (n_sims = 1)
 #' @keywords internal
-prepare_single_as_batch_bf <- function(data, backend_args) {
+prepare_single_as_batch_bf <- function(data, backend_args, field_map = NULL, sim_fn = NULL) {
+  # Resolve field_map from sim_fn@output_schema if available
+  if (is.null(field_map) && !is.null(sim_fn) && inherits(sim_fn, "rctbp_sim_fn")) {
+    field_map <- sim_fn@output_schema
+  }
+
+  # Fall back to default field map if still not provided
+  if (is.null(field_map)) {
+    field_map <- get_batch_field_map("ancova")
+  }
+
   # Detect if this is Python batch format (dict with matrices)
-  # Python sim_fn returns: list(outcome=matrix, covariate=matrix, group=matrix, N=int)
-  if (is.list(data) && !is.data.frame(data) && "outcome" %in% names(data)) {
-    # Already in batch format from Python sim_fn
-    # Just ensure group key exists (Python uses 'group', some may use 'arm')
-    group_data <- data$group %||% data$arm
-    return(list(
-      outcome = if (is.matrix(data$outcome)) data$outcome else matrix(data$outcome, nrow = 1),
-      covariate = if (is.matrix(data$covariate)) data$covariate else matrix(data$covariate, nrow = 1),
-      group = if (is.matrix(group_data)) group_data else matrix(group_data, nrow = 1),
-      N = data$N %||% ncol(data$outcome),
-      p_alloc = data$p_alloc %||% backend_args$p_alloc %||% 0.5
-    ))
+  # Uses structural heuristics: contains matrices OR has "n_total" metadata key
+  is_batch_dict <- is.list(data) && !is.data.frame(data) &&
+    (any(vapply(data, is.matrix, logical(1))) || "n_total" %in% names(data))
+
+  if (is_batch_dict) {
+    # Python batch format - extract and ensure matrix format
+    result <- lapply(names(field_map), function(fname) {
+      spec <- field_map[[fname]]
+      val <- NULL
+      for (src in spec$source) {
+        if (src %in% names(data)) {
+          val <- data[[src]]
+          break
+        }
+      }
+      if (is.null(val)) return(matrix(NA_real_, nrow = 1, ncol = 1))
+      if (is.matrix(val)) val else matrix(val, nrow = 1)
+    })
+    names(result) <- names(field_map)
+
+    result$N <- data$N %||% ncol(result[[1]])
+    result$p_alloc <- data$p_alloc %||% backend_args$p_alloc %||% 0.5
+    return(result)
   }
 
   # R data.frame format (rows=observations)
-  # Need to convert arm factor to numeric if present
-  arm_numeric <- if (is.factor(data$arm)) as.numeric(data$arm) - 1 else data$arm
-  list(
-    outcome = matrix(data$outcome, nrow = 1),
-    covariate = matrix(data$covariate, nrow = 1),
-    group = matrix(arm_numeric, nrow = 1),
-    N = nrow(data),
-    p_alloc = backend_args$p_alloc %||% 0.5
-  )
+  n_obs <- nrow(data)
+  result <- lapply(names(field_map), function(fname) {
+    spec <- field_map[[fname]]
+    val <- NULL
+    for (src in spec$source) {
+      if (src %in% names(data)) {
+        val <- data[[src]]
+        break
+      }
+    }
+    if (is.null(val)) return(matrix(NA_real_, nrow = 1, ncol = n_obs))
+
+    # Apply transformation if specified
+    if (!is.null(spec$transform)) {
+      val <- apply_batch_field_transform(val, spec$transform)
+    }
+    matrix(val, nrow = 1)
+  })
+  names(result) <- names(field_map)
+
+  result$N <- n_obs
+  result$p_alloc <- backend_args$p_alloc %||% 0.5
+  result
 }
 
 
 #' Prepare List of data.frames as Batch Format for BayesFlow
 #'
-#' Converts a list of simulation data to the batch format expected
-#' by BayesFlow models. Handles both:
-#' - R data.frames (rows=observations)
-#' - Python batch dicts (matrices with rows=simulations)
+#' Converts a list of simulation data to the batch format expected by BayesFlow
+#' models. Uses pre-allocated matrices for O(n) memory complexity instead of
+#' incremental rbind which has O(n²) complexity.
 #'
 #' @param data_list List of data.frames OR Python batch dicts
 #' @param backend_args List containing p_alloc and other settings
+#' @param field_map Optional field mapping specification (see [get_batch_field_map()]).
+#'   If NULL and sim_fn not provided, uses "ancova" mapping.
+#'   Can also be a model type string like "survival".
+#' @param sim_fn Optional rctbp_sim_fn object. If provided and has output_schema,
+#'   uses that instead of field_map. This is the preferred method.
 #'
-#' @return List with batch-formatted arrays
+#' @return List with batch-formatted arrays:
+#'   \itemize{
+#'     \item Numeric matrices for each field (batch_size x n_obs)
+#'     \item N: integer sample size per simulation
+#'     \item p_alloc: allocation probability
+#'   }
+#'
+#' @details
+#' \strong{Memory efficiency}: This function pre-allocates all output matrices
+#' before filling, achieving O(n) memory complexity. The previous implementation
+#' using do.call(rbind, lapply(...)) had O(n²) complexity due to repeated
+#' reallocation.
+#'
+#' \strong{Schema derivation}: When sim_fn is an rctbp_sim_fn object, the schema
+#' is derived from its output_schema property. This provides automatic column
+#' discovery and transformation specification without hardcoding.
+#'
 #' @keywords internal
-prepare_data_list_as_batch_bf <- function(data_list, backend_args) {
-  # Check first element to detect format
+#'
+#' @examples
+#' \dontrun{
+#' # Using sim_fn@output_schema (preferred)
+#' batch <- prepare_data_list_as_batch_bf(data_list, backend_args, sim_fn = my_sim_fn)
+#'
+#' # ANCOVA data (default fallback)
+#' batch <- prepare_data_list_as_batch_bf(data_list, backend_args)
+#'
+#' # Custom field mapping
+#' custom_map <- list(
+#'   y = list(source = "response"),
+#'   x = list(source = "predictor"),
+#'   trt = list(source = "treatment", transform = "factor_to_numeric")
+#' )
+#' batch <- prepare_data_list_as_batch_bf(data_list, backend_args, custom_map)
+#' }
+prepare_data_list_as_batch_bf <- function(data_list, backend_args, field_map = NULL, sim_fn = NULL) {
+  batch_size <- length(data_list)
+  if (batch_size == 0) {
+    cli::cli_abort("data_list cannot be empty")
+  }
+
   first <- data_list[[1]]
 
-  if (is.list(first) && !is.data.frame(first) && "outcome" %in% names(first)) {
-    # Python batch format - each element is already a batch dict with matrices
-    # Stack the matrices vertically
-    outcome_list <- lapply(data_list, function(d) {
-      if (is.matrix(d$outcome)) d$outcome else matrix(d$outcome, nrow = 1)
-    })
-    covariate_list <- lapply(data_list, function(d) {
-      if (is.matrix(d$covariate)) d$covariate else matrix(d$covariate, nrow = 1)
-    })
-    group_list <- lapply(data_list, function(d) {
-      g <- d$group %||% d$arm
-      if (is.matrix(g)) g else matrix(g, nrow = 1)
-    })
-
-    list(
-      outcome = do.call(rbind, outcome_list),
-      covariate = do.call(rbind, covariate_list),
-      group = do.call(rbind, group_list),
-      N = first$N %||% ncol(first$outcome),
-      p_alloc = first$p_alloc %||% backend_args$p_alloc %||% 0.5
-    )
-  } else {
-    # R data.frame format
-    list(
-      outcome = do.call(rbind, lapply(data_list, function(d) d$outcome)),
-      covariate = do.call(rbind, lapply(data_list, function(d) d$covariate)),
-      group = do.call(rbind, lapply(data_list, function(d) {
-        if (is.factor(d$arm)) as.numeric(d$arm) - 1 else d$arm
-      })),
-      N = nrow(data_list[[1]]),
-      p_alloc = backend_args$p_alloc %||% 0.5
-    )
+  # Resolve field_map from sim_fn@output_schema if available (preferred method)
+  if (is.null(field_map) && !is.null(sim_fn) && inherits(sim_fn, "rctbp_sim_fn")) {
+    field_map <- sim_fn@output_schema
   }
+
+  # Fall back to registry or string lookup
+  if (is.null(field_map)) {
+    field_map <- get_batch_field_map("ancova")
+  } else if (is.character(field_map) && length(field_map) == 1) {
+    field_map <- get_batch_field_map(field_map)
+  }
+  # else: assume it's already a proper field_map list
+
+  # Detect format: Python batch dict vs R data.frame
+  # Uses structural heuristics: contains matrices OR has "n_total" metadata key
+  is_batch_dict <- is.list(first) && !is.data.frame(first) &&
+    (any(vapply(first, is.matrix, logical(1))) || "n_total" %in% names(first))
+
+  # Determine observation count per simulation
+  if (is_batch_dict) {
+    # Find first available field to get dimensions
+    for (fname in names(field_map)) {
+      for (src in field_map[[fname]]$source) {
+        if (src %in% names(first)) {
+          ref_field <- first[[src]]
+          n_obs <- if (is.matrix(ref_field)) ncol(ref_field) else length(ref_field)
+          break
+        }
+      }
+      if (exists("n_obs")) break
+    }
+    if (!exists("n_obs")) n_obs <- first$N %||% 1L
+  } else {
+    n_obs <- nrow(first)
+  }
+
+  # ===========================================================================
+  # PRE-ALLOCATE OUTPUT MATRICES (Key optimization: O(n) vs O(n²))
+  # ===========================================================================
+  result <- setNames(
+    lapply(names(field_map), function(fname) {
+      matrix(NA_real_, nrow = batch_size, ncol = n_obs)
+    }),
+    names(field_map)
+  )
+
+  # ===========================================================================
+  # FILL MATRICES WITH DIRECT ROW ASSIGNMENT (no reallocation)
+  # ===========================================================================
+  for (i in seq_len(batch_size)) {
+    d <- data_list[[i]]
+
+    for (fname in names(field_map)) {
+      spec <- field_map[[fname]]
+
+      # Find source field (try alternatives in order)
+      val <- NULL
+      for (src in spec$source) {
+        if (src %in% names(d)) {
+          val <- d[[src]]
+          break
+        }
+      }
+
+      if (is.null(val)) next
+
+      # Handle batch dict format (may have matrix with 1 row)
+      if (is_batch_dict && is.matrix(val)) {
+        val <- val[1, ]
+      }
+
+      # Apply transformation if specified
+      if (!is.null(spec$transform)) {
+        val <- apply_batch_field_transform(val, spec$transform)
+      }
+
+      # Direct assignment to pre-allocated row (O(n_obs), not O(i * n_obs))
+      result[[fname]][i, ] <- val
+    }
+  }
+
+  # Add metadata
+  result$N <- n_obs
+  result$p_alloc <- first$p_alloc %||% backend_args$p_alloc %||% 0.5
+
+  result
 }
 
 
@@ -863,26 +1245,41 @@ is_bf_mock_mode <- function() {
 #' power analysis with many simulations.
 #'
 #' This function:
-#' 1. Runs Python garbage collection
+#' 1. Runs Python garbage collection (multiple passes for cyclic references)
 #' 2. Calls torch.cuda.empty_cache() if CUDA is available
+#' 3. Synchronizes CUDA to ensure all operations complete
+#' 4. Optionally runs R garbage collection
+#'
+#' @param r_gc Logical, whether to also run R garbage collection (default TRUE)
 #'
 #' @return Invisible NULL
-#' @keywords internal
-clear_gpu_memory <- function() {
+#' @export
+clear_gpu_memory <- function(r_gc = TRUE) {
   tryCatch({
-    # Run Python garbage collection first
+    # Run Python garbage collection multiple times
+    # (cyclic references may need multiple passes)
     gc_mod <- reticulate::import("gc", delay_load = FALSE)
     gc_mod$collect()
+    gc_mod$collect()  # Second pass for cyclic refs
 
     # Clear CUDA cache if available
     torch <- reticulate::import("torch", delay_load = FALSE)
     if (torch$cuda$is_available()) {
+      # Synchronize first to ensure all async ops complete
+      torch$cuda$synchronize()
+      # Empty the cache
       torch$cuda$empty_cache()
+      # Synchronize again
       torch$cuda$synchronize()
     }
   }, error = function(e) {
     # Silently ignore - memory cleanup is best-effort
   })
+
+  # Run R garbage collection to release reticulate references
+ if (r_gc) {
+    gc(verbose = FALSE, full = TRUE)
+  }
 
   invisible(NULL)
 }
@@ -940,11 +1337,17 @@ mock_bf_samples <- function(batch_size, n_samples, data_batch = NULL) {
 #' @param data_batch List with batched simulation data from prepare_*_bf().
 #'   Must contain: outcome (matrix), covariate (matrix), group (matrix), N (int)
 #' @param bf_model BayesFlow/Keras model (Python object via reticulate)
-#' @param backend_args List with n_posterior_samples (default 1000), etc.
+#' @param backend_args List with n_posterior_samples (default 1000).
 #' @param target_params Character vector of parameter names (first used for single-param models)
 #'
 #' @return Matrix of posterior draws (batch_size x n_posterior_samples).
 #'   For multi-parameter models, only the first target parameter is returned.
+#'
+#' @details
+#' **GPU Memory Management**: Batch size is controlled at the `power_analysis()` level
+#' via `bf_args$batch_size`. This determines how many simulations are grouped together
+#' before being sent to the GPU. Reduce `batch_size` if encountering OOM errors.
+#'
 #' @keywords internal
 estimate_batch_bf <- function(data_batch, bf_model, backend_args, target_params) {
   # Extract settings
@@ -959,7 +1362,6 @@ estimate_batch_bf <- function(data_batch, bf_model, backend_args, target_params)
   }
 
   # Validate model before proceeding
-
   if (is.null(bf_model)) {
     cli::cli_abort(c(
       "BayesFlow model is NULL",
@@ -978,13 +1380,11 @@ estimate_batch_bf <- function(data_batch, bf_model, backend_args, target_params)
     ))
   }
 
-  # Initialize Python
-  py_mods <- init_bf_python()
+  # Require BayesFlow to be initialized
+  py_mods <- require_bf_init()
   np <- py_mods$np
 
-  # Step 1: Convert R matrices to NumPy arrays and create conditions dict in Python
-  # Note: Creating dict in R with reticulate::dict() and numpy arrays causes issues
-  # So we construct the dict directly in Python using reticulate::r_to_py()
+  # Convert R matrices to NumPy arrays and create conditions dict
   data_cond <- reticulate::r_to_py(list(
     outcome = np$array(data_batch$outcome, dtype = "float32"),
     covariate = np$array(data_batch$covariate, dtype = "float32"),
@@ -993,17 +1393,21 @@ estimate_batch_bf <- function(data_batch, bf_model, backend_args, target_params)
     p_alloc = as.numeric(data_batch$p_alloc)
   ))
 
-  # Step 2: Call BayesFlow model for posterior samples
+  # Call BayesFlow model for posterior samples
   samples_py <- tryCatch({
     bf_model$sample(conditions = data_cond, num_samples = n_samples)
   }, error = function(e) {
+    # Clean up input tensors on error
+    rm(data_cond)
+    clear_gpu_memory(r_gc = FALSE)
+
     err_msg <- e$message
     # Check for CUDA out of memory error
     if (grepl("OutOfMemory|out of memory|CUDA", err_msg, ignore.case = TRUE)) {
       cli::cli_abort(c(
         "BayesFlow sampling failed: GPU out of memory",
         "x" = err_msg,
-        "i" = "Try reducing batch size: {.code bf_args = list(batch_size = 32)}",
+        "i" = "Try reducing batch_size: {.code bf_args = list(batch_size = 64)}",
         "i" = "Set memory config: {.code Sys.setenv(PYTORCH_CUDA_ALLOC_CONF = \"expandable_segments:True\")}",
         "i" = "Current batch size: {batch_size}, posterior samples: {n_samples}"
       ))
@@ -1015,11 +1419,15 @@ estimate_batch_bf <- function(data_batch, bf_model, backend_args, target_params)
     ))
   })
 
-  # Step 3: Convert back to R matrix
+  # Convert back to R matrix BEFORE deleting Python objects
   samples_r <- reticulate::py_to_r(samples_py)
 
-  # Step 4: Clear GPU memory to prevent accumulation between batches
-  clear_gpu_memory()
+  # Explicitly remove Python object references to allow garbage collection
+  # This is critical for releasing GPU memory held by tensors
+  rm(samples_py, data_cond)
+
+  # Clear GPU memory (includes Python gc + CUDA cache + R gc)
+  clear_gpu_memory(r_gc = TRUE)
 
   # Handle different output shapes
   # Expected: dict with parameter names as keys (e.g., "b_group")
@@ -1079,12 +1487,15 @@ estimate_batch_bf <- function(data_batch, bf_model, backend_args, target_params)
 #' @param thr_dec_fut Probability threshold for futility
 #' @param id_iter Iteration identifier (scalar or vector for batch)
 #' @param id_cond Condition identifier (scalar or vector for batch)
+#' @param sim_fn Optional rctbp_sim_fn object for schema-based batch preparation.
+#'   If provided, uses sim_fn@@output_schema for field mapping.
 #'
 #' @return Data frame with results (1 row per simulation in batch)
 #' @keywords internal
 estimate_single_bf <- function(data, model, backend_args, target_params,
                                 thr_fx_eff, thr_fx_fut,
-                                thr_dec_eff, thr_dec_fut, id_iter, id_cond) {
+                                thr_dec_eff, thr_dec_fut, id_iter, id_cond,
+                                sim_fn = NULL) {
 
   # Detect data format:
   # 1. R data.frame (single sim, rows=observations)
@@ -1100,13 +1511,13 @@ estimate_single_bf <- function(data, model, backend_args, target_params,
     # Case 1: Single R data.frame
     batch_size <- 1L
     n_analyzed <- nrow(data)
-    data_batch <- prepare_single_as_batch_bf(data, backend_args)
+    data_batch <- prepare_single_as_batch_bf(data, backend_args, sim_fn = sim_fn)
 
   } else if (is_python_batch_dict(data)) {
     # Case 2: Single Python batch dict
     batch_size <- nrow(data$outcome)
     n_analyzed <- ncol(data$outcome)
-    data_batch <- prepare_single_as_batch_bf(data, backend_args)
+    data_batch <- prepare_single_as_batch_bf(data, backend_args, sim_fn = sim_fn)
 
     # Expand id vectors if needed (Python batch may have multiple rows)
     if (length(id_iter) == 1 && batch_size > 1) id_iter <- rep(id_iter, batch_size)
@@ -1132,7 +1543,7 @@ estimate_single_bf <- function(data, model, backend_args, target_params,
     if (length(id_cond) == 1) id_cond <- rep(id_cond, batch_size)
 
     # Prepare batch data
-    data_batch <- prepare_data_list_as_batch_bf(data, backend_args)
+    data_batch <- prepare_data_list_as_batch_bf(data, backend_args, sim_fn = sim_fn)
 
   } else {
     cli::cli_abort("Unknown data format in estimate_single_bf")
@@ -1181,6 +1592,9 @@ estimate_single_bf <- function(data, model, backend_args, target_params,
     skip_convergence = backend_args$skip_convergence %||% TRUE
   )
 
+  # Clean up large objects to free RAM
+  rm(draws_matrix, data_batch)
+
   result
 }
 
@@ -1207,13 +1621,16 @@ estimate_single_bf <- function(data, model, backend_args, target_params,
 #' @param interim_function Function to make interim decisions (optional)
 #' @param id_iter Vector of iteration identifiers (one per sim in batch)
 #' @param id_cond Vector of condition identifiers (one per sim in batch)
+#' @param sim_fn Optional rctbp_sim_fn object for schema-based batch preparation.
+#'   If provided, uses sim_fn@@output_schema for field mapping.
 #'
 #' @return Data frame with (batch_size x n_analyses) rows
 #' @keywords internal
 estimate_sequential_bf <- function(full_data_list, model, backend_args, target_params,
                                     thr_fx_eff, thr_fx_fut,
                                     thr_dec_eff, thr_dec_fut, analysis_at,
-                                    interim_function, id_iter, id_cond) {
+                                    interim_function, id_iter, id_cond,
+                                    sim_fn = NULL) {
 
   batch_size <- length(full_data_list)
   n_total <- nrow(full_data_list[[1]])
@@ -1244,7 +1661,7 @@ estimate_sequential_bf <- function(full_data_list, model, backend_args, target_p
     analysis_data_list <- lapply(full_data_list[active_idx], function(fd) fd[1:current_n, ])
 
     # Prepare batch data
-    data_batch <- prepare_data_list_as_batch_bf(analysis_data_list, backend_args)
+    data_batch <- prepare_data_list_as_batch_bf(analysis_data_list, backend_args, sim_fn = sim_fn)
 
     # Single BayesFlow forward pass for all active simulations
     bf_error_msg <- NULL
@@ -1280,6 +1697,9 @@ estimate_sequential_bf <- function(full_data_list, model, backend_args, target_p
       n_analyzed = current_n,
       skip_convergence = backend_args$skip_convergence %||% TRUE
     )
+
+    # Clean up large objects to free RAM after each interim analysis
+    rm(draws_matrix, data_batch, analysis_data_list)
 
     # Update stopping state (if not final)
     if (!is_final) {

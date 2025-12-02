@@ -55,8 +55,8 @@ load_python_simulators <- function() {
     ))
   }
 
-  # Initialize BayesFlow Python environment (sets up numpy etc.)
-  init_bf_python()
+  # Require BayesFlow to be initialized (user must call init_bf_python() first)
+  require_bf_init()
 
   # Find simulator module path
   sim_path <- system.file("python", package = "rctbayespower")

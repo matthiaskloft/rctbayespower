@@ -10,9 +10,10 @@ create_ancova_sim_fn(n_arms)
 \item{n_arms}{Number of arms}
 }
 \value{
-Simulation function
+rctbp_sim_fn object (callable with schema)
 }
 \description{
 Internal helper to create simulation function for ANCOVA models.
+Returns an \code{rctbp_sim_fn} object with test arguments and output schema.
 }
 \keyword{internal}

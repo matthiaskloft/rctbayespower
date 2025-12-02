@@ -118,7 +118,8 @@ worker_process_single <- function(id_cond, id_iter, condition_args, design) {
           thr_dec_eff = thr_dec_eff,
           thr_dec_fut = thr_dec_fut,
           id_iter = id_iter,
-          id_cond = id_cond
+          id_cond = id_cond,
+          sim_fn = sim_fn
         )
       } else {
         cli::cli_abort(c(
@@ -157,7 +158,8 @@ worker_process_single <- function(id_cond, id_iter, condition_args, design) {
           analysis_at = analysis_at,
           interim_function = interim_function,
           id_iter = id_iter,
-          id_cond = id_cond
+          id_cond = id_cond,
+          sim_fn = sim_fn
         )
       } else {
         cli::cli_abort(c(
@@ -303,7 +305,8 @@ worker_process_batch <- function(work_units, design) {
         thr_dec_eff = thr_dec_eff,
         thr_dec_fut = thr_dec_fut,
         id_iter = id_iter_vec,
-        id_cond = id_cond_vec
+        id_cond = id_cond_vec,
+        sim_fn = sim_fn
       )
     },
     sequential = {
@@ -319,7 +322,8 @@ worker_process_batch <- function(work_units, design) {
         analysis_at = analysis_at,
         interim_function = interim_function,
         id_iter = id_iter_vec,
-        id_cond = id_cond_vec
+        id_cond = id_cond_vec,
+        sim_fn = sim_fn
       )
     }
   )

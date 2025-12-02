@@ -27,6 +27,7 @@ Documentation is organized in `dev/` as numbered topic files:
 | [`09_bayesian_adaptive_designs_reference.md`](dev/09_bayesian_adaptive_designs_reference.md) | Reference: Bayesian adaptive trial designs |
 | [`10_bayesflow_integration_roadmap.md`](dev/10_bayesflow_integration_roadmap.md) | BayesFlow integration status and next steps |
 | [`11_code_consistency_review.md`](dev/11_code_consistency_review.md) | Code consistency patterns, naming conventions |
+| [`12_bayesian_optimization_plan.md`](dev/12_bayesian_optimization_plan.md) | **[IMPLEMENTED]** Bayesian optimization for design search |
 
 Archived files in `dev/archive/`.
 
@@ -52,6 +53,7 @@ Archived files in `dev/archive/`.
 | **Dual backend support (brms + BayesFlow)** | ✅ |
 | **BayesFlow reticulate integration** | ✅ |
 | **Mock mode for testing without Python** | ✅ |
+| **Bayesian optimization for design search** | ✅ |
 
 ### Backend System
 
@@ -118,55 +120,75 @@ result@results_conditions
 ### BayesFlow Backend (When Available)
 
 ```r
-# Set up Python environment with GPU support (first time only)
+# =============================================================================
+# FIRST TIME SETUP (run once per machine)
+# =============================================================================
 setup_bf_python()  # Auto-detects CUDA, creates venv, installs packages
 
 # Or with specific options:
 setup_bf_python(cuda_version = "12.4")  # Specific CUDA version
 setup_bf_python(cuda_version = "cpu")   # CPU-only
 
-# Check status and verify installation
-bf_status()                              # Show full environment status
-bf_status(envname = "r-rctbayespower")   # Check specific environment
-verify_bf_installation()                 # Check all packages
-detect_cuda_version()                    # Just check CUDA
-get_bf_env_info()                        # Get device (CPU/GPU) and environment info
+# =============================================================================
+# EACH SESSION: Initialize at the start of your script (REQUIRED)
+# =============================================================================
+# IMPORTANT: Call init_bf_python() BEFORE any BayesFlow operations.
+# All BayesFlow functions require this - they will error if not initialized.
+# This sets KERAS_BACKEND, activates the venv, and validates dependencies.
+init_bf_python()  # Uses default "r-rctbayespower" environment
 
-# Check if BayesFlow is available
-check_bf_available(silent = TRUE)
+# Or use a custom environment name:
+init_bf_python("my-custom-env")
 
-# Backend options:
-# - "brms": Load brms model (default, always available)
-# - "bf": Try BayesFlow, fall back to brms WITH WARNING if unavailable
+# Output on success:
+# ✔ BayesFlow 2.0.1 initialized: GPU (NVIDIA RTX 4090), env: r-rctbayespower
 
-# brms backend (default)
-design <- build_design(
-  model_name = "ancova_cont_2arms",
-  target_params = "b_arm2"
-)
-design@backend  # "brms"
+# If not initialized, BayesFlow functions will error:
+# ✖ BayesFlow not initialized
+# ℹ Call init_bf_python() at the start of your script
 
-# BayesFlow backend (falls back to brms with warning if unavailable)
+# If environment not found:
+# ✖ Could not activate virtual environment "r-rctbayespower"
+# ℹ Run setup_bf_python() to create the environment
+
+# =============================================================================
+# THEN USE BAYESFLOW BACKEND
+# =============================================================================
 design <- build_design(
   model_name = "ancova_cont_2arms",
   backend = "bf",
   target_params = "b_arm2"
 )
 
-# Specify Python environment for BayesFlow
+# BayesFlow-specific options
 result <- power_analysis(
   conditions,
   n_sims = 100,
-  bf_args = list(
-    envname = "r-rctbayespower",  # Use specific venv
-    n_posterior_samples = 2000
-  )
+  bf_args = list(n_posterior_samples = 2000)  # batch_size defaults to n_sims
 )
-# Output shows: Device (CPU/GPU), Environment name, posterior samples, batch size
+
+# =============================================================================
+# DIAGNOSTIC FUNCTIONS
+# =============================================================================
+bf_status()                    # Show full environment status
+verify_bf_installation()       # Check all packages with versions
+detect_cuda_version()          # Just check CUDA
+get_bf_env_info()              # Get device (CPU/GPU) and environment info
+check_bf_available(silent = TRUE)  # Quick availability check
 
 # Testing without Python (mock mode)
 Sys.setenv(RCTBP_MOCK_BF = "TRUE")
 # BayesFlow calls will return mock samples
+
+# GPU Memory Management
+# For limited GPU memory, reduce batch_size:
+result <- power_analysis(conditions, bf_args = list(batch_size = 64))
+
+# Configure PyTorch memory allocator (before running):
+Sys.setenv(PYTORCH_CUDA_ALLOC_CONF = "expandable_segments:True")
+
+# Manual cleanup between analyses if needed:
+clear_gpu_memory()  # Clears Python gc + CUDA cache + R gc
 ```
 
 **Note**: Parameter names vary by model. Use `design@par_names_inference` to discover available `target_params` and `design@par_names_sim` for simulation arguments.
@@ -232,6 +254,67 @@ result_obf <- resummarize_boundaries(result,
 )
 ```
 
+### Bayesian Optimization for Design Search
+
+```r
+# Alternative to grid search: find optimal sample size automatically
+design <- build_design(
+  model_name = "ancova_cont_2arms",
+  target_params = "b_arm2"
+)
+
+# Define optimization problem
+obj <- build_objectives(
+  design = design,
+  search = list(n_total = c(50, 500)),           # Search bounds
+  objectives = list(pwr_eff = target(0.80)),     # Target 80% power
+  secondary = NULL,   # Auto-infer: minimize n_total (can override)
+  constant = list(
+    b_arm_treat = 0.3,
+    thr_dec_eff = 0.975, thr_dec_fut = 0.5,
+    thr_fx_eff = 0.2, thr_fx_fut = 0,
+    p_alloc = list(c(0.5, 0.5)),
+    intercept = 0, b_covariate = 0.3, sigma = 1
+  )
+)
+
+# Run with warmup phase (progressive fidelity)
+# First level estimates reference values for secondary objectives
+result <- optimization(
+  obj,
+  n_sims = c(500, 2000),      # Progressive fidelity (warmup + refinement)
+  evals_per_step = c(30, 20), # 30 warmup evals, 20 refinement evals
+  use_warmup = TRUE,          # Enable warmup phase
+  n_cores = 4,
+  surrogate = "gp"
+)
+
+# Access results
+result@result            # Optimal design
+result@reference_values  # Reference values from warmup (e.g., list(n_total = 105))
+result@archive           # All evaluations
+plot(result)             # Visualize optimization
+
+# Multi-objective: Pareto frontier
+obj_pareto <- build_objectives(
+  design = design,
+  search = list(n_total = c(50, 500), b_arm_treat = c(0.2, 0.6)),
+  objectives = list(pwr_eff = "maximize", n_total = "minimize"),
+  constant = list(...)
+)
+result <- optimization(obj_pareto, n_sims = 300, max_evals = 50)
+plot(result, type = "pareto")
+```
+
+**Key optimization features:**
+- **Two-component objective** for target optimization: `0.5 * power_quadratic + 0.5 * secondary_bonus`
+  - Power: quadratic ramp `(min(power, target)/target)²`, clamped at target
+  - Secondary bonus: only when target achieved, can be negative for n >> reference
+- **Warmup phase**: First fidelity level estimates reference values for secondary objectives
+- **Secondary objectives**: Auto-inferred (minimize n_total, thresholds) or explicitly specified
+- **Progressive fidelity**: Vector `n_sims` for cost-efficient optimization
+- **Early stopping**: Patience-based stopping when target achieved
+
 ## File Organization
 
 ### Core Classes (`R/class_*.R`)
@@ -242,6 +325,7 @@ result_obf <- resummarize_boundaries(result,
 | `R/class_model.R` | Legacy model class (backward compatibility, see note below) |
 | `R/class_conditions.R` | Conditions class definition |
 | `R/class_power_analysis.R` | Power analysis + run() + print/summary methods |
+| `R/class_objectives.R` | Optimization classes (`rctbp_objectives`, `rctbp_optimization_result`) |
 | `R/models_ancova.R` | ANCOVA model builders + batch simulation |
 
 ### Backend System
@@ -249,16 +333,28 @@ result_obf <- resummarize_boundaries(result,
 | File | Purpose |
 |------|---------|
 | `R/backend_brms.R` | brms-specific estimation (single + sequential) |
-| `R/backend_bf.R` | BayesFlow estimation + reticulate calls |
+| `R/backend_bf.R` | BayesFlow estimation + pre-allocated batch prep |
 | `R/model_cache.R` | Model download and caching system |
 | `R/utils_results.R` | Shared error result utilities |
 | `R/worker_functions.R` | Parallel worker dispatch + S7 serialization |
+
+**Key BayesFlow functions** (in `R/backend_bf.R`):
+- `get_batch_field_map(model_type)` - Field mapping registry for batch prep ("ancova", "binary", "survival")
+- `prepare_data_list_as_batch_bf()` - Pre-allocated O(n) batch preparation (vs O(n²) rbind pattern)
 
 ### Boundaries
 
 | File | Purpose |
 |------|---------|
 | `R/boundaries.R` | Stopping boundary functions (OBF, Pocock, linear, power) |
+
+### Optimization
+
+| File | Purpose |
+|------|---------|
+| `R/optimization.R` | `build_objectives()`, `optimization()`, `target()` |
+| `R/optimization_internal.R` | mlr3mbo/bbotk integration, surrogate setup |
+| `R/plot_optimization.R` | Optimization result plots (convergence, pareto, search) |
 
 ### Plotting (`R/plot_*.R`)
 
@@ -285,6 +381,7 @@ result_obf <- resummarize_boundaries(result,
 | `show_target_params(model_name)` | `R/required_fn_args.R` | Show available target parameters for a model |
 | `show_condition_args(design)` | `R/required_fn_args.R` | Show required arguments for build_conditions() |
 | `show_boundaries()` | `R/boundaries.R` | List available boundary functions |
+| `show_optimization_args()` | `R/optimization.R` | Show available optimization parameters |
 
 ### Utilities
 

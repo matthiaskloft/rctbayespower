@@ -20,6 +20,7 @@ rctbp_design <- S7::new_class(
     # =========================================================================
     # Core model properties (merged from rctbp_model)
     # =========================================================================
+    # Simulation function: either rctbp_sim_fn (with schema) or plain function
     sim_fn = S7::new_property(class = S7::class_any, default = NULL),
     inference_model = S7::new_property(class = S7::class_any, default = NULL),
 
@@ -43,7 +44,7 @@ rctbp_design <- S7::new_class(
     backend_args_brms = S7::new_property(S7::class_list, default = list()),
     backend_args_bf = S7::new_property(
       S7::class_list,
-      default = list(batch_size = NULL, n_posterior_samples = 1000L, envname = NULL)
+      default = list(batch_size = NULL, n_posterior_samples = 1000L)
     ),
 
     # Model metadata
@@ -59,13 +60,18 @@ rctbp_design <- S7::new_class(
     # =========================================================================
 
     # Parameter names from the simulation function (computed)
+    # Delegates to sim_fn@sim_fn_params if rctbp_sim_fn, otherwise uses formals()
     par_names_sim = S7::new_property(
       class = S7::class_character,
       getter = function(self) {
-        if (!is.null(self@sim_fn)) {
-          names(formals(self@sim_fn))
+        if (is.null(self@sim_fn)) {
+          return(character(0))
+        }
+        # Use sim_fn_params if available (rctbp_sim_fn), otherwise formals
+        if (inherits(self@sim_fn, "rctbp_sim_fn")) {
+          self@sim_fn@sim_fn_params
         } else {
-          character(0)
+          names(formals(self@sim_fn))
         }
       }
     ),
@@ -138,7 +144,8 @@ rctbp_design <- S7::new_class(
     }
 
     # Validate sim_fn has required parameters
-    if (!is.null(self@sim_fn)) {
+    # (rctbp_sim_fn objects validate themselves; check plain functions)
+    if (!is.null(self@sim_fn) && !inherits(self@sim_fn, "rctbp_sim_fn")) {
       required_params <- c("n_total", "p_alloc")
       if (!all(required_params %in% names(formals(self@sim_fn)))) {
         return("'sim_fn' must have parameters 'n_total' and 'p_alloc'.")
@@ -225,8 +232,9 @@ get_bf_parameter_names <- function(model) {
 #'   \describe{
 #'     \item{batch_size}{Batch size for inference (default: NULL, uses n_sims)}
 #'     \item{n_posterior_samples}{Number of posterior samples (default: 1000)}
-#'     \item{envname}{Python virtual environment name to use (default: NULL for auto-detect)}
 #'   }
+#'   Note: Python environment should be set before using BayesFlow via
+#'   [bf_status()] or [setup_bf_python()], not at runtime.
 #' @param n_endpoints Number of endpoints (positive integer). Required if `model_name` is NULL.
 #' @param endpoint_types Character vector of endpoint types ("continuous", "binary", "count").
 #'   Required if `model_name` is NULL.
@@ -285,8 +293,7 @@ build_design <- function(model_name = NULL,
                          backend_args_brms = list(),
                          backend_args_bf = list(
                            batch_size = NULL,
-                           n_posterior_samples = 1000L,
-                           envname = NULL
+                           n_posterior_samples = 1000L
                          ),
                          n_endpoints = NULL,
                          endpoint_types = NULL,
@@ -330,10 +337,12 @@ build_design <- function(model_name = NULL,
       "i" = "Provide a simulation function or specify {.arg model_name}"
     ))
   }
-  if (!is.function(sim_fn)) {
+  # Accept either rctbp_sim_fn or plain function
+  if (!inherits(sim_fn, "rctbp_sim_fn") && !is.function(sim_fn)) {
     cli::cli_abort(c(
-      "{.arg sim_fn} must be a function",
-      "x" = "You supplied {.type {sim_fn}}"
+      "{.arg sim_fn} must be a function or rctbp_sim_fn object",
+      "x" = "You supplied {.type {sim_fn}}",
+      "i" = "Use {.fn build_sim_fn} to wrap custom simulation functions"
     ))
   }
 
@@ -545,23 +554,25 @@ create_sim_fn_for_model <- function(model_name) {
 #' Create ANCOVA Simulation Function
 #'
 #' Internal helper to create simulation function for ANCOVA models.
+#' Returns an `rctbp_sim_fn` object with test arguments and output schema.
 #'
 #' @param n_arms Number of arms
-#' @return Simulation function
+#' @return rctbp_sim_fn object (callable with schema)
 #' @keywords internal
 create_ancova_sim_fn <- function(n_arms) {
   default_n_arms <- n_arms
   default_contrasts <- "contr.treatment"
   default_p_alloc <- rep(1, n_arms) / n_arms
   default_intercept <- 0
-  default_b_arm_treat <- NULL
-  default_b_covariate <- NULL
+  default_b_arm_treat <- rep(0, n_arms - 1)
+  default_b_covariate <- 0
   default_sigma <- 1
 
-  function(n_total, n_arms = default_n_arms, contrasts = default_contrasts,
-           p_alloc = default_p_alloc, intercept = default_intercept,
-           b_arm_treat = default_b_arm_treat, b_covariate = default_b_covariate,
-           sigma = default_sigma) {
+  # Create the raw simulation function
+  fn <- function(n_total, n_arms = default_n_arms, contrasts = default_contrasts,
+                 p_alloc = default_p_alloc, intercept = default_intercept,
+                 b_arm_treat = default_b_arm_treat, b_covariate = default_b_covariate,
+                 sigma = default_sigma) {
     # Create contrast matrix
     if (is.character(contrasts)) {
       contrasts_fn <- get(contrasts)
@@ -589,6 +600,20 @@ create_ancova_sim_fn <- function(n_arms) {
     )
     df
   }
+
+  # Wrap in rctbp_sim_fn with test arguments
+  build_sim_fn(
+    fn = fn,
+    test_args = list(
+      n_total = 20L,
+      n_arms = n_arms,
+      p_alloc = rep(1, n_arms) / n_arms,
+      intercept = 0,
+      b_arm_treat = rep(0, n_arms - 1),
+      b_covariate = 0,
+      sigma = 1
+    )
+  )
 }
 
 # =============================================================================

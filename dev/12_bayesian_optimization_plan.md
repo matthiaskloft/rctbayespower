@@ -2,91 +2,443 @@
 
 ## Overview
 
-Implement Bayesian optimization (BO) for automated optimal trial design discovery. This enables users to find designs that maximize power while minimizing sample size (or other objectives) without exhaustive grid search.
+Bayesian optimization (BO) for automated optimal trial design discovery. Finds designs that maximize power while minimizing sample size (or other objectives) without exhaustive grid search.
 
-**Backend Support**: Works with both brms and BayesFlow backends. BayesFlow recommended for BO (milliseconds vs. minutes per evaluation).
+**Backend Support**: Both brms and BayesFlow. BayesFlow recommended (ms vs minutes per evaluation).
 
-## Design Decisions
-
-| Decision | Choice | Rationale |
-|----------|--------|-----------|
-| API Style | S7 constructor | `rctbp_optimization()` + `optimize()` - consistent with package patterns |
-| MVP Scope | Multi-objective from start | Core use case is power vs. sample size trade-off |
-| Backends | Both brms + BayesFlow | Flexibility; warn users about brms speed |
-| Priority Use Cases | Sample size, Pareto, Sequential | Based on user requirements |
-
-## Use Cases (Priority Order)
-
-### 1. Sample Size Optimization (Primary)
-Find minimum `n_total` to achieve target power (e.g., 80%):
-```r
-# Create optimization specification
-optim <- rctbp_optimization(
-  design = design,
-  search = list(n_total = c(50, 500)),
-  objectives = list(pwr_scs = target(0.80)),  # Find n where pwr >= 0.80
-  constant = list(b_arm_treat = 0.3, ...)
-)
-
-# Run optimization
-result <- optimize(optim, n_sims = 500, n_evals = 30)
-# Returns: optimal n_total ≈ 187
-```
-
-### 2. Multi-Objective: Power vs. Sample Size (Core)
-Explore Pareto frontier of power vs. sample size trade-off:
-```r
-optim <- rctbp_optimization(
-  design = design,
-  search = list(n_total = c(50, 500), b_arm_treat = c(0.2, 0.6)),
-  objectives = list(pwr_scs = "maximize", n_total = "minimize"),
-  constant = list(...)
-)
-
-result <- optimize(optim, n_sims = 300, n_evals = 50)
-result@pareto_front  # View trade-off frontier
-plot(result)         # Visualize Pareto frontier
-```
-
-### 3. Sequential Design Optimization
-Optimize interim analysis timing and sample size:
-```r
-optim <- rctbp_optimization(
-  design = design,
-  search = list(
-    n_total = c(100, 400),
-    interim_fraction = c(0.3, 0.7)  # When to do interim (proportion)
-  ),
-  objectives = list(
-    expected_n = "minimize",  # Average sample size (accounting for early stopping)
-    pwr_scs = "maximize"
-  ),
-  constant = list(b_arm_treat = 0.4, ...)
-)
-
-result <- optimize(optim, n_sims = 300, n_evals = 50)
-```
-
-### 4. Cost-Constrained Optimization (Phase 2)
-Optimize power subject to budget constraint:
-```r
-optim <- rctbp_optimization(
-  design = design,
-  search = list(n_total = c(50, 500), p_alloc_treat = c(0.3, 0.7)),
-  objectives = list(pwr_scs = "maximize"),
-  cost_fn = function(params) {
-    n_ctrl <- params$n_total * (1 - params$p_alloc_treat)
-    n_treat <- params$n_total * params$p_alloc_treat
-    n_ctrl * 100 + n_treat * 500  # Treatment arm more expensive
-  },
-  constraints = list(cost <= 50000),
-  constant = list(...)
-)
-```
+**Status**: Core implementation complete with warmup phase and generalized secondary objectives.
 
 ## Architecture
 
-### Dependencies
+### Parallel to Existing Pattern
+
+```
+build_conditions() → rctbp_conditions  → power_analysis()   # Grid evaluation
+build_objectives() → rctbp_objectives  → optimization()     # Search optimization
+```
+
+### Class Structure
+
+**`rctbp_objectives`** - Problem specification (what to optimize):
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `design` | rctbp_design | Reference to trial design |
+| `search` | list | Parameter bounds: `list(n_total = c(50, 500))` |
+| `search_specs` | list | Internal: parsed simplex specs for p_alloc, looks |
+| `objectives` | list | What to optimize: `list(pwr_eff = target(0.80))` |
+| `constant` | list | Fixed parameters for all evaluations |
+| `secondary` | list | Secondary objectives: `list(n_total = "minimize")` |
+| `cost_fn` | function\|NULL | Optional user-defined cost function |
+| `objective_info` | list | Internal: parsed objective information |
+
+**`rctbp_optimization_result`** - Results:
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `objectives` | rctbp_objectives | Reference to problem spec |
+| `archive` | data.frame | All evaluations with parameters and objectives |
+| `result` | data.frame | Optimal design(s) |
+| `pareto_front` | data.frame\|NULL | For multi-objective (NULL if single) |
+| `convergence` | data.frame | Optimization trace |
+| `best_power_analysis` | rctbp_power_analysis | Full result from best solution |
+| `reference_values` | list | Reference values from warmup phase |
+| `n_sims` | numeric | Maximum n_sims used |
+| `n_evals` | numeric | Total evaluations |
+| `elapsed_time` | numeric | Runtime in seconds |
+| `early_stopped` | logical | Whether early stopping triggered |
+| `backend_used` | character | "brms" or "bf" |
+| `optimization_type` | character | "single", "target", or "multi" |
+
+## Core Functions
+
+### `build_objectives()`
+
+Creates optimization problem specification:
+
+```r
+build_objectives(
+  design,
+  search,
+  objectives,
+  constant = list(),
+  secondary = NULL,
+  cost_fn = NULL
+)
+```
+
+**Parameters:**
+
+| Argument | Description |
+|----------|-------------|
+| `design` | rctbp_design from `build_design()` |
+| `search` | Named list of bounds: `list(n_total = c(50, 500))` |
+| `objectives` | Named list: `"maximize"`, `"minimize"`, or `target(value)` |
+| `constant` | Fixed parameters for all evaluations |
+| `secondary` | Secondary objectives (auto-inferred if NULL) |
+| `cost_fn` | Optional custom cost function |
+
+**Secondary Objectives Auto-Inference:**
+
+When `secondary = NULL`, automatically infers from search parameters:
+- `n_total` → "minimize"
+- `thr_dec_eff`, `thr_dec_fut` → "minimize"
+- `thr_fx_eff`, `thr_fx_fut` → "minimize"
+
+Override with explicit list: `secondary = list(n_total = "minimize")` to only minimize n_total.
+
+### `optimization()`
+
+Executes Bayesian optimization:
+
+```r
+optimization(
+  objectives,
+  n_sims = 200,
+  evals_per_step = 10,
+  use_warmup = TRUE,
+  max_evals = 50,
+  n_cores = 1,
+  surrogate = c("rf", "gp"),
+  acq_function = "auto",
+  init_design = c("lhs", "random", "sobol"),
+  init_design_size = NULL,
+  patience = 30,
+  min_delta = 0.001,
+  bf_args = list(),
+  brms_args = list(),
+  refresh = 5,
+  run = TRUE,
+  verbosity = 1
+)
+```
+
+**Key Parameters:**
+
+| Argument | Default | Description |
+|----------|---------|-------------|
+| `n_sims` | 200 | Scalar or vector for progressive fidelity |
+| `evals_per_step` | 10 | Evals per fidelity level (scalar or vector) |
+| `use_warmup` | TRUE | Enable warmup phase for reference estimation |
+| `max_evals` | 50 | Max evaluations (ignored for vector n_sims) |
+| `surrogate` | "rf" | Surrogate model: "rf" or "gp" |
+| `patience` | 30 | Early stopping patience |
+| `min_delta` | 0.001 | Optimal window for early stopping |
+
+### `target()`
+
+Helper for target-constrained optimization:
+
+```r
+target(value, direction = ">=")
+```
+
+Examples:
+- `target(0.80)` - Find minimum sample size where power >= 80%
+- `target(0.05, "<=")` - Find design where type I error <= 5%
+
+## Optimization Types (Auto-Detected)
+
+| Objectives | Backend | Output |
+|------------|---------|--------|
+| Single (e.g., `pwr_eff = "max"`) | SingleCrit + EGO | Single optimal |
+| Target (e.g., `pwr_eff = target(0.80)`) | SingleCrit + 2-component | Single optimal |
+| Multiple (e.g., `pwr_eff = "max", n_total = "min"`) | MultiCrit + ParEGO | Pareto frontier |
+
+## Target Optimization: Two-Component Objective
+
+For target optimization (e.g., `pwr_eff = target(0.80)`), uses a two-component objective function with equal weights:
+
+```
+objective = 0.5 * power_component + 0.5 * secondary_bonus  (if target achieved)
+objective = 0.5 * power_component                          (if target not achieved)
+```
+
+### Components
+
+| Component | Formula | Range | Description |
+|-----------|---------|-------|-------------|
+| `power_component` | `(min(power, target) / target)²` | [0, 1] | Quadratic ramp, clamped at target |
+| `secondary_bonus` | see below | unbounded | Only added when target achieved |
+
+### Power Component (Quadratic, Clamped)
+
+The power component provides a smooth quadratic gradient toward the target, with no benefit for overshooting:
+
+| power | target | power_component |
+|-------|--------|-----------------|
+| 0.40 | 0.80 | (0.40/0.80)² = 0.25 |
+| 0.60 | 0.80 | (0.60/0.80)² = 0.56 |
+| 0.70 | 0.80 | (0.70/0.80)² = 0.77 |
+| 0.80 | 0.80 | 1.00 (clamped) |
+| 0.90 | 0.80 | 1.00 (clamped) |
+
+### Secondary Bonus Computation
+
+The secondary bonus encourages finding designs with preferred secondary parameter values (e.g., smaller n_total) **only after** the target is achieved.
+
+**Two-phase approach with warmup:**
+
+| Phase | Bonus Type | Formula (minimize) | Range | Description |
+|-------|------------|-------------------|-------|-------------|
+| Warmup | Inverse | `param_min / param` | (0, 1] | Bounds-independent |
+| Main | Reference-based | `1 - param / reference` | unbounded | Can be negative |
+
+**Reference-based bonus examples** (n_ref = 100):
+
+| n_total | secondary_bonus | Total objective (target achieved) |
+|---------|-----------------|-----------------------------------|
+| 50 | 1 - 50/100 = +0.50 | 0.5 × 1.0 + 0.5 × 0.50 = 0.75 |
+| 75 | 1 - 75/100 = +0.25 | 0.5 × 1.0 + 0.5 × 0.25 = 0.625 |
+| 100 | 1 - 100/100 = 0.00 | 0.5 × 1.0 + 0.5 × 0.00 = 0.50 |
+| 150 | 1 - 150/100 = -0.50 | 0.5 × 1.0 + 0.5 × (-0.50) = 0.25 |
+| 500 | 1 - 500/100 = -4.00 | 0.5 × 1.0 + 0.5 × (-4.00) = -1.50 |
+
+**Key insight**: The unbounded negative bonus for n >> reference creates a strong gradient pushing the optimizer away from high sample sizes.
+
+**Multiple secondary objectives** are combined with equal weight:
+```r
+total_bonus <- mean(bonus_n_total, bonus_thr_dec_eff, ...)
+```
+
+## Warmup Phase
+
+### Overview
+
+When using progressive fidelity (`length(n_sims) > 1`) with `use_warmup = TRUE`:
+
+1. **Warmup phase** (first fidelity level): Uses inverse bonus to explore and estimate reference values
+2. **Main phase** (remaining levels): Uses reference-based bonus centered on warmup estimates
+
+### Enabling Warmup
+
+Warmup requires:
+1. Progressive fidelity: `n_sims` must be a vector
+2. Secondary objectives: At least one secondary objective (auto-inferred or explicit)
+
+```r
+# Warmup enabled: progressive fidelity + secondary objectives
+result <- optimization(
+  obj,
+  n_sims = c(500, 2000),        # Vector = progressive fidelity
+  evals_per_step = c(30, 20),   # 30 warmup evals, 20 main evals
+  use_warmup = TRUE             # First level = warmup phase
+)
+
+# Warmup disabled: scalar n_sims
+result <- optimization(obj, n_sims = 500, use_warmup = TRUE)  # Ignored
+```
+
+### Reference Values
+
+After warmup completes:
+1. Reference values are extracted from the best warmup result
+2. Stored in `result@reference_values`
+3. Main phase uses `1 - param/reference` for bonus computation
+
+### Console Output
+
+```
+ℹ Warmup enabled: first 500-sim phase will estimate reference for: n_total (minimize)
+ℹ [1-30/50] n_sims=500 (warmup)
+ℹ [10/50] n_total = 180 | pwr_eff = 0.72
+✓ [20/50] New best: n_total = 105 | pwr_eff = 0.81
+✓ Warmup complete. Reference values: n_total=105
+ℹ [31-50/50] n_sims=2000 (refinement)
+✓ [40/50] New best: n_total = 98 | pwr_eff = 0.80
+```
+
+## Progressive Fidelity (Multi-Fidelity Optimization)
+
+### Basic Usage
+
+```r
+# Scalar evals_per_step: equal evals per level (40 total)
+optimization(obj, n_sims = c(100, 200, 500, 1000), evals_per_step = 10)
+
+# Vector evals_per_step: custom evals per level (50 total)
+optimization(obj, n_sims = c(100, 200, 500, 1000), evals_per_step = c(15, 10, 10, 15))
+```
+
+### Fidelity Schedule
+
+The fidelity schedule determines n_sims for each evaluation:
+
+| Eval | Fidelity Level | n_sims | Phase |
+|------|----------------|--------|-------|
+| 1-15 | 1 | 100 | Warmup (if enabled) |
+| 16-25 | 2 | 200 | Main |
+| 26-35 | 3 | 500 | Main |
+| 36-50 | 4 | 1000 | Refinement |
+
+### High-Fidelity Selection (Research-Based)
+
+**Reference**: [arXiv:2410.00544](https://arxiv.org/abs/2410.00544) - "Best Practices for Multi-Fidelity Bayesian Optimization"
+
+**Critical insight**: Final selection uses **high-fidelity observations only**.
+
+Low-fidelity observations are noisy and can mislead. Example from testing:
+- Low-fidelity (n_sims=300) reported pwr_eff=0.91 at n_total=366
+- Surrogate predicted 0.914 (trained on noisy data)
+- Final confirmation (n_sims=2000) showed 0.848 ± 0.008
+
+**Implementation** (`finalize_with_surrogate()`):
+```r
+max_n_sims <- max(archive_df$n_sims_used)
+high_fidelity_df <- archive_df[archive_df$n_sims_used == max_n_sims, ]
+best_idx <- which.max(high_fidelity_df[[obj_name]])
+```
+
+## Early Stopping
+
+For target optimization, early stopping triggers when:
+1. Target is achieved within optimal window `[target, target + min_delta)`
+2. `patience` consecutive evaluations pass without finding smaller secondary parameters
+
+```r
+optimization(
+  obj,
+  patience = 30,      # Stop after 30 evals without improvement
+  min_delta = 0.001   # Optimal window: [0.80, 0.801) for target(0.80)
+)
+```
+
+## Memory Management
+
+Critical for BayesFlow backend with limited GPU memory:
+
+```r
+# In objective function (optimization_internal.R)
+rm(pa_result, conditions)
+if (design@backend == "bf") {
+  clear_gpu_memory(r_gc = TRUE)  # Python gc + CUDA cache + R gc
+} else {
+  gc(verbose = FALSE, full = TRUE)
+}
+```
+
+For GPU OOM issues:
+```r
+# Reduce batch_size
+optimization(obj, bf_args = list(batch_size = 64))
+
+# Configure PyTorch memory allocator
+Sys.setenv(PYTORCH_CUDA_ALLOC_CONF = "expandable_segments:True")
+```
+
+## Simplex Search Parameters
+
+### Allocation Probabilities
+
+Search for optimal treatment allocation using `search_p_alloc()`:
+
+```r
+obj <- build_objectives(
+  design = design,
+  search = list(
+    n_total = c(50, 500),
+    p_alloc = search_p_alloc(min = 0.2)  # Each arm gets >= 20%
+  ),
+  objectives = list(pwr_eff = target(0.80)),
+  constant = list(...)
+)
+```
+
+**Internal handling:**
+- 2-arm: Direct sampling of treatment proportion in `[min, 1-min]`
+- k-arm (k>2): ILR transform on (k-1) dimensions, scaled to constraint
+
+### Interim Look Timing
+
+Search for optimal interim analysis timing using `search_looks()`:
+
+```r
+obj <- build_objectives(
+  design = design,
+  search = list(
+    n_total = c(100, 400),
+    analysis_at = search_looks(n = 3, min_spacing = 0.2)
+  ),
+  objectives = list(expected_n = "minimize", pwr_eff = target(0.80)),
+  constant = list(...)
+)
+```
+
+## Use Cases
+
+### 1. Sample Size for Target Power (with Warmup)
+
+```r
+design <- build_design(
+  model_name = "ancova_cont_2arms",
+  target_params = "b_arm2"
+)
+
+obj <- build_objectives(
+  design = design,
+  search = list(n_total = c(50, 500)),
+  objectives = list(pwr_eff = target(0.80)),
+  constant = list(
+    b_arm_treat = 0.3,
+    thr_dec_eff = 0.975, thr_dec_fut = 0.5,
+    thr_fx_eff = 0.2, thr_fx_fut = 0,
+    p_alloc = list(c(0.5, 0.5)),
+    intercept = 0, b_covariate = 0.3, sigma = 1
+  )
+)
+
+result <- optimization(
+  obj,
+  n_sims = c(500, 2000),
+  evals_per_step = c(30, 20),
+  use_warmup = TRUE
+)
+
+# Access results
+result@result            # Optimal design
+result@reference_values  # e.g., list(n_total = 105)
+result@archive           # All evaluations
+```
+
+### 2. Multi-Parameter Search with Multiple Secondary Objectives
+
+```r
+obj <- build_objectives(
+  design = design,
+  search = list(
+    n_total = c(50, 500),
+    thr_dec_eff = c(0.90, 0.99)
+  ),
+  objectives = list(pwr_eff = target(0.80)),
+  secondary = list(n_total = "minimize", thr_dec_eff = "minimize"),
+  constant = list(...)
+)
+```
+
+### 3. Power vs. Sample Size Pareto
+
+```r
+obj <- build_objectives(
+  design = design,
+  search = list(n_total = c(50, 500), b_arm_treat = c(0.2, 0.6)),
+  objectives = list(pwr_eff = "maximize", n_total = "minimize"),
+  constant = list(...)
+)
+
+result <- optimization(obj, n_sims = 300, max_evals = 50)
+result@pareto_front
+```
+
+## Files
+
+| File | Purpose |
+|------|---------|
+| `R/class_objectives.R` | `rctbp_objectives`, `rctbp_optimization_result` S7 classes, print methods |
+| `R/optimization.R` | `build_objectives()`, `optimization()`, `target()`, `search_p_alloc()`, `search_looks()` |
+| `R/optimization_internal.R` | `run_optimization()`, `create_objective_fn()`, mlr3mbo/bbotk integration |
+| `R/plot_optimization.R` | Plot methods (convergence, pareto, search space) |
+
+## Dependencies
 
 ```
 Suggests:
@@ -95,398 +447,64 @@ Suggests:
   paradox (>= 0.11.0)
 ```
 
-All dependencies are lazy-loaded via `rlang::check_installed()`.
+Lazy-loaded via `rlang::check_installed()`.
 
-### New Files
+## Implementation Status
 
-| File | Purpose |
-|------|---------|
-| `R/optimization.R` | Main entry point `find_optimal_design()` + helpers |
-| `R/class_optimization.R` | S7 classes for optimization specification and results |
-| `R/optimization_objectives.R` | Objective function wrappers for mlr3mbo |
+### Completed
 
-### Class Structure
+- [x] S7 classes (`rctbp_objectives`, `rctbp_optimization_result`)
+- [x] `build_objectives()` with validation
+- [x] `optimization()` with auto-detection
+- [x] SingleCrit (EGO) + MultiCrit (ParEGO) support
+- [x] `target()` helper with three-component objective
+- [x] Progressive fidelity (multi-fidelity n_sims)
+- [x] Warmup phase with reference-based bonus
+- [x] Secondary objectives (generalized beyond n_total)
+- [x] High-fidelity final selection
+- [x] GPU/RAM memory management
+- [x] Basic print/plot methods
+- [x] `show_optimization_args()` helper
+- [x] Simplex search (`search_p_alloc()`, `search_looks()`)
+- [x] Early stopping with patience
 
-```r
-# Optimization problem specification
-rctbp_optimization <- S7::new_class(
-  "rctbp_optimization",
-  properties = list(
-    design = rctbp_design,
-    search_space = S7::class_list,        # Named list: param = c(lower, upper) or param = c(val1, val2, ...)
-    objectives = S7::class_list,          # Named list: pwr_scs = "maximize", n_total = "minimize", or target(0.80)
-    constant = S7::class_list,            # Fixed parameters for power_analysis
-    constraints = S7::class_list | NULL,  # Optional constraints (Phase 2)
-    cost_fn = S7::class_function | NULL,  # Optional cost function (Phase 2)
-    # BO configuration
-    surrogate = S7::class_character,      # "gp" (default) or "rf"
-    acq_function = S7::class_character,   # "ei", "aei", "cb", "parego", "smsego"
-    initial_design = S7::class_character  # "lhs" (default), "sobol", "random"
-  ),
-  validator = function(self) {
-    # Validate search_space parameters exist in design
-    # Validate objectives are valid (pwr_scs, pwr_ftl, n_total, expected_n, cost)
-    # Validate constant has all required non-search params
-    NULL
-  }
-)
+### Planned
 
-# Optimization results
-rctbp_optimization_result <- S7::new_class(
-  "rctbp_optimization_result",
-  properties = list(
-    optimization = rctbp_optimization,    # Reference to problem spec
-    archive = S7::class_any,              # bbotk archive (all evaluations as data.table)
-    result = S7::class_data.frame,        # Optimal design(s) - single row or Pareto set
-    pareto_front = S7::class_data.frame | NULL,  # For multi-objective: non-dominated solutions
-    convergence = S7::class_data.frame,   # Optimization trace: batch_nr, best_so_far
-    n_sims = S7::class_integer,           # Simulations per evaluation
-    n_evals = S7::class_integer,          # Total BO iterations
-    elapsed_time = S7::class_numeric,     # Total runtime
-    backend_used = S7::class_character    # "brms" or "bf"
-  )
-)
+- [ ] Unit tests with mock BayesFlow
+- [ ] `expected_n` objective for sequential designs
+- [ ] `cost_fn` integration
+- [ ] Constraint handling
+- [ ] Vignette documentation
 
-# Helper: target specification for constrained optimization
-target <- function(value, direction = ">=") {
-  structure(list(value = value, direction = direction), class = "rctbp_target")
-}
-```
+## Technical Details
 
-### Integration with mlr3mbo
+### Bonus Comparison: Inverse vs Reference-Based
 
-The core pattern wraps `power_analysis()` as a bbotk objective:
+For `n_total` with bounds [50, 500] and reference 100:
 
-```r
-# Internal: Create objective function for mlr3mbo
-create_bo_objective <- function(design, search_space, constant, n_sims, n_cores) {
+| n_total | Inverse (50/n) | Reference (1-n/100) |
+|---------|----------------|---------------------|
+| 50 | 1.00 | 0.50 |
+| 75 | 0.67 | 0.25 |
+| 100 | 0.50 | 0.00 |
+| 150 | 0.33 | -0.50 → 0 (clamped) |
+| 500 | 0.10 | -4.00 → 0 (clamped) |
 
-  # Define paradox search space
-  domain <- do.call(paradox::ps, lapply(search_space, function(x) {
-    if (is.integer(x)) paradox::p_int(lower = x[1], upper = x[2])
-    else paradox::p_dbl(lower = x[1], upper = x[2])
-  }))
+**Key insight**: Inverse bonus is bounds-independent (always rewards smaller values). Reference-based bonus provides stronger gradient near the reference point.
 
-  # Objective function
-  objective_fn <- function(xs) {
-    # Merge search params with constants
-    all_params <- c(xs, constant)
+### Surrogate Model Considerations
 
-    # Build conditions (single point)
-    conditions <- build_conditions(
-      design = design,
-      crossed = lapply(xs, identity),  # Single values
-      constant = constant
-    )
+- **GP (Gaussian Process)**: Better for smooth functions, handles noise
+- **RF (Random Forest)**: Better for non-smooth, handles categorical
 
-    # Run power analysis
-    result <- power_analysis(conditions, n_sims = n_sims, n_cores = n_cores)
+Default is RF for robustness. GP recommended for smoother power surfaces.
 
-    # Return objectives
-    list(
-      pwr_scs = result@results_conditions$pwr_scs[1],
-      n_total = xs$n_total  # Pass through for multi-objective
-    )
-  }
+### Surrogate Uncertainty at Training Points
 
-  # Create bbotk objective
-  bbotk::ObjectiveRFun$new(
-    fun = objective_fn,
-    domain = domain,
-    codomain = paradox::ps(
-      pwr_scs = paradox::p_dbl(tags = "maximize"),
-      n_total = paradox::p_dbl(tags = "minimize")
-    ),
-    properties = "noisy"  # Power is estimated via simulation
-  )
-}
-```
-
-### Main Entry Points
-
-#### 1. S7 Constructor (Primary API)
-
-```r
-#' Create Bayesian Optimization Specification
-#'
-#' @param design An rctbp_design object
-#' @param search Named list of parameters to optimize with bounds
-#' @param objectives Named list specifying optimization direction or targets
-#' @param constant Named list of fixed parameters
-#' @param surrogate Surrogate model: "gp" (default) or "rf"
-#' @param acq_function Acquisition function: "ei", "aei", "parego", "smsego"
-#' @param initial_design Initial design type: "lhs" (default), "sobol", "random"
-#'
-#' @return An rctbp_optimization object
-rctbp_optimization <- function(
-  design,
-  search,
-  objectives = list(pwr_scs = "maximize"),
-  constant = list(),
-  constraints = NULL,
-  cost_fn = NULL,
-  surrogate = "gp",
-  acq_function = "auto",  # Auto-select based on single vs. multi-objective
-  initial_design = "lhs"
-) {
-  # Validation and construction via S7
-}
-```
-
-#### 2. optimize() Method
-
-```r
-#' Run Bayesian Optimization
-#'
-#' @param object An rctbp_optimization object
-#' @param n_sims Number of simulations per evaluation (default: 200)
-#' @param n_evals Maximum BO iterations (default: 50)
-#' @param n_cores Number of cores for power_analysis
-#' @param initial_design_size Initial random evaluations (default: 4 * n_params)
-#' @param seed Random seed for reproducibility
-#' @param verbose Verbosity level (0, 1, 2)
-#'
-#' @return An rctbp_optimization_result object
-S7::method(optimize, rctbp_optimization) <- function(
-  object,
-  n_sims = 200,
-  n_evals = 50,
-  n_cores = 1,
-  initial_design_size = NULL,
-  seed = NULL,
-  verbose = 1
-) {
-  # Check dependencies
-  rlang::check_installed(c("mlr3mbo", "bbotk", "paradox"))
-
-  # Warn if using brms backend
-  if (object@design@backend == "brms") {
-    cli::cli_warn(c(
-      "Using brms backend for optimization",
-      "i" = "This will be slow (~minutes per evaluation)",
-      "i" = "Consider using BayesFlow backend for faster optimization"
-    ))
-  }
-
-  # ... implementation
-}
-```
-
-#### 3. Convenience Wrapper (Optional)
-
-```r
-#' Quick Optimization Entry Point
-#'
-#' Combines rctbp_optimization() + optimize() for simple cases
-find_optimal_design <- function(design, search, objectives, constant, ...) {
-  optim <- rctbp_optimization(design, search, objectives, constant)
-  optimize(optim, ...)
-}
-```
-
-## Technical Considerations
-
-### 1. Noisy Objective Function
-Power is estimated via Monte Carlo simulation, making evaluations noisy. Handle with:
-- `properties = "noisy"` on bbotk Objective
-- GP surrogate with nugget: `srlrn(default_gp(noisy = TRUE))`
-- Augmented Expected Improvement: `acqf("aei")`
-- Higher `n_sims` for more stable estimates (trade-off with speed)
-
-### 2. Integer Parameters
-Sample size `n_total` must be integer. Options:
-- Use `p_int()` in paradox (native integer support)
-- Round continuous values in objective function
-
-### 3. Computational Cost
-Even with BayesFlow, each evaluation takes time. Mitigation:
-- Default `n_sims = 200` (lower than typical power analysis)
-- Batch evaluations when possible
-- Warmstart from previous runs
-- Progress reporting via cli
-
-### 4. Initial Design
-Space-filling initial design improves BO efficiency:
-- Default: Latin Hypercube Sampling (LHS)
-- Size: 4 × number of parameters (mlr3mbo default)
-- Option to provide pre-evaluated points
-
-### 5. Multi-Objective Optimization
-For power vs. sample size trade-offs:
-- ParEGO: Scalarizes objectives with random weights
-- SMS-EGO: Uses hypervolume improvement
-- Return Pareto frontier for user selection
-
-## Workflow Examples
-
-### Basic: Find Minimum Sample Size for 80% Power
-
-```r
-library(rctbayespower)
-
-# Create design
-design <- build_design(
-  model_name = "ancova_cont_2arms",
-  backend = "bf",  # Use BayesFlow for speed
-  target_params = "b_arm2"
-)
-
-# Find optimal sample size
-result <- find_optimal_design(
-  design = design,
-  search = list(n_total = c(50, 500)),
-  objectives = list(pwr_scs = list(target = 0.80, direction = ">=")),
-  constant = list(
-    b_arm_treat = 0.3,
-    p_alloc = list(c(0.5, 0.5)),
-    intercept = 0, b_covariate = 0.3, sigma = 1,
-    p_sig_scs = 0.975, p_sig_ftl = 0.5,
-    thresh_scs = 0.2, thresh_ftl = 0
-  ),
-  n_sims = 500,
-  n_evals = 30
-)
-
-# View result
-print(result)
-# Optimal design: n_total = 187, pwr_scs = 0.81
-
-# Plot convergence
-plot(result, type = "convergence")
-
-# Plot surrogate surface
-plot(result, type = "surface")
-```
-
-### Advanced: Multi-Objective Power vs. Sample Size
-
-```r
-result <- find_optimal_design(
-  design = design,
-  search = list(
-    n_total = c(50, 400),
-    b_arm_treat = c(0.2, 0.6)
-  ),
-  objectives = list(
-    pwr_scs = "maximize",
-    n_total = "minimize"
-  ),
-  constant = list(...),
-  n_sims = 300,
-  n_evals = 50,
-  acq_function = "parego"  # ParEGO for multi-objective
-)
-
-# View Pareto frontier
-result@pareto_front
-
-# Plot trade-off
-plot(result, type = "pareto")
-```
-
-### With Cost Function
-
-```r
-# Define cost function
-trial_cost <- function(n_total, p_alloc) {
-  n_ctrl <- n_total * p_alloc[1]
-  n_treat <- n_total * p_alloc[2]
-  # Recruitment + per-patient costs
-  5000 + n_ctrl * 200 + n_treat * 800
-}
-
-result <- find_optimal_design(
-  design = design,
-  search = list(
-    n_total = c(50, 300),
-    p_alloc_treat = c(0.3, 0.7)  # Proportion in treatment arm
-  ),
-  objectives = list(
-    pwr_scs = "maximize",
-    cost = "minimize"  # Uses cost_fn
-  ),
-  cost_fn = trial_cost,
-  constant = list(...)
-)
-```
-
-## Implementation Phases
-
-### Phase 1: Core + Multi-Objective (MVP)
-- [ ] `R/class_optimization.R`: S7 class definitions (`rctbp_optimization`, `rctbp_optimization_result`)
-- [ ] `R/optimization.R`: `optimize()` method implementation
-- [ ] `R/optimization_objectives.R`: bbotk objective wrapper with power_analysis integration
-- [ ] Single-objective support (EGO with EI/AEI)
-- [ ] Multi-objective support (ParEGO for power vs. n_total)
-- [ ] Pareto frontier extraction
-- [ ] Basic print/summary/plot methods
-- [ ] `target()` helper for constrained optimization
-- [ ] Unit tests with mock BayesFlow mode
-
-**Deliverables:**
-- Find minimum n_total for target power
-- Explore power vs. sample size Pareto frontier
-
-### Phase 2: Sequential Design Optimization
-- [ ] `expected_n` objective (average sample size accounting for early stopping)
-- [ ] `interim_fraction` as searchable parameter
-- [ ] Validation for sequential analysis constraints
-- [ ] Extended archive storage for interim metrics
-
-**Deliverables:**
-- Optimize interim timing + sample size jointly
-
-### Phase 3: Cost & Constraints
-- [ ] `cost_fn` integration (user-defined cost functions)
-- [ ] `cost` as optimizable objective
-- [ ] Constraint handling (penalty method or native bbotk)
-- [ ] Warmstart from previous optimization runs
-
-### Phase 4: Polish & Documentation
-- [ ] Vignette: "Optimal Trial Design with Bayesian Optimization"
-- [ ] roxygen2 documentation for all exports
-- [ ] `show_optimization_args()` discovery helper
-- [ ] Performance benchmarks (BayesFlow vs. brms)
-
-## Files to Create/Modify
-
-| File | Action | Purpose |
-|------|--------|---------|
-| `R/class_optimization.R` | Create | S7 class definitions |
-| `R/optimization.R` | Create | `optimize()` method, `find_optimal_design()` wrapper |
-| `R/optimization_objectives.R` | Create | bbotk objective wrapper |
-| `R/plot_optimization.R` | Create | Plot methods for results |
-| `R/zzz.R` | Modify | Register S7 methods for `optimize()` |
-| `DESCRIPTION` | Modify | Add mlr3mbo, bbotk, paradox to Suggests |
-| `NAMESPACE` | Auto | Via roxygen2 |
-
-## Critical Files to Read Before Implementation
-
-| File | Reason |
-|------|--------|
-| `R/class_design.R` | Understand design properties, backend detection |
-| `R/class_conditions.R` | Understand build_conditions() interface |
-| `R/class_power_analysis.R` | Understand power_analysis() + run() pattern |
-| `R/backend_bf.R` | BayesFlow integration for fast inference |
-| `R/compute_measures.R` | How power metrics are calculated |
-| `R/S7_helpers.R` | S7 utility patterns used in package |
+**Technical note**: Surrogate SE ≈ 0 at training points (archive observations) because interpolating surrogates (GP, RF) have zero uncertainty at observed data. This SE is **not meaningful** for reporting - only useful for acquisition functions at unobserved points.
 
 ## References
 
-### mlr3 Ecosystem
-- [mlr3mbo: Flexible Bayesian Optimization](https://mlr3mbo.mlr-org.com/dev/index.html)
-- [mlr3book: Advanced Tuning Methods and Black Box Optimization](https://mlr3book.mlr-org.com/chapters/chapter5/advanced_tuning_methods_and_black_box_optimization.html)
-- [bbotk: Black-Box Optimization Toolkit (GitHub)](https://github.com/mlr-org/bbotk)
-- [paradox: Universal Parameter Space Description](https://paradox.mlr-org.com/)
-
-### BO for Clinical Trial Design
-- Richter et al. (2022). "Improving adaptive seamless designs through Bayesian optimization." *Biometrical Journal*. [PubMed](https://pubmed.ncbi.nlm.nih.gov/35212423/) | [arXiv](https://arxiv.org/abs/2105.09223)
-
-### Bayesian Clinical Trial Design
-- Kunzmann et al. (2021). "A Review of Bayesian Perspectives on Sample Size Derivation for Confirmatory Trials." [PMC7612172](https://pmc.ncbi.nlm.nih.gov/articles/PMC7612172/)
-- Giovagnoli (2021). "The Bayesian Design of Adaptive Clinical Trials." [PMC7826635](https://pmc.ncbi.nlm.nih.gov/articles/PMC7826635/)
-- Eggleston et al. (2021). "BayesCTDesign: An R Package for Bayesian Trial Design Using Historical Control Data." *J Stat Softw*. [PMC8715862](https://pmc.ncbi.nlm.nih.gov/articles/PMC8715862/)
-
-### R Resources
-- [CRAN Task View: Clinical Trial Design, Monitoring, and Analysis](https://cran.r-project.org/web/views/ClinicalTrials.html)
-- [bpp: Bayesian Predictive Power](https://cran.r-project.org/web/packages/bpp/index.html)
+- [mlr3mbo](https://mlr3mbo.mlr-org.com/dev/index.html)
+- [Richter et al. (2022) - BO for clinical trials](https://pubmed.ncbi.nlm.nih.gov/35212423/)
+- [arXiv:2410.00544 - Multi-Fidelity BO Best Practices](https://arxiv.org/abs/2410.00544)
