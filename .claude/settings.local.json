@@ -61,7 +61,8 @@
       "WebFetch(domain:arxiv.org)",
       "Bash(git add:*)",
       "WebFetch(domain:mlr3.mlr-org.com)",
-      "WebFetch(domain:www.rdocumentation.org)"
+      "WebFetch(domain:www.rdocumentation.org)",
+      "Bash(dpkg:*)"
     ],
     "deny": []
   }

@@ -552,6 +552,10 @@ load_bf_model_python <- function(model_path) {
     cli::cli_abort("Model file not found: {.path {model_path}}")
   }
 
+  # Normalize path for Python (expand ~ and make absolute)
+  # Python's keras.saving.load_model() doesn't expand ~ like R does
+  model_path <- normalizePath(model_path, mustWork = TRUE)
+
   # Require BayesFlow to be initialized (user must call init_bf_python() first)
   py_mods <- require_bf_init()
 
