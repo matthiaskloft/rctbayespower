@@ -398,7 +398,7 @@ S7::method(run, rctbp_power_analysis) <- function(x, ...) {
     cli::cli_h3("Power Analysis Configuration")
     cli::cli_text("")
     if (should_show(2)) {
-      print(x@conditions@conditions_grid)
+      print(x@conditions@grid)
       cli::cli_text("")
     }
 

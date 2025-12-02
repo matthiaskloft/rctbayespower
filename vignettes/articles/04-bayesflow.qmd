@@ -27,8 +27,12 @@ library(rctbayespower)
 library(dplyr)
 library(pander)
 
+# install venv
+if(!reticulate::virtualenv_exists("rctbp-3-12")){
+  setup_bf_python(envname = "rctbp-3-12", python_version = "3.12", cuda_version = "auto")
+}
 # Initialize BayesFlow Python environment
-init_bf_python("rctbp-3-12-gpu")
+init_bf_python("rctbp-3-12")
 
 n_sims <- 1000L
 n_cores <- parallel::detectCores() - 1
@@ -71,8 +75,8 @@ The BayesFlow backend requires Python with PyTorch, Keras, and BayesFlow. Use `s
 setup_bf_python()
 
 # With options:
-setup_bf_python(envname = "rctbp-3-12-gpu", python_version = "3.12", cuda_version = "auto")
-setup_bf_python(envname = "rctbp-3-12-cpu", python_version = "3.12", cuda_version = "cpu")
+setup_bf_python(envname = "rctbp-3-12", python_version = "3.12", cuda_version = "auto")
+setup_bf_python(envname = "rctbp-3-11-cpu", python_version = "3.11", cuda_version = "cpu")
 setup_bf_python(cuda_version = "cpu")
 setup_bf_python(force = TRUE)
 ```
@@ -129,57 +133,49 @@ Then in R: `reticulate::use_virtualenv("r-rctbayespower", required = TRUE)`
 
 The workflow with BayesFlow is nearly identical to brms.
 
-## Step 1: Get Model
 
-```{r get-model}
-model <- get_model("ancova_cont_2arms", backend = "bf")
-print(model)
-cat("Backend:", model@backend, "\n")
-```
-
-## Step 2: Build Design
+## Step 1: Build Design
 
 ```{r build-design}
 design <- build_design(
   model_name = "ancova_cont_2arms",
   backend = "bf",
   target_params = "b_group"
-)
+  )
 print(design)
 ```
 
-## Step 3: Build Conditions
+## Step 2: Build Conditions
 
 ```{r build-conditions}
 conditions <- build_conditions(
   design = design,
   crossed = list(
-    n_total = seq(20, 300, 10),
-    b_arm_treat = c(0, .3, 0.5)
+    n_total = c(60, 80, 100, 120),
+    b_arm_treat = c(0.5)
   ),
   constant = list(
     b_covariate = 0.3,
     thr_fx_eff = 0.1,
-    thr_fx_fut = 0,
-    thr_dec_eff = 0.95,
+    thr_fx_fut = 0, 
+    thr_dec_eff = 0.975,
     thr_dec_fut = 0.5
   )
 )
 print(conditions)
 ```
 
-## Step 4: Run Power Analysis
+## Step 3: Run Power Analysis
 
 ```{r power-analysis-bf}
 power_bf <- power_analysis(
-  conditions,
+  conditions = conditions,
   n_sims = n_sims,
+  n_cores = 1,
   run = TRUE,
-  verbosity = 0,
+  verbosity = 2,
   bf_args = list(n_posterior_samples = 1000)
 )
-
-print(power_bf)
 ```
 
 ```{r power-results-bf}
@@ -200,8 +196,6 @@ plot(
 )
 ```
 
-
-## Simulation Based Calibration
 
 
 

@@ -26,11 +26,17 @@ execute:
 library(rctbayespower)
 library(dplyr)
 library(pander)
+library(reticulate)
+
+# install venv
+if(!reticulate::virtualenv_exists("rctbp-3-12-cpu")){
+  setup_bf_python(envname = "rctbp-3-12-cpu", python_version = "3.12", cuda_version = "cpu")
+}
 
 # Initialize BayesFlow Python environment
 init_bf_python("rctbp-3-12-cpu")
 
-n_sims <- 100L
+n_sims <- 500L
 n_cores <- 1
 ```
 
@@ -129,49 +135,42 @@ Then in R: `reticulate::use_virtualenv("r-rctbayespower", required = TRUE)`
 
 The workflow with BayesFlow is nearly identical to brms.
 
-## Step 1: Get Model
-
-```{r get-model}
-model <- get_model("ancova_cont_2arms", backend = "bf")
-print(model)
-cat("Backend:", model@backend, "\n")
-```
-
-## Step 2: Build Design
+## Step 1: Build Design
 
 ```{r build-design}
 design <- build_design(
-  model = model,
-  target_params = "b_group",
-  thr_dec_eff = 0.975,
-  thr_dec_fut = 0.5
-)
+  model_name = "ancova_cont_2arms",
+  backend = "bf",
+  target_params = "b_group"
+  )
 print(design)
 ```
 
-## Step 3: Build Conditions
+## Step 2: Build Conditions
 
 ```{r build-conditions}
 conditions <- build_conditions(
   design = design,
-  condition_values = list(
+  crossed = list(
     n_total = c(60, 80, 100, 120),
     b_arm_treat = c(0.5)
   ),
-  static_values = list(
+  constant = list(
     b_covariate = 0.3,
-    thresholds_success = 0.1,
-    thresholds_futility = 0
+    thr_fx_eff = 0.1,
+    thr_fx_fut = 0, 
+    thr_dec_eff = 0.975,
+    thr_dec_fut = 0.5
   )
 )
 print(conditions)
 ```
 
-## Step 4: Run Power Analysis
+## Step 3: Run Power Analysis
 
 ```{r power-analysis-bf}
 power_bf <- power_analysis(
-  conditions,
+  conditions = conditions,
   n_sims = n_sims,
   n_cores = 1,
   run = TRUE,
@@ -194,12 +193,10 @@ power_bf@results_conditions |>
 ## Run Power Analysis with brms
 
 ```{r power-analysis-brms}
-model_brms <- get_model("ancova_cont_2arms", backend = "brms")
 design_brms <- build_design(
-  model = model_brms,
-  target_params = "b_arm2",
-  thr_dec_eff = 0.975,
-  thr_dec_fut = 0.5
+  model_name = "ancova_cont_2arms", 
+  backend = "brms",
+  target_params = "b_arm2"
 )
 conditions_brms <- conditions
 conditions_brms@design <- design_brms
