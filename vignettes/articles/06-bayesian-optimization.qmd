@@ -139,8 +139,8 @@ obj <- build_objectives(
 )
 result <- optimization(
  obj,
- n_sims = c(100, 200, 1000),
- evals_per_step = c(20, 20, 10),
+ n_sims = c(100, 101, 500),
+ evals_per_step = c(20, 20, 20),
  use_warmup = TRUE,
  min_delta = .01,  # Minimum improvement
  patience = 10,
@@ -155,7 +155,7 @@ result <- optimization(
 ```
 
 ```{r}
-print(result)
+result@optimization_type
 ```
 
 ### Plot sampled points: n_total vs. time

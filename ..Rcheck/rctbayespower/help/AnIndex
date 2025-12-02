@@ -31,6 +31,7 @@ calculate_mcse_integrated_power	calculate_mcse_integrated_power
 calculate_mcse_mean	calculate_mcse_mean
 calculate_mcse_power	calculate_mcse_power
 check_bf_available	check_bf_available
+check_bf_dependencies	check_bf_dependencies
 check_python_sims_available	check_python_sims_available
 check_surrogate_stopping	check_surrogate_stopping
 class_data_frame	class_data_frame
@@ -41,6 +42,7 @@ compare_boundaries	compare_boundaries
 compare_power_methods	compare_power_methods
 compute_convergence_bf	compute_convergence_bf
 compute_fidelity_weights	compute_fidelity_weights
+compute_mcse_weights	compute_mcse_weights
 compute_measures	compute_measures
 compute_summaries_batch_ancova	compute_summaries_batch_ancova
 constrained_simplex	constrained_simplex
@@ -106,6 +108,7 @@ install_bf_dependencies	install_bf_dependencies
 interim_continue	interim_continue
 interim_futility_only	interim_futility_only
 interim_success_futility	interim_success_futility
+is_bf_cache_valid	is_bf_cache_valid
 is_bf_mock_mode	is_bf_mock_mode
 link	link
 list_models	list_models
@@ -167,6 +170,7 @@ report_renderers	report_renderers
 report_stopping	report_stopping
 report_stopping_by_look	report_stopping_by_look
 required_fn_args	show_condition_args
+require_bf_init	require_bf_init
 resolve_boundary_vector	resolve_boundary_vector
 resolve_threshold	resolve_threshold
 resummarize_boundaries	resummarize_boundaries
@@ -207,3 +211,4 @@ with_output_mode	with_output_mode
 with_verbosity	with_verbosity
 worker_process_batch	worker_process_batch
 worker_process_single	worker_process_single
+wrap_surrogate_with_weights	wrap_surrogate_with_weights

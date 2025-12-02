@@ -6,7 +6,7 @@
     GNU Fortran (GCC) 14.3.0
 * running under: Windows 11 x64 (build 26200)
 * using session charset: UTF-8
-* using options '--no-examples --no-tests --no-manual --no-vignettes'
+* using options '--no-tests --no-manual --no-vignettes'
 * checking for file './DESCRIPTION' ... OK
 * this is package 'rctbayespower' version '0.0.0.9000'
 * package encoding: UTF-8
@@ -82,17 +82,15 @@ Found the following non-portable file paths:
   rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/0C02CFDC740c501d/cn3tfrsupg2op/migration.target
   rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/0C02CFDC740c501d/cn3tfrsupg2op_t/execution.lock
   rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/0C02CFDC740c501d/cn3tfrsupg2op_t/migration.target
-  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/0C02CFDC8977e3a2/c90lkt1ksx3og/000011.csv
-  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/0C02CFDC8977e3a2/cf4rlkb02tquj/0002f5.csv
   rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/0C02CFDC8977e3a2/chunks.json
-  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/0C02CFDC8977e3a2/ctypqb341wmzu/000023.csv
-  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/0C02CFDC8977e3a2/ctypqb341wmzu/000024.metadata
-  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/0C02CFDC8977e3a2/ctypqb341wmzu/000024.png
-  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/0C02CFDC8977e3a2/ctypqb341wmzu/000024.snapshot
-  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/0C02CFDC8977e3a2/ctypqb341wmzu/000025.csv
-  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/0C02CFDC8977e3a2/ctypqb341wmzu/000026.metadata
-  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/0C02CFDC8977e3a2/ctypqb341wmzu/000026.png
-  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/0C02CFDC8977e3a2/ctypqb341wmzu/000026.snapshot
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/0C02CFDC8977e3a2/ctypqb341wmzu/000017.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/0C02CFDC8977e3a2/ctypqb341wmzu/000018.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/0C02CFDC8977e3a2/ctypqb341wmzu/000018.png
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/0C02CFDC8977e3a2/ctypqb341wmzu/000018.snapshot
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/0C02CFDC8977e3a2/ctypqb341wmzu/000019.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/0C02CFDC8977e3a2/ctypqb341wmzu/00001a.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/0C02CFDC8977e3a2/ctypqb341wmzu/00001a.png
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/0C02CFDC8977e3a2/ctypqb341wmzu/00001a.snapshot
   rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/c3jx08bmxaxcp/000025.csv
   rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/c3jx08bmxaxcp/000026.metadata
   rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/c3jx08bmxaxcp/000026.png
@@ -101,33 +99,419 @@ Found the following non-portable file paths:
   rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/c3jx08bmxaxcp/000028.metadata
   rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/c3jx08bmxaxcp/000028.png
   rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/c3jx08bmxaxcp/000028.snapshot
-  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/c4czcy7k3ass2/000015.csv
-  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/c90lkt1ksx3og/000011.csv
-  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0002f5.csv
-  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/chbllpe8594xs/000011.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/c4czcy7k3ass2/00000f.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/c90lkt1ksx3og/00000f.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0005e5.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0005e6.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0005e6.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0005e7.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0005e8.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0005e8.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0005e9.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0005ea.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0005ea.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0005eb.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0005ec.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0005ec.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0005ed.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0005ee.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0005ee.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0005ef.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0005f0.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0005f0.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0005f1.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0005f2.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0005f2.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0005f3.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0005f4.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0005f4.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0005f5.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0005f6.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0005f6.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0005f7.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0005f8.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0005f8.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0005f9.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0005fa.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0005fa.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0005fb.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0005fc.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0005fc.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0005fd.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0005fe.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0005fe.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0005ff.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000600.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000600.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000601.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000602.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000602.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000603.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000604.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000604.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000605.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000606.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000606.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000607.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000608.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000608.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000609.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/00060a.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/00060a.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/00060b.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/00060c.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/00060c.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/00060d.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/00060e.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/00060e.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/00060f.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000610.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000610.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000611.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000612.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000612.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000613.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000614.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000614.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000615.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000616.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000616.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000617.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000618.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000618.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000619.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/00061a.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/00061a.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/00061b.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/00061c.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/00061c.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/00061d.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/00061e.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/00061e.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/00061f.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000620.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000620.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000621.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000622.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000622.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000623.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000624.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000624.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000625.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000626.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000626.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000627.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000628.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000628.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000629.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/00062a.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/00062a.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/00062b.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/00062c.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/00062c.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/00062d.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/00062e.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/00062e.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/00062f.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000630.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000630.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000631.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000632.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000632.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000633.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000634.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000634.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000635.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000636.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000636.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000637.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000638.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000638.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000639.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/00063a.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/00063a.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/00063b.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/00063c.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/00063c.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/00063d.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/00063e.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/00063e.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/00063f.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000640.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000640.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000641.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000642.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000642.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000643.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000644.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000644.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000645.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000646.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000646.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000647.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000648.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000648.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000649.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/00064a.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/00064a.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/00064b.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/00064c.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/00064c.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/00064d.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/00064e.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/00064e.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/00064f.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000650.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000650.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000651.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000652.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000652.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000653.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000654.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000654.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000655.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000656.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000656.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000657.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000658.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000658.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000659.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/00065a.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/00065a.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/00065b.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/00065c.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/00065c.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/00065d.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/00065e.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/00065e.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/00065f.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000660.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000660.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000661.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000662.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000662.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000663.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000664.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000664.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000665.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000666.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000666.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000667.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000668.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000668.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000669.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/00066a.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/00066a.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/00066b.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/00066c.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/00066c.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/00066d.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/00066e.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/00066e.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/00066f.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000670.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000670.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000671.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000672.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000672.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000673.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000674.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000674.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000675.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000676.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000676.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000677.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000678.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000678.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000679.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/00067a.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/00067a.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/00067b.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/00067c.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/00067c.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/00067d.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/00067e.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/00067e.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/00067f.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000680.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000680.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000681.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000682.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000682.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000683.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000684.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000684.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000685.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000686.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000686.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000687.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000688.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000688.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000689.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/00068a.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/00068a.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/00068b.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/00068c.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/00068c.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/00068d.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/00068e.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/00068e.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/00068f.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000690.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000690.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000691.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000692.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000692.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000693.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000694.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000694.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000695.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000696.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000696.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000697.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000698.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000698.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/000699.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/00069a.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/00069a.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/00069b.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/00069c.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/00069c.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/00069d.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/00069e.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/00069e.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/00069f.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0006a0.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0006a0.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0006a1.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0006a2.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0006a2.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0006a3.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0006a4.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0006a4.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0006a5.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0006a6.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0006a6.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0006a7.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0006a8.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0006a8.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0006a9.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0006aa.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0006aa.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0006ab.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0006ac.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0006ac.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0006ad.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0006ae.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0006ae.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0006af.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0006b0.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0006b0.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0006b1.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0006b2.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0006b2.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0006b3.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0006b4.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0006b4.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0006b5.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0006b6.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0006b6.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0006b7.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0006b8.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0006b8.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0006b9.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0006ba.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0006ba.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0006bb.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0006bc.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0006bc.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0006bd.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0006be.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0006be.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0006bf.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0006c0.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0006c0.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0006c1.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0006c2.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0006c2.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0006c3.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0006c4.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0006c4.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0006c5.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0006c6.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0006c6.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0006c7.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0006c8.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0006c8.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0006c9.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0006ca.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0006ca.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0006cb.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0006cc.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0006cc.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0006cd.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0006ce.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0006ce.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0006cf.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0006d0.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0006d0.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0006d1.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0006d2.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0006d2.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0006d3.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0006d4.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0006d4.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0006d5.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0006d6.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0006d6.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0006d7.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0006d8.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0006d8.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0006d9.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0006da.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0006da.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0006db.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0006dc.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0006dc.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0006dd.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0006de.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0006de.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0006df.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0006e0.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0006e0.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0006e1.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0006e2.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0006e2.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0006e3.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0006e4.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0006e4.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0006e5.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0006e6.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0006e6.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0006e7.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0006e8.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0006e8.rdf
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cf4rlkb02tquj/0006e9.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/chbllpe8594xs/00000f.csv
   rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/clycx0eqv1o59/00000f.csv
   rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cr7ai86mnlp3p/00000f.csv
   rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cr7ai86mnlp3p/000010.error
   rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/csd1dzx237f2x/00000f.csv
   rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/csetup_chunk/00000f.csv
-  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cspn5cfugq03j/000011.csv
-  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cspn5cfugq03j/000012.metadata
-  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cspn5cfugq03j/000012.rdf
-  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/ctypqb341wmzu/000017.csv
-  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/ctypqb341wmzu/000018.metadata
-  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/ctypqb341wmzu/000018.png
-  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/ctypqb341wmzu/000018.snapshot
-  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/ctypqb341wmzu/000019.csv
-  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/ctypqb341wmzu/00001a.metadata
-  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/ctypqb341wmzu/00001a.png
-  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/ctypqb341wmzu/00001a.snapshot
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/cspn5cfugq03j/000013.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/ctypqb341wmzu/000013.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/ctypqb341wmzu/000014.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/ctypqb341wmzu/000014.png
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/ctypqb341wmzu/000014.snapshot
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/ctypqb341wmzu/000015.csv
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/ctypqb341wmzu/000016.metadata
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/ctypqb341wmzu/000016.png
+  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/s/ctypqb341wmzu/000016.snapshot
   rctbayespower/vignettes/.quarto/_freeze/articles/04-bayesflow-backend_cpu_1_core/execute-results/html.json
   rctbayespower/.Rproj.user/shared/notebooks/02D52AB6-01-introduction/1/s/lib/plotly-htmlwidgets-css-2.11.1
   rctbayespower/.Rproj.user/shared/notebooks/A8F4B08F-04-bayesflow/1/s/lib/plotly-htmlwidgets-css-2.11.1
   rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/0C02CFDC740c501d/cn3tfrsupg2op
   rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/0C02CFDC740c501d/cn3tfrsupg2op_t
-  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/0C02CFDC8977e3a2/c90lkt1ksx3og
-  rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/0C02CFDC8977e3a2/cf4rlkb02tquj
   rctbayespower/.Rproj.user/shared/notebooks/EB03A1FE-06-bayesian-optimization/1/0C02CFDC8977e3a2/ctypqb341wmzu
 
 Tarballs are only required to store paths of up to 100 bytes and cannot
@@ -156,11 +540,22 @@ Subdirectory 'data' contains no data sets.
 * checking whether the namespace can be unloaded cleanly ... OK
 * checking loading without being on the library search path ... OK
 * checking whether startup messages can be suppressed ... OK
-* checking dependencies in R code ... OK
+* checking dependencies in R code ... NOTE
+'::' oder ':::' importieren unangemeldet aus: 'mlr3'
+Nicht exportiertes Objekt durch einen ':::' Aufruf importiert: 'mlr3mbo:::surrogate_mult_max_to_min'
+  See the note in ?`:::` about the use of this operator.
 * checking S3 generic/method consistency ... OK
 * checking replacement functions ... OK
 * checking foreign function calls ... OK
-* checking R code for possible problems ... OK
+* checking R code for possible problems ... NOTE
+run_optimization: no visible global function definition for 'head'
+wrap_surrogate_with_weights : <anonymous>: no visible binding for
+  global variable 'private'
+Undefined global functions or variables:
+  head private
+Consider adding
+  importFrom("utils", "head")
+to your NAMESPACE file.
 * checking Rd files ... OK
 * checking Rd metadata ... OK
 * checking Rd cross-references ... OK
@@ -186,7 +581,7 @@ Files in the 'vignettes' directory but no files in 'inst/doc':
   'articles/06-bayesian-optimization.qmd'
   'articles/99-model-validation.qmd' 'rebuild.R'
 Package has no Sweave vignette sources and no VignetteBuilder field.
-* checking examples ... SKIPPED
+* checking examples ... OK
 * checking for unstated dependencies in 'tests' ... OK
 * checking tests ... SKIPPED
 * checking package vignettes ... NOTE
@@ -194,4 +589,4 @@ Package has 'vignettes' subdirectory but apparently no vignettes.
 Perhaps the 'VignetteBuilder' information is missing from the
 DESCRIPTION file?
 * DONE
-Status: 2 WARNINGs, 4 NOTEs
+Status: 2 WARNINGs, 6 NOTEs

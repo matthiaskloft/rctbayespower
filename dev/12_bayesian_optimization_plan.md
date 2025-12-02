@@ -124,6 +124,7 @@ optimization(
 | `surrogate` | "rf" | Surrogate model: "rf" or "gp" |
 | `patience` | 30 | Early stopping patience |
 | `min_delta` | 0.001 | Optimal window for early stopping |
+| `weight_evals` | FALSE | Weight surrogate training by MCSE (1/se²) |
 
 ### `target()`
 
@@ -287,6 +288,42 @@ Low-fidelity observations are noisy and can mislead. Example from testing:
 max_n_sims <- max(archive_df$n_sims_used)
 high_fidelity_df <- archive_df[archive_df$n_sims_used == max_n_sims, ]
 best_idx <- which.max(high_fidelity_df[[obj_name]])
+```
+
+### MCSE-based Weighted Surrogate Training
+
+Enable `weight_evals = TRUE` to weight surrogate training observations by their Monte Carlo Standard Error (MCSE). More precise observations (lower MCSE) receive higher weight.
+
+```r
+result <- optimization(
+  obj,
+  n_sims = c(100, 500, 2000),
+  evals_per_step = c(20, 15, 15),
+  weight_evals = TRUE  # Weight by inverse-variance (1/se^2)
+)
+```
+
+**How it works:**
+1. Each power simulation produces an MCSE (stored as `se_pwr_eff` in archive)
+2. `compute_mcse_weights()` computes inverse-variance weights: `weight = 1/se^2`
+3. `wrap_surrogate_with_weights()` injects weights into the TaskRegr
+4. GP/RF learners use weighted training for more accurate predictions
+
+**Why MCSE is better than n_sims-based weighting:**
+- MCSE directly measures precision of each estimate
+- Same n_sims can have different MCSE depending on effect size (power near 0.5 has higher variance)
+- Statistically standard: inverse-variance weighting is the textbook approach
+
+**Implementation** (`optimization_internal.R`):
+```r
+# Weight computation
+compute_mcse_weights <- function(se_values) {
+  weights <- 1 / (se_values^2)
+  weights / max(weights)  # Normalize to [0, 1]
+}
+
+# Applied in setup_mbo_components() when weight_evals = TRUE
+surr <- wrap_surrogate_with_weights(surr, "se_pwr_eff")
 ```
 
 ## Early Stopping

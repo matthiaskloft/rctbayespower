@@ -9,6 +9,8 @@ setup_mbo_components(
   opt_type,
   surrogate,
   acq_function,
+  weight_evals = FALSE,
+  obj_info = NULL,
   verbosity = 1
 )
 }
@@ -21,6 +23,10 @@ setup_mbo_components(
 
 \item{acq_function}{Acquisition function name}
 
+\item{weight_evals}{Logical, whether to weight by MCSE}
+
+\item{obj_info}{Objective information (for SE column name)}
+
 \item{verbosity}{Verbosity level for logging}
 }
 \value{
@@ -30,10 +36,8 @@ List with optimizer configuration
 Configures surrogate model, acquisition function, and optimizer.
 }
 \details{
-\strong{Multi-fidelity note}: The archive stores \code{n_sims_used} for each evaluation
-to enable precision-based observation weighting. Currently, weights are not
-used during surrogate training (mlr3mbo limitation). The progressive fidelity
-schedule still provides value through cost-efficient exploration at low
-n_sims followed by precise refinement at high n_sims.
+When \code{weight_evals = TRUE}, the surrogate model is wrapped to use
+inverse-variance weights based on MCSE. This gives more weight to
+precise observations during surrogate training.
 }
 \keyword{internal}

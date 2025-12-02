@@ -582,6 +582,12 @@ parse_objectives <- function(objectives) {
 #'   Note: Set Python environment before optimization via [bf_status()].
 #' @param brms_args Named list of brms-specific arguments passed to
 #'   [power_analysis()]. See [brms::brm()] for available options.
+#' @param weight_evals Logical (default FALSE). When TRUE, weights surrogate
+#'   training observations by inverse-variance of the Monte Carlo standard error
+#'   (MCSE). More precise observations (lower MCSE) get higher weight. This can
+#'   improve surrogate accuracy in multi-fidelity optimization where different
+#'   evaluations have different precision. Uses `weight = 1/se^2` normalized to
+#'   range 0-1.
 #' @param refresh How often to print progress updates (default 5).
 #'   Set to 0 to disable progress output, or a positive integer to print
 #'   every N evaluations. A CLI progress bar is shown when verbosity >= 1.
@@ -649,6 +655,7 @@ optimization <- function(objectives,
                          min_delta = 0.001,
                          bf_args = list(),
                          brms_args = list(),
+                         weight_evals = FALSE,
                          refresh = 5,
                          run = TRUE,
                          verbosity = 1) {
@@ -843,6 +850,7 @@ optimization <- function(objectives,
       init_design_size = init_design_size,
       bf_args = bf_args,
       brms_args = brms_args,
+      weight_evals = weight_evals,
       refresh = refresh,
       verbosity = verbosity
     )
@@ -946,6 +954,14 @@ show_optimization_args <- function() {
     " " = "  (Set Python env before running via bf_status())",
     "*" = "brms_args: brms-specific arguments (list)",
     " " = "  See brms::brm() for available options"
+  ))
+
+  cli::cli_h2("Advanced: MCSE-based Weighting")
+  cli::cli_bullets(c(
+    "*" = "weight_evals: Weight surrogate training by MCSE (default: FALSE)",
+    " " = "  When TRUE, uses inverse-variance weighting: weight = 1/se^2",
+    " " = "  More precise observations (lower MCSE) get higher weight",
+    " " = "  Useful for multi-fidelity optimization where precision varies"
   ))
 
   invisible(NULL)
