@@ -22,7 +22,6 @@ optimization(
   min_delta = 0.001,
   bf_args = list(),
   brms_args = list(),
-  weight_evals = FALSE,
   refresh = 5,
   run = TRUE,
   verbosity = 1
@@ -99,13 +98,6 @@ Note: Set Python environment before optimization via \code{\link[=bf_status]{bf_
 
 \item{brms_args}{Named list of brms-specific arguments passed to
 \code{\link[=power_analysis]{power_analysis()}}. See \code{\link[brms:brm]{brms::brm()}} for available options.}
-
-\item{weight_evals}{Logical (default FALSE). When TRUE, weights surrogate
-training observations by inverse-variance of the Monte Carlo standard error
-(MCSE). More precise observations (lower MCSE) get higher weight. This can
-improve surrogate accuracy in multi-fidelity optimization where different
-evaluations have different precision. Uses \code{weight = 1/se^2} normalized to
-range 0-1.}
 
 \item{refresh}{How often to print progress updates (default 5).
 Set to 0 to disable progress output, or a positive integer to print

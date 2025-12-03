@@ -119,8 +119,6 @@ obj <- build_objectives(
 
 ### Run Optimization
 ```{r run-optimization, results='hide'}
-#| eval: false
-
 obj <- build_objectives(
  design = design,
  search = list(n_total = c(20, 1000)),
@@ -141,10 +139,11 @@ result <- optimization(
  obj,
  n_sims = c(100, 101, 500),
  evals_per_step = c(20, 20, 20),
- use_warmup = TRUE,
+ use_warmup = TRUE, 
+ weight_evals = TRUE,
  min_delta = .01,  # Minimum improvement
  patience = 10,
- surrogate = "rf",   # Gaussian Process surrogate
+ surrogate = "rf",   # Random Forest surrogate
  verbosity = 1, 
  init_design_size = 5,
  refresh = 10,
@@ -155,7 +154,7 @@ result <- optimization(
 ```
 
 ```{r}
-result@optimization_type
+result@
 ```
 
 ### Plot sampled points: n_total vs. time

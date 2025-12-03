@@ -19,7 +19,6 @@ run_optimization(
   init_design_size,
   bf_args,
   brms_args,
-  weight_evals,
   refresh,
   verbosity
 )

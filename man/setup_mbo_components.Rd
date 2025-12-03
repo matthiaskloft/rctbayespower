@@ -9,7 +9,6 @@ setup_mbo_components(
   opt_type,
   surrogate,
   acq_function,
-  weight_evals = FALSE,
   obj_info = NULL,
   verbosity = 1
 )
@@ -23,8 +22,6 @@ setup_mbo_components(
 
 \item{acq_function}{Acquisition function name}
 
-\item{weight_evals}{Logical, whether to weight by MCSE}
-
 \item{obj_info}{Objective information (for SE column name)}
 
 \item{verbosity}{Verbosity level for logging}
@@ -34,10 +31,5 @@ List with optimizer configuration
 }
 \description{
 Configures surrogate model, acquisition function, and optimizer.
-}
-\details{
-When \code{weight_evals = TRUE}, the surrogate model is wrapped to use
-inverse-variance weights based on MCSE. This gives more weight to
-precise observations during surrogate training.
 }
 \keyword{internal}

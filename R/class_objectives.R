@@ -194,12 +194,43 @@ rctbp_objectives <- S7::new_class(
 # =============================================================================
 # S7 CLASS: rctbp_optimization_result
 # =============================================================================
-# Results from optimization:
-# - objectives: Reference to original problem specification
-# - archive: All evaluations (as data frame)
-# - result: Optimal design(s)
-# - pareto_front: For multi-objective (NULL if single)
 
+#' Optimization Result Class
+#'
+#' S7 class containing results from Bayesian optimization of trial designs.
+#'
+#' @section Properties:
+#' \describe{
+#'   \item{objectives}{Reference to the original [rctbp_objectives] specification}
+#'   \item{archive}{Data frame of all evaluations (parameters and objective values)}
+#'   \item{result}{Data frame with optimal design(s) - single row for single-objective,
+#'     multiple rows for Pareto front}
+#'   \item{pareto_front}{Data frame with Pareto-optimal solutions for multi-objective
+#'     optimization (NULL for single-objective)}
+#'   \item{convergence}{Data frame tracking best objective value over iterations}
+#'   \item{best_power_analysis}{Full [rctbp_power_analysis] object from the best solution}
+#'   \item{reference_values}{Named list of reference values from warmup phase used for
+#'     secondary objective scaling (e.g., `list(n_total = 150)`)}
+#'   \item{n_sims}{Number of simulations used per evaluation}
+#'   \item{n_evals}{Total number of evaluations performed}
+#'   \item{elapsed_time}{Total optimization time in seconds}
+#'   \item{early_stopped}{Logical indicating if optimization stopped early}
+#'   \item{backend_used}{Backend used for power analysis ("brms" or "bf")}
+#'   \item{optimization_type}{Type of optimization: "single", "target", or "multi"}
+#'   \item{mbo_objects}{Named list of mlr3mbo/bbotk objects for advanced access:
+#'     \describe{
+#'       \item{instance}{bbotk OptimInstance object containing the optimization state}
+#'       \item{surrogate}{mlr3mbo SurrogateLearner (e.g., Gaussian Process)}
+#'       \item{acq_function}{mlr3mbo acquisition function (e.g., Expected Improvement)}
+#'       \item{acq_optimizer}{mlr3mbo acquisition function optimizer}
+#'       \item{optimizer}{bbotk Optimizer object}
+#'       \item{loop_function}{mlr3mbo loop function (bayesopt_ego or bayesopt_parego)}
+#'     }
+#'   }
+#' }
+#'
+#' @seealso [optimization()], [build_objectives()], [plot.rctbp_optimization_result]
+#' @name rctbp_optimization_result
 #' @importFrom S7 new_class class_list class_any class_data.frame class_numeric class_character new_property
 rctbp_optimization_result <- S7::new_class(
   "rctbp_optimization_result",
@@ -255,6 +286,13 @@ rctbp_optimization_result <- S7::new_class(
     optimization_type = S7::new_property(
       class = S7::class_character,
       default = "single"  # "single", "target", or "multi"
+    ),
+
+    # mlr3mbo/bbotk objects for advanced access
+    # Contains: instance, surrogate, acq_function, acq_optimizer, optimizer
+    mbo_objects = S7::new_property(
+      class = S7::class_list | NULL,
+      default = NULL
     )
   ),
 
@@ -411,6 +449,7 @@ S7::method(print, rctbp_optimization_result) <- function(x, ...) {
   cli::cli_rule()
   cli::cli_alert_info("All evaluations: {.code result@archive}")
   cli::cli_alert_info("Best power analysis: {.code result@best_power_analysis}")
+  cli::cli_alert_info("mlr3mbo objects: {.code result@mbo_objects}")
   cli::cli_alert_info("Visualize: {.code plot(result)}")
 
 

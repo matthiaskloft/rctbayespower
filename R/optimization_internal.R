@@ -116,57 +116,6 @@ compute_fidelity_weights <- function(n_sims_used, n_sims_max) {
   n_sims_used / n_sims_max
 }
 
-
-#' Compute Weights from MCSE for Weighted Surrogate Training
-#'
-#' Computes inverse-variance weights from Monte Carlo Standard Error (MCSE)
-#' values. Lower MCSE = more precise estimate = higher weight.
-#'
-#' @param se_values Numeric vector of standard errors (MCSE) for each observation.
-#' @return Numeric vector of weights normalized to range 0-1 with max = 1,
-#'   or NULL if input is invalid.
-#'
-#' @details
-#' Uses inverse-variance weighting: `weight = 1/se^2`, normalized to range 0-1.
-#' This is the statistically standard approach for weighting observations
-#' by precision.
-#'
-#' Edge cases:
-#' - NA/Inf/zero SE values are replaced with max SE (lowest weight)
-#' - All same SE returns equal weights (all 1)
-#'
-#' @keywords internal
-compute_mcse_weights <- function(se_values) {
-  # Handle edge cases
-  if (is.null(se_values) || length(se_values) == 0) {
-    return(NULL)
-  }
-
-  # Get finite positive values for max SE calculation
-  valid_se <- se_values[is.finite(se_values) & se_values > 0]
-  if (length(valid_se) == 0) {
-    return(rep(1, length(se_values)))
-  }
-  max_se <- max(valid_se, na.rm = TRUE)
-
-
-  # Replace NA/Inf/zero with max SE (lowest weight)
-  se_clean <- se_values
-  se_clean[is.na(se_clean) | !is.finite(se_clean) | se_clean <= 0] <- max_se
-
-  # If all same SE, return equal weights
-  if (length(unique(se_clean)) == 1) {
-    return(rep(1, length(se_values)))
-  }
-
-  # Inverse variance weighting: weight = 1/se^2
-  weights <- 1 / (se_clean^2)
-
-  # Normalize to [0, 1] with max = 1
-  weights / max(weights, na.rm = TRUE)
-}
-
-
 # =============================================================================
 # SEARCH TYPE REGISTRY: Parameter Transforms
 # =============================================================================
@@ -840,7 +789,6 @@ run_optimization <- function(result,
                              init_design_size,
                              bf_args,
                              brms_args,
-                             weight_evals,
                              refresh,
                              verbosity) {
 
@@ -1050,7 +998,6 @@ run_optimization <- function(result,
       opt_type = opt_type,
       surrogate = surrogate,
       acq_function = acq_function,
-      weight_evals = weight_evals,
       obj_info = obj_info,
       verbosity = verbosity
     )
@@ -2201,90 +2148,6 @@ finalize_with_surrogate <- function(mbo_config, instance, objectives,
 }
 
 # =============================================================================
-# HELPER: Wrap Surrogate with MCSE-based Weights
-# =============================================================================
-
-#' Wrap Surrogate with MCSE-based Weighted Training
-#'
-#' Modifies a surrogate model to use inverse-variance weights based on
-#' Monte Carlo Standard Error (MCSE) during training. More precise observations
-#' (lower MCSE) receive higher weight.
-#'
-#' @param surrogate mlr3mbo SurrogateLearner object.
-#' @param se_col Name of the SE column in archive (e.g., "se_pwr_eff").
-#'
-#' @return Modified surrogate with weighted `.update()` method.
-#'
-#' @details
-#' Overrides the surrogate's private `.update()` method to:
-#' 1. Extract SE values from the archive
-#' 2. Compute inverse-variance weights using `compute_mcse_weights()`
-#' 3. Add weights to the TaskRegr via `set_col_roles("obs_weight", "weights_learner")`
-#'
-#' Both GP (DiceKriging) and RF (ranger) learners support weighted training.
-#'
-#' @keywords internal
-wrap_surrogate_with_weights <- function(surrogate, se_col) {
-  # Store SE column name in surrogate's environment for access in .update
-  surrogate$.__enclos_env__$private$.se_col <- se_col
-
-  # Get reference to original .update for input/output trafos
-  original_update <- surrogate$.__enclos_env__$private$.update
-
-  # Replace with weighted version
-  surrogate$.__enclos_env__$private$.update <- function() {
-    # Get archive data
-    archive_dt <- self$archive$data
-    cols <- c(self$cols_x, self$cols_y)
-    xydt <- data.table::copy(archive_dt[, cols, with = FALSE])
-
-    # Apply input transformations (if any)
-    if (!is.null(self$input_trafo)) {
-      self$input_trafo$cols_x <- self$cols_x
-      self$input_trafo$search_space <- self$archive$search_space
-      self$input_trafo$update(xydt)
-      xydt <- self$input_trafo$transform(xydt)
-    }
-
-    # Apply output transformations (if any)
-    if (!is.null(self$output_trafo)) {
-      self$output_trafo$cols_y <- self$cols_y
-      self$output_trafo$max_to_min <- mlr3mbo:::surrogate_mult_max_to_min(self)
-      self$output_trafo$update(xydt)
-      xydt <- self$output_trafo$transform(xydt)
-    }
-
-    # Compute weights from MCSE
-    se_col <- private$.se_col
-    if (!is.null(se_col) && se_col %in% names(archive_dt)) {
-      weights <- compute_mcse_weights(archive_dt[[se_col]])
-      if (!is.null(weights) && length(weights) == nrow(xydt)) {
-        xydt$obs_weight <- weights
-      }
-    }
-
-    # Create task with target column
-    task <- mlr3::TaskRegr$new(
-      id = "surrogate_task",
-      backend = xydt,
-      target = self$cols_y
-    )
-
-    # Set weight role if weights exist
-    if ("obs_weight" %in% names(xydt)) {
-      task$set_col_roles("obs_weight", "weights_learner")
-    }
-
-    # Train learner
-    mlr3::assert_learnable(task, learner = self$learner)
-    self$learner$train(task)
-  }
-
-  surrogate
-}
-
-
-# =============================================================================
 # HELPER: Setup MBO Components
 # =============================================================================
 
@@ -2296,23 +2159,16 @@ wrap_surrogate_with_weights <- function(surrogate, se_col) {
 #' @param opt_type Optimization type ("single", "target", "multi")
 #' @param surrogate Surrogate model type
 #' @param acq_function Acquisition function name
-#' @param weight_evals Logical, whether to weight by MCSE
 #' @param obj_info Objective information (for SE column name)
 #' @param verbosity Verbosity level for logging
 #'
 #' @return List with optimizer configuration
-#'
-#' @details
-#' When `weight_evals = TRUE`, the surrogate model is wrapped to use
-#' inverse-variance weights based on MCSE. This gives more weight to
-#' precise observations during surrogate training.
 #'
 #' @keywords internal
 setup_mbo_components <- function(instance,
                                  opt_type,
                                  surrogate,
                                  acq_function,
-                                 weight_evals = FALSE,
                                  obj_info = NULL,
                                  verbosity = 1) {
 
@@ -2343,18 +2199,6 @@ setup_mbo_components <- function(instance,
 
   # Configure surrogate to catch errors gracefully
   surr$param_set$values$catch_errors <- TRUE
-
-  # Apply MCSE-based weighting if enabled
-  if (isTRUE(weight_evals) && !is.null(obj_info)) {
-    # Determine SE column from first objective
-    first_obj <- names(obj_info$objectives)[1]
-    se_col <- paste0("se_", first_obj)
-    surr <- wrap_surrogate_with_weights(surr, se_col)
-
-    if (verbosity >= 1) {
-      cli::cli_alert_info("Weighting evaluations by MCSE ({se_col})")
-    }
-  }
 
   # ===========================================================================
   # ACQUISITION FUNCTION

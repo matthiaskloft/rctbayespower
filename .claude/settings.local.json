@@ -1,78 +1,115 @@
 {
+  "version": "1.0.0",
+  "name": "R Package Development Configuration",
+  "description": "Team-shared Claude Code settings for R package development",
+  
+  "model": "claude-sonnet-4-20250514",
+  "maxTokens": 4096,
+  
+  "project": {
+    "type": "r-package",
+    "testCommand": "Rscript -e 'devtools::test()'",
+    "checkCommand": "Rscript -e 'devtools::check()'",
+    "buildCommand": "Rscript -e 'devtools::build()'",
+    "documentCommand": "Rscript -e 'devtools::document()'"
+  },
+  
   "permissions": {
-    "allow": [
-      "Bash(find:*)",
-      "Bash(rg:*)",
-      "Bash(R:*)",
-      "Bash(rm:*)",
-      "Bash(mv:*)",
-      "Bash(grep:*)",
-      "Bash(_R_CHECK_FORCE_SUGGESTS_=false R CMD check . --no-tests --no-vignettes --no-manual)",
-      "Bash(mkdir:*)",
-      "Bash(_R_CHECK_FORCE_SUGGESTS_=false R CMD check . --no-manual --no-tests)",
-      "Bash(_R_CHECK_FORCE_SUGGESTS_=false R CMD check --no-examples --no-tests --no-vignettes --no-install .)",
-      "Bash(ls:*)",
-      "Bash(sudo apt-get:*)",
-      "Bash(sudo apt-get install:*)",
-      "Bash(_R_CHECK_FORCE_SUGGESTS_=false R CMD check . --no-manual --no-vignettes)",
-      "Bash(git checkout:*)",
-      "Bash(wget:*)",
-      "Bash(tar:*)",
-      "Bash(export PATH=$PWD/pandoc-3.1.8/bin:$PATH)",
-      "Bash(timeout:*)",
-      "Bash(sed:*)",
-      "Bash(_R_CHECK_FORCE_SUGGESTS_=false R CMD check --no-manual --no-vignettes --no-tests .)",
-      "Bash(for:*)",
-      "Bash(do echo \"=== $file ===\")",
-      "Bash(awk:*)",
-      "Bash(done)",
-      "WebFetch(domain:rconsortium.github.io)",
-      "Bash(cat:*)",
-      "WebFetch(domain:plotly.com)",
-      "Read(//mnt/c/Users/Matze/AppData/Local/Temp/RtmpIXEL2g/file59b047ae3be1/rctbayespower.Rcheck/**)",
-      "Read(//mnt/c/Users/Matze/AppData/Local/Temp/RtmpIXEL2g/file59b028042317/rctbayespower.Rcheck/**)",
-      "WebSearch",
-      "WebFetch(domain:github.com)",
-      "Bash(Rscript:*)",
-      "Bash(PARALLEL_TESTS=false Rscript:*)",
-      "Bash(_R_CHECK_FORCE_SUGGESTS_=false R CMD check:*)",
-      "Bash(dos2unix:*)",
-      "Bash(Makefile)",
-      "WebFetch(domain:cli.r-lib.org)",
-      "Bash(echo:*)",
-      "Bash(export _R_CHECK_FORCE_SUGGESTS_=false)",
-      "WebFetch(domain:paulbuerkner.com)",
-      "WebFetch(domain:tensorflow.rstudio.com)",
-      "WebFetch(domain:bayesflow.org)",
-      "WebFetch(domain:rstudio.github.io)",
-      "WebFetch(domain:keras3.posit.co)",
-      "WebFetch(domain:r-pkgs.org)",
-      "Bash(nvidia-smi:*)",
-      "WebFetch(domain:www.rpact.org)",
-      "WebFetch(domain:online.stat.psu.edu)",
-      "WebFetch(domain:keaven.github.io)",
-      "WebFetch(domain:mlr3mbo.mlr-org.com)",
-      "WebFetch(domain:mlr3book.mlr-org.com)",
-      "WebFetch(domain:onlinelibrary.wiley.com)",
-      "WebFetch(domain:pmc.ncbi.nlm.nih.gov)",
-      "WebFetch(domain:paradox.mlr-org.com)",
-      "WebFetch(domain:cran.r-project.org)",
-      "WebFetch(domain:bbotk.mlr-org.com)",
-      "WebFetch(domain:arxiv.org)",
-      "Bash(git add:*)",
-      "WebFetch(domain:mlr3.mlr-org.com)",
-      "WebFetch(domain:www.rdocumentation.org)",
-      "Bash(dpkg:*)",
-      "Bash(git commit:*)",
-      "Bash(git push:*)",
-      "Bash(git -C /home/matthias/rctbayespower commit -m \"$(cat <<''EOF''\nUpdate BayesFlow vignettes and fix conditions grid property\n\n- Fix property name from conditions_grid to grid in power analysis print\n- Update BayesFlow vignettes to use current API (build_design directly)\n- Add automatic venv setup in vignettes for reproducibility\n- Add update_S7_with_dots documentation\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
-      "Bash(git -C /home/matthias/rctbayespower status)",
-      "Bash(git -C /home/matthias/rctbayespower add .claude/settings.local.json)",
-      "Bash(git -C /home/matthias/rctbayespower commit -m \"$(cat <<''EOF''\nAdd git commit and push to allowed tools\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
-      "Bash(git -C /home/matthias/rctbayespower add vignettes/articles/05-bf_vs_brms_gpu.html vignettes/articles/04-bayesflow.html vignettes/articles/05-bf_vs_brms_cpu_1_core.html)",
-      "Bash(git -C /home/matthias/rctbayespower commit -m \"$(cat <<''EOF''\nUpdate rendered BayesFlow vignette HTML files\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
-      "Bash(git -C /home/matthias/rctbayespower commit -m \"$(cat <<''EOF''\nUpdate Claude Code local settings\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")"
+    "allowedTools": [
+      "Read",
+      "Write(R/**)",
+      "Write(tests/**)",
+      "Write(man/**)",
+      "Write(vignettes/**)",
+      "Write(DESCRIPTION)",
+      "Write(NAMESPACE)",
+      "Write(README.md)",
+      "Write(NEWS.md)",
+      "Write(_pkgdown.yml)",
+      "Bash(git *)",
+      "Bash(R *)",
+      "Bash(Rscript *)"
     ],
-    "deny": []
+    "deny": [
+      "Read(.env*)",
+      "Write(.Renviron)",
+      "Write(.Rprofile)",
+      "Write(data-raw/**)",
+      "Bash(sudo *)",
+      "Bash(rm -rf *)"
+    ]
+  },
+  
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write(R/*.R)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "Rscript -e \"styler::style_file('$file')\""
+          }
+        ]
+      },
+      {
+        "matcher": "Write(DESCRIPTION)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "Rscript -e \"devtools::document()\""
+          }
+        ]
+      }
+    ]
+  },
+  
+  "r_configuration": {
+    "repos": {
+      "CRAN": "https://cran.rstudio.com"
+    },
+    "requiredPackages": [
+      "devtools",
+      "testthat",
+      "roxygen2",
+      "usethis",
+      "pkgdown",
+      "covr",
+      "lintr",
+      "styler",
+      "remotes",
+      "rhub"
+    ],
+    "lintRules": {
+      "line_length": 80,
+      "indentation": 2
+    },
+    "testFramework": "testthat",
+    "documentationEngine": "roxygen2"
+  },
+  
+  "automation": {
+    "autoDocument": true,
+    "autoStyle": true,
+    "autoTest": false,
+    "checkBeforeCommit": true
+  },
+  
+  "gitWorkflow": {
+    "defaultBranch": "main",
+    "protectedBranches": ["main", "master", "develop"],
+    "branchPrefixes": {
+      "feature": "feature/",
+      "bugfix": "bugfix/",
+      "docs": "docs/",
+      "test": "test/",
+      "refactor": "refactor/"
+    }
+  },
+  
+  "environment": {
+    "R_LIBS_USER": "~/R/library",
+    "R_PROFILE_USER": ".Rprofile",
+    "R_ENVIRON_USER": ".Renviron"
   }
 }
+
