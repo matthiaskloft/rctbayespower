@@ -20,6 +20,9 @@ optimization(
   init_design_size = NULL,
   patience = 30,
   min_delta = 0.001,
+  optimum = c("surrogate", "empirical"),
+  sims_final_run = 1000,
+  trim_param_space = 0.25,
   bf_args = list(),
   brms_args = list(),
   refresh = 5,
@@ -91,6 +94,18 @@ target in the optimal window. Set to NULL to disable.}
 (default 0.001). Early stopping is triggered when the target is first
 achieved within this window and \code{patience} evaluations pass without finding
 smaller parameters that also achieve target in the window.}
+
+\item{optimum}{Optimum selection method for final result: "surrogate" (default)
+uses surrogate model search in constrained domain; "empirical" uses
+confidence interval-based selection from archive points.}
+
+\item{sims_final_run}{Number of simulations for final confirmation run
+(default 1000). Higher values provide more precise final estimates but
+increase computation time.}
+
+\item{trim_param_space}{Trimming proportion for surrogate search domain
+(default 0.25). Constrains search to trimmed quantile range of archive
+parameters. Use 0.25 for IQR, 0 for no constraint, 0.5 for maximum constraint.}
 
 \item{bf_args}{Named list of BayesFlow-specific arguments passed to
 \code{\link[=power_analysis]{power_analysis()}}. Options: \code{n_posterior_samples}, \code{batch_size}.

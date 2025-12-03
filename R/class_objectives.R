@@ -275,6 +275,17 @@ rctbp_optimization_result <- S7::new_class(
       default = list()
     ),
 
+    # Optimum selection results
+    # Results from both selection methods for comparison
+    optimum_surrogate = S7::new_property(
+      class = S7::class_list | NULL,
+      default = NULL
+    ),
+    optimum_empirical = S7::new_property(
+      class = S7::class_list | NULL,
+      default = NULL
+    ),
+
     # Metadata
     n_sims = S7::new_property(class = S7::class_numeric, default = NA_real_),
     n_evals = S7::new_property(class = S7::class_numeric, default = NA_real_),

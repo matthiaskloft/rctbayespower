@@ -28,6 +28,7 @@ Documentation is organized in `dev/` as numbered topic files:
 | [`10_bayesflow_integration_roadmap.md`](dev/10_bayesflow_integration_roadmap.md) | BayesFlow integration status and next steps |
 | [`11_code_consistency_review.md`](dev/11_code_consistency_review.md) | Code consistency patterns, naming conventions |
 | [`12_bayesian_optimization_plan.md`](dev/12_bayesian_optimization_plan.md) | **[IMPLEMENTED]** Bayesian optimization for design search |
+| [`13_claude_code_settings.md`](dev/13_claude_code_settings.md) | Claude Code settings, hooks, and security configuration |
 
 Archived files in `dev/archive/`.
 
@@ -132,20 +133,20 @@ setup_bf_python(cuda_version = "cpu")   # CPU-only
 # =============================================================================
 # EACH SESSION: Initialize at the start of your script (REQUIRED)
 # =============================================================================
-# IMPORTANT: Call init_bf_python() BEFORE any BayesFlow operations.
+# IMPORTANT: Call init_bf() BEFORE any BayesFlow operations.
 # All BayesFlow functions require this - they will error if not initialized.
 # This sets KERAS_BACKEND, activates the venv, and validates dependencies.
-init_bf_python()  # Uses default "r-rctbayespower" environment
+init_bf()  # Uses default "r-rctbayespower" environment
 
 # Or use a custom environment name:
-init_bf_python("my-custom-env")
+init_bf("my-custom-env")
 
 # Output on success:
 # ✔ BayesFlow 2.0.1 initialized: GPU (NVIDIA RTX 4090), env: r-rctbayespower
 
 # If not initialized, BayesFlow functions will error:
 # ✖ BayesFlow not initialized
-# ℹ Call init_bf_python() at the start of your script
+# ℹ Call init_bf() at the start of your script
 
 # If environment not found:
 # ✖ Could not activate virtual environment "r-rctbayespower"
@@ -170,7 +171,7 @@ result <- power_analysis(
 # =============================================================================
 # DIAGNOSTIC FUNCTIONS
 # =============================================================================
-bf_status()                    # Show full environment status
+check_bf_status()              # Show full environment status
 verify_bf_installation()       # Check all packages with versions
 detect_cuda_version()          # Just check CUDA
 get_bf_env_info()              # Get device (CPU/GPU) and environment info

@@ -32,7 +32,7 @@ if(!reticulate::virtualenv_exists("rctbp-3-12")){
   setup_bf_python(envname = "rctbp-3-12", python_version = "3.12", cuda_version = "auto")
 }
 # Initialize BayesFlow Python environment
-init_bf_python("rctbp-3-12")
+init_bf("rctbp-3-12")
 
 n_sims <- 1000L
 n_cores <- parallel::detectCores() - 1
@@ -86,7 +86,7 @@ Check your installation:
 ```{r bf-status}
 #| eval: false
 
-bf_status()
+check_bf_status()
 ```
 
 ```

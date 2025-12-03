@@ -376,23 +376,225 @@ check_bf_dependencies <- function(silent = FALSE) {
 #'   target_params = "b_arm2"
 #' )
 #' }
-init_bf_python <- function(envname = "r-rctbayespower", verbose = TRUE) {
+
+
+# =============================================================================
+# SHARED PYTHON ENVIRONMENT HELPERS
+# =============================================================================
+
+#' Discover Available BayesFlow Virtual Environments
+#'
+#' Discovers available Python virtual environments and identifies which ones
+#' are likely BayesFlow environments based on naming patterns.
+#'
+#' @return Named list with:
+#'   \itemize{
+#'     \item `all_envs`: All available virtual environments
+#'     \item `bf_envs`: Environments matching BayesFlow naming patterns
+#'     \item `recommended_env`: First BayesFlow environment or NULL
+#'   }
+#' @keywords internal
+get_bf_envs <- function() {
+  venvs <- tryCatch(reticulate::virtualenv_list(), error = function(e) character(0))
+  bf_venvs <- venvs[grepl("rctbp|rctbayespower", venvs, ignore.case = TRUE)]
+
+  list(
+    all_envs = venvs,
+    bf_envs = bf_venvs,
+    recommended_env = if (length(bf_venvs) > 0) bf_venvs[1] else NULL
+  )
+}
+
+
+#' Setup BayesFlow Python Environment
+#'
+#' Handles Python environment activation with environment compatibility checking.
+#' This centralizes the environment activation logic used by multiple functions.
+#'
+#' @param envname Name of virtual environment to activate, or NULL for current
+#' @param strict If TRUE, abort on environment conflicts; if FALSE, warn and continue
+#'
+#' @return Named list with:
+#'   \itemize{
+#'     \item `success`: TRUE if environment setup succeeded
+#'     \item `switched_env`: TRUE if environment was activated (vs already active)
+#'     \item `final_envname`: The environment name that's actually being used
+#'   }
+#' @keywords internal
+setup_bf_environment <- function(envname = NULL, strict = FALSE) {
+  if (is.null(envname) || nchar(envname) == 0) {
+    return(list(success = TRUE, switched_env = FALSE, final_envname = NULL))
+  }
+
+  python_already_init <- reticulate::py_available(initialize = FALSE)
+
+  if (python_already_init) {
+    # Check environment compatibility
+    current_config <- reticulate::py_config()
+    current_path <- normalizePath(current_config$python, winslash = "/", mustWork = FALSE)
+
+    requested_path <- tryCatch({
+      venv_python <- reticulate::virtualenv_python(envname)
+      normalizePath(venv_python, winslash = "/", mustWork = FALSE)
+    }, error = function(e) NULL)
+
+    if (!is.null(requested_path) && !identical(current_path, requested_path)) {
+      current_envname <- basename(dirname(dirname(current_path)))
+
+      error_msg <- c(
+        "Cannot switch Python environment in active R session",
+        if (strict) "x" else "!" = "Requested: {.val {envname}}",
+        if (strict) "x" else "!" = "Currently using: {.val {current_envname}}",
+        "i" = "Restart R session to use a different Python environment"
+      )
+
+      if (strict) {
+        cli::cli_abort(error_msg)
+      } else {
+        cli::cli_warn(error_msg)
+        return(list(success = TRUE, switched_env = FALSE, final_envname = NULL))
+      }
+    }
+
+    return(list(success = TRUE, switched_env = FALSE, final_envname = envname))
+  } else {
+    # Python not initialized - activate the environment
+    tryCatch({
+      reticulate::use_virtualenv(envname, required = TRUE)
+      return(list(success = TRUE, switched_env = TRUE, final_envname = envname))
+    }, error = function(e) {
+      envs <- get_bf_envs()
+
+      error_msg <- c(
+        "Could not activate virtual environment {.val {envname}}",
+        "x" = conditionMessage(e)
+      )
+
+      if (length(envs$bf_envs) > 0) {
+        error_msg <- c(error_msg,
+          "i" = "Available BayesFlow environments: {.val {envs$bf_envs}}",
+          "i" = "Try: {.code init_bf(\"{envs$recommended_env}\")}"
+        )
+      } else if (length(envs$all_envs) > 0) {
+        error_msg <- c(error_msg,
+          "i" = "Available environments: {.val {envs$all_envs}}",
+          "i" = "Run {.code setup_bf_python()} to create a BayesFlow environment"
+        )
+      } else {
+        error_msg <- c(error_msg,
+          "i" = "Run {.code setup_bf_python()} to create a Python environment"
+        )
+      }
+
+      cli::cli_abort(error_msg)
+    })
+  }
+}
+
+
+#' Check if BayesFlow Python is Ready
+#'
+#' Verifies that Python is initialized and optionally reports available
+#' environments if initialization fails. This centralizes Python readiness
+#' checking with helpful error messages.
+#'
+#' @param report_envs If TRUE, show helpful environment suggestions on failure
+#'
+#' @return TRUE if Python is ready, FALSE if not (only when report_envs=FALSE)
+#' @keywords internal
+check_bf_python_ready <- function(report_envs = TRUE) {
+  if (reticulate::py_available(initialize = TRUE)) {
+    return(TRUE)
+  }
+
+  if (!report_envs) {
+    return(FALSE)
+  }
+
+  # Python not available - show helpful suggestions
+  envs <- get_bf_envs()
+
+  error_msg <- c("Python is not available after environment activation")
+
+  if (length(envs$bf_envs) > 0) {
+    error_msg <- c(error_msg,
+      "i" = "Found BayesFlow environments: {.val {envs$bf_envs}}",
+      "i" = "Try restarting R and calling: {.code init_bf(\"{envs$recommended_env}\")}"
+    )
+  } else if (length(envs$all_envs) > 0) {
+    error_msg <- c(error_msg,
+      "i" = "Available environments: {.val {envs$all_envs}}",
+      "i" = "Run {.code setup_bf_python()} to create a BayesFlow environment"
+    )
+  } else {
+    error_msg <- c(error_msg,
+      "i" = "Run {.code setup_bf_python()} to create a Python environment"
+    )
+  }
+
+  cli::cli_abort(error_msg)
+}
+
+
+# =============================================================================
+# REFACTORED BAYESFLOW INITIALIZATION FUNCTIONS
+# =============================================================================
+
+#' Initialize BayesFlow Python Environment and Load Modules
+#'
+#' Initializes BayesFlow Python environment and loads required modules
+#' (BayesFlow, Keras, NumPy) for use in power analysis. This is the new,
+#' refactored version that uses shared helper functions to reduce code duplication.
+#'
+#' **Recommended workflow:**
+#' 1. First time: Run `setup_bf_python()` to create dedicated virtual environment
+#' 2. Each session: Call `init_bf()` at script start
+#'
+#' This function:
+#' 1. Sets KERAS_BACKEND=torch via R environment variable (before Python init)
+#' 2. Returns cached modules if already initialized and valid
+#' 3. Activates the specified virtual environment
+#' 4. Verifies Python is initialized and all dependencies are available
+#' 5. Imports modules eagerly to surface errors immediately
+#' 6. Caches modules for reuse
+#'
+#' @param envname Name of Python virtual environment to use.
+#'   Default is "r-rctbayespower" (created by [setup_bf_python()]).
+#'   Set to NULL to use the currently active Python environment.
+#'   **Important**: Environment can only be set BEFORE Python is initialized
+#'   in the R session. Restart R to switch environments.
+#' @param verbose If TRUE (default), print initialization status message.
+#'
+#' @return List with bf, np, and keras Python modules (invisibly)
+#' @export
+#'
+#' @examples
+#' \dontrun{
+#' # Recommended: Initialize at the start of your script
+#' init_bf()  # Uses default "r-rctbayespower" environment
+#'
+#' # Or specify environment explicitly
+#' init_bf("rctbp-3-12")
+#'
+#' # Then use BayesFlow backend in design
+#' design <- build_design(
+#'   model_name = "ancova_cont_2arms",
+#'   backend = "bf",
+#'   target_params = "b_arm2"
+#' )
+#' }
+init_bf <- function(envname = "r-rctbayespower", verbose = TRUE) {
 
   # ==========================================================================
   # STEP 1: Set KERAS_BACKEND before ANY Python initialization
   # ==========================================================================
-  # Must happen via R's Sys.setenv() BEFORE reticulate touches Python,
-  # otherwise Keras may initialize with wrong backend
   if (Sys.getenv("KERAS_BACKEND") == "") {
     Sys.setenv(KERAS_BACKEND = "torch")
   }
 
   # ==========================================================================
-  # STEP 2: Check cache validity FIRST (before environment checks)
+  # STEP 2: Check cache validity FIRST
   # ==========================================================================
-  # If Python objects are alive and working, use them regardless of envname.
-  # The envname parameter only matters for FIRST initialization.
-  # This prevents repeated warnings when internal code calls init_bf_python().
   if (is_bf_cache_valid()) {
     if (verbose) {
       info <- get_bf_env_info()
@@ -407,55 +609,23 @@ init_bf_python <- function(envname = "r-rctbayespower", verbose = TRUE) {
   }
 
   # ==========================================================================
-  # STEP 3: Environment activation (only possible before Python init)
+  # STEP 3: Environment activation (using shared helper)
   # ==========================================================================
-  python_already_initialized <- reticulate::py_available(initialize = FALSE)
-
-  if (!is.null(envname) && nchar(envname) > 0) {
-    if (python_already_initialized) {
-      # Check if we're already in the requested environment
-      current_config <- reticulate::py_config()
-      current_path <- normalizePath(current_config$python, winslash = "/", mustWork = FALSE)
-
-      requested_path <- tryCatch({
-        venv_python <- reticulate::virtualenv_python(envname)
-        normalizePath(venv_python, winslash = "/", mustWork = FALSE)
-      }, error = function(e) NULL)
-
-      if (!is.null(requested_path) && !identical(current_path, requested_path)) {
-        current_envname <- basename(dirname(dirname(current_path)))
-        cli::cli_warn(c(
-          "Cannot switch Python environment in active R session",
-          "x" = "Requested: {.val {envname}}",
-          "!" = "Currently using: {.val {current_envname}}",
-          "i" = "Restart R session to use a different Python environment"
-        ))
-        envname <- NULL
-      }
-    } else {
-      # Python not yet initialized - activate the environment
-      tryCatch({
-        reticulate::use_virtualenv(envname, required = TRUE)
-      }, error = function(e) {
-        cli::cli_abort(c(
-          "Could not activate virtual environment {.val {envname}}",
-          "x" = conditionMessage(e),
-          "i" = "Run {.code setup_bf_python()} to create the environment",
-          "i" = "Or use {.code init_bf_python(envname = NULL)} for current Python"
-        ))
-      })
-    }
-  }
+  setup_bf_environment(envname, strict = TRUE)
 
   # ==========================================================================
-  # STEP 4: Validate all dependencies (not just bayesflow)
+  # STEP 4: Python initialization (using shared helper)
+  # ==========================================================================
+  check_bf_python_ready()
+
+  # ==========================================================================
+  # STEP 5: Validate all dependencies
   # ==========================================================================
   check_bf_dependencies(silent = FALSE)
 
   # ==========================================================================
-  # STEP 5: Import modules EAGERLY (no delay_load)
+  # STEP 6: Import modules EAGERLY (no delay_load)
   # ==========================================================================
-  # Eager loading surfaces errors immediately at init time, not later during use
   if (verbose) {
     cli::cli_alert_info("Initializing BayesFlow Python environment...")
   }
@@ -509,7 +679,7 @@ init_bf_python <- function(envname = "r-rctbayespower", verbose = TRUE) {
   .bf_cache$initialized <- TRUE
 
   # ==========================================================================
-  # STEP 6: Report status
+  # STEP 7: Report status
   # ==========================================================================
   if (verbose) {
     info <- get_bf_env_info()

@@ -784,7 +784,6 @@ run_optimization <- function(result,
                              min_delta,
                              optimum,
                              sims_final_run,
-                             trim_param_space,
                              n_cores,
                              surrogate,
                              acq_function,
@@ -1136,7 +1135,6 @@ run_optimization <- function(result,
       fidelity_schedule = fidelity_schedule,
       optimum = optimum,
       sims_final_run = sims_final_run,
-      trim_param_space = trim_param_space,
       n_cores = n_cores,
       bf_args = bf_args,
       brms_args = brms_args,
@@ -1144,9 +1142,6 @@ run_optimization <- function(result,
     )
     result_df <- final_result$result_df
     final_pa <- final_result$power_analysis
-    # Extract optimum results for storage in result object slots
-    optimum_surrogate <- final_result$optimum_surrogate
-    optimum_empirical <- final_result$optimum_empirical
   }
 
   # Build convergence trace
@@ -1169,11 +1164,6 @@ run_optimization <- function(result,
   if (!is.null(mbo_config)) {
     mbo_config$instance <- instance
     result@mbo_objects <- mbo_config
-  }
-  # Store optimum results for single-objective optimization
-  if (opt_type != "multi" && exists("optimum_surrogate") && exists("optimum_empirical")) {
-    result@optimum_surrogate <- optimum_surrogate
-    result@optimum_empirical <- optimum_empirical
   }
 
   # ===========================================================================
@@ -2377,9 +2367,6 @@ select_best_via_surrogate <- function(mbo_config, archive_df, search_params) {
 #' @param instance bbotk optimization instance
 #' @param objectives rctbp_objectives object
 #' @param fidelity_schedule Data frame with fidelity schedule (uses max n_sims)
-#' @param optimum Optimum selection method: "surrogate" or "empirical"
-#' @param sims_final_run Number of simulations for final confirmation run
-#' @param trim_param_space Trimming proportion for parameter space constraint (0-0.5)
 #' @param n_cores Parallel cores
 #' @param bf_args BayesFlow arguments
 #' @param brms_args brms arguments
@@ -2388,10 +2375,10 @@ select_best_via_surrogate <- function(mbo_config, archive_df, search_params) {
 #' @return List with result_df and power_analysis
 #' @keywords internal
 finalize_with_surrogate <- function(mbo_config, instance, objectives,
-                                    fidelity_schedule, optimum, sims_final_run, trim_param_space, n_cores, bf_args, brms_args,
+                                    fidelity_schedule, optimum, sims_final_run, n_cores, bf_args, brms_args,
                                     verbosity) {
   # Use sims_final_run for final confirmation
-  n_sims <- sims_final_run
+  n_sims <- max(fidelity_schedule$n_sims)
   should_show <- function(level) verbosity >= level
 
   # Get archive and objective info
@@ -2401,10 +2388,11 @@ finalize_with_surrogate <- function(mbo_config, instance, objectives,
   actual_col <- paste0("actual_", obj_name)
 
   # ===========================================================================
-  # COMPUTE BOTH SURROGATE AND EMPIRICAL OPTIMA
+  # SELECT OPTIMAL POINT VIA SURROGATE SEARCH
   # ===========================================================================
+  # Uses surrogate model to find optimum in constrained domain (IQR by default).
+  # This searches over candidates rather than just smoothing observed points.
 
-  # Method A: Surrogate optimum (search in constrained domain)
   surrogate_result <- find_surrogate_optimum_internal(
     mbo_config = mbo_config,
     instance = instance,
@@ -2412,68 +2400,37 @@ finalize_with_surrogate <- function(mbo_config, instance, objectives,
     objectives = objectives,
     n_candidates = 10000,
     ci_level = 0.95,
-    trim = trim_param_space
+    trim = 0.25
   )
 
-  # Method B: Empirical optimum (CI-based selection from archive)
-  empirical_result <- find_empirical_optimum_internal(archive_df, objectives, ci_level = 0.95)
+  best_params <- surrogate_result$params
+  surrogate_pred <- surrogate_result$predicted_mean
+  surrogate_se <- surrogate_result$predicted_se
+  surrogate_ci_lower <- surrogate_result$ci_lower
+  surrogate_ci_upper <- surrogate_result$ci_upper
 
-  # ===========================================================================
-  # SELECT FINAL METHOD BASED ON OPTIMUM PARAMETER
-  # ===========================================================================
-
-  if (optimum == "surrogate") {
-    best_params <- surrogate_result$params
-    selected_method <- "surrogate"
-
-    if (should_show(1)) {
-      domain_info <- paste(
-        sapply(names(surrogate_result$domain_used), function(p) {
-          bounds <- surrogate_result$domain_used[[p]]
-          sprintf("%s:[%.0f,%.0f]", p, bounds[1], bounds[2])
-        }),
-        collapse = ", "
-      )
-      cli::cli_alert_info("Using surrogate optimum (constrained domain: {domain_info})")
-    }
-
-  } else {  # optimum == "empirical"
-    best_params <- empirical_result$params
-    selected_method <- "empirical"
-
-    if (should_show(1)) {
-      emp_n <- if ("n_total" %in% names(empirical_result$params)) {
-        round(empirical_result$params$n_total)
-      } else {
-        "N/A"
-      }
-      cli::cli_alert_info(
-        "Using empirical optimum: n_total={emp_n}, achieves_target={empirical_result$achieves_target}"
-      )
-    }
+  if (should_show(1)) {
+    domain_info <- paste(
+      sapply(names(surrogate_result$domain_used), function(p) {
+        bounds <- surrogate_result$domain_used[[p]]
+        sprintf("%s:[%.0f,%.0f]", p, bounds[1], bounds[2])
+      }),
+      collapse = ", "
+    )
+    cli::cli_alert_info("Surrogate search in constrained domain: {domain_info}")
   }
 
-  # For verbose output, also show the alternative method
   if (should_show(2)) {
-    if (optimum == "surrogate") {
-      emp_n <- if ("n_total" %in% names(empirical_result$params)) {
-        round(empirical_result$params$n_total)
-      } else {
-        "N/A"
-      }
-      cli::cli_alert_info(
-        "Alternative (empirical): n_total={emp_n}, achieves_target={empirical_result$achieves_target}"
-      )
+    # Also compute empirical optimum for comparison
+    empirical_result <- find_empirical_optimum_internal(archive_df, objectives, ci_level = 0.95)
+    emp_n <- if ("n_total" %in% names(empirical_result$params)) {
+      round(empirical_result$params$n_total)
     } else {
-      domain_info <- paste(
-        sapply(names(surrogate_result$domain_used), function(p) {
-          bounds <- surrogate_result$domain_used[[p]]
-          sprintf("%s:[%.0f,%.0f]", p, bounds[1], bounds[2])
-        }),
-        collapse = ", "
-      )
-      cli::cli_alert_info("Alternative (surrogate): constrained domain: {domain_info}")
+      "N/A"
     }
+    cli::cli_alert_info(
+      "Empirical optimum: n_total={emp_n}, achieves_target={empirical_result$achieves_target}"
+    )
   }
 
   if (should_show(1)) {
@@ -2509,12 +2466,7 @@ finalize_with_surrogate <- function(mbo_config, instance, objectives,
     # Fallback to bbotk's best
     result_df <- as.data.frame(instance$archive$best())
     result_df <- postprocess_archive(result_df, objectives)
-    return(list(
-      result_df = result_df,
-      power_analysis = NULL,
-      optimum_surrogate = surrogate_result,
-      optimum_empirical = empirical_result
-    ))
+    return(list(result_df = result_df, power_analysis = NULL))
   }
 
   # Run power analysis with same n_sims as optimization
@@ -2537,23 +2489,18 @@ finalize_with_surrogate <- function(mbo_config, instance, objectives,
     # Fallback to bbotk's best
     result_df <- as.data.frame(instance$archive$best())
     result_df <- postprocess_archive(result_df, objectives)
-    return(list(
-      result_df = result_df,
-      power_analysis = NULL,
-      optimum_surrogate = surrogate_result,
-      optimum_empirical = empirical_result
-    ))
+    return(list(result_df = result_df, power_analysis = NULL))
   }
 
   # Build result_df from final simulation
   final_results <- pa_result@results_conditions[1, ]
   result_df <- data.frame(final_results)
 
-  # Add surrogate uncertainty columns (always from surrogate method for comparison)
-  result_df$surrogate_pred <- surrogate_result$predicted_mean
-  result_df$surrogate_se <- surrogate_result$predicted_se
-  result_df$surrogate_ci_lower <- surrogate_result$ci_lower
-  result_df$surrogate_ci_upper <- surrogate_result$ci_upper
+  # Add surrogate uncertainty columns
+  result_df$surrogate_pred <- surrogate_pred
+  result_df$surrogate_se <- surrogate_se
+  result_df$surrogate_ci_lower <- surrogate_ci_lower
+  result_df$surrogate_ci_upper <- surrogate_ci_upper
 
   # Report final result
   if (should_show(1)) {
@@ -2573,12 +2520,7 @@ finalize_with_surrogate <- function(mbo_config, instance, objectives,
     }
   }
 
-  list(
-    result_df = result_df,
-    power_analysis = pa_result,
-    optimum_surrogate = surrogate_result,
-    optimum_empirical = empirical_result
-  )
+  list(result_df = result_df, power_analysis = pa_result)
 }
 
 # =============================================================================

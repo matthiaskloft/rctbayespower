@@ -509,12 +509,38 @@ verify_bf_installation <- function() {
 #' @examples
 #' \dontrun{
 #' # Check current/default environment
-#' bf_status()
+#' check_bf_status()
 #'
 #' # Check specific environment
-#' bf_status(envname = "r-rctbayespower")
+#' check_bf_status(envname = "r-rctbayespower")
 #' }
-bf_status <- function(envname = NULL) {
+
+
+#' Check BayesFlow Environment Status
+#'
+#' Displays current Python configuration and BayesFlow availability.
+#' This is the new, refactored version that uses shared helper functions
+#' to reduce code duplication.
+#'
+#' The function automatically initializes Python if not already active and
+#' shows comprehensive status information including Python version, virtual
+#' environment, package versions, and GPU availability.
+#'
+#' @param envname Optional name of Python virtual environment to check.
+#'   If NULL (default), uses the currently active environment or auto-detects.
+#'
+#' @return Invisibly returns list with status results
+#' @export
+#'
+#' @examples
+#' \dontrun{
+#' # Check current/default environment
+#' check_bf_status()
+#'
+#' # Check specific environment
+#' check_bf_status(envname = "rctbp-3-12")
+#' }
+check_bf_status <- function(envname = NULL) {
   cli::cli_h1("BayesFlow Environment Status")
 
   if (!requireNamespace("reticulate", quietly = TRUE)) {
@@ -522,66 +548,54 @@ bf_status <- function(envname = NULL) {
     return(invisible(NULL))
   }
 
-  # Check if Python is already initialized
-  python_already_initialized <- reticulate::py_available(initialize = FALSE)
+  # ==========================================================================
+  # STEP 1: Environment activation (using shared helper, non-strict mode)
+  # ==========================================================================
+  tryCatch({
+    rctbayespower::setup_bf_environment(envname, strict = FALSE)
+  }, error = function(e) {
+    cli::cli_alert_danger("Environment setup failed: {conditionMessage(e)}")
 
-  # If envname specified and Python already initialized, check compatibility
-  if (!is.null(envname) && nchar(envname) > 0 && python_already_initialized) {
-    current_config <- reticulate::py_config()
-    current_path <- normalizePath(current_config$python, winslash = "/", mustWork = FALSE)
-
-    requested_path <- tryCatch({
-      venv_python <- reticulate::virtualenv_python(envname)
-      normalizePath(venv_python, winslash = "/", mustWork = FALSE)
-    }, error = function(e) NULL)
-
-    if (!is.null(requested_path) && !identical(current_path, requested_path)) {
-      current_envname <- basename(dirname(dirname(current_path)))
-      cli::cli_alert_warning("Cannot switch Python environment in active R session")
-      cli::cli_alert_info("Requested: {.val {envname}}, but currently using: {.val {current_envname}}")
-      cli::cli_alert_info("Restart R session to use a different environment")
-      cli::cli_text("")
-      # Continue showing status of current environment
-      envname <- NULL
-    }
-  }
-
-  # Activate specified environment if provided (only if Python not yet initialized)
-  if (!is.null(envname) && nchar(envname) > 0 && !python_already_initialized) {
-    tryCatch({
-      reticulate::use_virtualenv(envname, required = TRUE)
-      cli::cli_alert_success("Activated environment: {.val {envname}}")
-    }, error = function(e) {
-      cli::cli_alert_danger("Could not activate environment {.val {envname}}: {conditionMessage(e)}")
-
-      # Show available virtualenvs
-      venvs <- tryCatch(reticulate::virtualenv_list(), error = function(e) character(0))
-      if (length(venvs) > 0) {
-        cli::cli_alert_info("Available environments: {.val {venvs}}")
-      }
-      return(invisible(NULL))
+    # Show available environments
+    envs <- tryCatch(rctbayespower::get_bf_envs(), error = function(e) {
+      list(all_envs = character(0), bf_envs = character(0), recommended_env = NULL)
     })
-  }
 
-  # Try to initialize Python if not available
-  if (!reticulate::py_available(initialize = TRUE)) {
+    if (length(envs$bf_envs) > 0) {
+      cli::cli_alert_info("Available BayesFlow environments: {.val {envs$bf_envs}}")
+    } else if (length(envs$all_envs) > 0) {
+      cli::cli_alert_info("Available environments: {.val {envs$all_envs}}")
+    } else {
+      cli::cli_alert_info("Run {.code setup_bf_python()} to create environment")
+    }
+    return(invisible(NULL))
+  })
+
+  # ==========================================================================
+  # STEP 2: Python initialization (using shared helper, non-strict mode)
+  # ==========================================================================
+  if (!rctbayespower::check_bf_python_ready(report_envs = FALSE)) {
     cli::cli_alert_warning("Python not available")
 
     # Show available virtualenvs
-    venvs <- tryCatch(reticulate::virtualenv_list(), error = function(e) character(0))
-    bf_venvs <- venvs[grepl("rctbp|rctbayespower", venvs, ignore.case = TRUE)]
+    envs <- tryCatch(rctbayespower::get_bf_envs(), error = function(e) {
+      list(all_envs = character(0), bf_envs = character(0), recommended_env = NULL)
+    })
 
-    if (length(bf_venvs) > 0) {
-      cli::cli_alert_info("Found BayesFlow environments: {.val {bf_venvs}}")
-      cli::cli_alert_info("Activate with: {.code bf_status(envname = \"{bf_venvs[1]}\")}")
-    } else if (length(venvs) > 0) {
-      cli::cli_alert_info("Available environments: {.val {venvs}}")
+    if (length(envs$bf_envs) > 0) {
+      cli::cli_alert_info("Found BayesFlow environments: {.val {envs$bf_envs}}")
+      cli::cli_alert_info("Activate with: {.code check_bf_status(envname = \"{envs$recommended_env}\")}")
+    } else if (length(envs$all_envs) > 0) {
+      cli::cli_alert_info("Available environments: {.val {envs$all_envs}}")
     } else {
       cli::cli_alert_info("Run {.code setup_bf_python()} to create environment")
     }
     return(invisible(NULL))
   }
 
+  # ==========================================================================
+  # STEP 3: Status display (unique functionality)
+  # ==========================================================================
   config <- reticulate::py_config()
 
   cli::cli_h2("Python Configuration")

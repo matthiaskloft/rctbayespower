@@ -28,6 +28,8 @@ rctbp_optimization_result(
     "data.frame"),
   best_power_analysis = NULL,
   reference_values = list(),
+  optimum_surrogate = list(),
+  optimum_empirical = list(),
   n_sims = NA_real_,
   n_evals = NA_real_,
   elapsed_time = NA_real_,

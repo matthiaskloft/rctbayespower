@@ -1,109 +1,11 @@
 {
   "permissions": {
     "allow": [
-      "Bash(cat:*)",
       "WebSearch",
-      "Bash(Rscript -e:*)"
+      "WebFetch(domain:github.com)",
+      "Bash(git push:*)",
+      "Bash(rm:*)"
     ],
-    "deny": [],
-    "ask": [],
-    "allowedTools": [
-      "Read",
-      "Write(R/**)",
-      "Write(tests/**)",
-      "Write(man/**)",
-      "Write(vignettes/**)",
-      "Write(DESCRIPTION)",
-      "Write(NAMESPACE)",
-      "Write(README.md)",
-      "Write(NEWS.md)",
-      "Write(_pkgdown.yml)",
-      "Bash(git *)",
-      "Bash(R *)",
-      "Bash(Rscript *)"
-    ]
-  },
-  "model": "claude-sonnet-4-20250514",
-  "hooks": {
-    "PostToolUse": [
-      {
-        "matcher": "Write(R/*.R)",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "Rscript -e \"styler::style_file('$file')\""
-          }
-        ]
-      },
-      {
-        "matcher": "Write(DESCRIPTION)",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "Rscript -e \"devtools::document()\""
-          }
-        ]
-      }
-    ]
-  },
-  "version": "1.0.0",
-  "name": "R Package Development Configuration",
-  "description": "Team-shared Claude Code settings for R package development",
-  "maxTokens": 4096,
-  "project": {
-    "type": "r-package",
-    "testCommand": "Rscript -e 'devtools::test()'",
-    "checkCommand": "Rscript -e 'devtools::check()'",
-    "buildCommand": "Rscript -e 'devtools::build()'",
-    "documentCommand": "Rscript -e 'devtools::document()'"
-  },
-  "r_configuration": {
-    "repos": {
-      "CRAN": "https://cran.rstudio.com"
-    },
-    "requiredPackages": [
-      "devtools",
-      "testthat",
-      "roxygen2",
-      "usethis",
-      "pkgdown",
-      "covr",
-      "lintr",
-      "styler",
-      "remotes",
-      "rhub"
-    ],
-    "lintRules": {
-      "line_length": 80,
-      "indentation": 2
-    },
-    "testFramework": "testthat",
-    "documentationEngine": "roxygen2"
-  },
-  "automation": {
-    "autoDocument": true,
-    "autoStyle": true,
-    "autoTest": false,
-    "checkBeforeCommit": true
-  },
-  "gitWorkflow": {
-    "defaultBranch": "main",
-    "protectedBranches": [
-      "main",
-      "master",
-      "develop"
-    ],
-    "branchPrefixes": {
-      "feature": "feature/",
-      "bugfix": "bugfix/",
-      "docs": "docs/",
-      "test": "test/",
-      "refactor": "refactor/"
-    }
-  },
-  "environment": {
-    "R_LIBS_USER": "~/R/library",
-    "R_PROFILE_USER": ".Rprofile",
-    "R_ENVIRON_USER": ".Renviron"
+    "deny": []
   }
 }

@@ -1,0 +1,92 @@
+{
+  "permissions": {
+    "allow": [
+      "Read",
+      "Glob",
+      "Grep",
+      "Edit(R/**)",
+      "Edit(tests/**)",
+      "Edit(man/**)",
+      "Edit(vignettes/**)",
+      "Edit(dev/**)",
+      "Edit(DESCRIPTION)",
+      "Edit(NAMESPACE)",
+      "Edit(README.md)",
+      "Edit(README.Rmd)",
+      "Edit(NEWS.md)",
+      "Edit(_pkgdown.yml)",
+      "Write(R/**)",
+      "Write(tests/**)",
+      "Write(man/**)",
+      "Write(vignettes/**)",
+      "Write(dev/**)",
+      "Write(DESCRIPTION)",
+      "Write(NAMESPACE)",
+      "Write(README.md)",
+      "Write(README.Rmd)",
+      "Write(NEWS.md)",
+      "Write(_pkgdown.yml)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git branch:*)",
+      "Bash(git checkout:*)",
+      "Bash(git fetch:*)",
+      "Bash(git pull:*)",
+      "Bash(Rscript:*)",
+      "Bash(Rscript -e:*)",
+      "Bash(R CMD:*)",
+      "Bash(python:*)",
+      "Bash(python -c:*)",
+      "Bash(ls:*)",
+      "Bash(pwd:*)",
+      "Bash(mkdir:*)",
+      "Bash(cp:*)",
+      "Bash(mv:*)"
+    ],
+    "deny": [
+      "Bash(rm -rf:*)",
+      "Bash(curl:*)",
+      "Bash(wget:*)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Read|Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python .claude/hooks/file_guard.py"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write(R/*.R)|Edit(R/*.R)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "Rscript -e \"styler::style_file('$CLAUDE_TOOL_INPUT_file_path')\""
+          }
+        ]
+      },
+      {
+        "matcher": "Write(R/*.R)|Edit(R/*.R)|Write(DESCRIPTION)|Edit(DESCRIPTION)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "Rscript -e \"devtools::document()\""
+          }
+        ]
+      }
+    ]
+  },
+  "includeCoAuthoredBy": true,
+  "env": {
+    "RCTBP_MOCK_BF": "FALSE"
+  }
+}

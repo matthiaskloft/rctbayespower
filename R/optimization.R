@@ -577,6 +577,15 @@ parse_objectives <- function(objectives) {
 #'   (default 0.001). Early stopping is triggered when the target is first
 #'   achieved within this window and `patience` evaluations pass without finding
 #'   smaller parameters that also achieve target in the window.
+#' @param optimum Optimum selection method for final result: "surrogate" (default)
+#'   uses surrogate model search in constrained domain; "empirical" uses
+#'   confidence interval-based selection from archive points.
+#' @param sims_final_run Number of simulations for final confirmation run
+#'   (default 1000). Higher values provide more precise final estimates but
+#'   increase computation time.
+#' @param trim_param_space Trimming proportion for surrogate search domain
+#'   (default 0.25). Constrains search to trimmed quantile range of archive
+#'   parameters. Use 0.25 for IQR, 0 for no constraint, 0.5 for maximum constraint.
 #' @param bf_args Named list of BayesFlow-specific arguments passed to
 #'   [power_analysis()]. Options: `n_posterior_samples`, `batch_size`.
 #'   Note: Set Python environment before optimization via [bf_status()].
@@ -647,6 +656,9 @@ optimization <- function(objectives,
                          init_design_size = NULL,
                          patience = 30,
                          min_delta = 0.001,
+                         optimum = c("surrogate", "empirical"),
+                         sims_final_run = 1000,
+                         trim_param_space = 0.25,
                          bf_args = list(),
                          brms_args = list(),
                          refresh = 5,
@@ -659,6 +671,25 @@ optimization <- function(objectives,
   # ===========================================================================
   surrogate <- match.arg(surrogate)
   init_design <- match.arg(init_design)
+  optimum <- match.arg(optimum)
+
+  # Validate sims_final_run
+  if (!is.numeric(sims_final_run) || sims_final_run < 1) {
+    cli::cli_abort(c(
+      "{.arg sims_final_run} must be a positive integer",
+      "x" = "Got {.val {sims_final_run}}"
+    ))
+  }
+
+  # Validate trim_param_space
+  if (!is.numeric(trim_param_space) || length(trim_param_space) != 1 ||
+      trim_param_space < 0 || trim_param_space > 0.5) {
+    cli::cli_abort(c(
+      "{.arg trim_param_space} must be a number between 0 and 0.5",
+      "x" = "Got {.val {trim_param_space}}",
+      "i" = "Use 0.25 (default) for IQR constraint, 0 for no constraint, 0.5 for maximum constraint"
+    ))
+  }
 
   if (!inherits(objectives, "rctbp_objectives") &&
       !inherits(objectives, "rctbayespower::rctbp_objectives")) {
@@ -836,6 +867,9 @@ optimization <- function(objectives,
       use_warmup = can_warmup,
       patience = patience,
       min_delta = min_delta,
+      optimum = optimum,
+      sims_final_run = sims_final_run,
+      trim_param_space = trim_param_space,
       n_cores = n_cores,
       surrogate = surrogate,
       acq_function = acq_function,

@@ -512,7 +512,7 @@ S7::method(run, rctbp_power_analysis) <- function(x, ...) {
     # Store in design for workers
     x@conditions@design@backend_args_bf <- final_bf_args
 
-    # Require BayesFlow to be initialized (user must call init_bf_python() first)
+    # Require BayesFlow to be initialized (user must call init_bf() first)
     require_bf_init()
 
     # Get environment info and store in object (always, not just for display)

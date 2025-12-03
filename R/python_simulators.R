@@ -55,7 +55,7 @@ load_python_simulators <- function() {
     ))
   }
 
-  # Require BayesFlow to be initialized (user must call init_bf_python() first)
+  # Require BayesFlow to be initialized (user must call init_bf() first)
   require_bf_init()
 
   # Find simulator module path
