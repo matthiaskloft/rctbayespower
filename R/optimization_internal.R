@@ -988,23 +988,92 @@ run_optimization <- function(result,
   stop_reason <- NULL
   mbo_config <- NULL
 
+  # Compute warmup boundary from fidelity schedule
+  warmup_evals <- if (use_warmup) sum(fidelity_schedule$fidelity_level == 1) else 0
+  total_warmup_evals <- init_design_size + warmup_evals
+
   tryCatch({
-    # Evaluate initial design
-    invisible(instance$eval_batch(init_design_pts))
+    if (use_warmup && warmup_evals > 0) {
+      # =======================================================================
+      # TWO-PHASE OPTIMIZATION (warmup + main)
+      # =======================================================================
+      # Phase 1 uses a different cost function (inverse bonus) than Phase 2
+      # (reference-based bonus). We create a fresh surrogate after warmup
+      # to ensure it only learns from consistent objective values.
 
-    # Set up MBO components (surrogate, acquisition function, optimizer)
-    mbo_config <- setup_mbo_components(
-      instance = instance,
-      opt_type = opt_type,
-      surrogate = surrogate,
-      acq_function = acq_function,
-      obj_info = obj_info,
-      verbosity = verbosity
-    )
+      # Phase 1: Warmup with temporary terminator
+      # Set terminator to stop after init_design + warmup evals
+      instance$terminator <- bbotk::trm("evals", n_evals = total_warmup_evals)
 
-    # Run the optimizer (uses mlr3mbo's built-in loop)
-    optimizer <- mbo_config$optimizer
-    invisible(optimizer$optimize(instance))
+      # Evaluate initial design
+      invisible(instance$eval_batch(init_design_pts))
+
+      # Set up warmup-phase MBO (this surrogate will be discarded after warmup)
+      mbo_config_warmup <- setup_mbo_components(
+        instance = instance,
+        opt_type = opt_type,
+        surrogate = surrogate,
+        acq_function = acq_function,
+        obj_info = obj_info,
+        verbosity = verbosity
+      )
+
+      # Run warmup optimization
+      invisible(mbo_config_warmup$optimizer$optimize(instance))
+
+      # IMPORTANT: Finalize warmup (extract reference values + recompute archive)
+      # This must happen BEFORE creating new surrogate so it trains on consistent data
+      obj_fn_result$finalize_warmup()
+
+      if (should_show(1)) {
+        cli::cli_alert_info("Creating fresh surrogate for main optimization phase...")
+      }
+
+      # Phase 2: Create FRESH surrogate for main optimization
+      # Reset terminator for full run
+      instance$terminator <- bbotk::trm("evals", n_evals = max_evals)
+
+      # Create new surrogate (associated with archive containing recomputed values)
+      mbo_config <- setup_mbo_components(
+        instance = instance,
+        opt_type = opt_type,
+        surrogate = surrogate,
+        acq_function = acq_function,
+        obj_info = obj_info,
+        verbosity = verbosity
+      )
+
+      # IMPORTANT: Explicitly train surrogate on recomputed archive data
+      # This ensures the fresh surrogate learns from consistent (reference-based) values
+      mbo_config$surrogate$update()
+
+      if (should_show(2)) {
+        cli::cli_alert_success("Fresh surrogate trained on {nrow(instance$archive$data)} archive points")
+      }
+
+      # Continue optimization with fresh surrogate
+      invisible(mbo_config$optimizer$optimize(instance))
+
+    } else {
+      # =======================================================================
+      # SINGLE-PHASE OPTIMIZATION (no warmup)
+      # =======================================================================
+      # Evaluate initial design
+      invisible(instance$eval_batch(init_design_pts))
+
+      # Set up MBO components (surrogate, acquisition function, optimizer)
+      mbo_config <- setup_mbo_components(
+        instance = instance,
+        opt_type = opt_type,
+        surrogate = surrogate,
+        acq_function = acq_function,
+        obj_info = obj_info,
+        verbosity = verbosity
+      )
+
+      # Run the optimizer (uses mlr3mbo's built-in loop)
+      invisible(mbo_config$optimizer$optimize(instance))
+    }
 
   }, error = function(e) {
     opt_error <<- e
@@ -1087,6 +1156,11 @@ run_optimization <- function(result,
   result@best_power_analysis <- if (!is.null(final_pa)) final_pa else obj_fn_result$get_best_pa()
   # Store reference values from warmup phase (empty list if no warmup)
   result@reference_values <- obj_fn_result$get_reference_values()
+  # Store mlr3mbo/bbotk objects for advanced access (NULL if setup failed)
+  if (!is.null(mbo_config)) {
+    mbo_config$instance <- instance
+    result@mbo_objects <- mbo_config
+  }
 
   # ===========================================================================
   # DISPLAY RESULTS
@@ -1705,12 +1779,11 @@ create_objective_fn <- function(objectives,
       obj_values[[paste0("actual_", name)]] <- actual_values[[name]]
     }
 
-    # Add MCSE values for tracked metrics (se_<metric> pattern)
-    for (obj_name in names(obj_info$objectives)) {
-      se_col <- paste0("se_", obj_name)
-      if (se_col %in% names(results)) {
-        obj_values[[se_col]] <- results[[se_col]][1]
-      }
+    # Add all MCSE values from results (se_* columns)
+    # This includes: se_pwr_eff, se_pwr_fut, se_pr_eff, se_pr_fut, etc.
+    se_cols <- grep("^se_", names(results), value = TRUE)
+    for (se_col in se_cols) {
+      obj_values[[se_col]] <- results[[se_col]][1]
     }
 
     # Add simplex values for archive storage (both ILR and proportions)
@@ -1722,6 +1795,10 @@ create_objective_fn <- function(objectives,
 
     # Add n_sims_used for fidelity-based weighting
     obj_values$n_sims_used <- current_n_sims
+
+    # Add warmup flag for archive transparency
+    # This tracks which evaluations used the warmup cost function vs main phase
+    obj_values$is_warmup <- warmup_active
 
     # Show progress at refresh intervals
     if (refresh > 0 && verbosity >= 1 && eval_count %% refresh == 0) {
@@ -1886,7 +1963,42 @@ create_objective_fn <- function(objectives,
     set_archive_ref = function(ref) {
       archive_ref <<- ref
     },
-    recompute_warmup = recompute_warmup_archive
+    recompute_warmup = recompute_warmup_archive,
+    # Finalize warmup phase (for two-phase optimization)
+    # Called externally after warmup phase completes to:
+    # 1. Extract reference values from best warmup result
+    # 2. Mark warmup as complete
+    # 3. Recompute archive with reference-based bonus
+    finalize_warmup = function() {
+      # Extract reference values from best warmup result
+      # (mirrors logic from warmup→main transition in obj_fn)
+      for (param in names(secondary_specs)) {
+        if (!is.null(best_params) && param %in% names(best_params)) {
+          reference_values[[param]] <<- best_params[[param]]
+        } else if (!is.null(warmup_best_params) && param %in% names(warmup_best_params)) {
+          # Fallback to warmup best (any point achieving target with smallest n)
+          reference_values[[param]] <<- warmup_best_params[[param]]
+        }
+      }
+
+      # Mark warmup as complete
+      warmup_active <<- FALSE
+
+      # Log reference values if available
+      if (verbosity >= 1 && length(reference_values) > 0) {
+        numeric_refs <- reference_values[vapply(reference_values, is.numeric, logical(1))]
+        if (length(numeric_refs) > 0) {
+          ref_str <- paste(
+            paste0(names(numeric_refs), "=", round(unlist(numeric_refs), 1)),
+            collapse = ", "
+          )
+          cli::cli_alert_success("Warmup finalized. Reference values: {ref_str}")
+        }
+      }
+
+      # Recompute archive with reference-based bonus
+      recompute_warmup_archive()
+    }
   )
 }
 

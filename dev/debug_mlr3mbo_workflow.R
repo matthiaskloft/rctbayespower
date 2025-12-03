@@ -31,6 +31,8 @@ options(
 # -----------------------------------------------------------------------------
 cat("\n=== STEP 1: Create Design ===\n")
 
+init_bf_python("rctbp-3-12-gpu")
+
 design <- build_design(
 
   model_name = "ancova_cont_2arms",
@@ -46,7 +48,7 @@ cat("Backend:", design@backend, "\n")
 # -----------------------------------------------------------------------------
 cat("\n=== STEP 2: Define Parameters ===\n")
 
-search_params <- list(n_total = c(50, 200))
+search_params <- list(n_total = c(50, 500))
 constant_params <- list(
 
   b_arm_treat = 0.5,

@@ -31,7 +31,7 @@ backend <- "bf"
 
 if(backend == "bf") {
   # Initialize BayesFlow Python environment
-  init_bf_python("rctbp-3-12-gpu")
+  init_bf_python("rctbp-3-12")
 }
 
 ```
@@ -137,10 +137,9 @@ obj <- build_objectives(
 )
 result <- optimization(
  obj,
- n_sims = c(100, 101, 500),
- evals_per_step = c(20, 20, 20),
+ n_sims = c(100, 101, 500, 1000),
+ evals_per_step = c(20, 20, 20, 10),
  use_warmup = TRUE, 
- weight_evals = TRUE,
  min_delta = .01,  # Minimum improvement
  patience = 10,
  surrogate = "rf",   # Random Forest surrogate
@@ -154,7 +153,53 @@ result <- optimization(
 ```
 
 ```{r}
-result@
+# Access the surrogate and instance
+surr <- result@mbo_objects$surrogate
+instance <- result@mbo_objects$instance
+
+# Option 1: Optimize the surrogate directly using bbotk
+# Create a grid to search over
+domain <- instance$search_space
+grid <- paradox::generate_design_grid(domain, resolution = 100)$data
+
+# Get surrogate predictions
+pred <- surr$predict(grid)
+grid$mean <- pred$mean  # Predicted objective value
+
+# Find the optimum (for maximization)
+best_idx <- which.max(grid$mean)
+grid[best_idx, ]
+
+# Option 2: For finer search, use random search on surrogate
+library(data.table)
+candidates <- paradox::generate_design_random(domain, n = 10000)$data
+pred <- surr$predict(candidates)
+candidates$mean <- pred$mean
+candidates$se <- pred$se  # Standard error (uncertainty)
+
+# Best predicted point
+best_idx <- which.max(candidates$mean)
+candidates[best_idx, ]
+
+# Option 3: Use the acquisition function optimizer (most sophisticated)
+acq_opt <- result@mbo_objects$acq_optimizer
+acq_fn <- result@mbo_objects$acq_function
+
+# Update acquisition function with current surrogate
+acq_fn$surrogate <- surr
+acq_fn$update()
+
+# Optimize acquisition function to find next best point
+# (This is what MBO does internally)
+
+
+#For a quick one - liner to get the surrogate's predicted best point:
+
+# Generate candidates and find predicted optimum
+domain <- result@mbo_objects$instance$search_space
+cands <- paradox::generate_design_lhs(domain, n = 5000)$data
+pred <- result@mbo_objects$surrogate$predict(cands)
+cands[which.max(pred$mean), ]
 ```
 
 ### Plot sampled points: n_total vs. time

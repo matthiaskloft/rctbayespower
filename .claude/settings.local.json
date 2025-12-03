@@ -1,20 +1,12 @@
 {
-  "version": "1.0.0",
-  "name": "R Package Development Configuration",
-  "description": "Team-shared Claude Code settings for R package development",
-  
-  "model": "claude-sonnet-4-20250514",
-  "maxTokens": 4096,
-  
-  "project": {
-    "type": "r-package",
-    "testCommand": "Rscript -e 'devtools::test()'",
-    "checkCommand": "Rscript -e 'devtools::check()'",
-    "buildCommand": "Rscript -e 'devtools::build()'",
-    "documentCommand": "Rscript -e 'devtools::document()'"
-  },
-  
   "permissions": {
+    "allow": [
+      "Bash(cat:*)",
+      "WebSearch",
+      "Bash(Rscript -e:*)"
+    ],
+    "deny": [],
+    "ask": [],
     "allowedTools": [
       "Read",
       "Write(R/**)",
@@ -29,17 +21,9 @@
       "Bash(git *)",
       "Bash(R *)",
       "Bash(Rscript *)"
-    ],
-    "deny": [
-      "Read(.env*)",
-      "Write(.Renviron)",
-      "Write(.Rprofile)",
-      "Write(data-raw/**)",
-      "Bash(sudo *)",
-      "Bash(rm -rf *)"
     ]
   },
-  
+  "model": "claude-sonnet-4-20250514",
   "hooks": {
     "PostToolUse": [
       {
@@ -62,7 +46,17 @@
       }
     ]
   },
-  
+  "version": "1.0.0",
+  "name": "R Package Development Configuration",
+  "description": "Team-shared Claude Code settings for R package development",
+  "maxTokens": 4096,
+  "project": {
+    "type": "r-package",
+    "testCommand": "Rscript -e 'devtools::test()'",
+    "checkCommand": "Rscript -e 'devtools::check()'",
+    "buildCommand": "Rscript -e 'devtools::build()'",
+    "documentCommand": "Rscript -e 'devtools::document()'"
+  },
   "r_configuration": {
     "repos": {
       "CRAN": "https://cran.rstudio.com"
@@ -86,17 +80,19 @@
     "testFramework": "testthat",
     "documentationEngine": "roxygen2"
   },
-  
   "automation": {
     "autoDocument": true,
     "autoStyle": true,
     "autoTest": false,
     "checkBeforeCommit": true
   },
-  
   "gitWorkflow": {
     "defaultBranch": "main",
-    "protectedBranches": ["main", "master", "develop"],
+    "protectedBranches": [
+      "main",
+      "master",
+      "develop"
+    ],
     "branchPrefixes": {
       "feature": "feature/",
       "bugfix": "bugfix/",
@@ -105,11 +101,9 @@
       "refactor": "refactor/"
     }
   },
-  
   "environment": {
     "R_LIBS_USER": "~/R/library",
     "R_PROFILE_USER": ".Rprofile",
     "R_ENVIRON_USER": ".Renviron"
   }
 }
-
