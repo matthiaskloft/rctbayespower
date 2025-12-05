@@ -28,11 +28,11 @@ devtools::install_github("matthiaskloft/rctbayespower")
 ## Overview
 
 `rctbayespower` provides tools for conducting Bayesian power analysis
-for randomized controlled trials (RCTs) using `brms` and Stan.
+for randomized controlled trials (RCTs) with dual backend support.
 
 ### Key Features
 
-- **Bayesian power analysis** with brms and Stan
+- **Dual backend support**: brms/Stan (MCMC) and BayesFlow (neural posterior estimation)
 - **Group sequential designs** with interim analyses
 - **Look-dependent stopping boundaries** (O'Brien-Fleming, Pocock, Linear, Power family)
 - **Post-hoc boundary comparison** without re-running simulations
@@ -51,16 +51,22 @@ introductory vignette:
   - [Introduction](https://matthiaskloft.github.io/rctbayespower/articles/01-introduction.html):
     Basic usage and concepts
 
-  - [Prior
-    Specifications](https://matthiaskloft.github.io/rctbayespower/articles/02-prior-specifications.html):
+  - [Prior Specification](https://matthiaskloft.github.io/rctbayespower/articles/02-prior-specification.html):
     Working with priors
 
-  - [Algorithm
-    Performance](https://matthiaskloft.github.io/rctbayespower/articles/03-algorithm-performance.html):
+  - [Algorithm Performance](https://matthiaskloft.github.io/rctbayespower/articles/03-algorithm-performance.html):
     Performance optimization
 
-  - [Model
-    Validation](https://matthiaskloft.github.io/rctbayespower/articles/99-model-validation.html):
+  - [BayesFlow Backend](https://matthiaskloft.github.io/rctbayespower/articles/04-bayesflow.html):
+    Neural posterior estimation for fast inference
+
+  - [BayesFlow vs brms (CPU)](https://matthiaskloft.github.io/rctbayespower/articles/05a-bf_vs_brms_cpu_1_core.html):
+    Backend comparison on CPU
+
+  - [BayesFlow vs brms (GPU)](https://matthiaskloft.github.io/rctbayespower/articles/05b-bf_vs_brms_gpu.html):
+    Backend comparison with GPU acceleration
+
+  - [Model Validation](https://matthiaskloft.github.io/rctbayespower/articles/99-model-validation.html):
     Validation of implemented predefined models
 
 - [Open an Issue](https://github.com/matthiaskloft/rctbayespower/issues)

@@ -4,14 +4,7 @@
 \alias{build_objectives}
 \title{Build Optimization Objectives}
 \usage{
-build_objectives(
-  design,
-  search,
-  objectives,
-  constant = list(),
-  secondary = NULL,
-  cost_fn = NULL
-)
+build_objectives(design, search, objectives, constant = list(), cost_fn = NULL)
 }
 \arguments{
 \item{design}{An rctbp_design object from \code{\link[=build_design]{build_design()}}}
@@ -31,13 +24,6 @@ Valid objective names: \code{pwr_eff}, \code{pwr_fut}, \code{n_total}, \code{exp
 \item{constant}{Named list of fixed parameters for all evaluations.
 Must include all parameters required by \code{\link[=build_conditions]{build_conditions()}} that are
 not in \code{search}.}
-
-\item{secondary}{Named list specifying secondary objectives for target
-optimization. These parameters are minimized/maximized after the primary
-target is achieved. If NULL (default), auto-infers from search parameters:
-\code{n_total}, \code{thr_dec_eff}, \code{thr_dec_fut}, \code{thr_fx_eff}, \code{thr_fx_fut}
-default to "minimize". Override with explicit list, e.g.,
-\code{list(n_total = "minimize")} to only consider n_total.}
 
 \item{cost_fn}{Optional user-defined cost function for custom objectives.
 Must accept a data frame row and return a numeric scalar.}

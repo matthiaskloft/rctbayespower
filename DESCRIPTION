@@ -25,10 +25,10 @@ Imports:
     tibble,
     parallel,
     rlang,
-    purrr,
     S7,
     pwr,
-    cli (>= 3.6.0)
+    cli (>= 3.6.0),
+    data.table
 Suggests:
     testthat (>= 3.0.0),
     withr,
@@ -48,8 +48,7 @@ Suggests:
     mlr3learners,
     DiceKriging,
     ranger,
-    lgr,
-    data.table
+    lgr
 SystemRequirements: Python (>= 3.10) for BayesFlow backend (optional)
 Config/reticulate:
   list(

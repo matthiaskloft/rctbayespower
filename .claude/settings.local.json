@@ -4,7 +4,10 @@
       "WebSearch",
       "WebFetch(domain:github.com)",
       "Bash(git push:*)",
-      "Bash(rm:*)"
+      "Bash(rm:*)",
+      "WebFetch(domain:paulbuerkner.com)",
+      "Bash(grep:*)",
+      "WebFetch(domain:www.nature.com)"
     ],
     "deny": []
   }

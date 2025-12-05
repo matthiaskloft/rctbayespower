@@ -435,9 +435,9 @@ S7::method(run, rctbp_power_analysis) <- function(x, ...) {
     # refresh = 0 and silent = 2 suppress Stan/brms output to avoid
     # console I/O bottleneck (can cause 6x slowdown in interactive sessions)
     default_brms_args <- list(
-      chains = 4,
-      iter = 450,
-      warmup = 200,
+      chains = 2,
+      iter = 350,
+      warmup = 100,
       cores = 1,
       refresh = 0,
       silent = 2
@@ -986,19 +986,20 @@ S7::method(run, rctbp_power_analysis) <- function(x, ...) {
     stop("All simulations failed. Check your model and data simulation parameters.")
   }
   
-  # Check for and report any error messages
-  # Always show errors for debugging
-  error_results <- dplyr::bind_rows(results_raw_list)
-  error_rows <- !is.na(error_results$error_msg)
-  if (any(error_rows)) {
-    error_msgs <- error_results[error_rows, "error_msg"]
-    cat("Simulation errors found:\n")
-    cat(paste(unique(error_msgs), collapse = "\n"), "\n")
-    cat("Number of errors:", sum(error_rows), "\n")
-  }
-  
   # Combine results - use bind_rows for robustness
   results_df_raw <- dplyr::bind_rows(results_raw_list)
+
+  # Check for and report any error messages
+  if ("error_msg" %in% names(results_df_raw)) {
+    error_rows <- !is.na(results_df_raw$error_msg)
+    if (any(error_rows) && should_show(2)) {
+      error_msgs <- unique(results_df_raw[error_rows, "error_msg", drop = TRUE])
+      cli::cli_warn(c(
+        "Simulation errors found: {sum(error_rows)} of {nrow(results_df_raw)} rows",
+        "i" = "First error: {error_msgs[1]}"
+      ))
+    }
+  }
 
   # Brief simulation summary (shown at verbosity >= 1)
   if (should_show(1)) {

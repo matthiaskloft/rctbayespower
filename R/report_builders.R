@@ -36,6 +36,9 @@ format_boundary <- function(threshold) {
       paste0("Function (at 50%: ", round(sample_results[1], 4),
              ", at 100%: ", round(sample_results[2], 4), ")")
     }
+  } else if (is.numeric(threshold) && length(threshold) > 1) {
+    # Numeric vector (e.g., evaluated boundary thresholds per look)
+    paste0(round(threshold[1], 3), " \u2192 ", round(threshold[length(threshold)], 3))
   } else {
     as.character(threshold)
   }
@@ -96,6 +99,15 @@ get_threshold_display <- function(conditions, param_name) {
     vals <- conditions@crossed[[param_name]]
     if (is.function(vals)) {
       return(format_boundary(vals))
+    } else if (is.list(vals)) {
+      # List of functions - format each and summarize
+      formatted <- vapply(vals, format_boundary, character(1))
+      unique_formatted <- unique(formatted)
+      if (length(unique_formatted) == 1) {
+        return(unique_formatted)
+      } else {
+        return(paste0(unique_formatted[1], " ... ", unique_formatted[length(unique_formatted)], " (varies)"))
+      }
     } else if (is.numeric(vals)) {
       if (length(vals) == 1) {
         return(as.character(vals))
@@ -109,9 +121,25 @@ get_threshold_display <- function(conditions, param_name) {
   if (param_name %in% names(conditions@grid)) {
     vals <- unique(conditions@grid[[param_name]])
     if (length(vals) == 1) {
-      return(format_boundary(vals))
+      # Single value - could be numeric or function
+      val <- if (is.list(vals)) vals[[1]] else vals
+      return(format_boundary(val))
     } else {
-      return(paste0(min(vals), "-", max(vals), " (varies)"))
+      # Multiple values - check if they are functions (stored as list)
+      if (is.list(vals)) {
+        # List of functions - format each and summarize
+        formatted <- vapply(vals, format_boundary, character(1))
+        unique_formatted <- unique(formatted)
+        if (length(unique_formatted) == 1) {
+          return(unique_formatted)
+        } else {
+          return(paste0(unique_formatted[1], " ... ", unique_formatted[length(unique_formatted)], " (varies)"))
+        }
+      } else if (is.numeric(vals)) {
+        return(paste0(min(vals), "-", max(vals), " (varies)"))
+      } else {
+        return("(varies)")
+      }
     }
   }
 

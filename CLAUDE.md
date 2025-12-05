@@ -269,7 +269,6 @@ obj <- build_objectives(
   design = design,
   search = list(n_total = c(50, 500)),           # Search bounds
   objectives = list(pwr_eff = target(0.80)),     # Target 80% power
-  secondary = NULL,   # Auto-infer: minimize n_total (can override)
   constant = list(
     b_arm_treat = 0.3,
     thr_dec_eff = 0.975, thr_dec_fut = 0.5,
@@ -279,20 +278,17 @@ obj <- build_objectives(
   )
 )
 
-# Run with warmup phase (progressive fidelity)
-# First level estimates reference values for secondary objectives
+# Run with progressive fidelity
 result <- optimization(
   obj,
-  n_sims = c(500, 2000),      # Progressive fidelity (warmup + refinement)
-  evals_per_step = c(30, 20), # 30 warmup evals, 20 refinement evals
-  use_warmup = TRUE,          # Enable warmup phase
+  n_sims = c(500, 2000),      # Progressive fidelity (exploration + refinement)
+  evals_per_step = c(30, 20), # 30 exploration evals, 20 refinement evals
   n_cores = 4,
   surrogate = "gp"
 )
 
 # Access results
 result@result            # Optimal design
-result@reference_values  # Reference values from warmup (e.g., list(n_total = 105))
 result@archive           # All evaluations
 plot(result)             # Visualize optimization
 
@@ -308,13 +304,17 @@ plot(result, type = "pareto")
 ```
 
 **Key optimization features:**
-- **Two-component objective** for target optimization: `0.5 * power_quadratic + 0.5 * secondary_bonus`
-  - Power: quadratic ramp `(min(power, target)/target)²`, clamped at target
-  - Secondary bonus: only when target achieved, can be negative for n >> reference
-- **Warmup phase**: First fidelity level estimates reference values for secondary objectives
-- **Secondary objectives**: Auto-inferred (minimize n_total, thresholds) or explicitly specified
+- **Continuous cost function** for target optimization:
+  - Below target: `cost = (power / target)²` — ranges [0, 1) as power approaches target
+  - At/above target: `cost = 2 - sqrt((power - target) / (1 - target))` — peaks at 2, sqrt penalty for overshoot
+  - Maximum value of 2 exactly at the target; sqrt decay gives steeper initial penalty for overshoot
 - **Progressive fidelity**: Vector `n_sims` for cost-efficient optimization
 - **Early stopping**: Patience-based stopping when target achieved
+- **Probabilistic constraint optimum** via `find_probabilistic_optimum()`:
+  - Finds minimum n where `P(power >= target) >= alpha`
+  - Models `logit(power)` with GP to get predictive uncertainty
+  - Computes `P_feas = Φ((μ - logit(target)) / σ)` using GP predictions
+  - Returns n rounded up to integer with confidence level guarantee
 
 ## File Organization
 

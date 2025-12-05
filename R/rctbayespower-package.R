@@ -9,6 +9,9 @@
 #'
 "_PACKAGE"
 
+# Enable data.table awareness for `:=` and other operators
+.datatable.aware = TRUE
+
 ## Suppress R CMD check warnings for undefined global variables
 if (getRversion() >= "2.15.1") {
   # Global variables for R CMD check
@@ -94,8 +97,19 @@ if (getRversion() >= "2.15.1") {
       # Overall stopping proportions
       "prop_stp_eff",
       "prop_stp_fut",
-      # rlang operator for tidyverse NSE
-      ":="
+      # data.table special symbols and operators
+      ":=",
+      ".N",
+      ".I",
+      ".SD",
+      # Variables from data.table operations in summarization
+      "n_total_sims",
+      "stopped",
+      "triggers_stop",
+      "already_stopped",
+      "is_stop_point",
+      "thr_dec_eff_new",
+      "thr_dec_fut_new"
     )
   )
 }

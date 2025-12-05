@@ -27,9 +27,22 @@ rctbp_optimization_result(
   convergence = structure(list(), names = character(0), row.names = integer(0), class =
     "data.frame"),
   best_power_analysis = NULL,
-  reference_values = list(),
   optimum_surrogate = list(),
-  optimum_empirical = list(),
+  optimum_confident = list(),
+  surrogate_profile = (function (.data = list(), row.names = NULL) 
+ {
+     if
+    (is.null(row.names)) {
+         list2DF(.data)
+     }
+     else {
+         out <-
+    list2DF(.data, length(row.names))
+         attr(out, "row.names") <- row.names
+      
+      out
+     }
+ })(),
   n_sims = NA_real_,
   n_evals = NA_real_,
   elapsed_time = NA_real_,
@@ -47,33 +60,58 @@ S7 class containing results from Bayesian optimization of trial designs.
 \describe{
 \item{objectives}{Reference to the original \link{rctbp_objectives} specification}
 \item{archive}{Data frame of all evaluations (parameters and objective values)}
-\item{result}{Data frame with optimal design(s) - single row for single-objective,
-multiple rows for Pareto front}
+\item{result}{Data frame with optimal design. For single/target optimization,
+includes surrogate model predictions: \code{surrogate_pred}, \code{surrogate_se},
+\code{surrogate_ci_lower}, \code{surrogate_ci_upper}. For multi-objective, same as
+\code{pareto_front}.}
 \item{pareto_front}{Data frame with Pareto-optimal solutions for multi-objective
-optimization (NULL for single-objective)}
+optimization (NULL for single/target optimization)}
 \item{convergence}{Data frame tracking best objective value over iterations}
-\item{best_power_analysis}{Full \link{rctbp_power_analysis} object from the best solution}
-\item{reference_values}{Named list of reference values from warmup phase used for
-secondary objective scaling (e.g., \code{list(n_total = 150)})}
-\item{n_sims}{Number of simulations used per evaluation}
+\item{best_power_analysis}{Full \link{rctbp_power_analysis} object from final confirmation
+simulation at the optimal point}
+\item{optimum_surrogate}{List with surrogate-based optimum selection results:
+\code{params} (optimal parameters), \code{predicted_mean}, \code{predicted_se}, \code{ci_lower},
+\code{ci_upper}, \code{domain_used} (constrained search domain). NULL for multi-objective.}
+\item{optimum_confident}{List with confident optimum from empirical stepping:
+\code{params} (optimal parameters where CI excludes target), \code{value} (actual
+simulated objective), \code{se}, \code{ci_lower}, \code{ci_upper}, \code{n_evals} (number of
+evaluations to find). NULL if no point confidently achieves target within
+\code{max_final_evals} or for multi-objective.}
+\item{n_sims}{Maximum number of simulations per evaluation (final fidelity level)}
 \item{n_evals}{Total number of evaluations performed}
-\item{elapsed_time}{Total optimization time in seconds}
-\item{early_stopped}{Logical indicating if optimization stopped early}
+\item{elapsed_time}{Total optimization time in minutes}
+\item{early_stopped}{Logical indicating if optimization stopped early via patience}
 \item{backend_used}{Backend used for power analysis ("brms" or "bf")}
 \item{optimization_type}{Type of optimization: "single", "target", or "multi"}
 \item{mbo_objects}{Named list of mlr3mbo/bbotk objects for advanced access:
 \describe{
 \item{instance}{bbotk OptimInstance object containing the optimization state}
-\item{surrogate}{mlr3mbo SurrogateLearner (e.g., Gaussian Process)}
-\item{acq_function}{mlr3mbo acquisition function (e.g., Expected Improvement)}
+\item{surrogate}{mlr3mbo SurrogateLearner (GP or RF)}
+\item{acq_function}{mlr3mbo acquisition function}
 \item{acq_optimizer}{mlr3mbo acquisition function optimizer}
 \item{optimizer}{bbotk Optimizer object}
-\item{loop_function}{mlr3mbo loop function (bayesopt_ego or bayesopt_parego)}
 }
 }
 }
 }
 
+\section{Optimum Selection Methods}{
+
+Two optimum estimates are provided for target optimization:
+\describe{
+\item{Surrogate Optimum}{Searches over constrained parameter domain (trimmed
+by IQR) using surrogate model predictions. Controlled by \code{trim_param_space}.
+This is the point estimate of the optimal design. Results stored in
+\code{optimum_surrogate}. Use \code{\link[=find_surrogate_optimum]{find_surrogate_optimum()}} to recompute.}
+\item{Confident Optimum}{Found via empirical stepping from surrogate optimum.
+Starting at the surrogate optimum, simulations are run with increasing
+parameter values until the CI excludes the target. More conservative than
+the surrogate optimum. Results stored in \code{optimum_confident}. Step size
+controlled by \code{profile_resolution}, max steps by \code{max_final_evals}.}
+}
+}
+
 \seealso{
-\code{\link[=optimization]{optimization()}}, \code{\link[=build_objectives]{build_objectives()}}, \link{plot.rctbp_optimization_result}
+\code{\link[=optimization]{optimization()}}, \code{\link[=build_objectives]{build_objectives()}}, \link{plot.rctbp_optimization_result},
+\code{\link[=find_surrogate_optimum]{find_surrogate_optimum()}}
 }

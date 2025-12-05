@@ -2,10 +2,10 @@
 % Please edit documentation in R/backend_brms.R
 \name{summarize_post_brms}
 \alias{summarize_post_brms}
-\title{Summarize Posterior - brms Backend}
+\title{Summarize Posterior - brms Backend (Multiple Parameters with Union)}
 \usage{
 summarize_post_brms(
-  posterior_rvars,
+  draws_arr,
   target_params,
   thr_fx_eff,
   thr_fx_fut,
@@ -14,23 +14,23 @@ summarize_post_brms(
 )
 }
 \arguments{
-\item{posterior_rvars}{draws_rvars object from brms}
+\item{draws_arr}{draws_array object from \code{\link[=extract_posterior_draws_brms]{extract_posterior_draws_brms()}}}
 
 \item{target_params}{Character vector of parameter names}
 
-\item{thr_fx_eff}{Numeric vector of efficacy thresholds (ROPE)}
+\item{thr_fx_eff}{Numeric vector of efficacy thresholds (one per param, recycled if shorter)}
 
-\item{thr_fx_fut}{Numeric vector of futility thresholds (ROPE)}
+\item{thr_fx_fut}{Numeric vector of futility thresholds (one per param, recycled if shorter)}
 
 \item{thr_dec_eff}{Probability threshold for efficacy}
 
 \item{thr_dec_fut}{Probability threshold for futility}
 }
 \value{
-Data frame with package output schema
+Data frame with one row per parameter plus union row (if multi-param)
 }
 \description{
-Wrapper around \code{\link[=compute_measures]{compute_measures()}} for brms posterior output.
-Provides consistent API with summarize_post_bf() (BayesFlow backend).
+Fast computation of posterior summaries for multiple parameters.
+Includes union calculation (AND logic across all parameters).
 }
 \keyword{internal}

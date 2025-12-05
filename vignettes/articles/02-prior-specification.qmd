@@ -76,26 +76,30 @@ uninformative_model <- build_model_ancova_cont_2arms(
   link_sigma = "identity"
 )
 
-# Create design
+# Create design from custom model
 uninformative_design <- build_design(
-  model = uninformative_model,
-  target_params = "b_arm2",
-  n_interim_analyses = 0,
-  thresholds_success = 0.3,
-  thresholds_futility = 0.1,
-  thr_dec_eff = 0.95,
-  thr_dec_fut = 0.5
+  sim_fn = uninformative_model@sim_fn,
+  inference_model = uninformative_model@inference_model,
+  n_endpoints = 1,
+  endpoint_types = "continuous",
+  n_arms = 2,
+  target_params = "b_arm2"
 )
 
 # Create conditions
 uninformative_conditions <- build_conditions(
   design = uninformative_design,
-  condition_values = list(
-    n_total = sample_size
-  ),
-  static_values = list(
-    b_arm_treat = 0.5, # Medium effect
-    b_covariate = 0 # No covariate effect
+  crossed = list(n_total = sample_size),
+  constant = list(
+    b_arm_treat = 0.5,        # Medium effect
+    b_covariate = 0,          # No covariate effect
+    p_alloc = list(c(0.5, 0.5)),
+    intercept = 0,
+    sigma = 1,
+    thr_dec_eff = 0.95,       # Probability threshold for efficacy
+    thr_dec_fut = 0.5,        # Probability threshold for futility
+    thr_fx_eff = 0.3,         # Effect size threshold for efficacy
+    thr_fx_fut = 0.1          # Effect size threshold for futility
   )
 )
 
@@ -109,11 +113,11 @@ uninformative_analysis <- rctbayespower::power_analysis(
 ```
 
 ```{r}
-res_uninformative <- uninformative_analysis@results_summ|>
+res_uninformative <- uninformative_analysis@results_conditions |>
   select(
     n_total,
-    median,
-    sd,
+    post_med,
+    post_sd,
     pr_eff,
     pwr_eff,
     pr_fut,
@@ -142,24 +146,30 @@ informative_model <- build_model_ancova_cont_2arms(
   link_sigma = "identity"
 )
 
-# Create design (same as uninformative)
+# Create design from custom model
 informative_design <- build_design(
-  model = informative_model,
-  target_params = "b_arm2",
-  n_interim_analyses = 0,
-  thresholds_success = 0.3,
-  thresholds_futility = 0.1,
-  thr_dec_eff = 0.975,
-  thr_dec_fut = 0.5
+  sim_fn = informative_model@sim_fn,
+  inference_model = informative_model@inference_model,
+  n_endpoints = 1,
+  endpoint_types = "continuous",
+  n_arms = 2,
+  target_params = "b_arm2"
 )
 
 # Create conditions
 informative_conditions <- build_conditions(
   design = informative_design,
-  condition_values = list(n_total = sample_size),
-  static_values = list(
-    b_arm_treat = 0.5, # Medium effect
-    b_covariate = 0 # No covariate effect
+  crossed = list(n_total = sample_size),
+  constant = list(
+    b_arm_treat = 0.5,        # Medium effect
+    b_covariate = 0,          # No covariate effect
+    p_alloc = list(c(0.5, 0.5)),
+    intercept = 0,
+    sigma = 1,
+    thr_dec_eff = 0.975,      # Probability threshold for efficacy
+    thr_dec_fut = 0.5,        # Probability threshold for futility
+    thr_fx_eff = 0.3,         # Effect size threshold for efficacy
+    thr_fx_fut = 0.1          # Effect size threshold for futility
   )
 )
 
@@ -173,11 +183,11 @@ informative_analysis <- power_analysis(
 ```
 
 ```{r}
-res_informative <- informative_analysis@results_summ|>
+res_informative <- informative_analysis@results_conditions |>
   select(
     n_total,
-    median,
-    sd,
+    post_med,
+    post_sd,
     pr_eff,
     pwr_eff,
     pr_fut,
@@ -211,23 +221,21 @@ To evaluate the alpha error rate (false positive rate) for both prior configurat
 Luckily, the `rctbayespower` package allows us to reuse the same model and design configurations, only changing the effect size to zero.
 
 ```{r alpha_error_uninformative}
-# Create design (same as uninformative)
-alpha_uninformative_design <- build_design(
-  model = uninformative_model,
-  target_params = "b_arm2",
-  n_interim_analyses = 0,
-  thresholds_success = 0,
-  thresholds_futility = 0,
-  thr_dec_eff = 0.95,
-  thr_dec_fut = 0.5
-)
-
+# Reuse uninformative design (same model)
+# Create conditions with null hypothesis (no effect)
 alpha_uninformative_conditions <- build_conditions(
-  design = alpha_uninformative_design,
-  condition_values = list(n_total = sample_size),
-  static_values = list(
-    b_arm_treat = 0, # Null hypothesis: no effect
-    b_covariate = 0 # No covariate effect
+  design = uninformative_design,
+  crossed = list(n_total = sample_size),
+  constant = list(
+    b_arm_treat = 0,          # Null hypothesis: no effect
+    b_covariate = 0,          # No covariate effect
+    p_alloc = list(c(0.5, 0.5)),
+    intercept = 0,
+    sigma = 1,
+    thr_dec_eff = 0.95,       # Probability threshold for efficacy
+    thr_dec_fut = 0.5,        # Probability threshold for futility
+    thr_fx_eff = 0,           # Effect size threshold for efficacy (null)
+    thr_fx_fut = 0            # Effect size threshold for futility (null)
   )
 )
 
@@ -240,22 +248,21 @@ alpha_uninformative <- power_analysis(
 ```
 
 ```{r alpha_error_informative}
-alpha_informative_design <- build_design(
-  model = informative_model,
-  target_params = "b_arm2",
-  n_interim_analyses = 0,
-  thresholds_success = 0,
-  thresholds_futility = 0,
-  thr_dec_eff = 0.95,
-  thr_dec_fut = 0.5
-)
-
+# Reuse informative design (same model)
+# Create conditions with null hypothesis (no effect)
 alpha_informative_conditions <- build_conditions(
-  design = alpha_informative_design,
-  condition_values = list(n_total = sample_size),
-  static_values = list(
-    b_arm_treat = 0, # Null hypothesis: no effect
-    b_covariate = 0 # No covariate effect
+  design = informative_design,
+  crossed = list(n_total = sample_size),
+  constant = list(
+    b_arm_treat = 0,          # Null hypothesis: no effect
+    b_covariate = 0,          # No covariate effect
+    p_alloc = list(c(0.5, 0.5)),
+    intercept = 0,
+    sigma = 1,
+    thr_dec_eff = 0.95,       # Probability threshold for efficacy
+    thr_dec_fut = 0.5,        # Probability threshold for futility
+    thr_fx_eff = 0,           # Effect size threshold for efficacy (null)
+    thr_fx_fut = 0            # Effect size threshold for futility (null)
   )
 )
 
@@ -271,14 +278,14 @@ Comparing the alpha error rates:
 ```{r alpha_comparison}
 res_alpha <- 
   rbind(
-    alpha_uninformative@results_summ |>
+    alpha_uninformative@results_conditions |>
       select(
         n_total,
         pr_eff,
         pwr_eff
       ) |>
       dplyr::mutate(Prior = "uninformative", .before = everything()),
-    alpha_informative@results_summ |>
+    alpha_informative@results_conditions |>
       select(
         n_total,
         pr_eff,

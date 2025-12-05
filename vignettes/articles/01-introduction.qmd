@@ -109,8 +109,6 @@ conditions <- build_conditions(
   )
 )
 print(conditions, n = 100)
-conditions@params_by_cond
-conditions@grid
 ```
 
 ## Run Power Analysis
@@ -139,7 +137,12 @@ summary(power)
 ```
 
 ```{r}
-report(x = power, topic = c("power", "stopping", "stopping_by_look"), format = "cli", heading_level = 3)
+report(
+  x = power,
+  topic = c("power", "stopping", "stopping_by_look"),
+  format = "cli",
+  heading_level = 3
+)
 ```
 
 ```{r}
@@ -147,7 +150,9 @@ report_conditions(x = power)
 ```
 
 ```{r}
-report_early_stopping(x = power, format = "markdown", heading_level = 3)
+report_early_stopping(x = power,
+                      format = "markdown",
+                      heading_level = 3)
 ```
 
 
@@ -166,28 +171,28 @@ plot(
 
 ```{r}
 res <- power@results_interim
-power2 <- resummarize_boundaries(power, thr_dec_fut = boundary_obf(), thr_dec_eff = boundary_obf())
+power2 <- resummarize_boundaries(
+  power,
+  thr_dec_fut = boundary_linear(0.3, 0.5),
+  thr_dec_eff = boundary_obf(threshold = 0.95)
+)
 res2 <- power2@results_interim
 ```
 
 ```{r}
-plot(res2)
+plot(power2, type = "power_curve", interactive = FALSE)
 ```
 
 
 ## Power for Effect of 0.3
 ```{r power_success}
-power@results_summ |>
+power@results_conditions |>
   dplyr::filter(b_arm_treat != 0) |>
   select(
     n_total,
     b_arm_treat,
-    pr_eff,
-    se_pr_eff,
     pwr_eff,
     se_pwr_eff,
-    pr_fut,
-    se_pr_fut,
     pwr_fut,
     se_pwr_fut
   ) |>
@@ -201,22 +206,18 @@ power@results_summ |>
 The power for success indicates the alpha error rate for the null effect (b_arm_treat = 0). This is the probability of rejecting the null hypothesis when it is true, which should be close to the significance level (0.05) if the design is well specified.
 
 ```{r power_null}
-power@results_summ |>
+power@results_conditions |>
   dplyr::filter(b_arm_treat == 0) |>
   select(
     n_total,
     b_arm_treat,
-    pr_eff,
-    se_pr_eff,
     pwr_eff,
     se_pwr_eff,
     pwr_fut,
-    se_pwr_fut,
-    pr_fut,
-    se_pr_fut
+    se_pwr_fut
   ) |>
-  dplyr::arrange(desc(b_arm_treat)) |> 
-  kableExtra::kable(digits = 3, 
+  dplyr::arrange(desc(b_arm_treat)) |>
+  kableExtra::kable(digits = 3,
                     format = "html")
 ```
 

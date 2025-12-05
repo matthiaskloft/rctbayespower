@@ -35,12 +35,15 @@ if (backend == "bf") {
     setup_bf_python(
       envname = "rctbp-3-12",
       python_version = "3.12",
-      cuda_version = "auto"
+      cuda_version = "auto",
+      force = TRUE
     )
   }
   # Initialize BayesFlow Python environment
   init_bf("rctbp-3-12")
 }
+
+rctbayespower::check_bf_available()
 ```
 
 ***
@@ -98,7 +101,7 @@ show_objective_fns()
 ```{r build-objectives}
 obj <- build_objectives(
  design = design,
- search = list(n_total = c(20, 1000)),
+ search = list(n_total = c(50, 800)),
  objectives = list(pwr_eff = target(0.9, direction = ">=")),
  constant = list(
    p_alloc = .5,
@@ -126,39 +129,70 @@ obj <- build_objectives(
 
 ### Run Optimization
 ```{r run-optimization, results='hide'}
-obj <- build_objectives(
- design = design,
- search = list(n_total = c(20, 1000)),
- objectives = list(pwr_eff = target(0.9, direction = ">=")),
- constant = list(
-   p_alloc = .5,
-   b_arm_treat = 0.3,
-   thr_dec_eff = 0.95,
-   thr_dec_fut = 0.5,
-   thr_fx_eff = 0.1,
-   thr_fx_fut = 0,
-   intercept = 0,
-   b_covariate = 0.3,
-   sigma = 1
- )
-)
+init_bf("rctbp-3-12")
 result <- optimization(
- obj,
- n_sims = c(100, 101, 500),
- evals_per_step = c(20, 40, 20),
- use_warmup = TRUE, 
- init_design_size = 5,
- surrogate = "rf",   # Random Forest surrogate
- verbosity = 2, 
- refresh = 10,
- bf_args = list(
-   n_posterior_samples = 1000
- )
+  obj,
+  n_sims = c(100, 200, 500),
+  sims_final_run = 1000,
+  evals_per_step = c(20, 20, 10),
+  init_design_size = 20,
+  trim_param_space = .25,
+  max_final_evals = 1,
+  acq_function  = "cb",
+  penalty = "logit_distance",
+  penalty_kappa = 2,
+  penalty_alpha = 0.5,
+  surrogate = "gp",
+  verbosity = 1,
+  refresh = 10,
+  bf_args = list(n_posterior_samples = 1000)
 )
 ```
 
 ```{r}
-result
+library(data.table)
+
+# Or create a fine grid for plotting:
+new_data <- data.table(
+  n_total = seq((50), (600), 1)
+)
+
+# After surrogate is fitted and updated:
+result@mbo_objects$surrogate$update()
+
+# Predict returns a data.table with 'mean' and 'se' columns
+predictions <- result@mbo_objects$surrogate$predict(new_data)
+
+# Access results:
+plogis(predictions$mean)  # Vector of posterior means
+plogis(predictions$se)    # Vector of posterior standard errors
+
+# Combine for analysis/plotting:
+new_data[, `:=`(
+  mean = plogis(predictions$mean),
+  se = plogis(predictions$se),
+  n_total = ceiling((n_total))  # Back-transform to original scale
+)]
+new_data
+
+# plot profile
+new_data |> 
+  as.data.frame() |> 
+ggplot(aes(x = n_total, y = mean)) +
+  geom_line() +
+  geom_ribbon(aes(
+    ymin = mean - 1.96 * se,
+    ymax = mean + 1.96 * se
+  ), alpha = 0.2) +
+  geom_hline(yintercept = 0.9,
+             linetype = "dashed",
+             color = "grey20") +
+  geom_vline(xintercept = result@result$n_total,
+             linetype = 1,
+             color = "red") +  
+  labs(title = "Surrogate Model Prediction", x = "Total Sample Size", y = "Power for Efficacy") +
+  scale_y_continuous(limits = c(0, 1)) +
+  theme_minimal()
 ```
 
 ### Plot sampled points: n_total vs. time
@@ -192,7 +226,7 @@ result@archive |>
   geom_hline(yintercept = result@result$pwr_eff,
              linetype = 1,
              color = "red") +  
-  geom_vline(xintercept = cands[which.max(pred$mean), ],
+  geom_vline(xintercept = result@result$n_total,
              linetype = 1,
              color = "red") +  
   geom_point() +
@@ -202,7 +236,7 @@ result@archive |>
   )) +
   geom_line() +
   scale_y_continuous(limits = c(0, 1)) +
-  scale_x_continuous(limits = c(200, NA)) +
+  scale_x_continuous(limits = c(NA, NA)) +
   labs(title = "Sampled Points during Optimization", x = "Total Sample Size", y = "Power for Efficacy") +
   theme_minimal()
 ```
@@ -276,76 +310,119 @@ result_alpha@archive |>
 ```
 
 
-***
+# Advanced Options
 
-# Objective Types
+## Acquisition Functions
 
-## Target Constraint
+The acquisition function guides where to sample next. Use `acq_function` to select:
 
-Find minimum sample size achieving target power:
+| Function | Description |
+|----------|-------------|
+| `"auto"` | Default: EI for single/target, scalarized EI for multi-objective |
+| `"ei"` | Expected Improvement |
+| `"cb"` | Confidence Bound (lower for minimization) |
+| `"pi"` | Probability of Improvement |
+| `"eic"` | Expected Improvement with Constraints (target optimization only) |
 
-```{r target-example}
+### EIC: Expected Improvement with Constraints
+
+EIC is designed for **constrained optimization** where you want to find the minimum sample size that achieves a target power. It uses two surrogate models:
+
+1. **Objective surrogate**: Predicts sample size (n_total)
+2. **Constraint surrogate**: Predicts power on logit scale
+
+The acquisition value is: `EIC(x) = EI(x) × P(feasible)`
+
+where P(feasible) is the probability that power ≥ target, computed from the constraint surrogate's predictive distribution.
+
+```{r eic-example}
 #| eval: false
 
-obj <- build_objectives(
- design = design,
- search = list(n_total = c(50, 500)),
- objectives = list(pwr_eff = target(0.80)),
- constant = list(...)
+# EIC with neutral P(feasible) estimation
+result <- optimization(
+  obj,
+  surrogate = "gp",
+  acq_function = "eic",
+  eic_kappa = 0  # Uses posterior mean for P(feasible)
+)
+
+# Conservative EIC: uses 97.5% lower confidence bound
+result_conservative <- optimization(
+  obj,
+  surrogate = "gp",
+  acq_function = "eic",
+  eic_kappa = 1.96  # 97.5% LCB for P(feasible)
 )
 ```
 
-## Multi-Objective (Pareto)
+**Kappa values for conservatism:**
 
-Explore power vs. sample size tradeoff:
+| `eic_kappa` | Interpretation |
+|-------------|----------------|
+| 0 | Neutral — uses posterior mean for P(feasible) |
+| 1.96 | 97.5% lower confidence bound — more conservative |
+| 2.58 | 99.5% LCB — very conservative |
 
-```{r multi-objective}
+Higher kappa means recommendations are more likely to achieve the target, but may suggest larger sample sizes.
+
+## Penalty Functions
+
+For target optimization, `penalty` controls how constraint violations are handled:
+
+| Penalty | Formula | Use Case |
+|---------|---------|----------|
+| `"none"` | Quadratic cost below target | Default, balanced |
+| `"hard"` | Large penalty when P(target) < α | Binary feasibility |
+| `"soft"` | Proportional to violation | Smooth penalty |
+| `"ratio"` | n / p_feas^κ | Risk-weighted cost |
+| `"logit_distance"` | 1 - invlogit(\|logit(power) - logit(target)\|) | Symmetric distance |
+
+### Logit-Distance: Symmetric Target Optimization
+
+The logit-distance penalty provides a **symmetric cost function** that:
+
+- Peaks at exactly the target (cost = 0.5)
+- Penalizes undershoot and overshoot equally at the same logit distance
+- Is smooth and differentiable everywhere
+
+```{r logit-distance-example}
 #| eval: false
 
-obj <- build_objectives(
- design = design,
- search = list(
-   n_total = c(50, 500),
-   b_arm_treat = c(0.2, 0.6)
- ),
- objectives = list(
-   pwr_eff = "maximize",
-   n_total = "minimize"
- ),
- constant = list(...)
+result <- optimization(
+  obj,
+  surrogate = "gp",
+  penalty = "logit_distance"
 )
-
-result <- optimization(obj, n_sims = 200, n_evals = 50)
-plot(result, type = "pareto")
 ```
 
-***
+**Cost values for target = 0.80:**
 
-# Visualization
+| Power | Cost |
+|-------|------|
+| 0.80 | 0.500 (maximum) |
+| 0.75 | 0.428 |
+| 0.85 | 0.428 |
+| 0.70 | 0.357 |
+| 0.90 | 0.357 |
+| 0.50 | 0.200 |
 
-```{r plot-example}
+This is useful when you want to find designs that achieve **exactly** the target power, rather than exceeding it.
+
+## Combining EIC with Penalties
+
+EIC and penalty functions can be used together for robust constrained optimization:
+
+```{r combined-example}
 #| eval: false
 
-# Convergence trace
-plot(result, type = "convergence")
-
-# Search space exploration
-plot(result, type = "search")
-
-# Pareto front (multi-objective only)
-plot(result, type = "pareto")
+result <- optimization(
+  obj,
+  surrogate = "gp",
+  acq_function = "eic",
+  eic_kappa = 1.96,           # Conservative feasibility
+  penalty = "logit_distance"  # Symmetric target matching
+)
 ```
-
-***
-
-
-
-## Key Parameters
-
-- **n_sims**: More simulations = less noise, but slower. Start with 100-200.
-- **n_evals**: Budget for objective evaluations. 20-50 typical.
-- **surrogate**: `"gp"` (Gaussian Process) or `"rf"` (Random Forest)
-- **initial_design_size**: Initial points before BO starts. Default: 4 × dimensions.
 
 ***
 

@@ -194,12 +194,6 @@ print.rctbp_search_looks <- function(x, ...) {
 #' @param constant Named list of fixed parameters for all evaluations.
 #'   Must include all parameters required by [build_conditions()] that are
 #'   not in `search`.
-#' @param secondary Named list specifying secondary objectives for target
-#'   optimization. These parameters are minimized/maximized after the primary
-#'   target is achieved. If NULL (default), auto-infers from search parameters:
-#'   `n_total`, `thr_dec_eff`, `thr_dec_fut`, `thr_fx_eff`, `thr_fx_fut`
-#'   default to "minimize". Override with explicit list, e.g.,
-#'   `list(n_total = "minimize")` to only consider n_total.
 #' @param cost_fn Optional user-defined cost function for custom objectives.
 #'   Must accept a data frame row and return a numeric scalar.
 #'
@@ -257,7 +251,6 @@ build_objectives <- function(design,
                              search,
                              objectives,
                              constant = list(),
-                             secondary = NULL,
                              cost_fn = NULL) {
   # ===========================================================================
   # INPUT VALIDATION
@@ -416,45 +409,6 @@ build_objectives <- function(design,
   objective_info <- parse_objectives(objectives)
 
   # ===========================================================================
-  # SECONDARY OBJECTIVES: Auto-infer or validate user-provided
-  # ===========================================================================
-  # Default: minimize n_total and threshold parameters when present in search
-  minimize_defaults <- c("n_total", "thr_dec_eff", "thr_dec_fut",
-                         "thr_fx_eff", "thr_fx_fut")
-
-  if (is.null(secondary)) {
-    # Auto-infer from search params
-    secondary <- list()
-    for (param in intersect(names(search), minimize_defaults)) {
-      # Only include if it's a standard bounds spec (not simplex)
-      if (is.numeric(search[[param]]) && length(search[[param]]) == 2) {
-        secondary[[param]] <- "minimize"
-      }
-    }
-  } else {
-    # Validate user-provided secondary
-    for (param in names(secondary)) {
-      if (!param %in% names(search)) {
-        cli::cli_warn(c(
-          "Secondary param {.val {param}} not in search, ignored",
-          "i" = "Secondary objectives must be search parameters"
-        ))
-      }
-      if (!secondary[[param]] %in% c("minimize", "maximize")) {
-        cli::cli_abort(c(
-          "Secondary direction must be 'minimize' or 'maximize'",
-          "x" = "Got {.val {secondary[[param]]}} for {.val {param}}"
-        ))
-      }
-    }
-    # Filter to only search params with standard bounds
-    secondary <- secondary[names(secondary) %in% names(search)]
-    secondary <- secondary[vapply(names(secondary), function(p) {
-      is.numeric(search[[p]]) && length(search[[p]]) == 2
-    }, logical(1))]
-  }
-
-  # ===========================================================================
   # CREATE S7 OBJECT
   # ===========================================================================
   rctbp_objectives(
@@ -463,7 +417,6 @@ build_objectives <- function(design,
     search_specs = search_specs,
     objectives = objectives,
     constant = constant,
-    secondary = secondary,
     cost_fn = cost_fn,
     objective_info = objective_info
   )
@@ -546,28 +499,34 @@ parse_objectives <- function(objectives) {
 #'     Total evals = `sum(evals_per_step)`.
 #'     Example: `evals_per_step = c(15, 10, 10, 15)` with `n_sims = c(100, 200, 500, 1000)`
 #'     means 15 evals at 100, 10 at 200, 10 at 500, 15 at 1000 (50 total).
-#' @param use_warmup Logical (default TRUE). When TRUE and using progressive
-#'   fidelity (`length(n_sims) > 1`), the first fidelity level is treated as a
-#'   warmup phase to estimate reference values for secondary objectives. During
-#'   warmup, inverse bonus (`min/value`) is used. After warmup, reference-based
-#'   bonus (`1 - value/reference`) is used. Warmup archive points are recomputed
-#'   with the new bonus and seed the main phase GP. Requires secondary objectives
-#'   (auto-inferred or explicit via [build_objectives()]).
-#' @param warmup_n_sims Deprecated. Use vector `n_sims` instead for multi-fidelity.
-#' @param warmup_evals Deprecated. Use vector `n_sims` with `evals_per_step` instead.
-#' @param warmup_margin Deprecated. No longer used.
 #' @param max_evals Maximum TOTAL number of objective function evaluations (default 50),
 #'   including initial design points. **Ignored when `n_sims` is a vector** (total
 #'   evals derived from `length(n_sims) * evals_per_step`).
 #' @param n_cores Number of CPU cores for parallel power analysis (default 1).
 #' @param surrogate Surrogate model type: "rf" (Random Forest, default) or "gp" (Gaussian Process).
 #' @param acq_function Acquisition function: "auto" (default), "ei" (Expected Improvement),
-#'   "cb" (Confidence Bound), or "pi" (Probability of Improvement).
+#'   "cb" (Confidence Bound), "pi" (Probability of Improvement), or "eic"
+#'   (Expected Improvement with Constraints). EIC uses a two-surrogate approach
+#'   with P(feasible) weighting for target optimization. Works best with GP surrogate.
+#' @param eic_kappa Conservatism parameter for EIC acquisition function (default 0).
+#'   Only used when `acq_function = "eic"`. Higher values use lower confidence
+#'   bound for P(feasible), making recommendations more conservative:
+#'   0 = neutral (uses posterior mean), 1.96 = 97.5% LCB, 2.58 = 99.5% LCB.
+#' @param penalty Penalty type for target optimization: "none" (default), "hard",
+#'   "soft", "ratio", or "logit_distance". Controls how constraint violations are
+#'   penalized during optimization. "none" uses standard quadratic cost; "hard"
+#'   adds large penalty when P(target achieved) < alpha; "soft" penalizes
+#'   proportionally to violation; "ratio" uses risk-weighted cost n/p_feas^kappa;
+#'   "logit_distance" uses symmetric logit-space distance from target.
+#'   Works best with GP surrogate.
+#' @param penalty_alpha Confidence level for hard constraint penalty (default 0.95).
+#'   Only used when `penalty = "hard"`. Larger values are more conservative.
+#' @param penalty_kappa Exponent for ratio penalty (default 2). Only used when
+#'   `penalty = "ratio"`. Larger values penalize low confidence more strongly.
 #' @param init_design Initial design method: "lhs" (Latin Hypercube, default),
-#'   "random", or "sobol". Ignored if warmup provides data.
+#'   "random", or "sobol".
 #' @param init_design_size Number of initial evaluations. If NULL, uses 4*d where
-#'   d is the number of search parameters. When warmup is enabled, this controls
-#'   how many of the best warmup points are selected for re-evaluation with full n_sims.
+#'   d is the number of search parameters.
 #' @param patience Number of evaluations without improvement before early stopping
 #'   (default 30). Only applies to target optimization. Once target is achieved
 #'   in the optimal window, ALL subsequent evaluations count toward patience.
@@ -577,15 +536,22 @@ parse_objectives <- function(objectives) {
 #'   (default 0.001). Early stopping is triggered when the target is first
 #'   achieved within this window and `patience` evaluations pass without finding
 #'   smaller parameters that also achieve target in the window.
-#' @param optimum Optimum selection method for final result: "surrogate" (default)
-#'   uses surrogate model search in constrained domain; "empirical" uses
-#'   confidence interval-based selection from archive points.
 #' @param sims_final_run Number of simulations for final confirmation run
 #'   (default 1000). Higher values provide more precise final estimates but
 #'   increase computation time.
 #' @param trim_param_space Trimming proportion for surrogate search domain
 #'   (default 0.25). Constrains search to trimmed quantile range of archive
-#'   parameters. Use 0.25 for IQR, 0 for no constraint, 0.5 for maximum constraint.
+#'   parameters. Use 0.25 for IQR (25th-75th percentile), 0.1 for 10th-90th
+#'   percentile, 0 for full domain (no constraint). Must be in range [0, 0.5).
+#' @param profile_resolution Resolution for stepping when finding confident optimum
+#'   (default "auto"). Determines step size when searching for the first parameter
+#'   value where CI excludes target. If "auto", resolution is determined by
+#'   parameter type: 1 for sample size parameters (n_total, n_*), 0.01 for
+#'   probability parameters (thr_*, pwr_*, pr_*). Can also specify a positive number.
+#' @param max_final_evals Maximum evaluations for final confirmation phase
+#'   (default 10). Controls how many simulations to run when stepping upward
+#'   from the surrogate optimum to find the confident optimum (where CI excludes
+#'   target). The first evaluation is at the surrogate optimum itself.
 #' @param bf_args Named list of BayesFlow-specific arguments passed to
 #'   [power_analysis()]. Options: `n_posterior_samples`, `batch_size`.
 #'   Note: Set Python environment before optimization via [bf_status()].
@@ -644,21 +610,22 @@ parse_objectives <- function(objectives) {
 optimization <- function(objectives,
                          n_sims = 200,
                          evals_per_step = 10,
-                         use_warmup = TRUE,
-                         warmup_n_sims = NULL,
-                         warmup_evals = NULL,
-                         warmup_margin = NULL,
                          max_evals = 50,
                          n_cores = 1,
                          surrogate = c("rf", "gp"),
                          acq_function = "auto",
+                         eic_kappa = 0,
+                         penalty = c("none", "hard", "soft", "ratio", "logit_distance"),
+                         penalty_alpha = 0.95,
+                         penalty_kappa = 2,
                          init_design = c("lhs", "random", "sobol"),
                          init_design_size = NULL,
                          patience = 30,
                          min_delta = 0.001,
-                         optimum = c("surrogate", "empirical"),
                          sims_final_run = 1000,
                          trim_param_space = 0.25,
+                         profile_resolution = "auto",
+                         max_final_evals = 10,
                          bf_args = list(),
                          brms_args = list(),
                          refresh = 5,
@@ -671,7 +638,7 @@ optimization <- function(objectives,
   # ===========================================================================
   surrogate <- match.arg(surrogate)
   init_design <- match.arg(init_design)
-  optimum <- match.arg(optimum)
+  penalty <- match.arg(penalty)
 
   # Validate sims_final_run
   if (!is.numeric(sims_final_run) || sims_final_run < 1) {
@@ -682,14 +649,36 @@ optimization <- function(objectives,
   }
 
   # Validate trim_param_space
+  # Must be in [0, 0.5) - exactly 0.5 would collapse to single point (median)
   if (!is.numeric(trim_param_space) || length(trim_param_space) != 1 ||
-      trim_param_space < 0 || trim_param_space > 0.5) {
+      trim_param_space < 0 || trim_param_space >= 0.5) {
     cli::cli_abort(c(
-      "{.arg trim_param_space} must be a number between 0 and 0.5",
+      "{.arg trim_param_space} must be a number in [0, 0.5)",
       "x" = "Got {.val {trim_param_space}}",
-      "i" = "Use 0.25 (default) for IQR constraint, 0 for no constraint, 0.5 for maximum constraint"
+      "i" = "Use 0.25 (default) for IQR, 0.1 for 10th-90th percentile, 0 for full domain"
     ))
   }
+
+  # Validate profile_resolution
+  if (!identical(profile_resolution, "auto") &&
+      !(is.numeric(profile_resolution) && length(profile_resolution) == 1 && profile_resolution > 0)) {
+    cli::cli_abort(c(
+      "{.arg profile_resolution} must be 'auto' or a positive number",
+      "x" = "Got {.val {profile_resolution}}",
+      "i" = "Use 'auto' for automatic resolution based on parameter type"
+    ))
+  }
+
+  # Validate max_final_evals
+  if (!is.numeric(max_final_evals) || length(max_final_evals) != 1 ||
+      max_final_evals < 1 || max_final_evals != as.integer(max_final_evals)) {
+    cli::cli_abort(c(
+      "{.arg max_final_evals} must be a positive integer",
+      "x" = "Got {.val {max_final_evals}}",
+      "i" = "Controls how many simulations to run when searching for confident optimum"
+    ))
+  }
+  max_final_evals <- as.integer(max_final_evals)
 
   if (!inherits(objectives, "rctbp_objectives") &&
       !inherits(objectives, "rctbayespower::rctbp_objectives")) {
@@ -698,6 +687,28 @@ optimization <- function(objectives,
       "x" = "Got object of class {.cls {class(objectives)}}",
       "i" = "Use {.fn build_objectives} to create an objectives object"
     ))
+  }
+
+ # Validate penalty parameters
+  if (penalty != "none") {
+    if (!is.numeric(penalty_alpha) || penalty_alpha <= 0 || penalty_alpha >= 1) {
+      cli::cli_abort(c(
+        "{.arg penalty_alpha} must be a probability in (0, 1)",
+        "x" = "Got {.val {penalty_alpha}}"
+      ))
+    }
+    if (penalty == "ratio" && (!is.numeric(penalty_kappa) || penalty_kappa <= 0)) {
+      cli::cli_abort(c(
+        "{.arg penalty_kappa} must be a positive number for ratio penalty",
+        "x" = "Got {.val {penalty_kappa}}"
+      ))
+    }
+    # Warn if using penalty without GP surrogate
+    if (surrogate != "gp" && verbosity >= 1) {
+      cli::cli_alert_warning(
+        "Probabilistic penalty works best with GP surrogate (using '{surrogate}')"
+      )
+    }
   }
 
   # Validate n_sims (scalar or vector)
@@ -712,12 +723,12 @@ optimization <- function(objectives,
   is_progressive <- length(n_sims) > 1
 
   if (is_progressive) {
-    # Vector n_sims: validate increasing order
-    if (!all(diff(n_sims) > 0)) {
+    # Vector n_sims: validate non-decreasing order (allows repeated values)
+    if (!all(diff(n_sims) >= 0)) {
       cli::cli_abort(c(
-        "{.arg n_sims} vector must be strictly increasing",
+        "{.arg n_sims} vector must be non-decreasing",
         "x" = "Got {.val {n_sims}}",
-        "i" = "Example: {.code c(100, 200, 500, 1000)}"
+        "i" = "Example: {.code c(100, 100, 500, 1000)} or {.code c(100, 200, 500, 1000)}"
       ))
     }
 
@@ -769,55 +780,6 @@ optimization <- function(objectives,
     ))
   }
 
-  # Deprecation warnings for warmup parameters
-  if (!is.null(warmup_n_sims)) {
-    cli::cli_warn(c(
-      "{.arg warmup_n_sims} is deprecated",
-      "i" = "Use vector {.arg n_sims} for multi-fidelity optimization instead",
-      "i" = "Example: {.code n_sims = c(100, 200, 500, 1000)}"
-    ))
-  }
-  if (!is.null(warmup_evals)) {
-    cli::cli_warn(c(
-      "{.arg warmup_evals} is deprecated",
-      "i" = "Use {.arg evals_per_step} with vector {.arg n_sims} instead"
-    ))
-  }
-  if (!is.null(warmup_margin)) {
-    cli::cli_warn(c(
-      "{.arg warmup_margin} is deprecated and ignored"
-    ))
-  }
-
-  # ===========================================================================
-  # WARMUP PHASE CONFIGURATION
-  # ===========================================================================
-  # Warmup requires: (1) progressive fidelity, (2) secondary objectives
-  has_secondary <- length(objectives@secondary) > 0
-  can_warmup <- use_warmup && is_progressive && has_secondary
-
-  if (use_warmup && !can_warmup) {
-    if (!is_progressive) {
-      cli::cli_alert_info(
-        "Warmup disabled: requires progressive fidelity (vector {.arg n_sims})"
-      )
-    } else if (!has_secondary) {
-      cli::cli_alert_info(
-        "Warmup disabled: no secondary objectives detected"
-      )
-    }
-  }
-
-  if (can_warmup && verbosity >= 1) {
-    secondary_str <- paste(
-      paste0(names(objectives@secondary), " (", unlist(objectives@secondary), ")"),
-      collapse = ", "
-    )
-    cli::cli_alert_info(
-      "Warmup enabled: first {n_sims[1]}-sim phase will estimate reference for: {secondary_str}"
-    )
-  }
-
   # ===========================================================================
   # BUILD FIDELITY SCHEDULE
   # ===========================================================================
@@ -864,15 +826,19 @@ optimization <- function(objectives,
       objectives = objectives,
       fidelity_schedule = fidelity_schedule,
       max_evals = effective_max_evals,
-      use_warmup = can_warmup,
       patience = patience,
       min_delta = min_delta,
-      optimum = optimum,
       sims_final_run = sims_final_run,
       trim_param_space = trim_param_space,
+      profile_resolution = profile_resolution,
+      max_final_evals = max_final_evals,
       n_cores = n_cores,
       surrogate = surrogate,
       acq_function = acq_function,
+      penalty = penalty,
+      penalty_alpha = penalty_alpha,
+      penalty_kappa = penalty_kappa,
+      eic_kappa = eic_kappa,
       init_design = init_design,
       init_design_size = init_design_size,
       bf_args = bf_args,
@@ -958,11 +924,30 @@ show_optimization_args <- function() {
 
   cli::cli_h2("Acquisition Function")
   cli::cli_bullets(c(
-    "*" = "acq_function: 'auto', 'ei', 'cb', or 'pi'",
+    "*" = "acq_function: 'auto', 'ei', 'cb', 'pi', or 'eic'",
     " " = "  auto: EI for single/target, scalarized EI for multi",
     " " = "  ei: Expected Improvement",
     " " = "  cb: Confidence Bound (lower for minimize)",
-    " " = "  pi: Probability of Improvement"
+    " " = "  pi: Probability of Improvement",
+    " " = "  eic: Expected Improvement with Constraints (target opt only)",
+    " " = "    Uses two surrogates: EI on objective x P(feasible)",
+    "*" = "eic_kappa: Conservatism for EIC (default: 0)",
+    " " = "  0 = neutral (posterior mean for P(feasible))",
+    " " = "  1.96 = 97.5% lower confidence bound (more conservative)",
+    " " = "  2.58 = 99.5% LCB (very conservative)"
+  ))
+
+  cli::cli_h2("Penalty Functions (target optimization)")
+  cli::cli_bullets(c(
+    "*" = "penalty: 'none', 'hard', 'soft', 'ratio', or 'logit_distance'",
+    " " = "  none: Standard quadratic cost (default)",
+    " " = "  hard: Large penalty when P(target achieved) < penalty_alpha",
+    " " = "  soft: Penalty proportional to violation",
+    " " = "  ratio: Risk-weighted cost n/p_feas^penalty_kappa",
+    " " = "  logit_distance: Symmetric distance from target on logit scale",
+    " " = "    f(x) = 1 - invlogit(|logit(power) - logit(target)|)",
+    "*" = "penalty_alpha: Confidence level for 'hard' penalty (default: 0.95)",
+    "*" = "penalty_kappa: Exponent for 'ratio' penalty (default: 2)"
   ))
 
   cli::cli_h2("Initial Design")

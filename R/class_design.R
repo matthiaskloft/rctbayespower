@@ -482,6 +482,8 @@ load_predefined_model_components <- function(model_name, backend) {
 
   if (backend == "bf") {
     bf_success <- FALSE
+    bf_error_msg <- NULL
+
     if (check_bf_available(silent = TRUE)) {
       tryCatch({
         bf_model <- load_bf_model(model_name)
@@ -496,15 +498,24 @@ load_predefined_model_components <- function(model_name, backend) {
         bf_success <- TRUE
         cli::cli_alert_success("Using BayesFlow backend")
       }, error = function(e) {
-        # Will fall back to brms
+        # Capture error message for better diagnostics
+        bf_error_msg <<- conditionMessage(e)
       })
     }
 
     if (!bf_success) {
-      cli::cli_warn(c(
-        "BayesFlow backend unavailable, using brms",
-        "i" = "To use BayesFlow: install Python + bayesflow package"
-      ))
+      # Provide specific guidance based on the error
+      if (!is.null(bf_error_msg) && grepl("not initialized", bf_error_msg, ignore.case = TRUE)) {
+        cli::cli_warn(c(
+          "BayesFlow not initialized, using brms",
+          "i" = "Call {.code init_bf()} at the start of your script"
+        ))
+      } else {
+        cli::cli_warn(c(
+          "BayesFlow backend unavailable, using brms",
+          "i" = "To use BayesFlow: install Python + bayesflow package"
+        ))
+      }
     }
   }
 

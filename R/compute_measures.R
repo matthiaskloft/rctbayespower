@@ -1,165 +1,13 @@
-#' Compute Power Measures from Posterior rvars (Backend-Agnostic)
-#'
-#' This function computes power analysis measures from posterior samples in rvar format.
-#' It works with posteriors from any backend (brms, NPE, etc.) as long as they are
-#' converted to rvar format first.
-#'
-#' @param posterior_rvars A draws_rvars object containing posterior samples for target parameters
-#' @param target_params Character vector of parameter names to analyze
-#' @param thr_fx_eff Numeric vector of efficacy thresholds (ROPE, one per parameter)
-#' @param thr_fx_fut Numeric vector of futility thresholds (ROPE, one per parameter)
-#' @param thr_dec_eff Probability threshold for declaring efficacy
-#' @param thr_dec_fut Probability threshold for declaring futility
-#'
-#' @return A data frame containing power analysis measures
-#' @importFrom stats median
-#' @keywords internal
-compute_measures <- function(posterior_rvars, target_params, thr_fx_eff,
-                             thr_fx_fut, thr_dec_eff, thr_dec_fut) {
-
-  # Compute measures for each parameter
-  measures_list <- purrr::map(target_params, function(param) {
-    # Extract rvar for this parameter
-    param_rvar <- posterior_rvars[[param]]
-
-    # extract thresholds
-    if (length(target_params) > 1) {
-      threshold_efficacy <- thr_fx_eff[which(target_params == param)]
-      # if the threshold is NA, use the first one
-      if (is.na(threshold_efficacy)) {
-        threshold_efficacy <- thr_fx_eff[1]
-      }
-      threshold_futility <- thr_fx_fut[which(target_params == param)]
-      # if the threshold is NA, use the first one
-      if (is.na(threshold_futility)) {
-        threshold_futility <- thr_fx_fut[1]
-      }
-    } else {
-      threshold_efficacy <- thr_fx_eff
-      threshold_futility <- thr_fx_fut
-    }
-    # calculate the probability of efficacy / futility
-    efficacy_prob <- posterior::Pr(param_rvar > threshold_efficacy)
-    futility_prob <- posterior::Pr(param_rvar < threshold_futility)
-    # significance
-    sig_efficacy <- as.numeric(efficacy_prob >= thr_dec_eff, na.rm = TRUE)
-    sig_futility <- as.numeric(futility_prob >= thr_dec_fut, na.rm = TRUE)
-    # parameter estimates
-    est_median <- stats::median(param_rvar)
-    est_mad <- posterior::mad(param_rvar)
-    est_mean <- mean(param_rvar)
-    est_sd <- posterior::sd(param_rvar)
-    # convergence metrics
-    rhat <- posterior::rhat(param_rvar)
-    ess_bulk <- posterior::ess_bulk(param_rvar)
-    ess_tail <- posterior::ess_tail(param_rvar)
-
-    # combine results into a list
-    out_list <- list(
-      par_name = param,
-      thr_fx_eff = threshold_efficacy,
-      thr_fx_fut = threshold_futility,
-      thr_dec_eff = thr_dec_eff,
-      thr_dec_fut = thr_dec_fut,
-      pr_eff = efficacy_prob,
-      pr_fut = futility_prob,
-      dec_eff = sig_efficacy,
-      dec_fut = sig_futility,
-      post_med = est_median,
-      post_mad = est_mad,
-      post_mn = est_mean,
-      post_sd = est_sd,
-      rhat = rhat,
-      ess_bulk = ess_bulk,
-      ess_tail = ess_tail
-    )
-
-    return(out_list)
-  })
-
-  # compute combined probabilities and powers
-  if (length(target_params) > 1) {
-    # Convert rvars to matrix for combined calculations
-    # Extract draws as matrix: each column is a parameter
-    posterior_matrix_list <- lapply(target_params, function(param) {
-      as.vector(posterior::draws_of(posterior_rvars[[param]]))
-    })
-    posterior_samples <- do.call(cbind, posterior_matrix_list)
-
-    # extract thresholds and broadcast if necessary
-    if (length(target_params) > length(thr_fx_eff)) {
-      thr_fx_eff_combined <- rep(thr_fx_eff[1], length(target_params))
-    } else {
-      thr_fx_eff_combined <- thr_fx_eff
-    }
-    if (length(target_params) > length(thr_fx_fut)) {
-      thr_fx_fut_combined <- rep(thr_fx_fut[1], length(target_params))
-    } else {
-      thr_fx_fut_combined <- thr_fx_fut
-    }
-
-    # Combined probability algorithm (AND decision rule for multiple parameters)
-    # All parameters must simultaneously exceed threshold (conjunctive logic)
-    # Algorithm:
-    #   1. Convert each parameter to binary: exceeds threshold? (1/0)
-    #   2. Take minimum across parameters for each draw (AND operation)
-    #   3. Average across draws to get probability
-    # Example: P(param1 > 0.2 AND param2 > 0.3 AND param3 > 0.1)
-    combined_efficacy_prob <- mean(apply(ifelse(
-      posterior_samples > thr_fx_eff_combined, 1, 0
-    ), 1, min))
-    combined_futility_prob <- mean(apply(
-      ifelse(posterior_samples < thr_fx_fut_combined, 1, 0),
-      1,
-      min
-    ))
-
-    # calculate combined significance
-    combined_sig_efficacy <- as.numeric(combined_efficacy_prob >= thr_dec_eff, na.rm = TRUE)
-    combined_sig_futility <- as.numeric(combined_futility_prob >= thr_dec_fut, na.rm = TRUE)
-
-    # combine results into a list
-    measures_list_combined <- list(
-      par_name = "union",
-      thr_fx_eff = NA,
-      thr_fx_fut = NA,
-      thr_dec_eff = thr_dec_eff,
-      thr_dec_fut = thr_dec_fut,
-      pr_eff = combined_efficacy_prob,
-      pr_fut = combined_futility_prob,
-      dec_eff = combined_sig_efficacy,
-      dec_fut = combined_sig_futility,
-      post_med = NA,
-      post_mad = NA,
-      post_mn = NA,
-      post_sd = NA,
-      rhat = NA,
-      ess_bulk = NA,
-      ess_tail = NA
-    )
-  }
-
-  # remove success_samples and futility_samples from the list
-  measures_list <- purrr::map(measures_list, function(x) {
-    x$success_samples <- NULL
-    x$futility_samples <- NULL
-    return(x)
-  })
-
-  # make data.frames and rbind()
-  measures_df <- do.call(rbind, measures_list)
-
-  if (length(target_params) > 1) {
-    # create a data frame for combined measures
-    measures_df_combined <- do.call(cbind, measures_list_combined)
-    # add combined measures
-    measures_df <- as.data.frame(rbind(measures_df, measures_df_combined))
-  } else {
-    measures_df <- as.data.frame(measures_df)
-  }
-
-  return(measures_df)
-}
+# =============================================================================
+# RESULT SUMMARIZATION
+# =============================================================================
+# Functions for aggregating simulation results from power analysis runs.
+#
+# Key functions:
+#   - summarize_sims(): Aggregate single-look simulation results
+#   - summarize_sims_with_interim(): Aggregate sequential analysis results
+#   - resummarize_boundaries(): Re-analyze with different stopping boundaries
+#   - compare_boundaries(): Compare multiple boundary configurations
 
 
 #' Summarize Power Analysis Simulation Results
@@ -222,20 +70,17 @@ summarize_sims <- function(results_df_raw, n_sims) {
     ))
   }
 
+  # Work with base R data.frame to avoid data.table method dispatch issues
+  # in special contexts (post-parallel, optimization callbacks)
+  df <- as.data.frame(results_df_raw)
+
   # =============================================================================
   # INTERIM ANALYSIS DETECTION
   # =============================================================================
-  # Detect if results contain interim analyses by checking:
-
-  # 1. Required interim columns exist (id_look, n_analyzed, stopped, stop_reason)
-  # 2. More than one unique analysis index exists (multiple looks per simulation)
-  #
-  # Single-look designs have id_look = 1 for all rows, so we only dispatch to
-  # interim summarization when there are actually multiple analysis timepoints.
   has_interim_cols <- all(c("id_look", "n_analyzed", "stopped", "stop_reason") %in%
-                            names(results_df_raw))
-  has_multiple_analyses <- has_interim_cols &&
-    length(unique(results_df_raw$id_look)) > 1
+                            names(df))
+  n_looks <- if (has_interim_cols) length(unique(df[["id_look"]])) else 1L
+  has_multiple_analyses <- has_interim_cols && n_looks > 1
 
   if (has_multiple_analyses) {
     return(summarize_sims_with_interim(results_df_raw, n_sims))
@@ -244,21 +89,19 @@ summarize_sims <- function(results_df_raw, n_sims) {
   # =============================================================================
   # STANDARD (SINGLE-LOOK) SUMMARIZATION
   # =============================================================================
-  # Track rows before filtering (for error detection)
-  n_total_rows <- nrow(results_df_raw)
+  n_total_rows <- nrow(df)
 
-  # remove rows with NA in id_cond or par_name (error results have NA par_name)
-  results_df_raw <- results_df_raw |>
-    dplyr::filter(!is.na(id_cond) & !is.na(par_name))
+  # Remove rows with NA in id_cond or par_name (error results have NA par_name)
+  keep_idx <- which(!is.na(df[["id_cond"]]) & !is.na(df[["par_name"]]))
+  df <- df[keep_idx, , drop = FALSE]
 
   # Warn if all rows were filtered (indicates all simulations failed)
-  if (nrow(results_df_raw) == 0) {
+  if (nrow(df) == 0) {
     cli::cli_warn(c(
       "All {n_total_rows} simulation results were filtered out (likely all simulations failed)",
       "i" = "Check the raw results for error messages",
       "i" = "This may indicate a model or data compatibility issue"
     ))
-    # Return empty data frame with expected columns
     return(data.frame(
       id_cond = integer(),
       par_name = character(),
@@ -272,64 +115,69 @@ summarize_sims <- function(results_df_raw, n_sims) {
     ))
   }
 
-  results_summarized <- results_df_raw |>
-    dplyr::group_by(id_cond, par_name, thr_fx_eff, thr_fx_fut, thr_dec_eff, thr_dec_fut) |>
-    dplyr::summarise(
-      pr_eff_mean = mean(pr_eff, na.rm = TRUE),
-      pr_eff_mcse = calculate_mcse_mean(pr_eff, n_sims),
-      pr_fut_mean = mean(pr_fut, na.rm = TRUE),
-      pr_fut_mcse = calculate_mcse_mean(pr_fut, n_sims),
-      pwr_eff_mean = mean(dec_eff, na.rm = TRUE),
-      pwr_eff_mcse = calculate_mcse_power(dec_eff, n_sims),
-      pwr_fut_mean = mean(dec_fut, na.rm = TRUE),
-      pwr_fut_mcse = calculate_mcse_power(dec_fut, n_sims),
-      post_med_mean = mean(.data$post_med, na.rm = TRUE),
-      post_med_mcse = calculate_mcse_mean(.data$post_med, n_sims),
-      post_mad_mean = mean(.data$post_mad, na.rm = TRUE),
-      post_mad_mcse = calculate_mcse_mean(.data$post_mad, n_sims),
-      post_mn_mean = mean(.data$post_mn, na.rm = TRUE),
-      post_mn_mcse = calculate_mcse_mean(.data$post_mn, n_sims),
-      post_sd_mean = mean(.data$post_sd, na.rm = TRUE),
-      post_sd_mcse = calculate_mcse_mean(.data$post_sd, n_sims),
-      rhat_mean = mean(rhat, na.rm = TRUE),
-      rhat_mcse = calculate_mcse_mean(rhat, n_sims),
-      ess_bulk_mean = mean(ess_bulk, na.rm = TRUE),
-      ess_bulk_mcse = calculate_mcse_mean(ess_bulk, n_sims),
-      ess_tail_mean = mean(ess_tail, na.rm = TRUE),
-      ess_tail_mcse = calculate_mcse_mean(ess_tail, n_sims),
-      conv_rate_mean = mean(converged, na.rm = TRUE),
-      conv_rate_mcse = calculate_mcse_power(converged, n_sims),
-      .groups = "drop"
-    ) |>
-    # make shorter names
-    dplyr::rename(
-      pr_eff = pr_eff_mean,
-      se_pr_eff = pr_eff_mcse,
-      pr_fut = pr_fut_mean,
-      se_pr_fut = pr_fut_mcse,
-      pwr_eff = pwr_eff_mean,
-      se_pwr_eff = pwr_eff_mcse,
-      pwr_fut = pwr_fut_mean,
-      se_pwr_fut = pwr_fut_mcse,
-      post_med = post_med_mean,
-      se_post_med = post_med_mcse,
-      post_mad = post_mad_mean,
-      se_post_mad = post_mad_mcse,
-      post_mn = post_mn_mean,
-      se_post_mn = post_mn_mcse,
-      post_sd = post_sd_mean,
-      se_post_sd = post_sd_mcse,
-      rhat = rhat_mean,
-      se_rhat = rhat_mcse,
-      ess_bulk = ess_bulk_mean,
-      se_ess_bulk = ess_bulk_mcse,
-      ess_tail = ess_tail_mean,
-      se_ess_tail = ess_tail_mcse,
-      conv_rate = conv_rate_mean,
-      se_conv_rate = conv_rate_mcse
-    )
+  # Determine grouping columns
+  by_cols <- intersect(
+    c("id_cond", "par_name", "thr_fx_eff", "thr_fx_fut", "thr_dec_eff", "thr_dec_fut"),
+    names(df)
+  )
 
-  return(results_summarized)
+  # Safe column getter
+  get_col <- function(data, col) {
+    if (col %in% names(data)) data[[col]] else rep(NA_real_, nrow(data))
+  }
+
+  # Aggregation function for each group
+  agg_fn <- function(grp) {
+    data.frame(
+      pr_eff = mean(get_col(grp, "pr_eff"), na.rm = TRUE),
+      se_pr_eff = calculate_mcse_mean(get_col(grp, "pr_eff"), n_sims),
+      pr_fut = mean(get_col(grp, "pr_fut"), na.rm = TRUE),
+      se_pr_fut = calculate_mcse_mean(get_col(grp, "pr_fut"), n_sims),
+      pwr_eff = mean(get_col(grp, "dec_eff"), na.rm = TRUE),
+      se_pwr_eff = calculate_mcse_power(get_col(grp, "dec_eff"), n_sims),
+      pwr_fut = mean(get_col(grp, "dec_fut"), na.rm = TRUE),
+      se_pwr_fut = calculate_mcse_power(get_col(grp, "dec_fut"), n_sims),
+      post_med = mean(get_col(grp, "post_med"), na.rm = TRUE),
+      se_post_med = calculate_mcse_mean(get_col(grp, "post_med"), n_sims),
+      post_mad = mean(get_col(grp, "post_mad"), na.rm = TRUE),
+      se_post_mad = calculate_mcse_mean(get_col(grp, "post_mad"), n_sims),
+      post_mn = mean(get_col(grp, "post_mn"), na.rm = TRUE),
+      se_post_mn = calculate_mcse_mean(get_col(grp, "post_mn"), n_sims),
+      post_sd = mean(get_col(grp, "post_sd"), na.rm = TRUE),
+      se_post_sd = calculate_mcse_mean(get_col(grp, "post_sd"), n_sims),
+      rhat = mean(get_col(grp, "rhat"), na.rm = TRUE),
+      se_rhat = calculate_mcse_mean(get_col(grp, "rhat"), n_sims),
+      ess_bulk = mean(get_col(grp, "ess_bulk"), na.rm = TRUE),
+      se_ess_bulk = calculate_mcse_mean(get_col(grp, "ess_bulk"), n_sims),
+      ess_tail = mean(get_col(grp, "ess_tail"), na.rm = TRUE),
+      se_ess_tail = calculate_mcse_mean(get_col(grp, "ess_tail"), n_sims),
+      conv_rate = mean(get_col(grp, "converged"), na.rm = TRUE),
+      se_conv_rate = calculate_mcse_power(get_col(grp, "converged"), n_sims),
+      stringsAsFactors = FALSE
+    )
+  }
+
+  # Split-apply-combine using base R
+  # Create grouping key from by_cols
+  group_key <- do.call(paste, c(df[by_cols], sep = "|||"))
+  groups <- split(df, group_key, drop = TRUE)
+
+  # Apply aggregation to each group
+  results_list <- lapply(groups, agg_fn)
+
+  # Bind results
+  results <- do.call(rbind, results_list)
+  rownames(results) <- NULL
+
+  # Extract group keys back to columns
+  first_rows <- lapply(groups, function(g) g[1, by_cols, drop = FALSE])
+  key_df <- do.call(rbind, first_rows)
+  rownames(key_df) <- NULL
+
+  # Combine keys with results
+  results <- cbind(key_df, results)
+
+  as.data.frame(results)
 }
 
 
@@ -386,7 +234,7 @@ summarize_sims_with_interim <- function(results_df_raw, n_sims) {
   }
 
   # Check required interim columns exist
- required_cols <- c("id_look", "n_analyzed", "stopped", "stop_reason")
+  required_cols <- c("id_look", "n_analyzed", "stopped", "stop_reason")
   missing_cols <- setdiff(required_cols, names(results_df_raw))
   if (length(missing_cols) > 0) {
     cli::cli_abort(c(
@@ -399,142 +247,41 @@ summarize_sims_with_interim <- function(results_df_raw, n_sims) {
   # Track rows before filtering (for error detection)
   n_total_rows <- nrow(results_df_raw)
 
+  # Work with base R data.frame to avoid data.table method dispatch issues
+  # in special contexts (post-parallel, optimization callbacks)
+  df <- as.data.frame(results_df_raw)
+
   # Remove rows with NA in key identifiers (error results have NA par_name)
-  results_df_raw <- results_df_raw |>
-    dplyr::filter(!is.na(id_cond) & !is.na(par_name))
+  keep_idx <- which(!is.na(df[["id_cond"]]) & !is.na(df[["par_name"]]))
+  df <- df[keep_idx, , drop = FALSE]
 
   # Warn if all rows were filtered (indicates all simulations failed)
-  if (nrow(results_df_raw) == 0) {
+  if (nrow(df) == 0) {
     cli::cli_warn(c(
       "All {n_total_rows} simulation results were filtered out (likely all simulations failed)",
       "i" = "Check the raw results for error messages",
       "i" = "This may indicate a model or data compatibility issue"
     ))
-    # Return list with empty data frames matching expected structure
     return(list(
       by_look = data.frame(
-        id_cond = integer(),
-        id_look = integer(),
-        pwr_eff = numeric(),
-        pwr_fut = numeric(),
+        id_cond = integer(), id_look = integer(),
+        pwr_eff = numeric(), pwr_fut = numeric(),
         stringsAsFactors = FALSE
       ),
       overall = data.frame(
-        id_cond = integer(),
-        n_planned = integer(),
-        pwr_eff = numeric(),
-        pwr_fut = numeric(),
+        id_cond = integer(), n_planned = integer(),
+        pwr_eff = numeric(), pwr_fut = numeric(),
         stringsAsFactors = FALSE
       )
     ))
   }
 
-  # =============================================================================
-  # PER-LOOK SUMMARY
-  # =============================================================================
+  # Safe column getter
+  get_col <- function(data, col) {
+    if (col %in% names(data)) data[[col]] else rep(NA_real_, nrow(data))
+  }
 
-  # First compute per-look stopping stats (condition × look level)
-  # These will be joined to by_look (redundant across parameters but keeps it simple)
-  n_total_sims <- results_df_raw |>
-    dplyr::group_by(id_cond) |>
-    dplyr::summarise(n_total_sims = dplyr::n_distinct(id_iter), .groups = "drop")
-
-  # Count stops at each look
-  stopping_by_look <- results_df_raw |>
-    dplyr::filter(!is.na(stop_reason)) |>
-    dplyr::group_by(id_cond, id_look, n_analyzed) |>
-    dplyr::summarise(
-      n_stp_look = dplyr::n_distinct(id_iter),
-      n_eff_look = sum(stop_reason == "stop_efficacy", na.rm = TRUE),
-      n_fut_look = sum(stop_reason == "stop_futility", na.rm = TRUE),
-      .groups = "drop"
-    ) |>
-    dplyr::left_join(n_total_sims, by = "id_cond") |>
-    dplyr::mutate(
-      prop_stp_look = n_stp_look / n_total_sims,
-      prop_eff_look = n_eff_look / n_total_sims,
-      prop_fut_look = n_fut_look / n_total_sims
-    ) |>
-    dplyr::group_by(id_cond) |>
-    dplyr::arrange(id_look) |>
-    dplyr::mutate(cumul_stp = cumsum(prop_stp_look)) |>
-    dplyr::ungroup() |>
-    dplyr::select(id_cond, id_look, prop_stp_look, prop_eff_look, prop_fut_look, cumul_stp)
-
-  # Group by condition, parameter, threshold, AND analysis look for power metrics
-  by_look <- results_df_raw |>
-    dplyr::group_by(id_cond, par_name, thr_fx_eff, thr_fx_fut, thr_dec_eff, thr_dec_fut, id_look, n_analyzed) |>
-    dplyr::summarise(
-      # Standard metrics
-      pr_eff = mean(pr_eff, na.rm = TRUE),
-      se_pr_eff = calculate_mcse_mean(pr_eff, n_sims),
-      pr_fut = mean(pr_fut, na.rm = TRUE),
-      se_pr_fut = calculate_mcse_mean(pr_fut, n_sims),
-      pwr_eff = mean(dec_eff, na.rm = TRUE),
-      se_pwr_eff = calculate_mcse_power(dec_eff, n_sims),
-      pwr_fut = mean(dec_fut, na.rm = TRUE),
-      se_pwr_fut = calculate_mcse_power(dec_fut, n_sims),
-      post_med = mean(.data$post_med, na.rm = TRUE),
-      se_post_med = calculate_mcse_mean(.data$post_med, n_sims),
-      post_mn = mean(.data$post_mn, na.rm = TRUE),
-      se_post_mn = calculate_mcse_mean(.data$post_mn, n_sims),
-      post_sd = mean(.data$post_sd, na.rm = TRUE),
-      se_post_sd = calculate_mcse_mean(.data$post_sd, n_sims),
-      # Convergence
-      rhat = mean(rhat, na.rm = TRUE),
-      ess_bulk = mean(ess_bulk, na.rm = TRUE),
-      conv_rate = mean(converged, na.rm = TRUE),
-      .groups = "drop"
-    ) |>
-    # Join per-look stopping stats (redundant across parameters)
-    dplyr::left_join(stopping_by_look, by = c("id_cond", "id_look")) |>
-    # Fill NA stopping stats with 0 (looks where no trials stopped)
-    dplyr::mutate(
-      prop_stp_look = dplyr::if_else(is.na(prop_stp_look), 0, prop_stp_look),
-      prop_eff_look = dplyr::if_else(is.na(prop_eff_look), 0, prop_eff_look),
-      prop_fut_look = dplyr::if_else(is.na(prop_fut_look), 0, prop_fut_look),
-      cumul_stp = dplyr::if_else(is.na(cumul_stp), 0, cumul_stp)
-    )
-
-  # =============================================================================
-  # OVERALL TRIAL SUMMARY (per condition)
-  # =============================================================================
-  # For overall metrics, we need to look at the final state of each simulation
-  # Get final analysis for each simulation (last id_look per id_iter/id_cond)
-  # Also need to track where stopping actually occurred
-
-  # Get the analysis where stopping occurred (if any) for each simulation
-  stopping_info <- results_df_raw |>
-    dplyr::filter(!is.na(stop_reason)) |>
-    dplyr::group_by(id_cond, id_iter) |>
-    dplyr::slice_min(id_look, n = 1, with_ties = FALSE) |>
-    dplyr::ungroup() |>
-    dplyr::select(id_cond, id_iter, stop_n = n_analyzed, stop_reason)
-
-  # Get all unique simulation runs
-  all_sims <- results_df_raw |>
-    dplyr::select(id_cond, id_iter) |>
-    dplyr::distinct()
-
-  # Join to get stopping info for each sim (NA if no stop)
-  sim_outcomes <- all_sims |>
-    dplyr::left_join(stopping_info, by = c("id_cond", "id_iter"))
-
-  # Get planned n_total (max n_analyzed per condition)
-  planned_n <- results_df_raw |>
-    dplyr::group_by(id_cond) |>
-    dplyr::summarise(n_planned = max(n_analyzed, na.rm = TRUE), .groups = "drop")
-
-  sim_outcomes <- sim_outcomes |>
-    dplyr::left_join(planned_n, by = "id_cond") |>
-    dplyr::mutate(
-      # If no stop, the effective N is n_planned
-      effective_n = dplyr::if_else(is.na(stop_n), n_planned, stop_n),
-      stopped_early = !is.na(stop_n)
-    )
-
-
-  # Helper to compute mode (most frequent value) and proportion at mode
+  # Helper functions for aggregation
   calc_mode <- function(x) {
     x <- x[!is.na(x)]
     if (length(x) == 0) return(NA_real_)
@@ -549,58 +296,231 @@ summarize_sims_with_interim <- function(results_df_raw, n_sims) {
     max(freq_table) / length(x)
   }
 
-  # Robust median: returns actual observed value (low median for even n)
-  # Unlike stats::median which averages two middle values, this always
-  # returns a value that was actually observed in the data
   calc_robust_median <- function(x) {
     x <- sort(x[!is.na(x)])
     n <- length(x)
     if (n == 0) return(NA_real_)
-    # For odd n: middle value; for even n: lower of two middle values
     x[(n + 1) %/% 2]
   }
 
-  # Compute overall summaries by condition
-  overall <- sim_outcomes |>
-    dplyr::group_by(id_cond) |>
-    dplyr::summarise(
-      n_planned = dplyr::first(n_planned),
-      n_mn = mean(effective_n, na.rm = TRUE),
-      se_n_mn = stats::sd(effective_n, na.rm = TRUE) / sqrt(dplyr::n()),
-      n_mdn = calc_robust_median(effective_n),
-      n_mode = calc_mode(effective_n),
-      prop_at_mode = calc_prop_at_mode(effective_n),
-      prop_stp_early = mean(stopped_early, na.rm = TRUE),
-      prop_stp_eff = mean(stop_reason == "stop_efficacy", na.rm = TRUE),
-      prop_stp_fut = mean(stop_reason == "stop_futility", na.rm = TRUE),
-      prop_no_dec = 1 - prop_stp_eff - prop_stp_fut,
-      .groups = "drop"
+  # =============================================================================
+  # PER-LOOK SUMMARY (base R)
+  # =============================================================================
+
+  # Count total sims per condition
+  n_total_sims_list <- tapply(df[["id_iter"]], df[["id_cond"]],
+                               function(x) length(unique(x)), simplify = FALSE)
+  n_total_sims_df <- data.frame(
+    id_cond = as.integer(names(n_total_sims_list)),
+    n_total_sims = unlist(n_total_sims_list),
+    stringsAsFactors = FALSE
+  )
+
+  # Get rows where stopping occurred
+  stopped_idx <- which(!is.na(df[["stop_reason"]]))
+  stopped_df <- df[stopped_idx, , drop = FALSE]
+
+  if (nrow(stopped_df) > 0) {
+    # Compute stopping stats by condition and look
+    stopping_by_cols <- intersect(c("id_cond", "id_look", "n_analyzed"), names(stopped_df))
+    stopping_key <- do.call(paste, c(stopped_df[stopping_by_cols], sep = "|||"))
+    stopping_groups <- split(stopped_df, stopping_key, drop = TRUE)
+
+    stopping_list <- lapply(stopping_groups, function(grp) {
+      data.frame(
+        id_cond = grp$id_cond[1],
+        id_look = grp$id_look[1],
+        n_analyzed = grp$n_analyzed[1],
+        n_stp_look = length(unique(grp$id_iter)),
+        n_eff_look = sum(grp$stop_reason == "stop_efficacy", na.rm = TRUE),
+        n_fut_look = sum(grp$stop_reason == "stop_futility", na.rm = TRUE),
+        stringsAsFactors = FALSE
+      )
+    })
+    stopping_stats <- do.call(rbind, stopping_list)
+    rownames(stopping_stats) <- NULL
+
+    # Join with total sims and compute proportions
+    stopping_stats <- merge(stopping_stats, n_total_sims_df, by = "id_cond", all.x = TRUE)
+    stopping_stats$prop_stp_look <- stopping_stats$n_stp_look / stopping_stats$n_total_sims
+    stopping_stats$prop_eff_look <- stopping_stats$n_eff_look / stopping_stats$n_total_sims
+    stopping_stats$prop_fut_look <- stopping_stats$n_fut_look / stopping_stats$n_total_sims
+
+    # Sort and compute cumulative stopping
+    stopping_stats <- stopping_stats[order(stopping_stats$id_cond, stopping_stats$id_look), ]
+    stopping_stats$cumul_stp <- ave(stopping_stats$prop_stp_look,
+                                     stopping_stats$id_cond,
+                                     FUN = cumsum)
+
+    stopping_cols <- c("id_cond", "id_look", "prop_stp_look", "prop_eff_look",
+                       "prop_fut_look", "cumul_stp")
+    stopping_by_look <- stopping_stats[, stopping_cols, drop = FALSE]
+  } else {
+    stopping_by_look <- data.frame(
+      id_cond = integer(), id_look = integer(),
+      prop_stp_look = numeric(), prop_eff_look = numeric(),
+      prop_fut_look = numeric(), cumul_stp = numeric(),
+      stringsAsFactors = FALSE
     )
+  }
+
+  # =============================================================================
+  # PER-LOOK POWER METRICS (base R)
+  # =============================================================================
+  by_look_by_cols <- intersect(
+    c("id_cond", "par_name", "thr_fx_eff", "thr_fx_fut", "thr_dec_eff", "thr_dec_fut",
+      "id_look", "n_analyzed"),
+    names(df)
+  )
+
+  by_look_key <- do.call(paste, c(df[by_look_by_cols], sep = "|||"))
+  by_look_groups <- split(df, by_look_key, drop = TRUE)
+
+  by_look_agg <- function(grp) {
+    data.frame(
+      pr_eff = mean(get_col(grp, "pr_eff"), na.rm = TRUE),
+      se_pr_eff = calculate_mcse_mean(get_col(grp, "pr_eff"), n_sims),
+      pr_fut = mean(get_col(grp, "pr_fut"), na.rm = TRUE),
+      se_pr_fut = calculate_mcse_mean(get_col(grp, "pr_fut"), n_sims),
+      pwr_eff = mean(get_col(grp, "dec_eff"), na.rm = TRUE),
+      se_pwr_eff = calculate_mcse_power(get_col(grp, "dec_eff"), n_sims),
+      pwr_fut = mean(get_col(grp, "dec_fut"), na.rm = TRUE),
+      se_pwr_fut = calculate_mcse_power(get_col(grp, "dec_fut"), n_sims),
+      post_med = mean(get_col(grp, "post_med"), na.rm = TRUE),
+      se_post_med = calculate_mcse_mean(get_col(grp, "post_med"), n_sims),
+      post_mn = mean(get_col(grp, "post_mn"), na.rm = TRUE),
+      se_post_mn = calculate_mcse_mean(get_col(grp, "post_mn"), n_sims),
+      post_sd = mean(get_col(grp, "post_sd"), na.rm = TRUE),
+      se_post_sd = calculate_mcse_mean(get_col(grp, "post_sd"), n_sims),
+      rhat = mean(get_col(grp, "rhat"), na.rm = TRUE),
+      ess_bulk = mean(get_col(grp, "ess_bulk"), na.rm = TRUE),
+      conv_rate = mean(get_col(grp, "converged"), na.rm = TRUE),
+      stringsAsFactors = FALSE
+    )
+  }
+
+  by_look_list <- lapply(by_look_groups, by_look_agg)
+  by_look_results <- do.call(rbind, by_look_list)
+  rownames(by_look_results) <- NULL
+
+  # Extract group keys
+  by_look_keys <- lapply(by_look_groups, function(g) g[1, by_look_by_cols, drop = FALSE])
+  by_look_keys_df <- do.call(rbind, by_look_keys)
+  rownames(by_look_keys_df) <- NULL
+
+  by_look_df <- cbind(by_look_keys_df, by_look_results)
+
+  # Join per-look stopping stats
+  by_look_df <- merge(by_look_df, stopping_by_look,
+                      by = c("id_cond", "id_look"), all.x = TRUE)
+
+  # Fill NA stopping stats with 0
+  by_look_df$prop_stp_look[is.na(by_look_df$prop_stp_look)] <- 0
+  by_look_df$prop_eff_look[is.na(by_look_df$prop_eff_look)] <- 0
+  by_look_df$prop_fut_look[is.na(by_look_df$prop_fut_look)] <- 0
+  by_look_df$cumul_stp[is.na(by_look_df$cumul_stp)] <- 0
+
+  by_look <- by_look_df
+
+  # =============================================================================
+  # OVERALL TRIAL SUMMARY (base R)
+  # =============================================================================
+  # Get first stopping point per simulation (if any)
+  overall_stopped_idx <- which(!is.na(df[["stop_reason"]]))
+  overall_stopped_df <- df[overall_stopped_idx, , drop = FALSE]
+
+  if (nrow(overall_stopped_df) > 0) {
+    # Sort and get first stop per simulation
+    overall_stopped_df <- overall_stopped_df[order(overall_stopped_df$id_cond,
+                                                     overall_stopped_df$id_iter,
+                                                     overall_stopped_df$id_look), ]
+    sim_stop_key <- paste(overall_stopped_df$id_cond, overall_stopped_df$id_iter, sep = "|||")
+    first_stop_idx <- !duplicated(sim_stop_key)
+    first_stops <- overall_stopped_df[first_stop_idx, , drop = FALSE]
+
+    stopping_info <- data.frame(
+      id_cond = first_stops$id_cond,
+      id_iter = first_stops$id_iter,
+      stop_n = first_stops$n_analyzed,
+      stop_reason = first_stops$stop_reason,
+      stringsAsFactors = FALSE
+    )
+  } else {
+    stopping_info <- data.frame(
+      id_cond = integer(), id_iter = integer(),
+      stop_n = integer(), stop_reason = character(),
+      stringsAsFactors = FALSE
+    )
+  }
+
+  # Get all unique simulation runs
+  all_sims <- unique(df[, c("id_cond", "id_iter"), drop = FALSE])
+
+  # Join to get stopping info for each sim (NA if no stop)
+  sim_outcomes <- merge(all_sims, stopping_info, by = c("id_cond", "id_iter"), all.x = TRUE)
+
+  # Get planned n_total (max n_analyzed per condition)
+  planned_n_list <- tapply(df[["n_analyzed"]], df[["id_cond"]],
+                            function(x) max(x, na.rm = TRUE), simplify = FALSE)
+  planned_n_df <- data.frame(
+    id_cond = as.integer(names(planned_n_list)),
+    n_planned = unlist(planned_n_list),
+    stringsAsFactors = FALSE
+  )
+
+  # Merge planned n with simulation outcomes
+  sim_outcomes <- merge(sim_outcomes, planned_n_df, by = "id_cond", all.x = TRUE)
+
+  # Compute effective_n and stopped_early
+  sim_outcomes$effective_n <- ifelse(is.na(sim_outcomes$stop_n),
+                                      sim_outcomes$n_planned,
+                                      sim_outcomes$stop_n)
+  sim_outcomes$stopped_early <- !is.na(sim_outcomes$stop_n)
+
+  # Compute overall summaries by condition
+  overall_groups <- split(sim_outcomes, sim_outcomes$id_cond, drop = TRUE)
+
+  overall_list <- lapply(overall_groups, function(grp) {
+    n_grp <- nrow(grp)
+    data.frame(
+      n_planned = grp$n_planned[1],
+      n_mn = mean(grp$effective_n, na.rm = TRUE),
+      se_n_mn = stats::sd(grp$effective_n, na.rm = TRUE) / sqrt(n_grp),
+      n_mdn = calc_robust_median(grp$effective_n),
+      n_mode = calc_mode(grp$effective_n),
+      prop_at_mode = calc_prop_at_mode(grp$effective_n),
+      prop_stp_early = mean(grp$stopped_early, na.rm = TRUE),
+      prop_stp_eff = sum(grp$stop_reason == "stop_efficacy", na.rm = TRUE) / n_grp,
+      prop_stp_fut = sum(grp$stop_reason == "stop_futility", na.rm = TRUE) / n_grp,
+      stringsAsFactors = FALSE
+    )
+  })
+
+  overall_results <- do.call(rbind, overall_list)
+  overall_results$id_cond <- as.integer(names(overall_list))
+  rownames(overall_results) <- NULL
+
+  overall_df <- overall_results
+
+  # Compute prop_no_dec
+  overall_df$prop_no_dec <- 1 - overall_df$prop_stp_eff - overall_df$prop_stp_fut
 
   # Add power metrics from final look to overall
-  final_look_id <- max(by_look$id_look)
-  final_power <- by_look |>
-    dplyr::filter(.data$id_look == final_look_id) |>
-    dplyr::select("id_cond", "pwr_eff", "pwr_fut", "se_pwr_eff", "se_pwr_fut")
+  final_look_id <- max(by_look_df$id_look)
+  power_cols <- c("id_cond", "pwr_eff", "pwr_fut", "se_pwr_eff", "se_pwr_fut")
+  power_cols <- intersect(power_cols, names(by_look_df))
+  final_power_df <- by_look_df[by_look_df[["id_look"]] == final_look_id,
+                                power_cols, drop = FALSE]
 
   # Merge and reorder columns logically
+  overall_df <- merge(overall_df, final_power_df, by = "id_cond", all.x = TRUE)
 
-  # NOTE: We do NOT add n_total here because grid already has it.
-  # Adding it here would cause duplicate columns (n_total.x, n_total.y) after
-
-  # the join in power_analysis(), breaking column access. The n_total from
-  # grid is the authoritative simulation parameter.
-  overall <- overall |>
-    dplyr::left_join(final_power, by = "id_cond") |>
-    dplyr::select(
-      "id_cond",
-      # Sample size metrics (n_total comes from grid via join)
-      "n_planned", "n_mn", "n_mdn", "n_mode", "se_n_mn", "prop_at_mode",
-      # Power metrics
-      "pwr_eff", "pwr_fut", "se_pwr_eff", "se_pwr_fut",
-      # Stopping proportions
-      "prop_stp_early", "prop_stp_eff", "prop_stp_fut", "prop_no_dec"
-    )
+  # Select and order columns (only those that exist)
+  col_order <- c("id_cond", "n_planned", "n_mn", "n_mdn", "n_mode", "se_n_mn",
+                 "prop_at_mode", "pwr_eff", "pwr_fut", "se_pwr_eff", "se_pwr_fut",
+                 "prop_stp_early", "prop_stp_eff", "prop_stp_fut", "prop_no_dec")
+  col_order <- intersect(col_order, names(overall_df))
+  overall <- overall_df[, col_order, drop = FALSE]
 
   return(list(
     by_look = by_look,
@@ -669,7 +589,7 @@ resummarize_boundaries <- function(power_result,
                                     thr_dec_fut = NULL) {
 
   # Validate input
- if (!inherits(power_result, "rctbayespower::rctbp_power_analysis") &&
+  if (!inherits(power_result, "rctbayespower::rctbp_power_analysis") &&
       !inherits(power_result, "rctbp_power_analysis")) {
     cli::cli_abort(c(
       "{.arg power_result} must be an rctbp_power_analysis object",
@@ -689,11 +609,21 @@ resummarize_boundaries <- function(power_result,
     ))
   }
 
+  # Convert to data.table
+  dt <- data.table::as.data.table(results_raw)
+
   # Get look structure for resolving functions
-  look_info <- results_raw |>
-    dplyr::select(id_look, n_analyzed) |>
-    dplyr::distinct() |>
-    dplyr::arrange(id_look)
+  look_cols <- intersect(c("id_look", "n_analyzed"), names(dt))
+  if (length(look_cols) == 0) {
+    cli::cli_abort(c(
+      "Required columns for boundary analysis not found",
+      "x" = "Need 'id_look' and 'n_analyzed' columns in results",
+      "i" = "This function requires sequential analysis results with interim looks"
+    ))
+  }
+  look_info_dt <- unique(dt[, look_cols, with = FALSE])
+  data.table::setorderv(look_info_dt, "id_look")
+  look_info <- as.data.frame(look_info_dt)
 
   n_total <- max(look_info$n_analyzed)
 
@@ -710,41 +640,81 @@ resummarize_boundaries <- function(power_result,
   fut_thresholds <- resolve_boundary_vector(thr_dec_fut, look_info, n_total)
 
   # Create threshold lookup
-  threshold_df <- look_info |>
-    dplyr::mutate(
-      thr_dec_eff_new = eff_thresholds,
-      thr_dec_fut_new = fut_thresholds
-    )
+  threshold_dt <- data.table::copy(look_info_dt)
+  threshold_dt[, `:=`(
+    thr_dec_eff_new = eff_thresholds,
+    thr_dec_fut_new = fut_thresholds
+  )]
+
+  # Merge thresholds with results
+  dt <- merge(dt, threshold_dt, by = c("id_look", "n_analyzed"), all.x = TRUE)
+
+  # Sort for proper cumsum calculations within groups
+  data.table::setorderv(dt, c("id_cond", "id_iter", "par_name", "id_look"))
 
   # Recompute decisions with new thresholds
-  results_recomputed <- results_raw |>
-    dplyr::left_join(threshold_df, by = c("id_look", "n_analyzed")) |>
-    dplyr::group_by(.data$id_cond, .data$id_iter, .data$par_name) |>
-    dplyr::arrange(.data$id_look) |>
-    dplyr::mutate(
-      # Recompute binary decisions
-      dec_eff = as.integer(.data$pr_eff >= .data$thr_dec_eff_new),
-      dec_fut = as.integer(.data$pr_fut >= .data$thr_dec_fut_new),
-      # Update thr_dec columns to show what was applied
-      thr_dec_eff = .data$thr_dec_eff_new,
-      thr_dec_fut = .data$thr_dec_fut_new,
-      # Recompute stopping
-      triggers_stop = (.data$dec_eff == 1) | (.data$dec_fut == 1 & .data$dec_eff == 0),
-      already_stopped = cumsum(dplyr::lag(.data$triggers_stop, default = FALSE)) > 0,
-      is_stop_point = .data$triggers_stop & !.data$already_stopped,
-      stopped = cumsum(.data$is_stop_point) > 0,
-      stop_reason = dplyr::case_when(
-        .data$is_stop_point & .data$dec_eff == 1 ~ "stop_efficacy",
-        .data$is_stop_point & .data$dec_fut == 1 ~ "stop_futility",
-        TRUE ~ NA_character_
-      )
-    ) |>
-    dplyr::ungroup() |>
-    dplyr::select(-"thr_dec_eff_new", -"thr_dec_fut_new", -"triggers_stop",
-                  -"already_stopped", -"is_stop_point")
+  dt[, `:=`(
+    # Recompute binary decisions
+    dec_eff = as.integer(pr_eff >= thr_dec_eff_new),
+    dec_fut = as.integer(pr_fut >= thr_dec_fut_new),
+    # Update thr_dec columns to show what was applied
+    thr_dec_eff = thr_dec_eff_new,
+    thr_dec_fut = thr_dec_fut_new
+  )]
+
+  # Recompute stopping within each group
+  group_by_cols <- intersect(c("id_cond", "id_iter", "par_name"), names(dt))
+  dt[, `:=`(
+    triggers_stop = (dec_eff == 1L) | (dec_fut == 1L & dec_eff == 0L)
+  )]
+
+  dt[, `:=`(
+    already_stopped = cumsum(data.table::shift(triggers_stop, fill = FALSE)) > 0
+  ), by = group_by_cols]
+
+  dt[, `:=`(
+    is_stop_point = triggers_stop & !already_stopped
+  )]
+
+  dt[, `:=`(
+    stopped = cumsum(is_stop_point) > 0
+  ), by = group_by_cols]
+
+  dt[, stop_reason := data.table::fifelse(
+    is_stop_point & dec_eff == 1L, "stop_efficacy",
+    data.table::fifelse(is_stop_point & dec_fut == 1L, "stop_futility", NA_character_)
+  )]
+
+  # Remove temporary columns
+  dt[, c("thr_dec_eff_new", "thr_dec_fut_new", "triggers_stop",
+         "already_stopped", "is_stop_point") := NULL]
+
+  results_recomputed <- as.data.frame(dt)
 
   # Summarize with existing function
   summary_result <- summarize_sims_with_interim(results_recomputed, n_sims)
+
+  # Get condition grid columns from original results to preserve them
+  # (e.g., n_total, b_arm_treat, analysis_at)
+  orig_cond <- power_result@results_conditions
+  grid_cols <- setdiff(names(orig_cond), names(summary_result$overall))
+  if (length(grid_cols) > 0 && "id_cond" %in% names(orig_cond)) {
+    grid_subset <- orig_cond[, c("id_cond", grid_cols), drop = FALSE]
+    # Merge grid columns into overall results
+    summary_result$overall <- merge(
+      summary_result$overall,
+      grid_subset,
+      by = "id_cond",
+      all.x = TRUE
+    )
+    # Also merge grid columns into by_look results (for plotting)
+    summary_result$by_look <- merge(
+      summary_result$by_look,
+      grid_subset,
+      by = "id_cond",
+      all.x = TRUE
+    )
+  }
 
   # Create new power_analysis object with updated results
   new_result <- power_result
@@ -816,7 +786,7 @@ compare_boundaries <- function(power_result, boundaries) {
   }
 
   # Process each boundary configuration
-  purrr::map_dfr(names(boundaries), function(name) {
+  results_list <- lapply(names(boundaries), function(name) {
     b <- boundaries[[name]]
 
     reanalyzed <- resummarize_boundaries(
@@ -826,7 +796,14 @@ compare_boundaries <- function(power_result, boundaries) {
     )
 
     # Extract overall summary and add boundary name
-    reanalyzed@results_conditions |>
-      dplyr::mutate(boundary = name, .before = 1)
+    result_df <- reanalyzed@results_conditions
+    result_df$boundary <- name
+    result_df
   })
+
+  # Bind all results and reorder columns
+  result <- data.table::rbindlist(results_list, use.names = TRUE, fill = TRUE)
+  # Move boundary column to first position
+  data.table::setcolorder(result, c("boundary", setdiff(names(result), "boundary")))
+  as.data.frame(result)
 }

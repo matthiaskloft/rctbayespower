@@ -109,13 +109,6 @@ rctbp_objectives <- S7::new_class(
       default = NULL
     ),
 
-    # Secondary objectives: params to minimize/maximize after target achieved
-    # e.g., list(n_total = "minimize"). Auto-inferred if NULL
-    secondary = S7::new_property(
-      class = S7::class_list,
-      default = list()
-    ),
-
     # Internal: parsed objective information
     objective_info = S7::new_property(
       class = S7::class_list,
@@ -203,33 +196,56 @@ rctbp_objectives <- S7::new_class(
 #' \describe{
 #'   \item{objectives}{Reference to the original [rctbp_objectives] specification}
 #'   \item{archive}{Data frame of all evaluations (parameters and objective values)}
-#'   \item{result}{Data frame with optimal design(s) - single row for single-objective,
-#'     multiple rows for Pareto front}
+#'   \item{result}{Data frame with optimal design. For single/target optimization,
+#'     includes surrogate model predictions: `surrogate_pred`, `surrogate_se`,
+#'     `surrogate_ci_lower`, `surrogate_ci_upper`. For multi-objective, same as
+#'     `pareto_front`.}
 #'   \item{pareto_front}{Data frame with Pareto-optimal solutions for multi-objective
-#'     optimization (NULL for single-objective)}
+#'     optimization (NULL for single/target optimization)}
 #'   \item{convergence}{Data frame tracking best objective value over iterations}
-#'   \item{best_power_analysis}{Full [rctbp_power_analysis] object from the best solution}
-#'   \item{reference_values}{Named list of reference values from warmup phase used for
-#'     secondary objective scaling (e.g., `list(n_total = 150)`)}
-#'   \item{n_sims}{Number of simulations used per evaluation}
+#'   \item{best_power_analysis}{Full [rctbp_power_analysis] object from final confirmation
+#'     simulation at the optimal point}
+#'   \item{optimum_surrogate}{List with surrogate-based optimum selection results:
+#'     `params` (optimal parameters), `predicted_mean`, `predicted_se`, `ci_lower`,
+#'     `ci_upper`, `domain_used` (constrained search domain). NULL for multi-objective.}
+#'   \item{optimum_confident}{List with confident optimum from empirical stepping:
+#'     `params` (optimal parameters where CI excludes target), `value` (actual
+#'     simulated objective), `se`, `ci_lower`, `ci_upper`, `n_evals` (number of
+#'     evaluations to find). NULL if no point confidently achieves target within
+#'     `max_final_evals` or for multi-objective.}
+#'   \item{n_sims}{Maximum number of simulations per evaluation (final fidelity level)}
 #'   \item{n_evals}{Total number of evaluations performed}
-#'   \item{elapsed_time}{Total optimization time in seconds}
-#'   \item{early_stopped}{Logical indicating if optimization stopped early}
+#'   \item{elapsed_time}{Total optimization time in minutes}
+#'   \item{early_stopped}{Logical indicating if optimization stopped early via patience}
 #'   \item{backend_used}{Backend used for power analysis ("brms" or "bf")}
 #'   \item{optimization_type}{Type of optimization: "single", "target", or "multi"}
 #'   \item{mbo_objects}{Named list of mlr3mbo/bbotk objects for advanced access:
 #'     \describe{
 #'       \item{instance}{bbotk OptimInstance object containing the optimization state}
-#'       \item{surrogate}{mlr3mbo SurrogateLearner (e.g., Gaussian Process)}
-#'       \item{acq_function}{mlr3mbo acquisition function (e.g., Expected Improvement)}
+#'       \item{surrogate}{mlr3mbo SurrogateLearner (GP or RF)}
+#'       \item{acq_function}{mlr3mbo acquisition function}
 #'       \item{acq_optimizer}{mlr3mbo acquisition function optimizer}
 #'       \item{optimizer}{bbotk Optimizer object}
-#'       \item{loop_function}{mlr3mbo loop function (bayesopt_ego or bayesopt_parego)}
 #'     }
 #'   }
 #' }
 #'
-#' @seealso [optimization()], [build_objectives()], [plot.rctbp_optimization_result]
+#' @section Optimum Selection Methods:
+#' Two optimum estimates are provided for target optimization:
+#' \describe{
+#'   \item{Surrogate Optimum}{Searches over constrained parameter domain (trimmed
+#'     by IQR) using surrogate model predictions. Controlled by `trim_param_space`.
+#'     This is the point estimate of the optimal design. Results stored in
+#'     `optimum_surrogate`. Use [find_surrogate_optimum()] to recompute.}
+#'   \item{Confident Optimum}{Found via empirical stepping from surrogate optimum.
+#'     Starting at the surrogate optimum, simulations are run with increasing
+#'     parameter values until the CI excludes the target. More conservative than
+#'     the surrogate optimum. Results stored in `optimum_confident`. Step size
+#'     controlled by `profile_resolution`, max steps by `max_final_evals`.}
+#' }
+#'
+#' @seealso [optimization()], [build_objectives()], [plot.rctbp_optimization_result],
+#'   [find_surrogate_optimum()]
 #' @name rctbp_optimization_result
 #' @importFrom S7 new_class class_list class_any class_data.frame class_numeric class_character new_property
 rctbp_optimization_result <- S7::new_class(
@@ -268,21 +284,20 @@ rctbp_optimization_result <- S7::new_class(
       default = NULL
     ),
 
-    # Reference values from warmup phase (for secondary objectives)
-    # e.g., list(n_total = 150, thr_dec_eff = 0.95)
-    reference_values = S7::new_property(
-      class = S7::class_list,
-      default = list()
-    ),
-
     # Optimum selection results
-    # Results from both selection methods for comparison
+    # Surrogate search finds optimum via surrogate model in constrained domain
     optimum_surrogate = S7::new_property(
       class = S7::class_list | NULL,
       default = NULL
     ),
-    optimum_empirical = S7::new_property(
+    # Confident optimum: where CI excludes target (statistically confident)
+    optimum_confident = S7::new_property(
       class = S7::class_list | NULL,
+      default = NULL
+    ),
+    # Surrogate profile: predictions along search dimension(s) for visualization
+    surrogate_profile = S7::new_property(
+      class = S7::class_data.frame | NULL,
       default = NULL
     ),
 
@@ -397,72 +412,109 @@ S7::method(print, rctbp_objectives) <- function(x, ...) {
 S7::method(print, rctbp_optimization_result) <- function(x, ...) {
   cli::cli_h1("Optimization Results")
 
-  # Status
+  # Status: not yet run
+
   if (nrow(x@archive) == 0) {
     cli::cli_alert_warning("Optimization not yet run")
     cli::cli_text("Use {.code optimization()} to execute")
     return(invisible(x))
   }
 
-  # Summary
+  # ===========================================================================
+  # SUMMARY
+  # ===========================================================================
   runtime <- format_duration(x@elapsed_time)
+  status_msg <- if (x@early_stopped) "Early stopped" else "Completed"
   cli::cli_alert_success(
-    "Completed in {runtime} | {x@n_evals} evaluations x {x@n_sims} sims | {x@backend_used}"
+    "{status_msg} in {runtime} | {x@n_evals} evals | {x@backend_used}"
   )
 
-  # Type-specific output
-  cli::cli_h2("Optimization Type: {.val {x@optimization_type}}")
-
+  # ===========================================================================
+  # MULTI-OBJECTIVE: PARETO FRONT
+  # ===========================================================================
   if (x@optimization_type == "multi" && !is.null(x@pareto_front)) {
-    cli::cli_text("Pareto front: {nrow(x@pareto_front)} solutions")
-    cli::cli_h2("Pareto Front")
-    # Show first few solutions
+    cli::cli_h2("Pareto Front ({nrow(x@pareto_front)} solutions)")
     n_show <- min(5, nrow(x@pareto_front))
     print(x@pareto_front[seq_len(n_show), , drop = FALSE])
     if (nrow(x@pareto_front) > n_show) {
       cli::cli_text("... and {nrow(x@pareto_front) - n_show} more")
     }
-  } else {
-    cli::cli_h2("Optimal Design")
-    if (nrow(x@result) > 0) {
-      print(x@result)
+    cli::cli_text("")
+    cli::cli_rule()
+    cli::cli_alert_info("All evaluations: {.code result@archive}")
+    cli::cli_alert_info("Visualize: {.code plot(result)}")
+    return(invisible(x))
+  }
 
-      # Show surrogate prediction with 95% CI
-      if ("surrogate_se" %in% names(x@result) && !is.na(x@result$surrogate_se[1])) {
-        obj_name <- names(x@objectives@objectives)[1]
-        pred <- x@result$surrogate_pred[1]
-        ci_lo <- x@result$surrogate_ci_lower[1]
-        ci_hi <- x@result$surrogate_ci_upper[1]
-        cli::cli_text("")
-        cli::cli_alert_info(
-          "Surrogate prediction: {obj_name} = {round(pred, 3)} (95% CI: [{round(ci_lo, 3)}, {round(ci_hi, 3)}])"
+  # ===========================================================================
+  # SINGLE/TARGET OBJECTIVE: OPTIMAL DESIGN
+  # ===========================================================================
+  cli::cli_h2("Optimal Design")
+
+  if (nrow(x@result) > 0) {
+    # Show key result columns (exclude surrogate_ columns from main display)
+    display_cols <- setdiff(
+      names(x@result),
+      c("surrogate_pred", "surrogate_se", "surrogate_ci_lower", "surrogate_ci_upper")
+    )
+    print(x@result[, display_cols, drop = FALSE])
+  }
+
+  # ===========================================================================
+  # OPTIMUM COMPARISON (if both methods available)
+  # ===========================================================================
+  has_surr <- !is.null(x@optimum_surrogate) && length(x@optimum_surrogate) > 0
+  has_conf <- !is.null(x@optimum_confident) && length(x@optimum_confident) > 0
+
+  if (has_surr || has_conf) {
+    cli::cli_h2("Optimum Selection")
+
+    obj_name <- if (!is.null(x@objectives)) names(x@objectives@objectives)[1] else "objective"
+
+    if (has_surr) {
+      surr <- x@optimum_surrogate
+      surr_n <- if ("n_total" %in% names(surr$params)) round(surr$params$n_total) else "N/A"
+      surr_pred <- round(surr$predicted_mean, 3)
+      surr_ci <- paste0("[", round(surr$ci_lower, 3), ", ", round(surr$ci_upper, 3), "]")
+
+      # Show domain constraint if available
+      if (!is.null(surr$domain_used)) {
+        domain_str <- paste(
+          vapply(names(surr$domain_used), function(p) {
+            bounds <- surr$domain_used[[p]]
+            sprintf("%s:[%.0f,%.0f]", p, bounds[1], bounds[2])
+          }, character(1)),
+          collapse = ", "
         )
+        cli::cli_alert_info("Surrogate: n={surr_n}, {obj_name}={surr_pred} {surr_ci} (domain: {domain_str})")
+      } else {
+        cli::cli_alert_info("Surrogate: n={surr_n}, {obj_name}={surr_pred} {surr_ci}")
       }
     }
-  }
 
-  # Show reference values from warmup phase (if any)
-  if (length(x@reference_values) > 0) {
-    # Filter to numeric values only
-    numeric_refs <- x@reference_values[vapply(x@reference_values, is.numeric, logical(1))]
-    if (length(numeric_refs) > 0) {
-      cli::cli_text("")
-      ref_str <- paste(
-        paste0(names(numeric_refs), "=", round(unlist(numeric_refs), 1)),
-        collapse = ", "
-      )
-      cli::cli_alert_info("Warmup reference values: {ref_str}")
+    if (has_conf) {
+      conf <- x@optimum_confident
+      conf_n <- if ("n_total" %in% names(conf$params)) round(conf$params$n_total) else "N/A"
+      conf_val <- round(conf$value, 3)
+      conf_ci <- paste0("[", round(conf$ci_lower, 3), ", ", round(conf$ci_upper, 3), "]")
+      n_evals_str <- if (!is.null(conf$n_evals)) paste0(" (", conf$n_evals, " evals)") else ""
+      cli::cli_alert_info("Confident (CI excludes target): n={conf_n}, {obj_name}={conf_val} {conf_ci}{n_evals_str}")
+    } else if (has_surr) {
+      cli::cli_alert_warning("No confident optimum found")
     }
   }
 
-  # Hints
+  # ===========================================================================
+  # HINTS
+  # ===========================================================================
   cli::cli_text("")
   cli::cli_rule()
-  cli::cli_alert_info("All evaluations: {.code result@archive}")
-  cli::cli_alert_info("Best power analysis: {.code result@best_power_analysis}")
-  cli::cli_alert_info("mlr3mbo objects: {.code result@mbo_objects}")
+  cli::cli_alert_info("Archive: {.code result@archive} ({nrow(x@archive)} rows)")
+  cli::cli_alert_info("Power analysis: {.code result@best_power_analysis}")
+  if (has_surr) {
+    cli::cli_alert_info("Re-compute surrogate optimum: {.code find_surrogate_optimum(result)}")
+  }
   cli::cli_alert_info("Visualize: {.code plot(result)}")
-
 
   invisible(x)
 }

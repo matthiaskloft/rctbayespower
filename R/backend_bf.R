@@ -285,14 +285,42 @@ is_bf_cache_valid <- function() {
 #' @return List with bf, np, and keras Python modules
 #' @keywords internal
 require_bf_init <- function() {
-  if (!is_bf_cache_valid()) {
-    cli::cli_abort(c(
-      "BayesFlow not initialized",
-      "i" = "Call {.code init_bf_python()} at the start of your script",
-      "i" = "See {.code ?init_bf_python} for setup instructions"
-    ))
+ if (!is_bf_cache_valid()) {
+    # Try to auto-reinitialize if we have a stored envname
+    # This handles cases where Python GC made cached objects stale
+    if (!is.null(.bf_cache$envname) && nzchar(.bf_cache$envname)) {
+      tryCatch({
+        # Silent reinit - just refresh the module references
+        reinit_bf_cache()
+      }, error = function(e) {
+        # Reinit failed, give user the standard error
+      })
+    }
+
+    # Check again after potential reinit
+    if (!is_bf_cache_valid()) {
+      cli::cli_abort(c(
+        "BayesFlow not initialized",
+        "i" = "Call {.code init_bf()} to initialize BayesFlow",
+        "i" = "Note: This is required after {.code devtools::load_all()} or package reload"
+      ))
+    }
   }
   list(bf = .bf_cache$bf, np = .bf_cache$np, keras = .bf_cache$keras)
+}
+
+#' Reinitialize BayesFlow Cache (Internal)
+#'
+#' Refreshes the cached Python module references without full reinitialization.
+#' Used when Python GC has made cached objects stale.
+#'
+#' @keywords internal
+reinit_bf_cache <- function() {
+  # Reimport core modules
+  .bf_cache$np <- reticulate::import("numpy", convert = FALSE)
+  .bf_cache$keras <- reticulate::import("keras")
+  .bf_cache$bf <- reticulate::import("bayesflow")
+  .bf_cache$initialized <- TRUE
 }
 
 
@@ -396,6 +424,17 @@ check_bf_dependencies <- function(silent = FALSE) {
 #' @keywords internal
 get_bf_envs <- function() {
   venvs <- tryCatch(reticulate::virtualenv_list(), error = function(e) character(0))
+
+  # Filter to environments that actually exist (virtualenv_list can return stale entries)
+  venvs <- vapply(venvs, function(env) {
+    tryCatch({
+      # Check if Python executable exists
+      py_path <- reticulate::virtualenv_python(env)
+      file.exists(py_path)
+    }, error = function(e) FALSE)
+  }, logical(1))
+  venvs <- names(venvs)[venvs]
+
   bf_venvs <- venvs[grepl("rctbp|rctbayespower", venvs, ignore.case = TRUE)]
 
   list(
@@ -1430,29 +1469,40 @@ is_bf_mock_mode <- function() {
 #' @export
 clear_gpu_memory <- function(r_gc = TRUE) {
   tryCatch({
+    # Reuse cached Python modules if available to avoid repeated imports
+    # which can affect reticulate state
+    if (is.null(.bf_cache$gc_mod)) {
+      .bf_cache$gc_mod <- reticulate::import("gc", delay_load = FALSE)
+    }
+    if (is.null(.bf_cache$torch)) {
+      .bf_cache$torch <- reticulate::import("torch", delay_load = FALSE)
+    }
+
     # Run Python garbage collection multiple times
     # (cyclic references may need multiple passes)
-    gc_mod <- reticulate::import("gc", delay_load = FALSE)
-    gc_mod$collect()
-    gc_mod$collect()  # Second pass for cyclic refs
+    .bf_cache$gc_mod$collect()
+    .bf_cache$gc_mod$collect()  # Second pass for cyclic refs
 
     # Clear CUDA cache if available
-    torch <- reticulate::import("torch", delay_load = FALSE)
-    if (torch$cuda$is_available()) {
+    if (.bf_cache$torch$cuda$is_available()) {
       # Synchronize first to ensure all async ops complete
-      torch$cuda$synchronize()
+      .bf_cache$torch$cuda$synchronize()
       # Empty the cache
-      torch$cuda$empty_cache()
+      .bf_cache$torch$cuda$empty_cache()
       # Synchronize again
-      torch$cuda$synchronize()
+      .bf_cache$torch$cuda$synchronize()
     }
   }, error = function(e) {
     # Silently ignore - memory cleanup is best-effort
+    # Clear cached modules on error so they get reimported next time
+    .bf_cache$gc_mod <- NULL
+    .bf_cache$torch <- NULL
   })
 
   # Run R garbage collection to release reticulate references
- if (r_gc) {
-    gc(verbose = FALSE, full = TRUE)
+  # Use regular gc (not full) to avoid potentially invalidating cached Python objects
+  if (r_gc) {
+    gc(verbose = FALSE, full = FALSE)
   }
 
   invisible(NULL)

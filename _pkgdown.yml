@@ -9,7 +9,21 @@ template:
 
 exclude: |
   CLAUDE.md
-  
+
+articles:
+- title: "Getting Started"
+  navbar: ~
+  contents:
+  - articles/01-introduction
+  - articles/02-prior-specification
+  - articles/03-algorithm-performance
+
+- title: "BayesFlow Backend"
+  contents:
+  - articles/04-bayesflow
+  - articles/05a-bf_vs_brms_cpu_1_core
+  - articles/05b-bf_vs_brms_gpu
+
 reference:
 - title: "Core Power Analysis Functions"
   desc: "Main functions for conducting Bayesian power analysis"

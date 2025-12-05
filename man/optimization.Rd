@@ -8,21 +8,22 @@ optimization(
   objectives,
   n_sims = 200,
   evals_per_step = 10,
-  use_warmup = TRUE,
-  warmup_n_sims = NULL,
-  warmup_evals = NULL,
-  warmup_margin = NULL,
   max_evals = 50,
   n_cores = 1,
   surrogate = c("rf", "gp"),
   acq_function = "auto",
+  eic_kappa = 0,
+  penalty = c("none", "hard", "soft", "ratio", "logit_distance"),
+  penalty_alpha = 0.95,
+  penalty_kappa = 2,
   init_design = c("lhs", "random", "sobol"),
   init_design_size = NULL,
   patience = 30,
   min_delta = 0.001,
-  optimum = c("surrogate", "empirical"),
   sims_final_run = 1000,
   trim_param_space = 0.25,
+  profile_resolution = "auto",
+  max_final_evals = 10,
   bf_args = list(),
   brms_args = list(),
   refresh = 5,
@@ -52,20 +53,6 @@ Example: \code{evals_per_step = c(15, 10, 10, 15)} with \code{n_sims = c(100, 20
 means 15 evals at 100, 10 at 200, 10 at 500, 15 at 1000 (50 total).
 }}
 
-\item{use_warmup}{Logical (default TRUE). When TRUE and using progressive
-fidelity (\code{length(n_sims) > 1}), the first fidelity level is treated as a
-warmup phase to estimate reference values for secondary objectives. During
-warmup, inverse bonus (\code{min/value}) is used. After warmup, reference-based
-bonus (\code{1 - value/reference}) is used. Warmup archive points are recomputed
-with the new bonus and seed the main phase GP. Requires secondary objectives
-(auto-inferred or explicit via \code{\link[=build_objectives]{build_objectives()}}).}
-
-\item{warmup_n_sims}{Deprecated. Use vector \code{n_sims} instead for multi-fidelity.}
-
-\item{warmup_evals}{Deprecated. Use vector \code{n_sims} with \code{evals_per_step} instead.}
-
-\item{warmup_margin}{Deprecated. No longer used.}
-
 \item{max_evals}{Maximum TOTAL number of objective function evaluations (default 50),
 including initial design points. \strong{Ignored when \code{n_sims} is a vector} (total
 evals derived from \code{length(n_sims) * evals_per_step}).}
@@ -75,14 +62,34 @@ evals derived from \code{length(n_sims) * evals_per_step}).}
 \item{surrogate}{Surrogate model type: "rf" (Random Forest, default) or "gp" (Gaussian Process).}
 
 \item{acq_function}{Acquisition function: "auto" (default), "ei" (Expected Improvement),
-"cb" (Confidence Bound), or "pi" (Probability of Improvement).}
+"cb" (Confidence Bound), "pi" (Probability of Improvement), or "eic"
+(Expected Improvement with Constraints). EIC uses a two-surrogate approach
+with P(feasible) weighting for target optimization. Works best with GP surrogate.}
+
+\item{eic_kappa}{Conservatism parameter for EIC acquisition function (default 0).
+Only used when \code{acq_function = "eic"}. Higher values use lower confidence
+bound for P(feasible), making recommendations more conservative:
+0 = neutral (uses posterior mean), 1.96 = 97.5\% LCB, 2.58 = 99.5\% LCB.}
+
+\item{penalty}{Penalty type for target optimization: "none" (default), "hard",
+"soft", "ratio", or "logit_distance". Controls how constraint violations are
+penalized during optimization. "none" uses standard quadratic cost; "hard"
+adds large penalty when P(target achieved) < alpha; "soft" penalizes
+proportionally to violation; "ratio" uses risk-weighted cost n/p_feas^kappa;
+"logit_distance" uses symmetric logit-space distance from target.
+Works best with GP surrogate.}
+
+\item{penalty_alpha}{Confidence level for hard constraint penalty (default 0.95).
+Only used when \code{penalty = "hard"}. Larger values are more conservative.}
+
+\item{penalty_kappa}{Exponent for ratio penalty (default 2). Only used when
+\code{penalty = "ratio"}. Larger values penalize low confidence more strongly.}
 
 \item{init_design}{Initial design method: "lhs" (Latin Hypercube, default),
-"random", or "sobol". Ignored if warmup provides data.}
+"random", or "sobol".}
 
 \item{init_design_size}{Number of initial evaluations. If NULL, uses 4*d where
-d is the number of search parameters. When warmup is enabled, this controls
-how many of the best warmup points are selected for re-evaluation with full n_sims.}
+d is the number of search parameters.}
 
 \item{patience}{Number of evaluations without improvement before early stopping
 (default 30). Only applies to target optimization. Once target is achieved
@@ -95,17 +102,25 @@ target in the optimal window. Set to NULL to disable.}
 achieved within this window and \code{patience} evaluations pass without finding
 smaller parameters that also achieve target in the window.}
 
-\item{optimum}{Optimum selection method for final result: "surrogate" (default)
-uses surrogate model search in constrained domain; "empirical" uses
-confidence interval-based selection from archive points.}
-
 \item{sims_final_run}{Number of simulations for final confirmation run
 (default 1000). Higher values provide more precise final estimates but
 increase computation time.}
 
 \item{trim_param_space}{Trimming proportion for surrogate search domain
 (default 0.25). Constrains search to trimmed quantile range of archive
-parameters. Use 0.25 for IQR, 0 for no constraint, 0.5 for maximum constraint.}
+parameters. Use 0.25 for IQR (25th-75th percentile), 0.1 for 10th-90th
+percentile, 0 for full domain (no constraint). Must be in range [0, 0.5).}
+
+\item{profile_resolution}{Resolution for stepping when finding confident optimum
+(default "auto"). Determines step size when searching for the first parameter
+value where CI excludes target. If "auto", resolution is determined by
+parameter type: 1 for sample size parameters (n_total, n_\emph{), 0.01 for
+probability parameters (thr_}, pwr_\emph{, pr_}). Can also specify a positive number.}
+
+\item{max_final_evals}{Maximum evaluations for final confirmation phase
+(default 10). Controls how many simulations to run when stepping upward
+from the surrogate optimum to find the confident optimum (where CI excludes
+target). The first evaluation is at the surrogate optimum itself.}
 
 \item{bf_args}{Named list of BayesFlow-specific arguments passed to
 \code{\link[=power_analysis]{power_analysis()}}. Options: \code{n_posterior_samples}, \code{batch_size}.

@@ -1,5 +1,6 @@
 ---
-title: "BayesFlow Backend for Fast Power Analysis"
+title: "Backend Comparison"
+subtitle: "brms vs. BayesFlow: Multicore CPU vs. GPU Accelerated Performance"
 author:
  - name: Matthias Kloft
    orcid: 0000-0003-1845-6957
@@ -25,7 +26,6 @@ execute:
 
 library(rctbayespower)
 library(tidyverse)
-library(ggplot2)
 library(pander)
 
 # install venv
@@ -33,7 +33,7 @@ if(!reticulate::virtualenv_exists("rctbp-3-12")){
   setup_bf_python(envname = "rctbp-3-12", python_version = "3.12", cuda_version = "auto")
 }
 # Initialize BayesFlow Python environment
-init_bf_python("rctbp-3-12")
+init_bf("rctbp-3-12")
 
 n_sims <- 1000L
 n_cores <- parallel::detectCores() - 1
@@ -43,7 +43,7 @@ n_cores <- parallel::detectCores() - 1
 
 # Introduction
 
-Power analysis for Bayesian trials typically requires running thousands of simulations, each involving full posterior estimation. With traditional MCMC methods, this can take hours or even days. The **BayesFlow backend** reduces this to seconds.
+Power analysis for Bayesian trials typically requires running thousands of simulations, each involving full posterior estimation. With traditional MCMC methods, large simulation studies can take hours. The **BayesFlow backend** reduces this to minutes.
 
 ## Two Backends
 
@@ -52,9 +52,8 @@ The `rctbayespower` package supports two backends for posterior estimation:
 | | brms/Stan | BayesFlow |
 |--------|-----------|-----------|
 | **Method** | MCMC sampling | Neural posterior estimation |
-| **Speed** | ~10-30 sec/simulation | ~5 ms/simulation |
-| **Accuracy** | Gold standard | Approximate (well-calibrated) |
 | **GPU support** | No | Yes |
+| **CPU parallelization** | Yes | No |
 | **Setup** | R only | Requires Python |
 
 **BayesFlow** uses neural networks trained on simulated data to learn the mapping from summary statistics to posterior distributions. Once trained, inference is a single forward pass—nearly instantaneous.
@@ -229,11 +228,9 @@ format_time <- function(time_sec) {
 
 speedup <- brms_time / bf_time
 
-paste0(
-  cat("BayesFlow:", format_time(bf_time), "\n"),
-  cat("brms:", format_time(brms_time), "\n"),
-  cat("Speedup:", round(speedup, 1), "x\n")
-)
+cat("BayesFlow:", format_time(bf_time), "\n")
+cat("brms:", format_time(brms_time), "\n")
+cat("Speedup:", round(speedup, 1), "x\n")
 ```
 
 ## Compare Power Curves

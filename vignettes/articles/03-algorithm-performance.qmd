@@ -92,10 +92,12 @@ conditions <- build_conditions(
     b_arm_treat = c(0, 0.3)
   ),
   constant = list(
-    # equal allocation
-    p_alloc = c(0.5, 0.5),
-    # baseline effect
+    # equal allocation (must be wrapped in list())
+    p_alloc = list(c(0.5, 0.5)),
+    # simulation parameters
+    intercept = 0,
     b_covariate = 0,
+    sigma = 1,
     # decision thresholds
     thr_dec_eff = 0.975,
     thr_dec_fut = 0.5,
@@ -144,7 +146,7 @@ power_result_sampling <- power_analysis(
   conditions = conditions,
   n_cores = n_cores,
   n_sims = n_sims,
-  verbose = FALSE,
+  verbosity = 0,
   brms_args = list(
     chains = 4,
     iter = 700,
@@ -156,12 +158,12 @@ power_result_sampling <- power_analysis(
 
 Extract the summarized results from each power analysis:
 ```{r}
-results_summary<- rbind(
-  power_result_meanfield@results_summ |> 
+results_summary <- rbind(
+  power_result_meanfield@results_conditions |>
     mutate(Algorithm = "Meanfield"),
-  power_result_fullrank@results_summ |> 
+  power_result_fullrank@results_conditions |>
     mutate(Algorithm = "Fullrank"),
-  power_result_sampling@results_summ |> 
+  power_result_sampling@results_conditions |>
     mutate(Algorithm = "Sampling")
 )
 ```

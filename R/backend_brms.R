@@ -10,8 +10,8 @@
 #
 # Key functions:
 #   - estimate_posterior_brms(): Fit brms model to data
-#   - extract_posterior_rvars_brms(): Extract posterior as rvars
-#   - summarize_post_brms(): Wrapper around compute_measures()
+#   - extract_posterior_draws_brms(): Extract posterior as draws_array
+#   - summarize_post_brms(): Fast posterior summarization (direct matrix ops)
 #
 # Output: All functions produce results compatible with summarize_sims()
 
@@ -19,18 +19,18 @@
 # POSTERIOR EXTRACTION
 # =============================================================================
 
-#' Extract Posterior Samples as rvars from brms Model
+#' Extract Posterior Draws from brms Model
 #'
-#' Extracts posterior samples from a fitted brms model and converts them
-#' to rvar format from the posterior package. This is the brms-specific
-#' implementation of posterior extraction.
+#' Extracts posterior samples from a fitted brms model as a draws_array.
+#' This preserves the chain structure needed for convergence diagnostics
+#' (Rhat, ESS) while allowing fast vectorized operations.
 #'
 #' @param brmsfit A fitted brmsfit object
 #' @param target_params Character vector of parameter names to extract
 #'
-#' @return A named list of rvar objects, one per target parameter
+#' @return A draws_array object (iterations x chains x variables)
 #' @keywords internal
-extract_posterior_rvars_brms <- function(brmsfit, target_params) {
+extract_posterior_draws_brms <- function(brmsfit, target_params) {
   if (!inherits(brmsfit, "brmsfit")) {
     cli::cli_abort(c(
       "{.arg brmsfit} must be a fitted brms model object",
@@ -39,10 +39,9 @@ extract_posterior_rvars_brms <- function(brmsfit, target_params) {
     ))
   }
 
-  # Extract all target parameters as rvars
-  posterior_rvars <- brms::as_draws_rvars(brmsfit, variable = target_params)
+  # Use draws_array to preserve chain structure for Rhat/ESS calculations
 
-  return(posterior_rvars)
+  brms::as_draws_array(brmsfit, variable = target_params)
 }
 
 
@@ -88,36 +87,140 @@ estimate_posterior_brms <- function(data, brms_model, backend_args = list()) {
 
 
 # =============================================================================
-# POSTERIOR SUMMARIZATION
+# POSTERIOR SUMMARIZATION (Fast Path)
 # =============================================================================
 
-#' Summarize Posterior - brms Backend
+#' Summarize Posterior - brms Backend (Single Parameter)
 #'
-#' Wrapper around [compute_measures()] for brms posterior output.
-#' Provides consistent API with summarize_post_bf() (BayesFlow backend).
+#' Fast computation of posterior summaries using direct draws operations.
+#' Avoids rvar conversion for better performance.
 #'
-#' @param posterior_rvars draws_rvars object from brms
-#' @param target_params Character vector of parameter names
-#' @param thr_fx_eff Numeric vector of efficacy thresholds (ROPE)
-#' @param thr_fx_fut Numeric vector of futility thresholds (ROPE)
+#' @param draws_arr draws_array object from [extract_posterior_draws_brms()]
+#' @param target_param Single parameter name (character)
+#' @param thr_fx_eff Efficacy threshold (numeric)
+#' @param thr_fx_fut Futility threshold (numeric)
 #' @param thr_dec_eff Probability threshold for efficacy
 #' @param thr_dec_fut Probability threshold for futility
 #'
-#' @return Data frame with package output schema
+#' @return Data frame with one row containing posterior summaries
 #' @keywords internal
-summarize_post_brms <- function(posterior_rvars, target_params,
-                                 thr_fx_eff, thr_fx_fut,
-                                 thr_dec_eff, thr_dec_fut) {
-  # Delegate to existing compute_measures() function
-  # which handles rvar operations
-  compute_measures(
-    posterior_rvars = posterior_rvars,
-    target_params = target_params,
+summarize_post_brms_single <- function(draws_arr, target_param,
+                                        thr_fx_eff, thr_fx_fut,
+                                        thr_dec_eff, thr_dec_fut) {
+  # Extract draws for this parameter as vector (iterations x chains flattened)
+  # draws_array is [iterations, chains, variables]
+  draws_vec <- as.numeric(draws_arr[, , target_param])
+
+  # Probability calculations (simple mean over all draws)
+  pr_eff <- mean(draws_vec > thr_fx_eff)
+  pr_fut <- mean(draws_vec < thr_fx_fut)
+
+  # Convergence diagnostics - needs draws object with chain structure
+  # extract_variable_matrix() returns (iterations x chains) matrix
+  draws_for_diag <- posterior::extract_variable_matrix(draws_arr, target_param)
+  rhat <- posterior::rhat(draws_for_diag)
+  ess_bulk <- posterior::ess_bulk(draws_for_diag)
+  ess_tail <- posterior::ess_tail(draws_for_diag)
+
+  data.frame(
+    par_name = target_param,
     thr_fx_eff = thr_fx_eff,
     thr_fx_fut = thr_fx_fut,
     thr_dec_eff = thr_dec_eff,
-    thr_dec_fut = thr_dec_fut
+    thr_dec_fut = thr_dec_fut,
+    pr_eff = pr_eff,
+    pr_fut = pr_fut,
+    dec_eff = as.integer(pr_eff >= thr_dec_eff),
+    dec_fut = as.integer(pr_fut >= thr_dec_fut),
+    post_med = stats::median(draws_vec),
+    post_mad = stats::mad(draws_vec),
+    post_mn = mean(draws_vec),
+    post_sd = stats::sd(draws_vec),
+    rhat = rhat,
+    ess_bulk = ess_bulk,
+    ess_tail = ess_tail,
+    stringsAsFactors = FALSE
   )
+}
+
+
+#' Summarize Posterior - brms Backend (Multiple Parameters with Union)
+#'
+#' Fast computation of posterior summaries for multiple parameters.
+#' Includes union calculation (AND logic across all parameters).
+#'
+#' @param draws_arr draws_array object from [extract_posterior_draws_brms()]
+#' @param target_params Character vector of parameter names
+#' @param thr_fx_eff Numeric vector of efficacy thresholds (one per param, recycled if shorter)
+#' @param thr_fx_fut Numeric vector of futility thresholds (one per param, recycled if shorter)
+#' @param thr_dec_eff Probability threshold for efficacy
+#' @param thr_dec_fut Probability threshold for futility
+#'
+#' @return Data frame with one row per parameter plus union row (if multi-param)
+#' @keywords internal
+summarize_post_brms <- function(draws_arr, target_params,
+                                 thr_fx_eff, thr_fx_fut,
+                                 thr_dec_eff, thr_dec_fut) {
+  # Process each parameter
+  results_list <- lapply(seq_along(target_params), function(i) {
+    param <- target_params[i]
+    eff_thr <- if (length(thr_fx_eff) >= i) thr_fx_eff[i] else thr_fx_eff[1]
+    fut_thr <- if (length(thr_fx_fut) >= i) thr_fx_fut[i] else thr_fx_fut[1]
+
+    summarize_post_brms_single(draws_arr, param, eff_thr, fut_thr,
+                               thr_dec_eff, thr_dec_fut)
+  })
+
+  # Compute union (AND logic across all params) if multiple parameters
+  if (length(target_params) > 1) {
+    # Get all draws as matrix (n_draws x n_params)
+    n_draws <- prod(dim(draws_arr)[1:2])  # iterations x chains
+    all_draws <- matrix(NA_real_, nrow = n_draws, ncol = length(target_params))
+    for (i in seq_along(target_params)) {
+      all_draws[, i] <- as.numeric(draws_arr[, , target_params[i]])
+    }
+
+    # Recycle thresholds if needed
+    thr_eff <- if (length(thr_fx_eff) < length(target_params)) {
+      rep(thr_fx_eff[1], length(target_params))
+    } else {
+      thr_fx_eff[seq_along(target_params)]
+    }
+    thr_fut <- if (length(thr_fx_fut) < length(target_params)) {
+      rep(thr_fx_fut[1], length(target_params))
+    } else {
+      thr_fx_fut[seq_along(target_params)]
+    }
+
+    # Compute joint probabilities (AND logic: all params must meet threshold)
+    exceeds_eff <- rowMeans(sweep(all_draws, 2, thr_eff, `>`)) == 1
+    below_fut <- rowMeans(sweep(all_draws, 2, thr_fut, `<`)) == 1
+    union_pr_eff <- mean(exceeds_eff)
+    union_pr_fut <- mean(below_fut)
+
+    union_row <- data.frame(
+      par_name = "union",
+      thr_fx_eff = NA_real_,
+      thr_fx_fut = NA_real_,
+      thr_dec_eff = thr_dec_eff,
+      thr_dec_fut = thr_dec_fut,
+      pr_eff = union_pr_eff,
+      pr_fut = union_pr_fut,
+      dec_eff = as.integer(union_pr_eff >= thr_dec_eff),
+      dec_fut = as.integer(union_pr_fut >= thr_dec_fut),
+      post_med = NA_real_,
+      post_mad = NA_real_,
+      post_mn = NA_real_,
+      post_sd = NA_real_,
+      rhat = NA_real_,
+      ess_bulk = NA_real_,
+      ess_tail = NA_real_,
+      stringsAsFactors = FALSE
+    )
+    results_list <- c(results_list, list(union_row))
+  }
+
+  do.call(rbind, results_list)
 }
 
 
@@ -168,9 +271,9 @@ estimate_single_brms <- function(data, model, backend_args, target_params,
     return(create_error_result(id_iter, id_cond, id_analysis = 0L, "Estimation failed"))
   }
 
-  # Extract posterior rvars
-  posterior_rvars <- tryCatch({
-    extract_posterior_rvars_brms(
+  # Extract posterior draws (as draws_array for chain structure)
+  posterior_draws <- tryCatch({
+    extract_posterior_draws_brms(
       brmsfit = estimation_result,
       target_params = target_params
     )
@@ -182,7 +285,7 @@ estimate_single_brms <- function(data, model, backend_args, target_params,
     return(NULL)
   })
 
-  if (is.null(posterior_rvars)) {
+  if (is.null(posterior_draws)) {
     return(create_error_result(id_iter, id_cond, id_analysis = 0L, "Extraction failed"))
   }
 
@@ -190,24 +293,23 @@ estimate_single_brms <- function(data, model, backend_args, target_params,
   current_thr_dec_eff <- resolve_threshold(thr_dec_eff, 1)
   current_thr_dec_fut <- resolve_threshold(thr_dec_fut, 1)
 
-  # Compute measures using brms summarization
+  # Compute measures using fast summarization path
   result <- tryCatch({
     df <- summarize_post_brms(
-      posterior_rvars = posterior_rvars,
+      draws_arr = posterior_draws,
       target_params = target_params,
       thr_fx_eff = thr_fx_eff,
       thr_fx_fut = thr_fx_fut,
       thr_dec_eff = current_thr_dec_eff,
       thr_dec_fut = current_thr_dec_fut
-    ) |>
-      dplyr::mutate(dplyr::across(-par_name, as.numeric))
-    df |> dplyr::mutate(
-      id_iter = id_iter,
-      id_cond = id_cond,
-      id_look = 0L,  # Single analysis
-      converged = 1L,
-      error_msg = NA_character_
     )
+    # Add IDs and metadata
+    df$id_iter <- id_iter
+    df$id_cond <- id_cond
+    df$id_look <- 0L  # Single analysis
+    df$converged <- 1L
+    df$error_msg <- NA_character_
+    df
   }, error = function(e) {
     return(create_error_result(id_iter, id_cond, id_analysis = 0L, as.character(e)))
   })
@@ -293,9 +395,9 @@ estimate_sequential_brms <- function(full_data, model, backend_args, target_para
       next
     }
 
-    # Extract posterior rvars
-    posterior_rvars <- tryCatch({
-      extract_posterior_rvars_brms(
+    # Extract posterior draws (as draws_array for chain structure)
+    posterior_draws <- tryCatch({
+      extract_posterior_draws_brms(
         brmsfit = estimation_result,
         target_params = target_params
       )
@@ -307,7 +409,7 @@ estimate_sequential_brms <- function(full_data, model, backend_args, target_para
       return(NULL)
     })
 
-    if (is.null(posterior_rvars)) {
+    if (is.null(posterior_draws)) {
       results_list[[id_analysis]] <- create_error_result(
         id_iter, id_cond, id_analysis,
         "Extraction failed"
@@ -315,17 +417,16 @@ estimate_sequential_brms <- function(full_data, model, backend_args, target_para
       next
     }
 
-    # Compute measures (using resolved probability thresholds)
+    # Compute measures using fast summarization path
     measures <- tryCatch({
       summarize_post_brms(
-        posterior_rvars = posterior_rvars,
+        draws_arr = posterior_draws,
         target_params = target_params,
         thr_fx_eff = thr_fx_eff,
         thr_fx_fut = thr_fx_fut,
         thr_dec_eff = current_thr_dec_eff,
         thr_dec_fut = current_thr_dec_fut
-      ) |>
-        dplyr::mutate(dplyr::across(-par_name, as.numeric))
+      )
     }, error = function(e) {
       results_list[[id_analysis]] <- create_error_result(
         id_iter, id_cond, id_analysis,
@@ -388,23 +489,24 @@ estimate_sequential_brms <- function(full_data, model, backend_args, target_para
       }
     }
 
-    # Add IDs and interim information
-    measures <- measures |>
-      dplyr::mutate(
-        id_iter = id_iter,
-        id_cond = id_cond,
-        id_look = id_analysis,
-        n_analyzed = current_n,
-        stopped = stopped,
-        stop_reason = dplyr::if_else(stopped, stop_reason, NA_character_),
-        interim_decision = if (!is.null(interim_decision)) list(interim_decision) else list(NULL),
-        converged = 1L,
-        error_msg = NA_character_
-      )
+    # Add IDs and interim information (base R assignment)
+    measures$id_iter <- id_iter
+    measures$id_cond <- id_cond
+    measures$id_look <- id_analysis
+    measures$n_analyzed <- current_n
+    measures$stopped <- stopped
+    measures$stop_reason <- if (stopped) stop_reason else NA_character_
+    measures$interim_decision <- if (!is.null(interim_decision)) {
+      rep(list(interim_decision), nrow(measures))
+    } else {
+      rep(list(NULL), nrow(measures))
+    }
+    measures$converged <- 1L
+    measures$error_msg <- NA_character_
 
     results_list[[id_analysis]] <- measures
   }
 
   # Combine all analyses
-  dplyr::bind_rows(results_list)
+  do.call(rbind, results_list)
 }

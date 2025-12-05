@@ -144,11 +144,14 @@ create_power_plot <- function(x,
   # =============================================================================
   # DETECT EFFECT SIZE COLUMN FROM CONDITIONS
   # =============================================================================
-  # The effect size column name comes from crossed params, not target_params.
-  # target_params contains brms parameter names (e.g., "b_arm2"),
-  # but crossed uses user-specified names (e.g., "b_arm_treat").
-  crossed_param_names <- names(conditions@crossed)
-  effect_cols <- setdiff(crossed_param_names, "n_total")
+  # The effect size column name comes from the grid, not crossed (since link()
+  # processes params directly into grid). target_params contains brms parameter
+  # names (e.g., "b_arm2"), but grid uses user-specified names (e.g., "b_arm_treat").
+  grid_param_names <- names(conditions@grid)
+  # Exclude non-varying columns: id_cond, n_total, analysis_at, thresholds
+  exclude_cols <- c("id_cond", "n_total", "analysis_at",
+                    grep("^thr_", grid_param_names, value = TRUE))
+  effect_cols <- setdiff(grid_param_names, exclude_cols)
 
   # Use first effect column if available, otherwise NULL
   effect_col <- if (length(effect_cols) > 0) effect_cols[1] else NULL
