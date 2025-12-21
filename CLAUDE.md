@@ -255,66 +255,91 @@ result_obf <- resummarize_boundaries(result,
 )
 ```
 
-### Bayesian Optimization for Design Search
+### Pareto Optimization for Design Search
+
+The package provides Pareto-based Bayesian optimization with three specialized wrappers:
 
 ```r
-# Alternative to grid search: find optimal sample size automatically
 design <- build_design(
   model_name = "ancova_cont_2arms",
   target_params = "b_arm2"
 )
 
-# Define optimization problem
-obj <- build_objectives(
+# =============================================================================
+# WRAPPER 1: Power vs Sample Size (fixed effect)
+# =============================================================================
+# Find Pareto front of power vs n_total for a fixed treatment effect
+result <- optimize_power_n(
   design = design,
-  search = list(n_total = c(50, 500)),           # Search bounds
-  objectives = list(pwr_eff = target(0.80)),     # Target 80% power
+  power_metric = "pwr_eff",
+  n_range = c(50, 500),
+  effect_size = 0.3,              # Fixed effect size
   constant = list(
-    b_arm_treat = 0.3,
     thr_dec_eff = 0.975, thr_dec_fut = 0.5,
     thr_fx_eff = 0.2, thr_fx_fut = 0,
     p_alloc = list(c(0.5, 0.5)),
     intercept = 0, b_covariate = 0.3, sigma = 1
-  )
-)
-
-# Run with progressive fidelity
-result <- optimization(
-  obj,
-  n_sims = c(500, 2000),      # Progressive fidelity (exploration + refinement)
-  evals_per_step = c(30, 20), # 30 exploration evals, 20 refinement evals
-  n_cores = 4,
-  surrogate = "gp"
+  ),
+  n_sims = c(500, 2000),          # Progressive fidelity
+  evals_per_step = c(30, 20),
+  n_cores = 4
 )
 
 # Access results
-result@result            # Optimal design
+result@pareto_front      # All Pareto-optimal points
+result@selected_design   # Knee point (auto-selected)
 result@archive           # All evaluations
-plot(result)             # Visualize optimization
+plot(result)             # Pareto front visualization
 
-# Multi-objective: Pareto frontier
-obj_pareto <- build_objectives(
+# =============================================================================
+# WRAPPER 2: Power vs Effect Size (fixed sample size)
+# =============================================================================
+# Find minimum detectable effect at a given sample size
+result <- optimize_power_effect(
   design = design,
-  search = list(n_total = c(50, 500), b_arm_treat = c(0.2, 0.6)),
-  objectives = list(pwr_eff = "maximize", n_total = "minimize"),
-  constant = list(...)
+  power_metric = "pwr_eff",
+  effect_range = c(0.1, 0.8),
+  n_total = 200,                  # Fixed sample size
+  constant = list(...),
+  n_sims = 500,
+  n_cores = 4
 )
-result <- optimization(obj_pareto, n_sims = 300, max_evals = 50)
-plot(result, type = "pareto")
+
+# =============================================================================
+# WRAPPER 3: Effect Size vs Sample Size (fixed power target)
+# =============================================================================
+# Find (effect, n) pairs that achieve target power
+result <- optimize_effect_n(
+  design = design,
+  power_target = 0.80,            # Target power level
+  power_metric = "pwr_eff",
+  n_range = c(50, 500),
+  effect_range = c(0.1, 0.8),
+  constant = list(...),
+  n_sims = 500,
+  n_cores = 4
+)
+
+# =============================================================================
+# GENERIC CORE FUNCTION
+# =============================================================================
+# For custom two-objective optimization
+result <- pareto_optimize(
+  design = design,
+  objectives = list(pwr_eff = "maximize", n_total = "minimize"),
+  search = list(n_total = c(50, 500), thr_dec_eff = c(0.90, 0.99)),
+  constant = list(...),
+  n_sims = 500,
+  n_cores = 4
+)
 ```
 
 **Key optimization features:**
-- **Continuous cost function** for target optimization:
-  - Below target: `cost = (power / target)²` — ranges [0, 1) as power approaches target
-  - At/above target: `cost = 2 - sqrt((power - target) / (1 - target))` — peaks at 2, sqrt penalty for overshoot
-  - Maximum value of 2 exactly at the target; sqrt decay gives steeper initial penalty for overshoot
+- **Pareto front**: Returns set of non-dominated designs trading off objectives
+- **Knee point selection**: Automatic selection via utopia distance (normalized)
 - **Progressive fidelity**: Vector `n_sims` for cost-efficient optimization
-- **Early stopping**: Patience-based stopping when target achieved
-- **Probabilistic constraint optimum** via `find_probabilistic_optimum()`:
-  - Finds minimum n where `P(power >= target) >= alpha`
-  - Models `logit(power)` with GP to get predictive uncertainty
-  - Computes `P_feas = Φ((μ - logit(target)) / σ)` using GP predictions
-  - Returns n rounded up to integer with confidence level guarantee
+- **Simplex search**: Use `search_p_alloc()` and `search_looks()` for allocation/timing
+- **Constraint support**: Filter Pareto front by minimum power threshold
 
 ## File Organization
 
@@ -326,7 +351,7 @@ plot(result, type = "pareto")
 | `R/class_model.R` | Legacy model class (backward compatibility, see note below) |
 | `R/class_conditions.R` | Conditions class definition |
 | `R/class_power_analysis.R` | Power analysis + run() + print/summary methods |
-| `R/class_objectives.R` | Optimization classes (`rctbp_objectives`, `rctbp_optimization_result`) |
+| `R/class_pareto_result.R` | Pareto optimization result class (`rctbp_pareto_result`) |
 | `R/models_ancova.R` | ANCOVA model builders + batch simulation |
 
 ### Backend System
@@ -353,9 +378,11 @@ plot(result, type = "pareto")
 
 | File | Purpose |
 |------|---------|
-| `R/optimization.R` | `build_objectives()`, `optimization()`, `target()` |
-| `R/optimization_internal.R` | mlr3mbo/bbotk integration, surrogate setup |
-| `R/plot_optimization.R` | Optimization result plots (convergence, pareto, search) |
+| `R/pareto_optimize.R` | Core `pareto_optimize()` + knee point selection |
+| `R/pareto_wrappers.R` | Wrapper functions: `optimize_power_n()`, `optimize_power_effect()`, `optimize_effect_n()` |
+| `R/optimization.R` | Simplex search helpers: `search_p_alloc()`, `search_looks()` |
+| `R/optimization_internal.R` | mlr3mbo/bbotk integration, surrogate setup, ILR transforms |
+| `R/plot_optimization.R` | Optimization result plots (pareto, convergence, search) |
 
 ### Plotting (`R/plot_*.R`)
 
@@ -382,7 +409,6 @@ plot(result, type = "pareto")
 | `show_target_params(model_name)` | `R/required_fn_args.R` | Show available target parameters for a model |
 | `show_condition_args(design)` | `R/required_fn_args.R` | Show required arguments for build_conditions() |
 | `show_boundaries()` | `R/boundaries.R` | List available boundary functions |
-| `show_optimization_args()` | `R/optimization.R` | Show available optimization parameters |
 
 ### Utilities
 

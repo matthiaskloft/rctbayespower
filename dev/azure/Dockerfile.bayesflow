@@ -1,0 +1,54 @@
+# =============================================================================
+# BayesFlow Training Image for Azure ML / Local GPU
+# =============================================================================
+# Mirrors rctbayespower::setup_bf_python() dependencies
+#
+# Build:
+#   docker build -t bayesflow-training -f Dockerfile.bayesflow .
+#
+# Run (local GPU):
+#   docker run --gpus all -it -v $(pwd):/workspace bayesflow-training
+#
+# Run (CPU only):
+#   docker run -it -v $(pwd):/workspace bayesflow-training
+
+FROM pytorch/pytorch:2.5.1-cuda12.4-cudnn9-runtime
+
+LABEL maintainer="rctbayespower"
+LABEL description="BayesFlow 2.0 training environment with PyTorch/CUDA 12.4"
+LABEL version="1.0"
+
+# Set non-interactive frontend for apt
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Set Keras backend to PyTorch (must be set before importing keras)
+ENV KERAS_BACKEND=torch
+
+# PyTorch memory optimization for limited GPU memory
+ENV PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    git \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Upgrade pip
+RUN pip install --no-cache-dir --upgrade pip
+
+# Install Python dependencies
+COPY requirements-bf-training.txt /tmp/
+RUN pip install --no-cache-dir -r /tmp/requirements-bf-training.txt
+
+# Verify installation
+RUN python -c "import torch; print(f'PyTorch: {torch.__version__}')" && \
+    python -c "import torch; print(f'CUDA available: {torch.cuda.is_available()}')" && \
+    python -c "import bayesflow; print(f'BayesFlow: {bayesflow.__version__}')" && \
+    python -c "import keras; print(f'Keras: {keras.__version__}')" && \
+    python -c "import numpy; print(f'NumPy: {numpy.__version__}')"
+
+# Working directory for training scripts
+WORKDIR /workspace
+
+# Default command
+CMD ["bash"]

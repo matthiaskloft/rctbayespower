@@ -12,7 +12,7 @@ Must be in (0, 0.5). For k arms, requires \code{k * min < 1}.}
 }
 \value{
 An object of class "rctbp_search_p_alloc" for use in
-\code{\link[=build_objectives]{build_objectives()}} \code{search} argument.
+\code{\link[=pareto_optimize]{pareto_optimize()}} or wrapper functions' \code{search} argument.
 }
 \description{
 Creates a search specification for optimizing treatment allocation
@@ -37,17 +37,17 @@ where the first entry is the control arm probability.
 \examples{
 \dontrun{
 # Optimize allocation with at least 20\% per group
-obj <- build_objectives(
+result <- pareto_optimize(
   design = design,
+  objectives = list(pwr_eff = "maximize", n_total = "minimize"),
   search = list(
     n_total = c(50, 500),
     p_alloc = search_p_alloc(min = 0.2)
   ),
-  objectives = list(pwr_eff = target(0.80)),
   constant = list(...)
 )
 }
 }
 \seealso{
-\code{\link[=build_objectives]{build_objectives()}}, \code{\link[=search_looks]{search_looks()}}
+\code{\link[=pareto_optimize]{pareto_optimize()}}, \code{\link[=optimize_power_n]{optimize_power_n()}}, \code{\link[=search_looks]{search_looks()}}
 }

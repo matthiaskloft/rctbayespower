@@ -15,7 +15,7 @@ consecutive looks (default 0.2). Requires \code{n * min_spacing <= 1}.}
 }
 \value{
 An object of class "rctbp_search_looks" for use in
-\code{\link[=build_objectives]{build_objectives()}} \code{search} argument.
+\code{\link[=pareto_optimize]{pareto_optimize()}} or wrapper functions' \code{search} argument.
 }
 \description{
 Creates a search specification for optimizing the timing of interim
@@ -39,17 +39,17 @@ is automatically appended by \code{\link[=build_conditions]{build_conditions()}}
 \examples{
 \dontrun{
 # Optimize timing of 3 looks with at least 20\% spacing
-obj <- build_objectives(
+result <- pareto_optimize(
   design = design,
+  objectives = list(pwr_eff = "maximize", n_total = "minimize"),
   search = list(
     n_total = c(100, 400),
     analysis_at = search_looks(n = 3, min_spacing = 0.2)
   ),
-  objectives = list(pwr_eff = target(0.80)),
   constant = list(...)
 )
 }
 }
 \seealso{
-\code{\link[=build_objectives]{build_objectives()}}, \code{\link[=search_p_alloc]{search_p_alloc()}}
+\code{\link[=pareto_optimize]{pareto_optimize()}}, \code{\link[=optimize_power_n]{optimize_power_n()}}, \code{\link[=search_p_alloc]{search_p_alloc()}}
 }

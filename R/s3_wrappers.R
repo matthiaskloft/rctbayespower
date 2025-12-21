@@ -50,15 +50,15 @@ run.rctbp_power_analysis <- function(x, ...) {
 }
 
 # =============================================================================
-# OPTIMIZATION CLASSES
+# PARETO OPTIMIZATION CLASSES
 # =============================================================================
 
 #' @export
-print.rctbp_objectives <- function(x, ...) {
-  S7::method(print, rctbp_objectives)(x, ...)
+print.rctbp_pareto_result <- function(x, ...) {
+  S7::method(print, rctbp_pareto_result)(x, ...)
 }
 
 #' @export
-print.rctbp_optimization_result <- function(x, ...) {
-  S7::method(print, rctbp_optimization_result)(x, ...)
+summary.rctbp_pareto_result <- function(object, ...) {
+  S7::method(summary, rctbp_pareto_result)(object, ...)
 }

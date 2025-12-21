@@ -13,7 +13,7 @@ find_probabilistic_optimum(
 )
 }
 \arguments{
-\item{result}{An \code{rctbp_optimization_result} object from \code{\link[=optimization]{optimization()}}}
+\item{result}{An \code{rctbp_pareto_result} object from \code{\link[=pareto_optimize]{pareto_optimize()}}}
 
 \item{alpha}{Required confidence level for P(power >= target) (default 0.95).
 Higher values (e.g., 0.99, 0.999) are more conservative.}
@@ -71,7 +71,7 @@ the GP's predictive distribution
 }
 \examples{
 \dontrun{
-result <- optimization(obj, n_sims = 200, max_evals = 30)
+result <- optimize_power_n(design, n_range = c(50, 500), effect_size = 0.3, ...)
 
 # Find minimum n with 95\% confidence of achieving target
 prob_opt <- find_probabilistic_optimum(result, alpha = 0.95)
@@ -89,5 +89,5 @@ abline(v = prob_opt$n_opt, lty = 2, col = "blue")
 }
 }
 \seealso{
-\code{\link[=find_surrogate_optimum]{find_surrogate_optimum()}}, \code{\link[=optimization]{optimization()}}
+\code{\link[=find_surrogate_optimum]{find_surrogate_optimum()}}, \code{\link[=pareto_optimize]{pareto_optimize()}}
 }

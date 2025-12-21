@@ -3437,7 +3437,7 @@ postprocess_archive <- function(df, objectives) {
 #' the optimal point. By default, constrains search to the observed IQR to
 #' reduce extrapolation risk.
 #'
-#' @param result An `rctbp_optimization_result` object from [optimization()]
+#' @param result An `rctbp_pareto_result` object from [pareto_optimize()]
 #' @param n_candidates Number of LHS candidates to evaluate (default 10000)
 #' @param ci_level Confidence level for interval (default 0.95)
 #' @param trim Proportion to trim from each tail of observed distributions
@@ -3466,12 +3466,12 @@ postprocess_archive <- function(df, objectives) {
 #'   \item `trim = 0`: Search full original domain (higher extrapolation risk)
 #' }
 #'
-#' @seealso [optimization()]
+#' @seealso [pareto_optimize()]
 #'
 #' @export
 #' @examples
 #' \dontrun{
-#' result <- optimization(obj, n_sims = 200, max_evals = 30)
+#' result <- optimize_power_n(design, n_range = c(50, 500), effect_size = 0.3, ...)
 #'
 #' # Find surrogate optimum in IQR (default)
 #' surr_opt <- find_surrogate_optimum(result)
@@ -3485,14 +3485,14 @@ find_surrogate_optimum <- function(result,
                                    ci_level = 0.95,
                                    trim = 0.25) {
   # Validate result
-  
-  if (!inherits(result, "rctbp_optimization_result") &&
-      !inherits(result, "rctbayespower::rctbp_optimization_result")) {
+
+  if (!inherits(result, "rctbp_pareto_result") &&
+      !inherits(result, "rctbayespower::rctbp_pareto_result")) {
     cli::cli_abort(
       c(
-        "{.arg result} must be an rctbp_optimization_result object",
+        "{.arg result} must be an rctbp_pareto_result object",
         "x" = "Got object of class {.cls {class(result)}}",
-        "i" = "Use {.fn optimization} to create a result object"
+        "i" = "Use {.fn pareto_optimize} or a wrapper function to create a result object"
       )
     )
   }
@@ -3531,7 +3531,7 @@ find_surrogate_optimum <- function(result,
 #' Finds the minimum sample size where the GP-predicted probability of
 #' achieving target power exceeds a required confidence level.
 #'
-#' @param result An `rctbp_optimization_result` object from [optimization()]
+#' @param result An `rctbp_pareto_result` object from [pareto_optimize()]
 #' @param alpha Required confidence level for P(power >= target) (default 0.95).
 #'   Higher values (e.g., 0.99, 0.999) are more conservative.
 #' @param target Target power value. If NULL (default), extracted from
@@ -3572,12 +3572,12 @@ find_surrogate_optimum <- function(result,
 #' - alpha = 0.99: 99% confident (more conservative, larger n)
 #' - alpha = 0.999: Very high confidence for critical studies
 #'
-#' @seealso [find_surrogate_optimum()], [optimization()]
+#' @seealso [find_surrogate_optimum()], [pareto_optimize()]
 #'
 #' @export
 #' @examples
 #' \dontrun{
-#' result <- optimization(obj, n_sims = 200, max_evals = 30)
+#' result <- optimize_power_n(design, n_range = c(50, 500), effect_size = 0.3, ...)
 #'
 #' # Find minimum n with 95% confidence of achieving target
 #' prob_opt <- find_probabilistic_optimum(result, alpha = 0.95)
@@ -3599,13 +3599,13 @@ find_probabilistic_optimum <- function(result,
                                         n_candidates = 1000,
                                         use_log_n = TRUE) {
   # Validate result
-  if (!inherits(result, "rctbp_optimization_result") &&
-      !inherits(result, "rctbayespower::rctbp_optimization_result")) {
+  if (!inherits(result, "rctbp_pareto_result") &&
+      !inherits(result, "rctbayespower::rctbp_pareto_result")) {
     cli::cli_abort(
       c(
-        "{.arg result} must be an rctbp_optimization_result object",
+        "{.arg result} must be an rctbp_pareto_result object",
         "x" = "Got object of class {.cls {class(result)}}",
-        "i" = "Use {.fn optimization} to create a result object"
+        "i" = "Use {.fn pareto_optimize} or a wrapper function to create a result object"
       )
     )
   }

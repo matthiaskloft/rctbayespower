@@ -12,7 +12,7 @@ find_surrogate_optimum(
 )
 }
 \arguments{
-\item{result}{An \code{rctbp_optimization_result} object from \code{\link[=optimization]{optimization()}}}
+\item{result}{An \code{rctbp_pareto_result} object from \code{\link[=pareto_optimize]{pareto_optimize()}}}
 
 \item{n_candidates}{Number of LHS candidates to evaluate (default 10000)}
 
@@ -52,7 +52,7 @@ The \code{trim} parameter controls how much to constrain the search domain:
 }
 \examples{
 \dontrun{
-result <- optimization(obj, n_sims = 200, max_evals = 30)
+result <- optimize_power_n(design, n_range = c(50, 500), effect_size = 0.3, ...)
 
 # Find surrogate optimum in IQR (default)
 surr_opt <- find_surrogate_optimum(result)
@@ -63,5 +63,5 @@ surr_opt_full <- find_surrogate_optimum(result, trim = 0)
 }
 }
 \seealso{
-\code{\link[=optimization]{optimization()}}
+\code{\link[=pareto_optimize]{pareto_optimize()}}
 }
