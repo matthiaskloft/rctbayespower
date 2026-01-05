@@ -24,6 +24,10 @@ articles:
   - articles/05a-bf_vs_brms_cpu_1_core
   - articles/05b-bf_vs_brms_gpu
 
+- title: "Development"
+  contents:
+  - articles/99-model-validation
+
 reference:
 - title: "Core Power Analysis Functions"
   desc: "Main functions for conducting Bayesian power analysis"
@@ -31,23 +35,25 @@ reference:
   - power_analysis
   - run
   - run.rctbp_power_analysis
-  - simulate_single_run
 
 - title: "Model Building"
   desc: "Functions for creating and configuring study models"
   contents:
-  - build_model
   - build_model_ancova
   - build_model_ancova_cont_2arms
   - build_model_ancova_cont_3arms
   - list_predefined_models
-  - get_predefined_model
 
 - title: "Design and Conditions"
   desc: "Functions for setting up study designs and simulation conditions"
   contents:
   - build_design
   - build_conditions
+
+- title: "Classes"
+  desc: "S7 class documentation"
+  contents:
+  - rctbp_pareto_result
 
 - title: "Analysis Functions"
   desc: "Functions for power calculations and comparisons"
@@ -60,13 +66,94 @@ reference:
   desc: "Print and plot methods for package objects"
   contents:
   - plot.rctbp_power_analysis
+  - plot.rctbp_pareto_result
   - print.rctbp_power_analysis
+  - print.rctbp_pareto_result
   - print.rctbp_conditions
   - print.rctbp_design
   - print.rctbp_model
+  - summary.rctbp_power_analysis
+  - summary.rctbp_pareto_result
+
+- title: "Bayesian Optimization"
+  desc: "Functions for Pareto-based design optimization"
+  contents:
+  - pareto_optimize
+  - optimize_power_n
+  - optimize_power_effect
+  - optimize_effect_n
+  - search_p_alloc
+  - search_looks
+  - find_probabilistic_optimum
+  - find_surrogate_optimum
+  - AcqFunctionEIC
+
+- title: "Sequential Analysis and Boundaries"
+  desc: "Functions for group sequential designs and stopping boundaries"
+  contents:
+  - boundary_obf
+  - boundary_obf_threshold
+  - boundary_pocock
+  - boundary_pocock_threshold
+  - boundary_linear
+  - boundary_power
+  - boundary_constant
+  - boundary_hsd
+  - show_boundaries
+  - compare_boundaries
+  - resummarize_boundaries
+  - interim_continue
+  - interim_futility_only
+  - interim_success_futility
+  - link
+
+- title: "BayesFlow Backend"
+  desc: "Functions for BayesFlow neural posterior estimation"
+  contents:
+  - init_bf
+  - setup_bf_python
+  - install_bf_dependencies
+  - check_bf_status
+  - check_bf_available
+  - verify_bf_installation
+  - detect_cuda_version
+  - get_bf_env_info
+  - get_bf_envs
+  - clear_gpu_memory
+  - load_bf_model
+  - load_brms_model
+  - clear_model_cache
+  - get_cache_size
 
 - title: "Utilities"
   desc: "Helper functions and utilities"
   contents:
   - required_fn_args
+  - show_predefined_models
+  - show_target_params
+  - show_condition_args
+  - set_verbosity
+  - get_verbosity
+  - with_verbosity
+  - set_output_mode
+  - get_output_mode
+  - with_output_mode
+  - should_show
+  - report
+  - report_conditions
+  - report_power
+  - report_stopping
+  - report_stopping_by_look
+  - report_early_stopping
+  - export_report
+
+- title: "Advanced/Internal"
+  desc: "Advanced functions and Python integration"
+  contents:
+  - build_sim_fn
+  - create_python_sim_fn
+  - get_python_simulator
+  - load_python_simulators
+  - check_python_sims_available
+  - list_models
 
