@@ -178,9 +178,76 @@ Add to `.claude/settings.local.json` (not committed):
 3. **git push in local settings**: Personal choice, not team-enforced
 4. **Fail-open design**: Hook errors allow operations (to avoid breaking legitimate work)
 
+## Skills
+
+Four skills are available for rctbayespower development, providing progressive disclosure of project patterns:
+
+### `code-patterns`
+
+Essential code patterns for writing rctbayespower code. Triggered when writing new code, adding functions, or creating R files.
+
+**Contains:**
+- Naming conventions (rctbp_*, pwr_*, pr_*, dec_*)
+- File header template
+- Error handling pattern (cli::cli_abort)
+- S7 class template
+
+**Location:** `.claude/skills/code-patterns/SKILL.md`
+
+### `r-cmd-check`
+
+Fix R CMD check issues. Triggered when R CMD check has errors, warnings, or notes.
+
+**Contains:**
+- globalVariables location (`R/rctbayespower-package.R`)
+- Roxygen defaults mismatch fix
+- Roxygen link syntax fix
+- Common issues table
+
+**Location:** `.claude/skills/r-cmd-check/SKILL.md`
+
+### `s7-classes`
+
+Write S7 class definitions and methods. Triggered when creating new S7 classes, adding properties, defining validators, or registering methods.
+
+**Structure:** Multi-file with references
+```
+s7-classes/
+├── SKILL.md                    # Class template, property types
+├── references/
+│   ├── s7-patterns.md          # Computed properties, validation, methods
+│   └── package-setup.md        # zzz.R, S3 wrappers, inheritance
+└── S7_0-2-1_manual.html        # Complete S7 reference manual
+```
+
+**Location:** `.claude/skills/s7-classes/SKILL.md`
+
+### `skill-creator`
+
+Create new Claude Code skills. Triggered when writing a new skill or learning skill best practices.
+
+**Structure:** Multi-file with references
+```
+skill-creator/
+├── SKILL.md                           # Skill structure, template
+└── references/
+    └── skill-best-practices.md        # Progressive disclosure, context efficiency
+```
+
+**Location:** `.claude/skills/skill-creator/SKILL.md`
+
+### Progressive Disclosure
+
+```
+Layer 1: CLAUDE.md (overview)           → Always loaded
+Layer 2: Skills (essential patterns)    → Loaded when triggered
+Layer 3: dev/ docs (full reference)     → Deep detail when needed
+```
+
 ## References
 
 - [Claude Code Settings Documentation](https://code.claude.com/docs/en/settings)
 - [Hooks Reference](https://code.claude.com/docs/en/hooks)
+- [Skills Reference](https://code.claude.com/docs/en/skills)
 - [Deny Rules Bug Report](https://github.com/anthropics/claude-code/issues/6699)
 - [Claude Code Best Practices](https://www.anthropic.com/engineering/claude-code-best-practices)
