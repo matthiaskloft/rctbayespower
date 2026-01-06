@@ -43,3 +43,24 @@
   * Put mlr3mbo, bbotk, and paradox in the Suggests field of your DESCRIPTION file.
   * Write a high-level wrapper function (e.g., find_optimal_design()).
   * Inside that function, use rlang::check_installed("mlr3mbo") (a modern, cleaner version of requireNamespace) to prompt the user to install the missing packages if they try to run it.
+  
+  
+# Major Package Development Decisions
+
+- Consolidate API
+  - minimal viable product for first release
+  - placeholders for future extensions
+  - naming conventions:
+    - classes
+    - arguments
+    - pre-defined models
+    
+- Strategy for rolling out first package version
+  - Repo managment
+  - which pre-defined models
+    
+    
+    
+    
+    
+    
