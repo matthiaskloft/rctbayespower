@@ -87,6 +87,24 @@ rctbp_design <- S7::new_class(
     # Design-specific properties
     # =========================================================================
     target_params = S7::class_character,    # Parameters to analyze (must match par_names_inference)
+
+    # Trial type determines the fundamental structure
+    trial_type = S7::new_property(
+      class = S7::class_character,
+      default = "fixed",
+      setter = function(self, value) {
+        valid_types <- c("fixed", "group_sequential", "adaptive")
+        if (!value %in% valid_types) {
+          cli::cli_abort(c(
+            "{.arg trial_type} must be one of: {.val {valid_types}}",
+            "x" = "You supplied {.val {value}}"
+          ))
+        }
+        self@trial_type <- value
+        self
+      }
+    ),
+
     design_name = S7::class_character | NULL
   ),
 
@@ -243,6 +261,10 @@ get_bf_parameter_names <- function(model) {
 #' @param target_params Character vector specifying which model parameters to
 #'   analyze for power. Must be valid parameter names from the inference model.
 #'   Use `design@par_names_inference` to discover available names. Required.
+#' @param trial_type Character. Type of trial design: "fixed" (default, single
+#'   analysis), "group_sequential" (interim stopping rules), or "adaptive"
+#'   (parameter modification like RAR/SSR). Determines validation requirements
+#'   in [build_conditions()].
 #' @param design_name Optional character string providing a descriptive name.
 #'
 #' @details
@@ -300,6 +322,7 @@ build_design <- function(model_name = NULL,
                          n_arms = NULL,
                          n_repeated_measures = NULL,
                          target_params,
+                         trial_type = "fixed",
                          design_name = NULL) {
 
   backend <- match.arg(backend)
@@ -361,6 +384,15 @@ build_design <- function(model_name = NULL,
     ))
   }
 
+  # Validate trial_type
+  valid_types <- c("fixed", "group_sequential", "adaptive")
+  if (!trial_type %in% valid_types) {
+    cli::cli_abort(c(
+      "{.arg trial_type} must be one of: {.val {valid_types}}",
+      "x" = "You supplied {.val {trial_type}}"
+    ))
+  }
+
   # =========================================================================
   # Extract parameter names BEFORE stripping the model
   # =========================================================================
@@ -406,6 +438,7 @@ build_design <- function(model_name = NULL,
     n_repeated_measures = n_repeated_measures,
     par_names_inference = par_names_inference,
     target_params = target_params,
+    trial_type = trial_type,
     design_name = design_name
   )
 }

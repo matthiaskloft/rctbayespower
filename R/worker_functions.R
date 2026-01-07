@@ -46,32 +46,34 @@ worker_process_single <- function(id_cond, id_iter, condition_args, design) {
   thr_dec_fut <- decision_args$thr_dec_fut
   analysis_at <- decision_args$analysis_at
   interim_function <- decision_args$interim_function
-  adaptive <- decision_args$adaptive %||% FALSE
+  trial_type <- decision_args$trial_type %||% "fixed"
 
   # =============================================================================
-  # STRATEGY DETECTION (Single vs Sequential vs Adaptive)
+  # STRATEGY DETECTION (from trial_type)
   # =============================================================================
-  # Determines analysis strategy based on decision parameters:
+  # Strategy is determined by trial_type set in build_design():
   #
-  # "single" - No interim analyses (analysis_at = NULL or empty)
+  # "fixed" -> "single" - No interim analyses
   #   - One analysis at n_total only
   #   - Most common scenario
   #
-  # "sequential" - Has interim timepoints, non-adaptive
+  # "group_sequential" -> "sequential" - Has interim timepoints, non-adaptive
   #   - Fixed interim analyses at predefined sample sizes
   #   - Early stopping possible but parameters don't change
   #
-  # "adaptive" - Has interim timepoints, adaptive = TRUE
-  #   - Parameters can be modified between looks
+  # "adaptive" -> "adaptive" - Has interim timepoints with adaptation
+  #   - Parameters can be modified between looks (RAR, SSR)
   #   - Not yet implemented (planned feature)
-  has_interims <- !is.null(analysis_at) && length(analysis_at) > 0
-  strategy <- if (!has_interims) {
-    "single"
-  } else if (!adaptive) {
-    "sequential"
-  } else {
-    "adaptive"
-  }
+  strategy <- switch(
+    trial_type,
+    "fixed" = "single",
+    "group_sequential" = "sequential",
+    "adaptive" = "adaptive",
+    cli::cli_abort(c(
+      "Unknown trial_type: {.val {trial_type}}",
+      "i" = "This is an internal error - please report"
+    ))
+  )
 
   # Simulate full dataset (unless adaptive - which handles its own simulation)
   if (strategy %in% c("single", "sequential")) {
@@ -170,8 +172,8 @@ worker_process_single <- function(id_cond, id_iter, condition_args, design) {
     },
     adaptive = {
       cli::cli_abort(c(
-        "Adaptive strategy not yet implemented",
-        "i" = "This feature is planned for future releases"
+        "Adaptive trial type not yet implemented",
+        "i" = "Use {.val group_sequential} for sequential monitoring without adaptation"
       ))
     }
   )
@@ -238,18 +240,22 @@ worker_process_batch <- function(work_units, design) {
   thr_dec_fut <- decision_args$thr_dec_fut
   analysis_at <- decision_args$analysis_at
   interim_function <- decision_args$interim_function
-  adaptive <- decision_args$adaptive %||% FALSE
+  trial_type <- decision_args$trial_type %||% "fixed"
 
-  if (adaptive) {
+  if (trial_type == "adaptive") {
     cli::cli_abort(c(
-      "Adaptive strategy with batching not yet implemented",
-      "i" = "This feature is planned for future releases"
+      "Adaptive trial type with batching not yet implemented",
+      "i" = "Use {.val group_sequential} for sequential monitoring without adaptation"
     ))
   }
 
-  # Detect strategy
-  has_interims <- !is.null(analysis_at) && length(analysis_at) > 0
-  strategy <- if (!has_interims) "single" else "sequential"
+  # Detect strategy from trial_type
+  strategy <- switch(
+    trial_type,
+    "fixed" = "single",
+    "group_sequential" = "sequential",
+    "adaptive" = "adaptive"  # Already caught above
+  )
 
   # Simulate full datasets for all work units
   full_data_list <- lapply(work_units, function(wu) {

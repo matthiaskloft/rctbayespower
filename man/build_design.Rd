@@ -16,6 +16,7 @@ build_design(
   n_arms = NULL,
   n_repeated_measures = NULL,
   target_params,
+  trial_type = "fixed",
   design_name = NULL
 )
 }
@@ -58,6 +59,11 @@ Required if \code{model_name} is NULL.}
 \item{target_params}{Character vector specifying which model parameters to
 analyze for power. Must be valid parameter names from the inference model.
 Use \code{design@par_names_inference} to discover available names. Required.}
+
+\item{trial_type}{Character. Type of trial design: "fixed" (default, single
+analysis), "group_sequential" (interim stopping rules), or "adaptive"
+(parameter modification like RAR/SSR). Determines validation requirements
+in \code{\link[=build_conditions]{build_conditions()}}.}
 
 \item{design_name}{Optional character string providing a descriptive name.}
 }

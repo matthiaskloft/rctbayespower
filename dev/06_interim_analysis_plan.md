@@ -128,6 +128,8 @@ The following plot types should be implemented for sequential/interim analysis v
 
 ## Adaptive Strategy Implementation Plan
 
+**Note (2025-01-06):** The `adaptive` boolean parameter is being replaced by `trial_type` in `build_design()`. See "Migration: adaptive Boolean → trial_type" section below.
+
 **Status:** Planning
 **Primary Use Case:** Response-Adaptive Randomization (RAR)
 
@@ -145,11 +147,69 @@ Final dataset = concatenation of batches with **different generation parameters*
 
 | Component | Status |
 |-----------|--------|
-| `design@adaptive` property | ✅ Exists (logical flag) |
+| `design@adaptive` property | ⚠️ Deprecated → use `design@trial_type` |
 | `interim_function` returns `modified_params` | ✅ Interface defined |
 | `estimate_sequential_brms()` uses `modified_params` | ❌ Ignores it |
 | Incremental data generation | ❌ Not implemented |
 | Validation of `modified_params` | ❌ Not implemented |
+
+---
+
+## Migration: `adaptive` Boolean → `trial_type`
+
+**Status:** Planned
+
+The `adaptive` boolean parameter in `build_conditions()` is being replaced by `trial_type` in `build_design()`.
+
+### Old API (Deprecated)
+
+```r
+# This pattern is DEPRECATED
+build_conditions(
+  design = design,
+  constant = list(
+    adaptive = TRUE,  # DEPRECATED - will error
+    analysis_at = c(0.5, 1.0),
+    ...
+  )
+)
+```
+
+### New API
+
+```r
+# NEW: trial_type is specified in build_design()
+design <- build_design(
+  model_name = "ancova_cont_2arms",
+  target_params = "b_arm2",
+  trial_type = "adaptive"  # NEW - one of: "fixed", "group_sequential", "adaptive"
+)
+
+conditions <- build_conditions(
+  design = design,
+  constant = list(
+    analysis_at = c(0.5, 1.0),  # Required for non-fixed trial types
+    interim_function = interim_rar(...),
+    ...
+  )
+)
+```
+
+### Trial Type Definitions
+
+| Type | Description | Required in conditions |
+|------|-------------|------------------------|
+| `fixed` (default) | Single final analysis | None |
+| `group_sequential` | Multiple looks, stopping rules only | `analysis_at` |
+| `adaptive` | Parameter modification between looks | `analysis_at`, specific adaptive params |
+
+### Migration Path
+
+1. Move `adaptive = TRUE` from `build_conditions()` to `trial_type = "adaptive"` in `build_design()`
+2. Remove `adaptive` from your `constant` list
+3. Ensure `analysis_at` is specified for non-fixed trial types
+
+---
 
 ### Implementation Phases
 

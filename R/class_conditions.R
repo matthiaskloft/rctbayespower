@@ -379,13 +379,6 @@ build_conditions <- function(design,
     ))
   }
 
-  # Check that 'adaptive' is only in constant (not yet supported in crossed)
-  if ("adaptive" %in% names(crossed_flat)) {
-    cli::cli_abort(c(
-      "{.arg adaptive} must be specified in {.arg constant}, not {.arg crossed}",
-      "i" = "Varying {.arg adaptive} across conditions is not yet supported"
-    ))
-  }
 
   # required parameters
   params_needed <- show_condition_args(design, print = FALSE)
@@ -394,7 +387,7 @@ build_conditions <- function(design,
   # Parameters that have defaults and don't need explicit specification
   # NOTE: p_sig_scs, p_sig_ftl are now REQUIRED in conditions (no longer inherited from design)
   # analysis_at is optional (NULL = single-look design)
-  params_with_defaults <- c("analysis_at", "interim_function", "adaptive")
+  params_with_defaults <- c("analysis_at", "interim_function")
 
   # Exclude parameters with defaults from required validation
   params_required <- setdiff(params_needed$params_all, params_with_defaults)
@@ -406,6 +399,41 @@ build_conditions <- function(design,
       "Missing required parameters",
       "x" = "The following parameters must be specified: {.val {missing_params}}",
       "i" = "Add these to {.arg crossed} or {.arg constant}"
+    ))
+  }
+
+  # ==========================================================================
+  # TRIAL TYPE VALIDATION
+  # ==========================================================================
+  # Get trial_type from design and validate parameter requirements
+  trial_type <- design@trial_type
+
+  # Check if user provided 'adaptive' (deprecated)
+  if ("adaptive" %in% names(crossed_flat) || "adaptive" %in% names(constant)) {
+    cli::cli_abort(c(
+      "The {.arg adaptive} parameter is deprecated",
+      "i" = "Use {.code trial_type = 'adaptive'} in {.fn build_design} instead",
+      "i" = "Remove {.arg adaptive} from your {.fn build_conditions} call"
+    ))
+  }
+
+  # Validate analysis_at requirements based on trial_type
+  analysis_at_provided <- "analysis_at" %in% names(crossed_flat) ||
+                          "analysis_at" %in% names(constant)
+
+  if (trial_type != "fixed" && !analysis_at_provided) {
+    cli::cli_abort(c(
+      "Trial type {.val {trial_type}} requires {.arg analysis_at}",
+      "i" = "Add {.arg analysis_at} to {.arg crossed} or {.arg constant}",
+      "i" = "Or change {.arg trial_type} to 'fixed' in {.fn build_design}"
+    ))
+  }
+
+  if (trial_type == "fixed" && analysis_at_provided) {
+    cli::cli_warn(c(
+      "Trial type is {.val fixed} but {.arg analysis_at} was provided",
+      "i" = "Change {.arg trial_type} to 'group_sequential' or 'adaptive' in {.fn build_design}",
+      "i" = "Or remove {.arg analysis_at} for a fixed (single-analysis) design"
     ))
   }
 
@@ -478,8 +506,7 @@ build_conditions <- function(design,
     # interim_function = NULL is valid for sequential monitoring without stopping rules
     decision_defaults <- list(
       analysis_at = NULL,           # NULL = single final analysis
-      interim_function = NULL,      # NULL = no stopping rules
-      adaptive = FALSE              # FALSE = non-adaptive design
+      interim_function = NULL       # NULL = no stopping rules
     )
 
     for (param in params_needed$params_decision) {
@@ -579,6 +606,9 @@ build_conditions <- function(design,
       decision_args$thr_dec_fut_display <- "boundary_function"
       decision_args$thr_dec_fut <- decision_args$thr_dec_fut(info_fracs)
     }
+
+    # Add trial_type for worker dispatch
+    decision_args$trial_type <- trial_type
 
     # Return both sets of args
     list(

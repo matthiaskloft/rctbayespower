@@ -129,7 +129,7 @@ show_condition_args <- function(design = NULL, print = TRUE) {
 
   # Decision parameters (per-condition): thresholds, boundaries, analysis_at, interim
   params_decision <- c("thr_fx_eff", "thr_fx_fut", "thr_dec_eff", "thr_dec_fut",
-                       "analysis_at", "interim_function", "adaptive")
+                       "analysis_at", "interim_function")
 
   params_all <- c(params_sim, params_decision)
 
@@ -160,11 +160,18 @@ show_condition_args <- function(design = NULL, print = TRUE) {
     cli::cli_text("  {.emph See {.fn show_boundaries} for available boundary functions}")
     cli::cli_text("")
 
-    # Optional sequential design parameters
-    cli::cli_text("{.strong Optional (sequential designs):}")
+    # Optional parameters (depends on trial_type in design)
+    cli::cli_text("{.strong Optional (depends on trial_type):}")
     cli::cli_bullets(c(
-      "*" = "analysis_at {.emph (default NULL = single final analysis)}",
-      "*" = "adaptive {.emph (default FALSE; constant only)}"
+      "*" = "analysis_at {.emph (required for group_sequential and adaptive trial types)}",
+      "*" = "interim_function {.emph (optional custom interim decision function)}"
+    ))
+    cli::cli_text("")
+    cli::cli_text("{.emph Note: trial_type is set in build_design():}")
+    cli::cli_bullets(c(
+      " " = "fixed (default): No interim analyses",
+      " " = "group_sequential: Interim stopping, requires analysis_at",
+      " " = "adaptive: Parameter modification (future), requires analysis_at"
     ))
     cli::cli_text("")
 

@@ -55,6 +55,7 @@ Archived files in `dev/archive/`.
 | **BayesFlow reticulate integration** | ✅ |
 | **Mock mode for testing without Python** | ✅ |
 | **Bayesian optimization for design search** | ✅ |
+| **trial_type parameter** | ✅ |
 
 ### Backend System
 
@@ -85,6 +86,7 @@ Archived files in `dev/archive/`.
 design <- build_design(
   model_name = "ancova_cont_2arms",
   target_params = "b_arm2"  # Use design@par_names_inference to discover
+  # trial_type = "fixed" is default; use "group_sequential" or "adaptive" for interim analyses
 )
 
 # Discover available parameter names
@@ -254,6 +256,43 @@ result_obf <- resummarize_boundaries(result,
   thr_dec_fut = boundary_linear(0.30, 0.50)
 )
 ```
+
+### Trial Types
+
+The `trial_type` parameter in `build_design()` determines the fundamental structure of your trial:
+
+| Type | Description | Required in `build_conditions()` |
+|------|-------------|----------------------------------|
+| `fixed` (default) | Single final analysis | None |
+| `group_sequential` | Multiple looks with stopping rules | `analysis_at` |
+| `adaptive` | Parameter modification between looks (RAR, SSR) | `analysis_at`, specific params |
+
+```r
+# Fixed trial (default - simplest)
+design <- build_design(
+  model_name = "ancova_cont_2arms",
+  target_params = "b_arm2"
+  # trial_type = "fixed" is default
+)
+
+# Group sequential trial
+design <- build_design(
+  model_name = "ancova_cont_2arms",
+  target_params = "b_arm2",
+  trial_type = "group_sequential"
+)
+# Requires analysis_at in build_conditions()
+
+# Adaptive trial (future - currently errors)
+design <- build_design(
+  model_name = "ancova_cont_2arms",
+  target_params = "b_arm2",
+  trial_type = "adaptive"
+)
+# Will support RAR, SSR when implemented
+```
+
+**Note:** The `adaptive` boolean in `build_conditions()` is deprecated. Use `trial_type` in `build_design()` instead.
 
 ### Pareto Optimization for Design Search
 

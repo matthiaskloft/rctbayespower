@@ -255,6 +255,7 @@ build_report.rctbp_design <- function(x) {
         name = "Design Specifications",
         items = list(
           "Design name" = if (is.null(x@design_name)) "(not set)" else x@design_name,
+          "Trial type" = x@trial_type,
           "Target parameters" = paste(x@target_params, collapse = ", ")
         ),
         note = "Decision thresholds and analysis schedule are specified in build_conditions()."
