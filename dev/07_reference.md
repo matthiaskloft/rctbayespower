@@ -44,10 +44,10 @@ This file contains reference material moved from CLAUDE.md to keep that file con
 
 | Feature | Status | Plan |
 |---------|--------|------|
-| Adaptive interim analysis (parameter modification) | Planning | `06_interim_analysis_plan.md` |
-| Train BayesFlow models | Next step | `10_bayesflow_integration_roadmap.md` |
-| Binary/survival outcomes | Not started | `08_adaptive_trials_roadmap.md` |
-| Test suite | 0% | `05_testing.md` |
+| Adaptive interim analysis (parameter modification) | Planning | `20_interim_analysis_plan.md` |
+| Train BayesFlow models | Next step | `11_bayesflow_integration_roadmap.md` |
+| Binary/survival outcomes | Not started | `21_adaptive_trials_roadmap.md` |
+| Test suite | 0% | `06_testing.md` |
 
 ---
 

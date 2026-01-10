@@ -25,8 +25,12 @@ R CMD check --as-cran .     # CRAN-style check
 2. Check if new tests are necessary. Write tests if necessary.
 3. Update roxygen documentation to match code
 4. Update the pkgdown site and README if necessary
-4. Run verification of the package
-5. Commit and create pull request
+5. Run verification of the package
+  - After significant changes: run `/verify-package`
+  - Before commits: run `/check` and `/test`
+  - Verification loop: implement → test → fix → repeat
+6. Commit and create pull request
+
 
 ## Code Style
 
@@ -60,14 +64,49 @@ Essential rules not in skill:
 
 ## Developer Documentation
 
+### Core (01-07)
+
 | File | Topic |
 |------|-------|
 | [`dev/01_architecture.md`](dev/01_architecture.md) | Architecture, class hierarchy |
 | [`dev/02_s7_classes.md`](dev/02_s7_classes.md) | S7 patterns |
 | [`dev/03_workflow.md`](dev/03_workflow.md) | User workflow, API |
 | [`dev/04_development_guidelines.md`](dev/04_development_guidelines.md) | Code style, R CMD check |
-| [`dev/11_code_consistency_review.md`](dev/11_code_consistency_review.md) | Naming conventions |
-| [`dev/14_reference.md`](dev/14_reference.md) | File organization, status |
+| [`dev/05_code_consistency_review.md`](dev/05_code_consistency_review.md) | Naming conventions |
+| [`dev/06_testing.md`](dev/06_testing.md) | Testing & CI |
+| [`dev/07_reference.md`](dev/07_reference.md) | File organization, status |
+
+### Backend Plans (10-12)
+
+| File | Topic |
+|------|-------|
+| [`dev/10_backend_abstraction_plan.md`](dev/10_backend_abstraction_plan.md) | Backend abstraction |
+| [`dev/11_bayesflow_integration_roadmap.md`](dev/11_bayesflow_integration_roadmap.md) | BayesFlow integration |
+| [`dev/12_gpu_support_plan.md`](dev/12_gpu_support_plan.md) | GPU support |
+
+### Trial Design Plans (20-23)
+
+| File | Topic |
+|------|-------|
+| [`dev/20_interim_analysis_plan.md`](dev/20_interim_analysis_plan.md) | Interim analysis |
+| [`dev/21_adaptive_trials_roadmap.md`](dev/21_adaptive_trials_roadmap.md) | Adaptive trials roadmap |
+| [`dev/22_bayesian_adaptive_designs_reference.md`](dev/22_bayesian_adaptive_designs_reference.md) | Bayesian adaptive reference |
+| [`dev/23_api_roadmap.md`](dev/23_api_roadmap.md) | API evolution roadmap |
+
+### Optimization Plans (30-31)
+
+| File | Topic |
+|------|-------|
+| [`dev/30_bayesian_optimization_plan.md`](dev/30_bayesian_optimization_plan.md) | Bayesian optimization |
+| [`dev/31_BO_implementation_guide.md`](dev/31_BO_implementation_guide.md) | BO implementation guide |
+
+### Tooling (90-99)
+
+| File | Topic |
+|------|-------|
+| [`dev/90_claude_code_settings.md`](dev/90_claude_code_settings.md) | Claude Code settings |
+| [`dev/91_claude_permissions_template.md`](dev/91_claude_permissions_template.md) | Claude permissions template |
+| [`dev/99_dev_todos.md`](dev/99_dev_todos.md) | Development TODOs |
 
 ## Skills
 
@@ -88,11 +127,3 @@ Essential rules not in skill:
 | `/test` | Run tests, report failures |
 | `/doc` | Regenerate documentation |
 | `/roxygen-check` | Verify roxygen docs match code |
-
-## Verification (Boris's #1 Tip)
-
-"Give Claude a way to verify its work" - this 2-3x the quality.
-
-- After significant changes: run `/verify-package`
-- Before commits: run `/check` and `/test`
-- Verification loop: implement → test → fix → repeat

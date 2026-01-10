@@ -15,7 +15,7 @@ Bayesian adaptive designs leverage posterior and predictive probability distribu
 
 ## 1. Bayesian Interim Monitoring (High Priority)
 
-These designs align with the current `06_interim_analysis_plan.md` and should be prioritized for implementation.
+These designs align with the current `20_interim_analysis_plan.md` and should be prioritized for implementation.
 
 ### 1.1 Posterior Probability Stopping Rules
 

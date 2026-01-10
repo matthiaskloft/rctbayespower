@@ -2,7 +2,7 @@
 
 **Last Updated:** 2025-11-28
 
-See also: [`11_code_consistency_review.md`](11_code_consistency_review.md) for detailed patterns verified across all R files.
+See also: [`05_code_consistency_review.md`](05_code_consistency_review.md) for detailed patterns verified across all R files.
 
 ## Code Style Requirements
 

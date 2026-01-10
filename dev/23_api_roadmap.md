@@ -190,7 +190,7 @@ conditions <- build_conditions(
 ---
 ## 7. Cross-References
 
-- Interim/sequential details: `06_interim_analysis_plan.md`
-- Outcome type roadmap: `08_adaptive_trials_roadmap.md`
-- Bayesian design reference: `09_bayesian_adaptive_designs_reference.md`
-- BayesFlow integration: `10_bayesflow_integration_roadmap.md`
+- Interim/sequential details: `20_interim_analysis_plan.md`
+- Outcome type roadmap: `21_adaptive_trials_roadmap.md`
+- Bayesian design reference: `22_bayesian_adaptive_designs_reference.md`
+- BayesFlow integration: `11_bayesflow_integration_roadmap.md`

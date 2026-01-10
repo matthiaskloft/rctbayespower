@@ -2,7 +2,7 @@
 
 **Created:** 2024-11-24
 **Status:** ✅ IMPLEMENTED (2025-11-27)
-**Implementation:** See `dev/10_bayesflow_integration_roadmap.md` for details
+**Implementation:** See `dev/11_bayesflow_integration_roadmap.md` for details
 
 ---
 
@@ -50,13 +50,13 @@ The R infrastructure is complete. Remaining work:
 3. **Integration**: Upload trained models to GitHub releases
 4. **Testing**: Add unit tests with mock mode
 
-See `dev/10_bayesflow_integration_roadmap.md` for detailed next steps.
+See `dev/11_bayesflow_integration_roadmap.md` for detailed next steps.
 
 ---
 
 ## Original Plan (Archived)
 
-The content below is the original plan from 2024-11-24. It has been superseded by the actual implementation documented above and in `10_bayesflow_integration_roadmap.md`.
+The content below is the original plan from 2024-11-24. It has been superseded by the actual implementation documented above and in `11_bayesflow_integration_roadmap.md`.
 
 <details>
 <summary>Click to expand original plan</summary>
