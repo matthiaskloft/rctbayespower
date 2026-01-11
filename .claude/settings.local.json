@@ -10,7 +10,12 @@
       "WebFetch(domain:www.nature.com)",
       "Bash(git worktree:*)",
       "Bash(cat:*)",
-      "WebFetch(domain:cran.r-project.org)"
+      "WebFetch(domain:cran.r-project.org)",
+      "WebFetch(domain:howborisusesclaudecode.com)",
+      "WebFetch(domain:www.anthropic.com)",
+      "WebFetch(domain:paddo.dev)",
+      "WebFetch(domain:twitter-thread.com)",
+      "Bash(git mv:*)"
     ],
     "deny": []
   }
