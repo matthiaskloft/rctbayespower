@@ -61,6 +61,7 @@ Essential rules not in skill:
 - All R source files in `/R` root (no subfolders)
 - Development docs in `dev/`
 - Skills in `.claude/skills/`
+- Subagents in `.claude/agents/`
 
 ## Developer Documentation
 
@@ -106,6 +107,7 @@ Essential rules not in skill:
 |------|-------|
 | [`dev/90_claude_code_settings.md`](dev/90_claude_code_settings.md) | Claude Code settings |
 | [`dev/91_claude_permissions_template.md`](dev/91_claude_permissions_template.md) | Claude permissions template |
+| [`dev/92_custom_subagents.md`](dev/92_custom_subagents.md) | Custom subagents |
 | [`dev/99_dev_todos.md`](dev/99_dev_todos.md) | Development TODOs |
 
 ## Skills
@@ -127,3 +129,14 @@ Essential rules not in skill:
 | `/test` | Run tests, report failures |
 | `/doc` | Regenerate documentation |
 | `/roxygen-check` | Verify roxygen docs match code |
+
+## Subagents
+
+Auto-delegated agents for specialized tasks. See [`dev/92_custom_subagents.md`](dev/92_custom_subagents.md) for details.
+
+| Agent | Triggers | Purpose |
+|-------|----------|---------|
+| `test-writer` | "write tests", "add coverage" | Generate testthat tests |
+| `roxygen-sync` | "sync docs", "fix roxygen" | Fix documentation mismatches |
+| `backend-verifier` | "verify backends" | Check brms/BayesFlow consistency |
+| `naming-auditor` | "audit naming" | Check naming conventions |

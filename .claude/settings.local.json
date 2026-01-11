@@ -15,7 +15,10 @@
       "WebFetch(domain:www.anthropic.com)",
       "WebFetch(domain:paddo.dev)",
       "WebFetch(domain:twitter-thread.com)",
-      "Bash(git mv:*)"
+      "Bash(git mv:*)",
+      "WebFetch(domain:roxygen2.r-lib.org)",
+      "WebFetch(domain:style.tidyverse.org)",
+      "WebFetch(domain:alexop.dev)"
     ],
     "deny": []
   }
