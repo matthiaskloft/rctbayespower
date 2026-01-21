@@ -40,10 +40,11 @@ Takes precedence over explicit component arguments.}
 \item{backend_args_brms}{List of brms-specific arguments (chains, iter, etc.)}
 
 \item{backend_args_bf}{List of BayesFlow-specific arguments:
-\describe{
-\item{batch_size}{Batch size for inference (default: NULL, uses n_sims)}
-\item{n_posterior_samples}{Number of posterior samples (default: 1000)}
+\itemize{
+\item \code{batch_size}: Batch size for inference (NULL uses n_sims)
+\item \code{n_posterior_samples}: Number of posterior samples to draw
 }
+
 Note: Python environment should be set before using BayesFlow via
 \code{\link[=bf_status]{bf_status()}} or \code{\link[=setup_bf_python]{setup_bf_python()}}, not at runtime.}
 

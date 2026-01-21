@@ -22,7 +22,8 @@ R CMD check --as-cran .     # CRAN-style check
 ## Development Workflow
 
 1. Make changes
-2. Check if new tests are necessary. Write tests if necessary.
+2. Check if new tests are necessary. Write tests if necessary. 
+    - Prefer running single tests, and not the whole test suite, for performance
 3. Update roxygen documentation to match code
 4. Update the pkgdown site and README if necessary
 5. Run verification of the package
@@ -116,9 +117,11 @@ Essential rules not in skill:
 |-------|-------------|
 | `/code-patterns` | Writing new code, naming conventions |
 | `/s7-classes` | Creating S7 classes, properties, validators |
+| `/roxygen` | Writing roxygen documentation |
 | `/r-cmd-check` | Fixing R CMD check errors |
 | `/verify-package` | Before commits, after significant changes |
 | `/code-simplifier` | After implementing a feature, to clean up |
+| `/skill-creator` | Creating new Claude Code skills |
 
 ## Slash Commands
 
@@ -128,7 +131,7 @@ Essential rules not in skill:
 | `/check` | Run R CMD check, report issues |
 | `/test` | Run tests, report failures |
 | `/doc` | Regenerate documentation |
-| `/roxygen-check` | Verify roxygen docs match code |
+| `/roxygen-sync [file\|function]` | Check & fix roxygen docs (files assumed in `R/`) |
 
 ## Subagents
 
@@ -137,6 +140,6 @@ Auto-delegated agents for specialized tasks. See [`dev/92_custom_subagents.md`](
 | Agent | Triggers | Purpose |
 |-------|----------|---------|
 | `test-writer` | "write tests", "add coverage" | Generate testthat tests |
-| `roxygen-sync` | "sync docs", "fix roxygen" | Fix documentation mismatches |
+| `roxygen-sync` | "fix roxygen", "sync docs" | Fix documentation mismatches (can edit) |
 | `backend-verifier` | "verify backends" | Check brms/BayesFlow consistency |
 | `naming-auditor` | "audit naming" | Check naming conventions |

@@ -9,6 +9,8 @@ model: sonnet
 
 You synchronize roxygen2 documentation blocks with actual R function signatures in rctbayespower.
 
+**Reference**: Use `/roxygen` skill for templates when writing new documentation.
+
 ## Common Issues to Fix
 
 ### 1. Missing @param
@@ -84,9 +86,9 @@ Always run:
 devtools::document()
 ```
 
-Then verify with:
+Then verify (skip tests for speed):
 ```r
-devtools::check()
+devtools::check(args = "--no-tests")
 ```
 
 ## Package-Specific Notes

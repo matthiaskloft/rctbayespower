@@ -18,7 +18,9 @@
       "Bash(git mv:*)",
       "WebFetch(domain:roxygen2.r-lib.org)",
       "WebFetch(domain:style.tidyverse.org)",
-      "WebFetch(domain:alexop.dev)"
+      "WebFetch(domain:alexop.dev)",
+      "Skill(roxygen-sync)",
+      "Skill(roxygen)"
     ],
     "deny": []
   }

@@ -66,11 +66,13 @@ System prompt in markdown...
 
 **Triggers**: "sync docs", "fix roxygen", "@param mismatch", "documentation out of sync"
 
+**References**: `/roxygen` skill for templates when writing new documentation.
+
 **Capabilities**:
 - Detect missing/orphaned @param entries
 - Fix default value mismatches
 - Convert old link syntax to modern `[fn()]`
-- Run devtools::document() after fixes
+- Run devtools::document() and devtools::check(args = "--no-tests") after fixes
 
 ### backend-verifier
 

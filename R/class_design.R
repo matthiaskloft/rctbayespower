@@ -241,16 +241,13 @@ get_bf_parameter_names <- function(model) {
 #' @param inference_model A brmsfit object (for brms backend) or BayesFlow model
 #'   (for bf backend). Required if `model_name` is NULL.
 #' @param backend Which backend to use: "brms" (default) or "bf".
-#'   \itemize{
-#'     \item "brms": Load brms model (default, always available)
-#'     \item "bf": Try BayesFlow, fall back to brms with warning if unavailable
-#'   }
+#'   - "brms": Load brms model (default, always available)
+#'   - "bf": Try BayesFlow, fall back to brms with warning if unavailable
 #' @param backend_args_brms List of brms-specific arguments (chains, iter, etc.)
 #' @param backend_args_bf List of BayesFlow-specific arguments:
-#'   \describe{
-#'     \item{batch_size}{Batch size for inference (default: NULL, uses n_sims)}
-#'     \item{n_posterior_samples}{Number of posterior samples (default: 1000)}
-#'   }
+#'   - `batch_size`: Batch size for inference (NULL uses n_sims)
+#'   - `n_posterior_samples`: Number of posterior samples to draw
+#'
 #'   Note: Python environment should be set before using BayesFlow via
 #'   [bf_status()] or [setup_bf_python()], not at runtime.
 #' @param n_endpoints Number of endpoints (positive integer). Required if `model_name` is NULL.
@@ -273,11 +270,11 @@ get_bf_parameter_names <- function(model) {
 #' thresholds (`p_sig_scs`, `p_sig_ftl`, `thresh_scs`, `thresh_ftl`) and
 #' sequential analysis settings (`analysis_at`) are specified in [build_conditions()].
 #'
-#' \strong{Predefined Models:} For most users, specify `model_name` to use a
+#' **Predefined Models:** For most users, specify `model_name` to use a
 #' predefined model configuration. Available models can be listed with
 #' [show_predefined_models()].
 #'
-#' \strong{Custom Models:} For custom analyses, provide explicit `sim_fn` and
+#' **Custom Models:** For custom analyses, provide explicit `sim_fn` and
 #' `inference_model` arguments along with trial metadata.
 #'
 #' @return An S7 object of class "rctbp_design"
