@@ -20,7 +20,10 @@
       "WebFetch(domain:style.tidyverse.org)",
       "WebFetch(domain:alexop.dev)",
       "Skill(roxygen-sync)",
-      "Skill(roxygen)"
+      "Skill(roxygen)",
+      "WebFetch(domain:pypi.org)",
+      "WebFetch(domain:bambinos.github.io)",
+      "WebFetch(domain:www.statsmodels.org)"
     ],
     "deny": []
   }
