@@ -154,8 +154,17 @@ bootstrap_pip <- function(envname) {
   status <- attr(result, "status")
 
   if (is.null(status) || status == 0) {
-    cli::cli_alert_success("pip bootstrapped via ensurepip")
-    return(invisible(TRUE))
+    # Verify pip actually works (ensurepip can exit 0 but leave pip broken on Windows)
+    verify <- suppressWarnings(
+      system2(python_path, c("-m", "pip", "--version"),
+              stdout = TRUE, stderr = TRUE)
+    )
+    verify_status <- attr(verify, "status")
+    if (is.null(verify_status) || verify_status == 0) {
+      cli::cli_alert_success("pip bootstrapped via ensurepip")
+      return(invisible(TRUE))
+    }
+    cli::cli_alert_warning("ensurepip exited successfully but pip is not functional")
   }
 
   # ensurepip failed - fall back to get-pip.py
