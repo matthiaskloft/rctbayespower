@@ -128,6 +128,71 @@ find_python_version <- function(version) {
 
 
 # =============================================================================
+# PIP BOOTSTRAPPING
+# =============================================================================
+
+#' Bootstrap pip in a Virtual Environment
+#'
+#' Ensures pip is available in a virtual environment. Uses `ensurepip` first,
+#' falling back to `get-pip.py` if that fails. This works around a known
+#' CPython bug where `venv` creation silently fails to bootstrap pip on Windows.
+#'
+#' @param envname Name of the virtual environment
+#'
+#' @return Invisibly returns TRUE on success
+#' @keywords internal
+bootstrap_pip <- function(envname) {
+  # Normalize to resolve Windows 8.3 short paths (e.g., ONEDRI~1 -> OneDrive)
+  python_path <- normalizePath(reticulate::virtualenv_python(envname), winslash = "/")
+
+  # Try ensurepip first
+  cli::cli_alert_info("Bootstrapping pip...")
+  result <- suppressWarnings(
+    system2(python_path, c("-m", "ensurepip", "--upgrade"),
+            stdout = TRUE, stderr = TRUE)
+  )
+  status <- attr(result, "status")
+
+  if (is.null(status) || status == 0) {
+    cli::cli_alert_success("pip bootstrapped via ensurepip")
+    return(invisible(TRUE))
+  }
+
+  # ensurepip failed - fall back to get-pip.py
+  cli::cli_alert_warning("ensurepip failed, downloading get-pip.py...")
+  get_pip_path <- tempfile(fileext = ".py")
+  on.exit(unlink(get_pip_path), add = TRUE)
+
+  tryCatch({
+    utils::download.file(
+      "https://bootstrap.pypa.io/get-pip.py",
+      get_pip_path,
+      quiet = TRUE
+    )
+  }, error = function(e) {
+    cli::cli_abort(c(
+      "Failed to download get-pip.py",
+      "x" = conditionMessage(e),
+      "i" = "Check your internet connection and try again"
+    ))
+  })
+
+  result <- system2(python_path, get_pip_path, stdout = TRUE, stderr = TRUE)
+  status <- attr(result, "status")
+
+  if (!is.null(status) && status != 0) {
+    cli::cli_abort(c(
+      "Failed to bootstrap pip",
+      "i" = paste(utils::tail(result, 5), collapse = "\n")
+    ))
+  }
+
+  cli::cli_alert_success("pip bootstrapped via get-pip.py")
+  invisible(TRUE)
+}
+
+
+# =============================================================================
 # ENVIRONMENT SETUP
 # =============================================================================
 
@@ -219,8 +284,12 @@ setup_bf_python <- function(envname = "r-rctbayespower",
       unlink(envpath, recursive = TRUE)
     }
     cli::cli_alert_info("Creating virtual environment: {.val {envname}}")
-    # Use explicit Python path to avoid Windows Store Python
-    reticulate::virtualenv_create(envname = envname, python = python_path)
+    # Use packages = FALSE to avoid pip bootstrap failures on Windows
+    # (CPython bug: ensurepip can silently fail in venv creation)
+    reticulate::virtualenv_create(
+      envname = envname, python = python_path, packages = FALSE
+    )
+    bootstrap_pip(envname)
   }
 
   # Use this environment
@@ -360,8 +429,8 @@ install_bf_dependencies <- function(envname = "r-rctbayespower",
     cli::cli_h2("Installing PyTorch with CUDA {cuda_version}")
   }
 
-  # Get Python path
-  python_path <- reticulate::virtualenv_python(envname)
+  # Get Python path (normalize to resolve Windows 8.3 short paths)
+  python_path <- normalizePath(reticulate::virtualenv_python(envname), winslash = "/")
 
   # Step 1: Install PyTorch with correct CUDA version
   cli::cli_alert_info("Installing PyTorch from {.url {torch_index}}")
