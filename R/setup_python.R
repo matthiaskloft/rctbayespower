@@ -186,7 +186,8 @@ bootstrap_pip <- function(envname) {
     ))
   })
 
-  result <- system2(python_path, get_pip_path, stdout = TRUE, stderr = TRUE)
+  result <- system2(python_path, c(get_pip_path, "--force-reinstall"),
+                    stdout = TRUE, stderr = TRUE)
   status <- attr(result, "status")
 
   if (!is.null(status) && status != 0) {
