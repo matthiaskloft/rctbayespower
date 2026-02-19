@@ -23,7 +23,10 @@
       "Skill(roxygen)",
       "WebFetch(domain:pypi.org)",
       "WebFetch(domain:bambinos.github.io)",
-      "WebFetch(domain:www.statsmodels.org)"
+      "WebFetch(domain:www.statsmodels.org)",
+      "Bash(\"/c/Users/nu006612/OneDrive - Leibniz-Institut für Bildungsverläufe e.V/Dokumente/.virtualenvs/rctbp-3-11/Scripts/python.exe\" -m pip --version)",
+      "Bash(\"/c/Users/nu006612/OneDrive - Leibniz-Institut für Bildungsverläufe e.V/Dokumente/.virtualenvs/rctbp-3-11/Scripts/python.exe\" -m pip list)",
+      "Bash(nvidia-smi:*)"
     ],
     "deny": []
   }

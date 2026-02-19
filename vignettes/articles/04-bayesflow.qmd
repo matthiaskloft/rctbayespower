@@ -28,8 +28,13 @@ library(dplyr)
 library(pander)
 
 # install venv
-if(!reticulate::virtualenv_exists("rctbp-3-12")){
-  setup_bf_python(envname = "rctbp-3-12", python_version = "3.11", cuda_version = "auto")
+if(!reticulate::virtualenv_exists("rctbp-3-12")) {
+  setup_bf_python(
+    envname = "rctbp-3-12",
+    python_version = "3.12",
+    cuda_version = "auto",
+    force = TRUE
+  )
 }
 # Initialize BayesFlow Python environment
 init_bf("rctbp-3-12", verbose = TRUE)
@@ -75,7 +80,7 @@ The BayesFlow backend requires Python with PyTorch, Keras, and BayesFlow. Use `s
 setup_bf_python()
 
 # With options:
-setup_bf_python(envname = "rctbp-3-12", python_version = "3.12", cuda_version = "auto")
+setup_bf_python(envname = "rctbp-3-12", python_version = "3.12", cuda_version = "auto", force = TRUE)
 setup_bf_python(envname = "rctbp-3-11-cpu", python_version = "3.11", cuda_version = "cpu")
 setup_bf_python(cuda_version = "cpu")
 setup_bf_python(force = TRUE)
