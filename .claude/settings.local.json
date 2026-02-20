@@ -23,7 +23,14 @@
       "Skill(roxygen)",
       "WebFetch(domain:pypi.org)",
       "WebFetch(domain:bambinos.github.io)",
-      "WebFetch(domain:www.statsmodels.org)"
+      "WebFetch(domain:www.statsmodels.org)",
+      "Bash(git remote set-url:*)",
+      "Bash(gh pr list:*)",
+      "Bash(gh pr create:*)",
+      "Bash(gh pr view:*)",
+      "WebFetch(domain:gpaux.github.io)",
+      "WebFetch(domain:tjaki.github.io)",
+      "WebFetch(domain:batss-dev.github.io)"
     ],
     "deny": []
   }

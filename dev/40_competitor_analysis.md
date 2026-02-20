@@ -1,10 +1,10 @@
 # Competitor Analysis: rctbayespower
 
-*Last updated: 2026-02-16*
+*Last updated: 2026-02-20*
 
 ## 1. Executive Summary
 
-The landscape of free, open-source tools for Bayesian power analysis of RCTs is fragmented. No single package offers a complete workflow from Bayesian power calculation through group sequential monitoring to automated design optimization. Existing tools tend to be either (a) Bayesian but without power analysis focus (RBesT, bayesDP), (b) power-focused but frequentist (gsDesign, rpact, pwr), or (c) simulation-based but without Bayesian inference (Superpower, simr).
+The landscape of free, open-source tools for Bayesian power analysis of RCTs is fragmented. No single package offers a complete workflow from Bayesian power calculation through group sequential monitoring to automated design optimization. Existing tools tend to be either (a) Bayesian but limited in scope (gsbDesign for normal endpoints only, BayesPPD for power priors), (b) power-focused but frequentist (gsDesign, rpact, pwr), or (c) simulation-based but without Bayesian inference (Superpower, simr).
 
 **rctbayespower** targets the unoccupied intersection: a dedicated Bayesian power analysis tool for RCTs with ROPE-based decision making, group sequential boundaries, dual estimation backends (MCMC + neural posterior estimation), and automated Bayesian optimization for design search. For psychological intervention trials specifically, the built-in ANCOVA models match the dominant analysis approach (pre-post designs with baseline adjustment), and the ROPE framework aligns with the field's growing emphasis on clinically meaningful effect sizes.
 
@@ -110,36 +110,23 @@ No competitor offers neural posterior estimation for power analysis, automated P
 - **Psych relevance**: Medium — Gaussian and Bernoulli outcomes apply; historical control data from prior therapy trials could be incorporated; but lack of ANCOVA and group sequential limits utility for typical psych RCTs
 - **Status**: CRAN v0.6.1, published 2021-11-30, likely inactive
 
-#### bayesDP — Bayesian Discount Prior
+#### BATSS — Bayesian Adaptive Trials Simulator Software
 
-- **Overview**: Data augmentation using Bayesian discount priors for single-arm and two-arm clinical trials. Developed with the Medical Device Innovation Consortium (MDIC).
+- **Overview**: Simulates Bayesian adaptive clinical trial designs and evaluates their operating characteristics. Uses INLA (Integrated Nested Laplace Approximation) for fitting Bayesian GLMs, supporting covariate adjustment and adaptive randomization. The most feature-rich actively maintained Bayesian adaptive trial simulation package on CRAN (bayesCT was archived in 2025).
 - **Key features**:
-  - Discount function for down-weighting historical data
-  - Binomial, normal, linear regression, and survival outcomes
-  - Single-arm and two-arm trial support
-  - Posterior inference with discounted historical prior
-- **Estimation backend**: MCMC (via MCMCpack and custom Rcpp)
-- **Optimization method**: None (analysis tool, not design tool)
-- **Strengths**: Principled historical data borrowing; regulatory engagement (MDIC); multiple outcome types; actively maintained
-- **Limitations**: Analysis-focused, not design/power-focused; no power calculations built in; no group sequential; no ROPE; no optimization; requires users to write their own simulation wrapper for power analysis
-- **Psych relevance**: Low — useful for incorporating historical data but does not directly address power analysis or trial design questions
-- **Status**: CRAN v1.3.7, published 2025-01-12, actively maintained
-
-#### RBesT — R Bayesian Evidence Synthesis Tools (Novartis)
-
-- **Overview**: Bayesian evidence synthesis toolkit for meta-analysis, robust prior derivation from historical data, and operating characteristics evaluation. Industry-backed by Novartis.
-- **Key features**:
-  - Meta-Analytic-Predictive (MAP) priors from historical data
-  - Mixture priors for robustification
-  - Operating characteristics via simulation
-  - One-sample and two-sample designs
-  - Normal, binary, and Poisson endpoints
-- **Estimation backend**: MCMC via Stan (rstan)
-- **Optimization method**: Grid-based operating characteristics (evaluates at user-specified scenarios)
-- **Strengths**: Industry standard (Novartis); rigorous MAP prior methodology (Neuenschwander, Schmidli); well-documented; actively maintained; regulatory credibility
-- **Limitations**: Focused on prior derivation and evidence synthesis, not full power analysis workflow; no group sequential designs; no ROPE framework; no automated optimization; no ANCOVA models
-- **Psych relevance**: Medium — MAP priors could synthesize evidence from prior therapy trials to inform new designs; normal and binary endpoints are relevant; but requires users to build their own power analysis pipeline around it
-- **Status**: CRAN v1.8-2, published 2025-04-25, actively maintained by Novartis
+  - Bayesian GLM via INLA for fast approximate posterior inference
+  - Normal, binary, Poisson, negative binomial, and survival endpoints
+  - Covariate adjustment (ANCOVA supported)
+  - Treatment stopping rules (efficacy and futility)
+  - Trial-wide stopping rules
+  - Bayesian response-adaptive randomization
+  - Parallel processing and cluster computing support
+- **Estimation backend**: INLA (Integrated Nested Laplace Approximation) — a unique backend among competitors; faster than MCMC but approximate
+- **Optimization method**: None (user specifies designs; evaluates operating characteristics via simulation)
+- **Strengths**: Broad outcome support including ANCOVA; INLA is faster than full MCMC; adaptive randomization; actively maintained; parallelization; the only active Bayesian adaptive trial package on CRAN
+- **Limitations**: No ROPE framework; no automated design optimization; no group sequential boundaries (uses fixed stopping rules); INLA requires separate installation (not on CRAN); no post-hoc boundary comparison; no neural inference
+- **Psych relevance**: High — supports ANCOVA (standard for psych RCTs), binary outcomes (remission), and Bayesian inference; adaptive randomization could be useful for multi-arm psych trials comparing therapies; covariate adjustment for baseline severity
+- **Status**: CRAN v1.1.1, published 2025-10-02, actively maintained
 
 ---
 
@@ -228,93 +215,122 @@ No competitor offers neural posterior estimation for power analysis, automated P
 - **Psych relevance**: Very High — multilevel/mixed models are standard for psych RCTs (patients nested in therapists/sites, repeated measures); handles clustering that simpler tools miss; but frequentist inference
 - **Status**: CRAN v1.0.8, published 2025-08-18, actively maintained
 
+#### longpower — Power for Longitudinal Data
+
+- **Overview**: Power and sample size calculations for linear models of longitudinal data, supporting mixed-effects models, generalized least squares, and generalized estimating equations.
+- **Key features**:
+  - Power for linear mixed-effects models with longitudinal data
+  - GLS and GEE model support
+  - Analytical formulas from Liu & Liang (1997) and Diggle et al. (2002)
+  - Sample size for detecting slopes and rate-of-change differences
+- **Estimation backend**: Analytical (closed-form formulas)
+- **Optimization method**: Analytical inversion (solves for sample size given power targets)
+- **Strengths**: Dedicated to longitudinal designs; well-established methodology; applicable to Alzheimer's and other repeated-measures clinical trials; lightweight
+- **Limitations**: Only continuous outcomes; frequentist only; no Bayesian methods; limited to linear models (no GLMMs); no sequential designs; no ANCOVA; no automated multi-objective optimization
+- **Psych relevance**: High — longitudinal mixed models are standard for therapy trials with weekly/monthly assessments; power for detecting treatment × time interactions is central to psych RCT design
+- **Status**: CRAN v1.0.27, published 2024-09-05, actively maintained
+
+#### PowerUpR — Power for Multilevel Randomized Experiments
+
+- **Overview**: Calculates statistical power, minimum detectable effect size (MDES), and minimum required sample size for multilevel randomized experiments with continuous outcomes. Supports 14+ design types including cluster randomized and partially nested designs.
+- **Key features**:
+  - 14 designs for primary treatment effects in multilevel experiments
+  - 7 designs for moderated treatment effects
+  - 5 designs for mediated treatment effects
+  - 4 partially nested designs
+  - Power, MDES, and MDESD calculations
+- **Estimation backend**: Analytical (closed-form formulas for multilevel designs)
+- **Optimization method**: Analytical inversion (solves for sample size at each level, MDES, or MDESD)
+- **Strengths**: Comprehensive coverage of multilevel/cluster designs; handles nested structures (patients in therapists in clinics); supports moderation and mediation power; calculates power at each clustering level
+- **Limitations**: Only continuous outcomes; frequentist only; no Bayesian methods; no sequential designs; no ANCOVA; no simulation component; limited to balanced designs
+- **Psych relevance**: High — cluster randomization is common in psych interventions (therapists, clinics, schools as clusters); partially nested designs (treatment group has therapist clustering, control does not) are a frequent psych RCT pattern
+- **Status**: CRAN v1.1.0, published 2021-10-25, sporadically maintained
+
+#### Mediana — Clinical Scenario Evaluation Framework
+
+- **Overview**: A general framework for clinical trial simulations based on the Clinical Scenario Evaluation (CSE) approach. Decomposes trial design into data models, analysis models, and evaluation models, enabling power evaluation and design optimization across multiple endpoints and decision criteria.
+- **Key features**:
+  - Simulation-based power evaluation and sample size calculations
+  - Continuous, binary, survival, count, and multivariate endpoints
+  - Multiplicity adjustments for multiple endpoints/comparisons
+  - Composite success criteria (e.g., disjunctive power, weighted criteria)
+  - Adaptive designs and Go/No-Go decision frameworks
+  - Confidence intervals on power estimates
+  - Parallelization via doParallel/foreach
+- **Estimation backend**: Simulation-based (Monte Carlo)
+- **Optimization method**: Grid evaluation across scenarios; tradeoff-based optimization for multiplicity strategies
+- **Strengths**: Very flexible framework handling multivariate endpoints and complex success criteria; multiplicity adjustments built in; published methodology (Dmitrienko & D'Agostino 2013); supports compound decision rules beyond simple power
+- **Limitations**: Frequentist only; no Bayesian methods; no ROPE; no ANCOVA models; no group sequential boundaries; not recently updated (2019); steeper learning curve due to modular CSE framework
+- **Psych relevance**: Medium — continuous and binary endpoints match psych trials; multiplicity adjustment useful for trials with multiple outcome scales (e.g., depression + anxiety + functioning); but the CSE framework is more complex than needed for typical psych RCT power analysis
+- **Status**: CRAN v1.0.8, published 2019-05-08, not recently updated
+
 ---
 
-### 2.4 Python Packages
+### 2.4 Honorable Mentions
 
-#### statsmodels.stats.power — Frequentist Power Analysis
+The following packages are relevant to the Bayesian clinical trial ecosystem but were excluded from the main analysis because they lack built-in power analysis / sample size planning features or are not directly applicable to RCTs.
 
-- **Overview**: Power analysis module within the statsmodels Python library. Provides analytical power calculations for common statistical tests.
-- **Key features**:
-  - t-tests (independent, paired)
-  - F-test / ANOVA
-  - Chi-squared goodness-of-fit
-  - Normal distribution tests (z-tests)
-  - Solve for any parameter (sample size, power, effect size, alpha)
-- **Estimation backend**: Analytical (closed-form formulas)
-- **Optimization method**: Analytical inversion (root-finding for sample size)
-- **Strengths**: Part of the large statsmodels ecosystem; Python-native; well-tested; fast analytical calculations
-- **Limitations**: Frequentist only; limited test types (no ANCOVA, no mixed models, no GLM); no Bayesian methods; no sequential designs; no simulation; Python-only (not integrated with R clinical trial ecosystem)
-- **Psych relevance**: Low-Medium — Python equivalent of `pwr`; same limitation of only simple tests; psychology research predominantly uses R
-- **Status**: PyPI v0.14.6, published 2025-12-05, actively maintained
-
-#### bambi — BAyesian Model-Building Interface
-
-- **Overview**: High-level Bayesian model-building interface for Python, wrapping PyMC. Designed for fitting Bayesian mixed-effects models common in social sciences and biology using formula syntax.
-- **Key features**:
-  - R-style formula interface (`y ~ x1 + (1|group)`)
-  - Automatic prior specification
-  - Gaussian, Bernoulli, Poisson, and other families
-  - Mixed-effects models (random intercepts/slopes)
-  - Integration with ArviZ for diagnostics
-- **Estimation backend**: MCMC via PyMC (NUTS sampler)
-- **Optimization method**: None (model fitting tool, not power analysis tool)
-- **Strengths**: User-friendly formula syntax familiar to R users; automatic priors; well-documented; published in JSS (2022); designed for social science models
-- **Limitations**: **No power analysis functionality** — purely a model-fitting tool; users would need to write their own simulation wrapper; Python-only; slower than analytical methods; no sequential designs; no optimization
-- **Psych relevance**: Medium — excellent for Bayesian analysis of psych data, but provides no power analysis tools; could theoretically be used for simulation-based power by wrapping model fits, but this is not built in
-- **Status**: PyPI, actively maintained, Python 3.11+
+- **bayesDP** (R, CRAN) — Bayesian discount prior for historical data incorporation. Analysis-focused tool for down-weighting historical controls; no power calculations or sample size planning built in. Could serve as an upstream prior derivation tool.
+- **RBesT** (R, CRAN, Novartis) — Bayesian evidence synthesis and Meta-Analytic-Predictive (MAP) prior derivation. Industry-standard for synthesizing historical data into informative priors, but focused on prior derivation rather than power analysis workflows. Could complement rctbayespower by providing priors.
+- **statsmodels.stats.power** (Python, PyPI) — Analytical power for t-tests, ANOVA, and chi-squared. Essentially the Python equivalent of `pwr`; not RCT-specific and lacks Bayesian methods, sequential designs, or ANCOVA support.
+- **bambi** (Python, PyPI) — Bayesian model-building interface wrapping PyMC with R-style formula syntax. Excellent for fitting Bayesian mixed models but has no power analysis functionality; users would need to write custom simulation wrappers.
+- **TrialSize** (R, CRAN) — 80+ frequentist sample size functions implementing Chow et al.'s textbook. Comprehensive but purely frequentist, primarily pharma-oriented, and covers many designs not relevant to psych RCTs.
+- **simglm** (R, CRAN) — Simulation-based power for generalized linear mixed models, similar niche to simr but less focused on clinical trials. Last updated 2022.
+- **adpss** (R, CRAN) — Adaptive sample size determination with frequentist efficiency guarantees. Specialized methodology for adaptive trials, not a general-purpose power analysis tool.
+- **MAMS** (R, CRAN) — Multi-arm multi-stage frequentist design with power via `mams.sim()`. Normal endpoints with known variance only; multi-arm focus is niche for typical 2-arm psych RCTs. Actively maintained (v3.0.3, Aug 2025).
 
 ---
 
 ## 3. Feature Comparison Matrix
 
-| Feature | rctbayespower | bpp | BayesPPD | BayesianPower | gsbDesign | bayesCT | BayesCTDesign | bayesDP | RBesT | gsDesign | rpact | pwr | Superpower | simr | statsmodels | bambi |
+| Feature | rctbayespower | bpp | BayesPPD | BayesianPower | gsbDesign | bayesCT | BayesCTDesign | BATSS | gsDesign | rpact | pwr | Superpower | simr | longpower | PowerUpR | Mediana |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
 | **Framework** | | | | | | | | | | | | | | | | |
-| Bayesian | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | No | No | No | No | No | No | Yes |
-| Frequentist | No | No | No | No | No | No | No | No | No | Yes | Yes | Yes | Yes | Yes | Yes | No |
+| Bayesian | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | No | No | No | No | No | No | No | No |
+| Frequentist | No | No | No | No | No | No | No | No | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
 | ROPE decisions | Yes | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No |
 | Bayes factors | No | No | No | Yes | No | No | No | No | No | No | No | No | No | No | No | No |
 | **Sequential** | | | | | | | | | | | | | | | | |
-| Group sequential | Yes | No | No | No | Yes | Yes | No | No | No | Yes | Yes | No | No | No | No | No |
-| Interim analyses | Yes | Yes | No | No | Yes | Yes | No | No | No | Yes | Yes | No | No | No | No | No |
-| Look-dependent boundaries | Yes | No | No | No | No | No | No | No | No | Yes | Yes | No | No | No | No | No |
+| Group sequential | Yes | No | No | No | Yes | Yes | No | No | Yes | Yes | No | No | No | No | No | No |
+| Interim analyses | Yes | Yes | No | No | Yes | Yes | No | Yes | Yes | Yes | No | No | No | No | No | No |
+| Look-dependent boundaries | Yes | No | No | No | No | No | No | No | Yes | Yes | No | No | No | No | No | No |
 | Post-hoc boundary re-analysis | Yes | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No |
 | **Computation** | | | | | | | | | | | | | | | | |
-| MCMC | Yes (brms/Stan) | No | Yes (Rcpp) | No | No | No | No | Yes (MCMCpack) | Yes (Stan) | No | No | No | No | No | No | Yes (PyMC) |
-| Simulation-based | Yes | No | Yes | No | No | Yes | Yes | No | Yes | No | No | No | Yes | Yes | No | No |
-| Analytical | No | Yes | No | Yes | Yes | No | No | No | No | Yes | Yes | Yes | Yes | No | Yes | No |
+| MCMC | Yes (brms/Stan) | No | Yes (Rcpp) | No | No | No | No | No | No | No | No | No | No | No | No | No |
+| INLA | No | No | No | No | No | No | No | Yes | No | No | No | No | No | No | No | No |
+| Simulation-based | Yes | No | Yes | No | No | Yes | Yes | Yes | No | No | No | Yes | Yes | No | No | Yes |
+| Analytical | No | Yes | No | Yes | Yes | No | No | No | Yes | Yes | Yes | Yes | No | Yes | Yes | No |
 | Neural posterior estimation | Yes (BayesFlow) | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No |
 | GPU acceleration | Yes (planned) | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No |
-| Parallelization | Yes | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No |
+| Parallelization | Yes | No | No | No | No | No | No | Yes | No | No | No | No | No | No | No | Yes |
 | **Optimization** | | | | | | | | | | | | | | | | |
-| Automated sample size search | Yes | No | No | Yes | No | No | No | No | No | Yes | Yes | Yes | No | No | Yes | No |
+| Automated sample size search | Yes | No | No | Yes | No | No | No | No | Yes | Yes | Yes | No | No | Yes | Yes | No |
 | Bayesian optimization | Yes (mlr3mbo) | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No |
 | Pareto optimization | Yes | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No |
 | Progressive fidelity | Yes | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No |
 | **Outcomes** | | | | | | | | | | | | | | | | |
 | Continuous | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
-| Binary | No | No | Yes | No | No | Yes | Yes | Yes | Yes | Yes | Yes | Yes | No | Yes | No | Yes |
-| Survival | No | No | No | No | No | Yes | Yes | Yes | No | Yes | Yes | No | No | No | No | No |
-| Count | No | No | Yes | No | No | No | Yes | No | Yes | No | No | No | No | Yes | No | Yes |
+| Binary | No | No | Yes | No | No | Yes | Yes | Yes | Yes | Yes | Yes | No | Yes | No | No | Yes |
+| Survival | No | No | No | No | No | Yes | Yes | Yes | Yes | Yes | No | No | No | No | No | Yes |
+| Count | No | No | Yes | No | No | No | Yes | Yes | No | No | No | No | Yes | No | No | Yes |
 | **Models** | | | | | | | | | | | | | | | | |
-| ANCOVA | Yes | No | No | No | No | No | No | No | No | No | No | No | Yes | No | No | No |
-| t-test | No | No | No | No | Yes | No | No | No | No | No | Yes | Yes | Yes | No | Yes | No |
-| Mixed models | No | No | No | No | No | No | No | No | No | No | No | No | No | Yes | No | Yes |
-| GLM | No | No | Yes | No | No | No | Yes | Yes | No | No | No | No | No | Yes | No | Yes |
+| ANCOVA | Yes | No | No | No | No | No | No | Yes | No | No | No | Yes | No | No | No | No |
+| t-test | No | No | No | No | Yes | No | No | No | No | Yes | Yes | Yes | No | No | No | No |
+| Mixed models | No | No | No | No | No | No | No | No | No | No | No | No | Yes | Yes | No | No |
+| GLM | No | No | Yes | No | No | No | Yes | Yes | No | No | No | No | Yes | No | No | No |
+| Multilevel / cluster | No | No | No | No | No | No | No | No | No | No | No | No | Yes | No | Yes | No |
 | **Historical data** | | | | | | | | | | | | | | | | |
 | Power priors | No | No | Yes | No | No | No | No | No | No | No | No | No | No | No | No | No |
-| MAP priors | No | No | No | No | No | No | No | No | Yes | No | No | No | No | No | No | No |
-| Discount prior | No | No | No | No | No | No | Yes | Yes | No | No | No | No | No | No | No | No |
-| Informative priors | Yes | Yes | No | Yes | Yes | Yes | No | No | Yes | No | No | No | No | No | No | Yes |
+| Discount prior | No | No | No | No | No | No | Yes | No | No | No | No | No | No | No | No | No |
+| Informative priors | Yes | Yes | No | Yes | Yes | Yes | No | Yes | No | No | No | No | No | No | No | No |
 | **Psych relevance** | | | | | | | | | | | | | | | | |
-| Factorial designs | No | No | No | No | No | No | No | No | No | No | No | No | Yes | No | No | No |
-| Repeated measures | No | No | No | No | No | No | No | No | No | No | No | No | Yes | Yes | No | Yes |
-| Cohen's d effect sizes | No | No | No | No | No | No | No | No | No | No | No | Yes | Yes | No | Yes | No |
+| Factorial designs | No | No | No | No | No | No | No | No | No | No | No | Yes | No | No | No | No |
+| Repeated measures | No | No | No | No | No | No | No | No | No | No | No | Yes | Yes | Yes | No | No |
+| Cohen's d effect sizes | No | No | No | No | No | No | No | No | No | No | Yes | Yes | No | No | Yes | No |
 | **Usability** | | | | | | | | | | | | | | | | |
-| Language | R | R | R | R | R | R | R | R | R | R | R | R | R | R | Python | Python |
+| Language | R | R | R | R | R | R | R | R | R | R | R | R | R | R | R | R |
 | CRAN/PyPI | No | Yes | Yes | Yes | Yes | Archived | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
-| Active maintenance | Yes | Yes | Yes | No | Sporadic | No | No | Yes | Yes | Yes | Yes | Sporadic | Yes | Yes | Yes | Yes |
+| Active maintenance | Yes | Yes | Yes | No | Sporadic | No | No | Yes | Yes | Yes | Sporadic | Yes | Yes | Yes | Sporadic | No |
 
 ---
 
@@ -324,7 +340,7 @@ Derived from the feature comparison matrix — these are capabilities where rctb
 
 ### 4.1 Neural Posterior Estimation for Power Analysis
 
-**rctbayespower is the only tool in this landscape that uses neural posterior estimation (BayesFlow) for power analysis.** All Bayesian competitors use either MCMC (BayesPPD, bayesDP, RBesT, bambi) or analytical conjugate models (bpp, gsbDesign). The BayesFlow backend enables 100-1000x speedup over MCMC once models are trained, making large-scale design exploration feasible.
+**rctbayespower is the only tool in this landscape that uses neural posterior estimation (BayesFlow) for power analysis.** All Bayesian competitors use either MCMC (BayesPPD), INLA (BATSS), or analytical conjugate models (bpp, gsbDesign). The BayesFlow backend enables 100-1000x speedup over MCMC once models are trained, making large-scale design exploration feasible.
 
 *No competitor offers this.*
 
@@ -354,9 +370,9 @@ Derived from the feature comparison matrix — these are capabilities where rctb
 
 ### 4.6 Bayesian ANCOVA Power with Group Sequential Monitoring
 
-**rctbayespower is the only Bayesian tool that combines ANCOVA models with group sequential interim analyses.** gsbDesign offers Bayesian sequential but only for simple normal means (no covariates). Superpower offers ANCOVA power but is frequentist and non-sequential. No other tool combines all three: Bayesian inference + ANCOVA + group sequential.
+**rctbayespower is the only Bayesian tool that combines ANCOVA models with group sequential interim analyses and post-hoc boundary re-analysis.** BATSS also offers Bayesian ANCOVA with interim analyses, but uses a different framework (adaptive stopping rules via INLA rather than group sequential boundaries) and does not support post-hoc boundary re-analysis. gsbDesign offers Bayesian sequential but only for simple normal means (no covariates). Superpower offers ANCOVA power but is frequentist and non-sequential.
 
-*No competitor offers this combination.*
+*BATSS is the closest competitor but lacks group sequential boundary functions (OBF, Pocock, etc.) and post-hoc boundary re-analysis.*
 
 ---
 
@@ -368,7 +384,7 @@ Gaps identified by comparing rctbayespower's current capabilities against what i
 
 | Gap | Why it matters for psych RCTs | Competitors that have it |
 |-----|-------------------------------|--------------------------|
-| **Binary outcomes** | Remission (yes/no), response (yes/no), and clinical cutoffs are primary endpoints in many therapy trials | BayesPPD, bayesCT, BayesCTDesign, bayesDP, RBesT, gsDesign, rpact, pwr, simr, bambi |
+| **Binary outcomes** | Remission (yes/no), response (yes/no), and clinical cutoffs are primary endpoints in many therapy trials | BayesPPD, bayesCT, BayesCTDesign, BATSS, gsDesign, rpact, pwr, simr, Mediana |
 | **Test coverage (0%)** | Cannot be trusted for real trial design without validated tests | Most mature packages have test suites |
 | **CRAN publication** | Discoverability and credibility; researchers search CRAN Task Views | All non-archived competitors |
 
@@ -376,18 +392,18 @@ Gaps identified by comparing rctbayespower's current capabilities against what i
 
 | Gap | Why it matters for psych RCTs | Competitors that have it |
 |-----|-------------------------------|--------------------------|
-| **Mixed-model / repeated measures support** | Longitudinal designs (pre-mid-post, weekly assessments) are standard in therapy trials | simr, bambi |
-| **Cohen's d and standardized effect sizes** | Psychology uses Cohen's d universally for effect size communication and meta-analysis | pwr, Superpower, statsmodels |
+| **Mixed-model / repeated measures support** | Longitudinal designs (pre-mid-post, weekly assessments) are standard in therapy trials | simr, longpower |
+| **Cohen's d and standardized effect sizes** | Psychology uses Cohen's d universally for effect size communication and meta-analysis | pwr, Superpower |
 | **Factorial designs** | Treatment x moderator designs (e.g., CBT vs. medication x severity level) are common | Superpower |
-| **Historical data incorporation** | Psych interventions have substantial prior literature; formal borrowing could reduce sample sizes | BayesPPD, BayesCTDesign, bayesDP, RBesT |
+| **Historical data incorporation** | Psych interventions have substantial prior literature; formal borrowing could reduce sample sizes | BayesPPD, BayesCTDesign |
 
 ### Lower Priority
 
 | Gap | Why it matters for psych RCTs | Competitors that have it |
 |-----|-------------------------------|--------------------------|
-| **Cluster randomization** | Therapy delivered by therapists (clustering) or in group settings | simr (via random effects) |
-| **Count outcomes** | Symptom counts, behavioral frequency measures | BayesPPD, BayesCTDesign, RBesT, simr, bambi |
-| **Survival / time-to-event** | Relapse time, time to dropout — less common but used in substance use research | bayesCT, BayesCTDesign, bayesDP, gsDesign, rpact |
+| **Cluster randomization** | Therapy delivered by therapists (clustering) or in group settings | simr (via random effects), PowerUpR |
+| **Count outcomes** | Symptom counts, behavioral frequency measures | BayesPPD, BayesCTDesign, BATSS, simr, Mediana |
+| **Survival / time-to-event** | Relapse time, time to dropout — less common but used in substance use research | bayesCT, BayesCTDesign, BATSS, gsDesign, rpact, Mediana |
 | **GUI / Shiny app** | Lower barrier for clinical researchers without R experience | None of the competitors have this either |
 
 ### Gaps That Are Strategic Non-Issues
@@ -396,4 +412,3 @@ Gaps identified by comparing rctbayespower's current capabilities against what i
 |---------|-----------|
 | Frequentist methods | rctbayespower is deliberately Bayesian-only; users needing frequentist analysis use gsDesign/rpact/pwr |
 | Bayes factors | Different decision paradigm; ROPE is the chosen framework |
-| Power priors / MAP priors / discount priors | These are prior specification methods that could be used *upstream* of rctbayespower (e.g., derive a prior with RBesT, then pass it to rctbayespower) |
