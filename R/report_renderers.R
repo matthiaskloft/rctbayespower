@@ -334,6 +334,40 @@ render_cli <- function(report) {
       cli::cli_text("")
       table_lines <- format_table_cli(section$grid)
       cat(paste(table_lines, collapse = "\n"), "\n")
+
+      # Show fixed (non-varying) crossed params and constant params below grid
+      fmt_val <- function(v) {
+        if (is.function(v)) {
+          bt <- attr(v, "boundary_type")
+          if (!is.null(bt)) paste0("boundary_", bt, "()") else "<function>"
+        } else if (is.numeric(v) && length(v) > 1) {
+          paste0("c(", paste(round(v, 3), collapse = ", "), ")")
+        } else if (is.list(v) && length(v) == 1) {
+          inner <- v[[1]]
+          if (is.numeric(inner)) paste0("c(", paste(round(inner, 3), collapse = ", "), ")")
+          else as.character(inner)
+        } else {
+          as.character(v)
+        }
+      }
+      fixed_parts <- character(0)
+      if (!is.null(section$static_grid_values) && length(section$static_grid_values) > 0) {
+        sgv_strs <- vapply(names(section$static_grid_values), function(nm) {
+          paste0(nm, " = ", fmt_val(section$static_grid_values[[nm]]))
+        }, character(1))
+        fixed_parts <- c(fixed_parts, paste0("  [fixed in grid] ", sgv_strs))
+      }
+      if (!is.null(section$constant) && length(section$constant) > 0) {
+        const_strs <- vapply(names(section$constant), function(nm) {
+          paste0(nm, " = ", fmt_val(section$constant[[nm]]))
+        }, character(1))
+        fixed_parts <- c(fixed_parts, paste0("  [constant] ", const_strs))
+      }
+      if (length(fixed_parts) > 0) {
+        cli::cli_text("")
+        cli::cli_text("{.emph Fixed parameters:}")
+        cat(paste(fixed_parts, collapse = "\n"), "\n")
+      }
     }
 
     # BRMS model
@@ -508,6 +542,39 @@ render_markdown <- function(report, heading_level = 2L) {
     if (!is.null(section$grid)) {
       table_lines <- format_table_markdown(section$grid)
       output <- c(output, table_lines, "")
+
+      # Show fixed (non-varying) crossed params and constant params below grid
+      fmt_val_md <- function(v) {
+        if (is.function(v)) {
+          bt <- attr(v, "boundary_type")
+          if (!is.null(bt)) paste0("boundary_", bt, "()") else "<function>"
+        } else if (is.numeric(v) && length(v) > 1) {
+          paste0("c(", paste(round(v, 3), collapse = ", "), ")")
+        } else if (is.list(v) && length(v) == 1) {
+          inner <- v[[1]]
+          if (is.numeric(inner)) paste0("c(", paste(round(inner, 3), collapse = ", "), ")")
+          else as.character(inner)
+        } else {
+          as.character(v)
+        }
+      }
+      if ((!is.null(section$static_grid_values) && length(section$static_grid_values) > 0) ||
+          (!is.null(section$constant) && length(section$constant) > 0)) {
+        output <- c(output, "_Fixed parameters:_", "")
+        if (!is.null(section$static_grid_values) && length(section$static_grid_values) > 0) {
+          sgv_strs <- vapply(names(section$static_grid_values), function(nm) {
+            paste0(nm, " = ", fmt_val_md(section$static_grid_values[[nm]]))
+          }, character(1))
+          output <- c(output, paste0("- [fixed in grid] ", sgv_strs))
+        }
+        if (!is.null(section$constant) && length(section$constant) > 0) {
+          const_strs <- vapply(names(section$constant), function(nm) {
+            paste0(nm, " = ", fmt_val_md(section$constant[[nm]]))
+          }, character(1))
+          output <- c(output, paste0("- [constant] ", const_strs))
+        }
+        output <- c(output, "")
+      }
     }
 
     # BRMS model
