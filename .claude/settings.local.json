@@ -24,9 +24,13 @@
       "WebFetch(domain:pypi.org)",
       "WebFetch(domain:bambinos.github.io)",
       "WebFetch(domain:www.statsmodels.org)",
-      "Bash(\"/c/Users/nu006612/OneDrive - Leibniz-Institut für Bildungsverläufe e.V/Dokumente/.virtualenvs/rctbp-3-11/Scripts/python.exe\" -m pip --version)",
-      "Bash(\"/c/Users/nu006612/OneDrive - Leibniz-Institut für Bildungsverläufe e.V/Dokumente/.virtualenvs/rctbp-3-11/Scripts/python.exe\" -m pip list)",
-      "Bash(nvidia-smi:*)"
+      "Bash(git remote set-url:*)",
+      "Bash(gh pr list:*)",
+      "Bash(gh pr create:*)",
+      "Bash(gh pr view:*)",
+      "WebFetch(domain:gpaux.github.io)",
+      "WebFetch(domain:tjaki.github.io)",
+      "WebFetch(domain:batss-dev.github.io)"
     ],
     "deny": []
   }
