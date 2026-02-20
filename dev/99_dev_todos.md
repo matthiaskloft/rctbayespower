@@ -9,10 +9,10 @@
 
 ## class 'conditions'
 
-* implement check that all required params are specified
-* no differentiation between condition\_values and static\_values
-* automatic detection of static values and varying parameters
-* n\_total is always included in grid, even when unique(n\_total) == 1
+* ~~implement check that all required params are specified~~ (done)
+* ~~no differentiation between condition\_values and static\_values~~ (done: grid shows only varying cols; fixed params listed below)
+* ~~automatic detection of static values and varying parameters~~ (done: warns when crossed param has 1 level)
+* ~~n\_total is always included in grid, even when unique(n\_total) == 1~~ (done: single-value columns excluded from grid display)
 * inclusion of brms priors as varying parameters
 
   * parallelization of model compilation

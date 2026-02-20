@@ -283,54 +283,56 @@ The following packages are relevant to the Bayesian clinical trial ecosystem but
 
 ## 3. Feature Comparison Matrix
 
-| Feature | rctbayespower | bpp | BayesPPD | BayesianPower | gsbDesign | bayesCT | BayesCTDesign | BATSS | gsDesign | rpact | pwr | Superpower | simr | longpower | PowerUpR | Mediana |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| **Framework** | | | | | | | | | | | | | | | | |
-| Bayesian | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | No | No | No | No | No | No | No | No |
-| Frequentist | No | No | No | No | No | No | No | No | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
-| ROPE decisions | Yes | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No |
-| Bayes factors | No | No | No | Yes | No | No | No | No | No | No | No | No | No | No | No | No |
-| **Sequential** | | | | | | | | | | | | | | | | |
-| Group sequential | Yes | No | No | No | Yes | Yes | No | No | Yes | Yes | No | No | No | No | No | No |
-| Interim analyses | Yes | Yes | No | No | Yes | Yes | No | Yes | Yes | Yes | No | No | No | No | No | No |
-| Look-dependent boundaries | Yes | No | No | No | No | No | No | No | Yes | Yes | No | No | No | No | No | No |
-| Post-hoc boundary re-analysis | Yes | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No |
-| **Computation** | | | | | | | | | | | | | | | | |
-| MCMC | Yes (brms/Stan) | No | Yes (Rcpp) | No | No | No | No | No | No | No | No | No | No | No | No | No |
-| INLA | No | No | No | No | No | No | No | Yes | No | No | No | No | No | No | No | No |
-| Simulation-based | Yes | No | Yes | No | No | Yes | Yes | Yes | No | No | No | Yes | Yes | No | No | Yes |
-| Analytical | No | Yes | No | Yes | Yes | No | No | No | Yes | Yes | Yes | Yes | No | Yes | Yes | No |
-| Neural posterior estimation | Yes (BayesFlow) | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No |
-| GPU acceleration | Yes (planned) | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No |
-| Parallelization | Yes | No | No | No | No | No | No | Yes | No | No | No | No | No | No | No | Yes |
-| **Optimization** | | | | | | | | | | | | | | | | |
-| Automated sample size search | Yes | No | No | Yes | No | No | No | No | Yes | Yes | Yes | No | No | Yes | Yes | No |
-| Bayesian optimization | Yes (mlr3mbo) | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No |
-| Pareto optimization | Yes | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No |
-| Progressive fidelity | Yes | No | No | No | No | No | No | No | No | No | No | No | No | No | No | No |
-| **Outcomes** | | | | | | | | | | | | | | | | |
-| Continuous | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
-| Binary | No | No | Yes | No | No | Yes | Yes | Yes | Yes | Yes | Yes | No | Yes | No | No | Yes |
-| Survival | No | No | No | No | No | Yes | Yes | Yes | Yes | Yes | No | No | No | No | No | Yes |
-| Count | No | No | Yes | No | No | No | Yes | Yes | No | No | No | No | Yes | No | No | Yes |
-| **Models** | | | | | | | | | | | | | | | | |
-| ANCOVA | Yes | No | No | No | No | No | No | Yes | No | No | No | Yes | No | No | No | No |
-| t-test | No | No | No | No | Yes | No | No | No | No | Yes | Yes | Yes | No | No | No | No |
-| Mixed models | No | No | No | No | No | No | No | No | No | No | No | No | Yes | Yes | No | No |
-| GLM | No | No | Yes | No | No | No | Yes | Yes | No | No | No | No | Yes | No | No | No |
-| Multilevel / cluster | No | No | No | No | No | No | No | No | No | No | No | No | Yes | No | Yes | No |
-| **Historical data** | | | | | | | | | | | | | | | | |
-| Power priors | No | No | Yes | No | No | No | No | No | No | No | No | No | No | No | No | No |
-| Discount prior | No | No | No | No | No | No | Yes | No | No | No | No | No | No | No | No | No |
-| Informative priors | Yes | Yes | No | Yes | Yes | Yes | No | Yes | No | No | No | No | No | No | No | No |
-| **Psych relevance** | | | | | | | | | | | | | | | | |
-| Factorial designs | No | No | No | No | No | No | No | No | No | No | No | Yes | No | No | No | No |
-| Repeated measures | No | No | No | No | No | No | No | No | No | No | No | Yes | Yes | Yes | No | No |
-| Cohen's d effect sizes | No | No | No | No | No | No | No | No | No | No | Yes | Yes | No | No | Yes | No |
-| **Usability** | | | | | | | | | | | | | | | | |
-| Language | R | R | R | R | R | R | R | R | R | R | R | R | R | R | R | R |
-| CRAN/PyPI | No | Yes | Yes | Yes | Yes | Archived | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
-| Active maintenance | Yes | Yes | Yes | No | Sporadic | No | No | Yes | Yes | Yes | Sporadic | Yes | Yes | Yes | Sporadic | No |
+Only packages with explicit trial simulation (Monte Carlo simulation of individual trials) are included. Analytical-only tools (bpp, BayesianPower, gsbDesign, gsDesign, rpact, pwr, longpower, PowerUpR) are excluded.
+
+| Feature | rctbayespower | BayesPPD | bayesCT | BayesCTDesign | BATSS | Superpower | simr | Mediana |
+|---|---|---|---|---|---|---|---|---|
+| **Framework** | | | | | | | | |
+| Bayesian | Yes | Yes | Yes | Yes | Yes | No | No | No |
+| Frequentist | No | No | No | No | No | Yes | Yes | Yes |
+| ROPE decisions | Yes | No | No | No | No | No | No | No |
+| Bayes factors | No | No | No | No | No | No | No | No |
+| **Sequential** | | | | | | | | |
+| Group sequential | Yes | No | Yes | No | No | No | No | No |
+| Interim analyses | Yes | No | Yes | No | Yes | No | No | No |
+| Look-dependent boundaries | Yes | No | No | No | No | No | No | No |
+| Post-hoc boundary re-analysis | Yes | No | No | No | No | No | No | No |
+| **Computation** | | | | | | | | |
+| MCMC | Yes (brms/Stan) | Yes (Rcpp) | No | No | No | No | No | No |
+| INLA | No | No | No | No | Yes | No | No | No |
+| Simulation-based | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
+| Analytical | No | No | No | No | No | Yes | No | No |
+| Neural posterior estimation | Yes (BayesFlow) | No | No | No | No | No | No | No |
+| GPU acceleration | Yes (planned) | No | No | No | No | No | No | No |
+| Parallelization | Yes | No | No | No | Yes | No | No | Yes |
+| **Optimization** | | | | | | | | |
+| Automated sample size search | Yes | No | No | No | No | No | No | No |
+| Bayesian optimization | Yes (mlr3mbo) | No | No | No | No | No | No | No |
+| Pareto optimization | Yes | No | No | No | No | No | No | No |
+| Progressive fidelity | Yes | No | No | No | No | No | No | No |
+| **Outcomes** | | | | | | | | |
+| Continuous | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
+| Binary | No | Yes | Yes | Yes | Yes | No | Yes | Yes |
+| Survival | No | No | Yes | Yes | Yes | No | No | Yes |
+| Count | No | Yes | No | Yes | Yes | No | Yes | Yes |
+| **Models** | | | | | | | | |
+| ANCOVA | Yes | No | No | No | Yes | Yes | No | No |
+| t-test | No | No | No | No | No | Yes | No | No |
+| Mixed models | No | No | No | No | No | No | Yes | No |
+| GLM | No | Yes | No | Yes | Yes | No | Yes | No |
+| Multilevel / cluster | No | No | No | No | No | No | Yes | No |
+| **Historical data** | | | | | | | | |
+| Power priors | No | Yes | No | No | No | No | No | No |
+| Discount prior | No | No | No | Yes | No | No | No | No |
+| Informative priors | Yes | No | Yes | No | Yes | No | No | No |
+| **Psych relevance** | | | | | | | | |
+| Factorial designs | No | No | No | No | No | Yes | No | No |
+| Repeated measures | No | No | No | No | No | Yes | Yes | No |
+| Cohen's d effect sizes | No | No | No | No | No | Yes | No | No |
+| **Usability** | | | | | | | | |
+| Language | R | R | R | R | R | R | R | R |
+| CRAN/PyPI | No | Yes | Archived | Yes | Yes | Yes | Yes | Yes |
+| Active maintenance | Yes | Yes | No | No | Yes | Yes | Yes | No |
 
 ---
 

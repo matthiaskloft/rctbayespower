@@ -302,22 +302,51 @@ build_report.rctbp_conditions <- function(x) {
     paste0(round(x@target_pwr * 100, 1), "%")
   }
 
+  # Identify truly varying columns in the grid (exclude id_cond and single-value cols)
+  grid_cols <- setdiff(names(x@grid), "id_cond")
+  varying_cols <- grid_cols[vapply(grid_cols, function(col) {
+    vals <- x@grid[[col]]
+    if (is.list(vals)) {
+      length(unique(lapply(vals, function(v) v))) > 1L
+    } else {
+      length(unique(vals)) > 1L
+    }
+  }, logical(1))]
+  static_grid_cols <- setdiff(grid_cols, varying_cols)
+
+  n_varying <- length(varying_cols)
+  n_static_in_grid <- length(static_grid_cols)
+
   # Build summary items
   summary_items <- list(
     "Number of conditions" = n_conditions,
-    "Crossed parameters" = n_regular_crossed,
-    "Constant parameters" = n_constant,
+    "Varying parameters" = n_varying,
+    "Constant parameters" = n_constant + n_static_in_grid,
     "Target power for optimal condition" = target_pwr_display
   )
 
   # Add link() info only if present
-
   if (n_link_groups > 0) {
     summary_items <- c(
-      summary_items[1:2],  # conditions, crossed
+      summary_items[1:2],  # conditions, varying
       list("Linked groups (via link())" = paste0(n_link_groups, " (", n_linked_params, " params)")),
       summary_items[3:4]   # constant, target_pwr
     )
+  }
+
+
+  # Build display grid with only id_cond + varying cols
+  display_cols <- c("id_cond", varying_cols)
+  display_grid <- x@grid[, display_cols, drop = FALSE]
+
+  # Build named list of static crossed col values (first row = representative value)
+  static_grid_values <- if (length(static_grid_cols) > 0) {
+    lapply(stats::setNames(static_grid_cols, static_grid_cols), function(col) {
+      val <- x@grid[[col]]
+      if (is.list(val)) val[[1L]] else val[[1L]]
+    })
+  } else {
+    list()
   }
 
   list(
@@ -329,7 +358,9 @@ build_report.rctbp_conditions <- function(x) {
       ),
       list(
         name = "Condition Grid",
-        grid = x@grid
+        grid = display_grid,
+        static_grid_values = static_grid_values,
+        constant = x@constant
       )
     )
   )

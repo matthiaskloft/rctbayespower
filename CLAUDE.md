@@ -1,10 +1,26 @@
 # CLAUDE.md
 
-Guidance for Claude Code when working with rctbayespower.
-
 ## Package Overview
 
 `rctbayespower` is an R package for Bayesian power analysis of randomized controlled trials. Supports dual backends: brms/Stan (MCMC) and BayesFlow (neural posterior estimation). Uses S7 classes and ROPE-based decision making.
+
+## Development Workflow
+
+1. Understand and plan changes. Propose a method for verifying the validity of the planned changes. Ask if changes should be made on a work tree and create the work tree if the user requests this.
+2. Implement changes
+3. Check if new tests are necessary. Write tests if necessary. 
+    - Prefer running single tests, and not the whole test suite, for performance
+4. Update roxygen documentation to match code
+5. Update the pkgdown site and README if necessary
+6. Update /dev docs corresponding to the changes made.
+7. Run verification of the package and the changes made
+  - After significant changes: run `/verify-package`
+  - Before commits: run `/check` and `/test`
+  - Verification loop: implement → test → fix → repeat
+8. Check changes for potential security issues
+9. If problems occured in he session: note down learnings and patterns to avoid in the CLAUDE.md
+10. Commit
+11. If changes re on a worktree: PR and delete the local worktree
 
 ## Commands
 
@@ -18,20 +34,6 @@ devtools::load_all()        # Load package for testing
 # Specific checks
 R CMD check --as-cran .     # CRAN-style check
 ```
-
-## Development Workflow
-
-1. Make changes
-2. Check if new tests are necessary. Write tests if necessary. 
-    - Prefer running single tests, and not the whole test suite, for performance
-3. Update roxygen documentation to match code
-4. Update the pkgdown site and README if necessary
-5. Run verification of the package
-  - After significant changes: run `/verify-package`
-  - Before commits: run `/check` and `/test`
-  - Verification loop: implement → test → fix → repeat
-6. Commit and create pull request
-
 
 ## Code Style
 

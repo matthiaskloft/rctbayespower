@@ -379,6 +379,21 @@ build_conditions <- function(design,
     ))
   }
 
+  # Auto-detect crossed params that have only one level (should be in constant)
+  single_level_params <- character(0)
+  for (param_name in names(regular_params)) {
+    vals <- regular_params[[param_name]]
+    n_levels <- if (is.list(vals)) length(vals) else length(vals)
+    if (n_levels == 1L) {
+      single_level_params <- c(single_level_params, param_name)
+    }
+  }
+  if (length(single_level_params) > 0) {
+    cli::cli_warn(c(
+      "Parameter{?s} in {.arg crossed} with only one level: {.val {single_level_params}}",
+      "i" = "Move these to {.arg constant} to avoid a redundant grid dimension"
+    ))
+  }
 
   # required parameters
   params_needed <- show_condition_args(design, print = FALSE)
