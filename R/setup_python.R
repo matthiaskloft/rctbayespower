@@ -294,6 +294,33 @@ setup_bf_python <- function(envname = "r-rctbayespower",
 
   cli::cli_h1("Setting up Python environment for BayesFlow")
 
+  # Warn if virtualenv root is on cloud-synced storage (OneDrive, Dropbox, etc.)
+  # OneDrive "Files On-Demand" evicts .py files to cloud-only storage, making
+  # Python unable to import them (they appear as directories but files are missing).
+  venv_root <- normalizePath(reticulate::virtualenv_root(), mustWork = FALSE)
+  if (grepl("OneDrive|Dropbox|iCloudDrive|Google Drive", venv_root, ignore.case = TRUE)) {
+    local_suggestion <- normalizePath(
+      file.path(Sys.getenv("USERPROFILE", Sys.getenv("HOME")), ".virtualenvs"),
+      mustWork = FALSE, winslash = "/"
+    )
+    # Fall back if the USERPROFILE itself is on cloud storage
+    if (grepl("OneDrive|Dropbox|iCloudDrive|Google Drive", local_suggestion, ignore.case = TRUE)) {
+      local_suggestion <- "C:/virtualenvs"
+    }
+    cli::cli_abort(c(
+      "Virtualenv root is on cloud-synced storage: {.path {venv_root}}",
+      "x" = paste0(
+        "Cloud sync (OneDrive Files On-Demand, Dropbox) evicts .py files to ",
+        "cloud-only storage. Python cannot import from evicted files."
+      ),
+      "i" = paste0(
+        "Fix: run the following before calling {.code setup_bf_python()}:\n",
+        "  {.code Sys.setenv(RETICULATE_VIRTUALENV_ROOT = \"", local_suggestion, "\")}"
+      ),
+      "i" = "Or add that line to your {.file .Renviron} for a permanent fix."
+    ))
+  }
+
   # Step 1: Ensure Python version is installed via reticulate's pyenv
   cli::cli_alert_info("Ensuring Python {.val {python_version}} is available...")
   python_path <- find_or_install_python(python_version)
@@ -524,19 +551,43 @@ verify_bf_installation <- function() {
 
   # Check torch
   if (reticulate::py_module_available("torch")) {
-    results$torch <- TRUE
     torch <- reticulate::import("torch")
-    torch_ver <- torch$`__version__`
-    cli::cli_alert_success("PyTorch: {.val {torch_ver}}")
 
-    # Check CUDA
-    if (torch$cuda$is_available()) {
-      results$cuda <- TRUE
-      device_name <- torch$cuda$get_device_name(0L)
-      cuda_ver <- torch$version$cuda
-      cli::cli_alert_success("CUDA: {.val {cuda_ver}} ({device_name})")
+    # __version__ can fail when the native _C extension is in a broken state
+    # (e.g. path with Unicode characters on Windows prevents DLL loading)
+    torch_ver <- tryCatch(
+      torch$`__version__`,
+      error = function(e) {
+        tryCatch(
+          reticulate::py_eval("import torch; torch.__version__"),
+          error = function(e2) NULL
+        )
+      }
+    )
+
+    if (!is.null(torch_ver)) {
+      results$torch <- TRUE
+      cli::cli_alert_success("PyTorch: {.val {torch_ver}}")
+
+      # Check CUDA
+      cuda_ok <- tryCatch(torch$cuda$is_available(), error = function(e) FALSE)
+      if (isTRUE(cuda_ok)) {
+        results$cuda <- TRUE
+        device_name <- tryCatch(torch$cuda$get_device_name(0L), error = function(e) "unknown")
+        cuda_ver <- tryCatch(torch$version$cuda, error = function(e) "unknown")
+        cli::cli_alert_success("CUDA: {.val {cuda_ver}} ({device_name})")
+      } else {
+        cli::cli_alert_warning("CUDA: not available (CPU-only)")
+      }
     } else {
-      cli::cli_alert_warning("CUDA: not available (CPU-only)")
+      cli::cli_alert_danger("PyTorch: import succeeded but module is non-functional")
+      cli::cli_alert_info(
+        "Likely cause: virtualenv path contains non-ASCII characters (e.g. {.val \u00fc})"
+      )
+      cli::cli_alert_info(paste0(
+        "Fix: set RETICULATE_VIRTUALENV_ROOT to an ASCII-only path before calling ",
+        "{.code setup_bf_python()}"
+      ))
     }
   } else {
     cli::cli_alert_danger("PyTorch: not installed")
@@ -564,10 +615,14 @@ verify_bf_installation <- function() {
 
   # Check numpy
   if (reticulate::py_module_available("numpy")) {
-    results$numpy <- TRUE
     np <- reticulate::import("numpy")
-    np_ver <- np$`__version__`
-    cli::cli_alert_success("NumPy: {.val {np_ver}}")
+    np_ver <- tryCatch(np$`__version__`, error = function(e) NULL)
+    if (!is.null(np_ver)) {
+      results$numpy <- TRUE
+      cli::cli_alert_success("NumPy: {.val {np_ver}}")
+    } else {
+      cli::cli_alert_danger("NumPy: import succeeded but module is non-functional")
+    }
   } else {
     cli::cli_alert_danger("NumPy: not installed")
   }
