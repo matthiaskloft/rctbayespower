@@ -168,6 +168,23 @@ bootstrap_pip <- function(envname) {
   }
 
   # ensurepip failed - fall back to get-pip.py
+  # First, remove broken pip directories so get-pip.py can install cleanly
+  # (get-pip.py --force-reinstall fails when pip has no RECORD file)
+  site_pkgs <- file.path(dirname(dirname(python_path)), "Lib", "site-packages")
+  broken_pip_dir <- file.path(site_pkgs, "pip")
+  if (dir.exists(broken_pip_dir) &&
+      !file.exists(file.path(broken_pip_dir, "__main__.py"))) {
+    cli::cli_alert_info("Removing broken pip installation before get-pip.py...")
+    unlink(broken_pip_dir, recursive = TRUE)
+    # Also remove any pip dist-info with missing RECORD file
+    dist_infos <- list.dirs(site_pkgs, recursive = FALSE, full.names = TRUE)
+    for (di in dist_infos[grepl("^pip-", basename(dist_infos))]) {
+      if (!file.exists(file.path(di, "RECORD"))) {
+        unlink(di, recursive = TRUE)
+      }
+    }
+  }
+
   cli::cli_alert_warning("ensurepip failed, downloading get-pip.py...")
   get_pip_path <- tempfile(fileext = ".py")
   on.exit(unlink(get_pip_path), add = TRUE)
@@ -186,8 +203,7 @@ bootstrap_pip <- function(envname) {
     ))
   })
 
-  result <- system2(python_path, c(get_pip_path, "--force-reinstall"),
-                    stdout = TRUE, stderr = TRUE)
+  result <- system2(python_path, get_pip_path, stdout = TRUE, stderr = TRUE)
   status <- attr(result, "status")
 
   if (!is.null(status) && status != 0) {
