@@ -23,7 +23,7 @@ optimize_power_n(
 )
 }
 \arguments{
-\item{design}{An \link{rctbp_design} object specifying the trial design.}
+\item{design}{An \code{\link[=build_design]{build_design()}} object specifying the trial design.}
 
 \item{power_metric}{Power metric to maximize: \code{"pwr_eff"} (default),
 \code{"pwr_fut"}, or other power columns from results.}
@@ -60,7 +60,7 @@ fidelity (e.g., \code{c(500, 2000)}).}
 \item{verbosity}{Output level (0, 1, 2).}
 }
 \value{
-An \link{rctbp_pareto_result} object with \code{optimization_type = "power_n"}.
+An \code{rctbp_pareto_result} object with \code{optimization_type = "power_n"}.
 }
 \description{
 Finds the Pareto front of power vs sample size for a fixed treatment effect.

@@ -10,7 +10,7 @@
 #' Core function for multi-objective Bayesian optimization of trial designs.
 #' Finds the Pareto front trading off two objectives (e.g., power vs sample size).
 #'
-#' @param design An [rctbp_design] object specifying the trial design.
+#' @param design An [build_design()] object specifying the trial design.
 #' @param objectives Named list of exactly 2 objectives. Each element should be
 #'   `"maximize"` or `"minimize"`. Names must be either power metrics
 #'   (e.g., `pwr_eff`, `pwr_fut`) or search parameters.
@@ -44,7 +44,7 @@
 #' @param brms_args Named list of brms-specific arguments.
 #' @param verbosity Output level: 0 (silent), 1 (progress), 2 (debug).
 #'
-#' @return An [rctbp_pareto_result] object containing:
+#' @return An `rctbp_pareto_result` object containing:
 #'   - `pareto_front`: Data frame of Pareto-optimal solutions
 #'   - `selected_design`: Knee point selected by `knee_method`
 #'   - `archive`: All evaluated designs

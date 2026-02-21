@@ -278,7 +278,7 @@ is_bf_cache_valid <- function() {
 
 #' Require BayesFlow Initialization (Internal)
 #'
-#' Checks that BayesFlow has been initialized via [init_bf_python()].
+#' Checks that BayesFlow has been initialized via [init_bf()].
 #' Used internally by functions that need Python modules.
 #' Errors with helpful message if not initialized.
 #'

@@ -248,7 +248,7 @@ get_bf_parameter_names <- function(model) {
 #'   - `n_posterior_samples`: Number of posterior samples to draw
 #'
 #'   Note: Python environment should be set before using BayesFlow via
-#'   [bf_status()] or [setup_bf_python()], not at runtime.
+#'   [check_bf_status()] or [setup_bf_python()], not at runtime.
 #' @param n_endpoints Number of endpoints (positive integer). Required if `predefined_model` is NULL.
 #' @param endpoint_types Character vector of endpoint types ("continuous", "binary", "count").
 #'   Required if `predefined_model` is NULL.

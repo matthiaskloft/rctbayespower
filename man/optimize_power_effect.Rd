@@ -23,7 +23,7 @@ optimize_power_effect(
 )
 }
 \arguments{
-\item{design}{An \link{rctbp_design} object specifying the trial design.}
+\item{design}{An \code{\link[=build_design]{build_design()}} object specifying the trial design.}
 
 \item{power_metric}{Power metric to maximize: \code{"pwr_eff"} (default),
 \code{"pwr_fut"}, or other power columns from results.}
@@ -55,7 +55,7 @@ optimize_power_effect(
 \item{verbosity}{Output level (0, 1, 2).}
 }
 \value{
-An \link{rctbp_pareto_result} object with \code{optimization_type = "power_effect"}.
+An \code{rctbp_pareto_result} object with \code{optimization_type = "power_effect"}.
 }
 \description{
 Finds the Pareto front of power vs effect size for a fixed sample size.

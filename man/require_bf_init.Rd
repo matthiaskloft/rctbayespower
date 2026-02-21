@@ -10,7 +10,7 @@ require_bf_init()
 List with bf, np, and keras Python modules
 }
 \description{
-Checks that BayesFlow has been initialized via \code{\link[=init_bf_python]{init_bf_python()}}.
+Checks that BayesFlow has been initialized via \code{\link[=init_bf]{init_bf()}}.
 Used internally by functions that need Python modules.
 Errors with helpful message if not initialized.
 }

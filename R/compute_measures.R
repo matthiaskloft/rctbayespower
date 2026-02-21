@@ -223,6 +223,7 @@ summarize_sims <- function(results_df_raw, n_sims) {
 #' }
 #'
 #' @seealso [summarize_sims()]
+#' @importFrom stats ave
 #' @keywords internal
 summarize_sims_with_interim <- function(results_df_raw, n_sims) {
   # Validate input

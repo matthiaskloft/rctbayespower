@@ -12,7 +12,7 @@
 #' This is the most common use case: determining how much power is achievable
 #' at different sample sizes.
 #'
-#' @param design An [rctbp_design] object specifying the trial design.
+#' @param design An [build_design()] object specifying the trial design.
 #' @param power_metric Power metric to maximize: `"pwr_eff"` (default),
 #'   `"pwr_fut"`, or other power columns from results.
 #' @param n_range Numeric vector `c(lower, upper)` for sample size search bounds.
@@ -34,7 +34,7 @@
 #' @param brms_args brms-specific arguments.
 #' @param verbosity Output level (0, 1, 2).
 #'
-#' @return An [rctbp_pareto_result] object with `optimization_type = "power_n"`.
+#' @return An `rctbp_pareto_result` object with `optimization_type = "power_n"`.
 #'
 #' @seealso [pareto_optimize()], [optimize_power_effect()], [optimize_effect_n()]
 #'
@@ -127,7 +127,7 @@ optimize_power_n <- function(design,
 #' Useful for understanding the minimum detectable effect (MDE) at a given
 #' sample size.
 #'
-#' @param design An [rctbp_design] object specifying the trial design.
+#' @param design An [build_design()] object specifying the trial design.
 #' @param power_metric Power metric to maximize: `"pwr_eff"` (default),
 #'   `"pwr_fut"`, or other power columns from results.
 #' @param effect_range Numeric vector `c(lower, upper)` for effect size search bounds.
@@ -144,7 +144,7 @@ optimize_power_n <- function(design,
 #' @param brms_args brms-specific arguments.
 #' @param verbosity Output level (0, 1, 2).
 #'
-#' @return An [rctbp_pareto_result] object with `optimization_type = "power_effect"`.
+#' @return An `rctbp_pareto_result` object with `optimization_type = "power_effect"`.
 #'
 #' @details
 #' The second objective minimizes effect size. This is useful because larger
@@ -241,7 +241,7 @@ optimize_power_effect <- function(design,
 #' achieve a target power level. Useful for understanding the trade-off
 #' between the effect you can detect and the sample size required.
 #'
-#' @param design An [rctbp_design] object specifying the trial design.
+#' @param design An [build_design()] object specifying the trial design.
 #' @param power_target Target power level to achieve (e.g., 0.80 for 80% power).
 #' @param power_metric Power metric to constrain: `"pwr_eff"` (default),
 #'   `"pwr_fut"`, or other power columns from results.
@@ -259,7 +259,7 @@ optimize_power_effect <- function(design,
 #' @param brms_args brms-specific arguments.
 #' @param verbosity Output level (0, 1, 2).
 #'
-#' @return An [rctbp_pareto_result] object with `optimization_type = "effect_n"`.
+#' @return An `rctbp_pareto_result` object with `optimization_type = "effect_n"`.
 #'
 #' @details
 #' This function finds (effect_size, n_total) combinations that achieve the

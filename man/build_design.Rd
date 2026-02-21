@@ -43,7 +43,7 @@ Takes precedence over explicit component arguments.}
 }
 
 Note: Python environment should be set before using BayesFlow via
-\code{\link[=bf_status]{bf_status()}} or \code{\link[=setup_bf_python]{setup_bf_python()}}, not at runtime.}
+\code{\link[=check_bf_status]{check_bf_status()}} or \code{\link[=setup_bf_python]{setup_bf_python()}}, not at runtime.}
 
 \item{n_endpoints}{Number of endpoints (positive integer). Required if \code{predefined_model} is NULL.}
 

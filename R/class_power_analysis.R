@@ -204,7 +204,7 @@ format_duration <- function(minutes) {
 #'         \item n_posterior_samples: Number of posterior samples (default: 1000)
 #'         \item batch_size: Batch size for inference (default: n_sims)
 #'       }
-#'       Note: Set Python environment before analysis via [bf_status()] or
+#'       Note: Set Python environment before analysis via [check_bf_status()] or
 #'       [setup_bf_python()], not at runtime.
 #'     }
 #'     \item{design_prior}{Prior specification (NULL, brms syntax string, or function)}

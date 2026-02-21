@@ -22,7 +22,7 @@ conditions and design parameters for the power analysis. Created by
 \item n_posterior_samples: Number of posterior samples (default: 1000)
 \item batch_size: Batch size for inference (default: n_sims)
 }
-Note: Set Python environment before analysis via \code{\link[=bf_status]{bf_status()}} or
+Note: Set Python environment before analysis via \code{\link[=check_bf_status]{check_bf_status()}} or
 \code{\link[=setup_bf_python]{setup_bf_python()}}, not at runtime.
 }
 \item{design_prior}{Prior specification (NULL, brms syntax string, or function)}

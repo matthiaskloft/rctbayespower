@@ -24,7 +24,7 @@ pareto_optimize(
 )
 }
 \arguments{
-\item{design}{An \link{rctbp_design} object specifying the trial design.}
+\item{design}{An \code{\link[=build_design]{build_design()}} object specifying the trial design.}
 
 \item{objectives}{Named list of exactly 2 objectives. Each element should be
 \code{"maximize"} or \code{"minimize"}. Names must be either power metrics
@@ -80,7 +80,7 @@ Scalar for uniform steps, or vector matching \code{n_sims} length.}
 \item{verbosity}{Output level: 0 (silent), 1 (progress), 2 (debug).}
 }
 \value{
-An \link{rctbp_pareto_result} object containing:
+An \code{rctbp_pareto_result} object containing:
 \itemize{
 \item \code{pareto_front}: Data frame of Pareto-optimal solutions
 \item \code{selected_design}: Knee point selected by \code{knee_method}

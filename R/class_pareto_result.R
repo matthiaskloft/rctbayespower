@@ -4,31 +4,9 @@
 # Result class for Pareto optimization of trial designs.
 # Stores Pareto front, archive of all evaluations, and selected knee point.
 
-#' Pareto Optimization Result
-#'
-#' S7 class containing results from Pareto optimization via [pareto_optimize()]
-#' or its wrapper functions ([optimize_power_n()], [optimize_power_effect()],
-#' [optimize_effect_n()]).
-#'
-#' @slot design Reference to the [rctbp_design] object used
-#' @slot pareto_front Data frame of Pareto-optimal solutions
-#' @slot archive Data frame of all evaluated designs
-#' @slot selected_design Data frame with the selected knee point
-#' @slot convergence Data frame tracking optimization progress
-#' @slot optimization_type Type of optimization: "power_n", "power_effect",
-#'   "effect_n", or "custom"
-#' @slot objectives Named list of objectives with directions
-#' @slot search Named list of search parameter bounds
-#' @slot n_sims Number of simulations per evaluation (final fidelity)
-#' @slot n_evals Total number of evaluations performed
-#' @slot elapsed_time Total optimization time in minutes
-#' @slot mbo_objects Named list of mlr3mbo/bbotk objects for advanced access
-#'
-#' @seealso [pareto_optimize()], [optimize_power_n()], [optimize_power_effect()],
-#'   [optimize_effect_n()], [plot.rctbp_pareto_result]
-#' @name rctbp_pareto_result
 #' @importFrom S7 new_class class_list class_any class_data.frame class_numeric
 #'   class_character new_property
+#' @noRd
 rctbp_pareto_result <- S7::new_class(
   "rctbp_pareto_result",
   properties = list(

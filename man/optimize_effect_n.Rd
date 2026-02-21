@@ -24,7 +24,7 @@ optimize_effect_n(
 )
 }
 \arguments{
-\item{design}{An \link{rctbp_design} object specifying the trial design.}
+\item{design}{An \code{\link[=build_design]{build_design()}} object specifying the trial design.}
 
 \item{power_target}{Target power level to achieve (e.g., 0.80 for 80\% power).}
 
@@ -58,7 +58,7 @@ optimize_effect_n(
 \item{verbosity}{Output level (0, 1, 2).}
 }
 \value{
-An \link{rctbp_pareto_result} object with \code{optimization_type = "effect_n"}.
+An \code{rctbp_pareto_result} object with \code{optimization_type = "effect_n"}.
 }
 \description{
 Finds the Pareto front of effect size vs sample size for designs that
