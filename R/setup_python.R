@@ -167,24 +167,11 @@ bootstrap_pip <- function(envname) {
     cli::cli_alert_warning("ensurepip exited successfully but pip is not functional")
   }
 
-  # ensurepip failed - fall back to get-pip.py
-  # First, remove broken pip directories so get-pip.py can install cleanly
-  # (get-pip.py --force-reinstall fails when pip has no RECORD file)
-  site_pkgs <- file.path(dirname(dirname(python_path)), "Lib", "site-packages")
-  broken_pip_dir <- file.path(site_pkgs, "pip")
-  if (dir.exists(broken_pip_dir) &&
-      !file.exists(file.path(broken_pip_dir, "__main__.py"))) {
-    cli::cli_alert_info("Removing broken pip installation before get-pip.py...")
-    unlink(broken_pip_dir, recursive = TRUE)
-    # Also remove any pip dist-info with missing RECORD file
-    dist_infos <- list.dirs(site_pkgs, recursive = FALSE, full.names = TRUE)
-    for (di in dist_infos[grepl("^pip-", basename(dist_infos))]) {
-      if (!file.exists(file.path(di, "RECORD"))) {
-        unlink(di, recursive = TRUE)
-      }
-    }
-  }
-
+  # ensurepip failed - fall back to get-pip.py.
+  # Pass --ignore-installed so pip skips the uninstall step for any existing
+  # (potentially broken) pip artifacts. This avoids the CPython Windows venv
+  # bug where ensurepip leaves a pip dist-info without a RECORD file, causing
+  # "package contents are unknown: no RECORD file was found for pip".
   cli::cli_alert_warning("ensurepip failed, downloading get-pip.py...")
   get_pip_path <- tempfile(fileext = ".py")
   on.exit(unlink(get_pip_path), add = TRUE)
@@ -203,7 +190,8 @@ bootstrap_pip <- function(envname) {
     ))
   })
 
-  result <- system2(python_path, get_pip_path, stdout = TRUE, stderr = TRUE)
+  result <- system2(python_path, c(get_pip_path, "--ignore-installed"),
+                    stdout = TRUE, stderr = TRUE)
   status <- attr(result, "status")
 
   if (!is.null(status) && status != 0) {
@@ -307,17 +295,23 @@ setup_bf_python <- function(envname = "r-rctbayespower",
     if (grepl("OneDrive|Dropbox|iCloudDrive|Google Drive", local_suggestion, ignore.case = TRUE)) {
       local_suggestion <- "C:/virtualenvs"
     }
-    cli::cli_abort(c(
+    cli::cli_warn(c(
       "Virtualenv root is on cloud-synced storage: {.path {venv_root}}",
-      "x" = paste0(
+      "!" = paste0(
         "Cloud sync (OneDrive Files On-Demand, Dropbox) evicts .py files to ",
         "cloud-only storage. Python cannot import from evicted files."
       ),
       "i" = paste0(
-        "Fix: run the following before calling {.code setup_bf_python()}:\n",
+        "To avoid this, set before calling {.code setup_bf_python()}:\n",
         "  {.code Sys.setenv(RETICULATE_VIRTUALENV_ROOT = \"", local_suggestion, "\")}"
       ),
-      "i" = "Or add that line to your {.file .Renviron} for a permanent fix."
+      "i" = "Or add that line to your {.file .Renviron} for a permanent fix.",
+      "i" = paste0(
+        "Alternatively, disable OneDrive Files On-Demand: ",
+        "OneDrive tray icon -> Settings -> Sync and backup -> ",
+        "Advanced settings -> turn off 'Save space and download files as you use them'. ",
+        "Note: this option may be greyed out on managed/work machines."
+      )
     ))
   }
 
@@ -345,8 +339,33 @@ setup_bf_python <- function(envname = "r-rctbayespower",
     bootstrap_pip(envname)
   }
 
-  # Use this environment
-  reticulate::use_virtualenv(envname, required = TRUE)
+  # Activate environment (only possible before Python is initialized in the session).
+  # pip install steps below use system() subprocesses and do NOT need R's active
+  # Python — so a conflict here is non-fatal for installation.
+  python_already_init <- reticulate::py_available(initialize = FALSE)
+  session_env_conflict <- FALSE
+
+  if (!python_already_init) {
+    reticulate::use_virtualenv(envname, required = TRUE)
+  } else {
+    # Python is already locked to an executable — check if it matches our target
+    target_py <- normalizePath(
+      reticulate::virtualenv_python(envname), winslash = "/", mustWork = FALSE
+    )
+    active_py <- normalizePath(
+      reticulate::py_config()$python, winslash = "/", mustWork = FALSE
+    )
+    if (!identical(active_py, target_py)) {
+      session_env_conflict <- TRUE
+      cli::cli_warn(c(
+        "Python already initialized with a different environment in this session",
+        "!" = "Active:  {.path {active_py}}",
+        "!" = "Target:  {.path {target_py}}",
+        "i" = "Installation will proceed (pip runs as a subprocess).",
+        "i" = "Restart R and call {.code init_bf(\"{envname}\")} to use the new environment."
+      ))
+    }
+  }
 
   # Step 2: Detect CUDA version
   if (cuda_version == "auto") {
@@ -357,16 +376,24 @@ setup_bf_python <- function(envname = "r-rctbayespower",
   install_bf_dependencies(envname = envname, cuda_version = cuda_version)
 
   # Step 4: Verify installation
-  # Re-initialize Python after pip installs (reticulate quirk)
   cli::cli_h2("Verifying installation")
-  reticulate::use_virtualenv(envname, required = TRUE)
 
-  # Force Python initialization
-  if (!reticulate::py_available(initialize = TRUE)) {
-    cli::cli_alert_warning("Could not initialize Python for verification")
-    cli::cli_alert_info("Try running {.code bf_status()} after restarting R")
+  if (session_env_conflict) {
+    cli::cli_alert_warning("Verification skipped: session is locked to a different Python environment")
+    cli::cli_alert_info("Restart R, then call {.code init_bf(\"{envname}\")} to verify the installation")
   } else {
-    verify_bf_installation()
+    # Re-signal the environment after pip installs (reticulate quirk)
+    tryCatch(
+      reticulate::use_virtualenv(envname, required = TRUE),
+      error = function(e) NULL  # already active — ignore
+    )
+
+    if (!reticulate::py_available(initialize = TRUE)) {
+      cli::cli_alert_warning("Could not initialize Python for verification")
+      cli::cli_alert_info("Try running {.code check_bf_status()} after restarting R")
+    } else {
+      verify_bf_installation()
+    }
   }
 
   cli::cli_alert_success("Setup complete!")
@@ -605,10 +632,14 @@ verify_bf_installation <- function() {
 
   # Check keras
   if (reticulate::py_module_available("keras")) {
-    results$keras <- TRUE
     keras <- reticulate::import("keras")
-    keras_ver <- keras$`__version__`
-    cli::cli_alert_success("Keras: {.val {keras_ver}}")
+    keras_ver <- tryCatch(keras$`__version__`, error = function(e) NULL)
+    if (!is.null(keras_ver)) {
+      results$keras <- TRUE
+      cli::cli_alert_success("Keras: {.val {keras_ver}}")
+    } else {
+      cli::cli_alert_danger("Keras: import succeeded but module is non-functional")
+    }
   } else {
     cli::cli_alert_danger("Keras: not installed")
   }
@@ -681,12 +712,12 @@ check_bf_status <- function(envname = NULL) {
   # STEP 1: Environment activation (using shared helper, non-strict mode)
   # ==========================================================================
   tryCatch({
-    rctbayespower::setup_bf_environment(envname, strict = FALSE)
+    setup_bf_environment(envname, strict = FALSE)
   }, error = function(e) {
     cli::cli_alert_danger("Environment setup failed: {conditionMessage(e)}")
 
     # Show available environments
-    envs <- tryCatch(rctbayespower::get_bf_envs(), error = function(e) {
+    envs <- tryCatch(get_bf_envs(), error = function(e) {
       list(all_envs = character(0), bf_envs = character(0), recommended_env = NULL)
     })
 
@@ -703,11 +734,11 @@ check_bf_status <- function(envname = NULL) {
   # ==========================================================================
   # STEP 2: Python initialization (using shared helper, non-strict mode)
   # ==========================================================================
-  if (!rctbayespower::check_bf_python_ready(report_envs = FALSE)) {
+  if (!check_bf_python_ready(report_envs = FALSE)) {
     cli::cli_alert_warning("Python not available")
 
     # Show available virtualenvs
-    envs <- tryCatch(rctbayespower::get_bf_envs(), error = function(e) {
+    envs <- tryCatch(get_bf_envs(), error = function(e) {
       list(all_envs = character(0), bf_envs = character(0), recommended_env = NULL)
     })
 
