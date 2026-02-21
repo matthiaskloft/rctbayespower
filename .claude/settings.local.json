@@ -33,7 +33,10 @@
       "WebFetch(domain:batss-dev.github.io)",
       "WebFetch(domain:www.rpact.org)",
       "Bash(wc:*)",
-      "WebFetch(domain:rdrr.io)"
+      "WebFetch(domain:rdrr.io)",
+      "WebFetch(domain:www.rpact.com)",
+      "WebFetch(domain:docs.rpact.org)",
+      "Bash(git check-ignore:*)"
     ],
     "deny": []
   }

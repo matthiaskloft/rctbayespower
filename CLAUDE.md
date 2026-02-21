@@ -88,7 +88,7 @@ Essential rules not in skill:
 | [`dev/11_bayesflow_integration_roadmap.md`](dev/11_bayesflow_integration_roadmap.md) | BayesFlow integration |
 | [`dev/12_gpu_support_plan.md`](dev/12_gpu_support_plan.md) | GPU support |
 
-### Trial Design Plans (20-23)
+### Trial Design Plans (20-24)
 
 | File | Topic |
 |------|-------|
@@ -96,6 +96,7 @@ Essential rules not in skill:
 | [`dev/21_adaptive_trials_roadmap.md`](dev/21_adaptive_trials_roadmap.md) | Adaptive trials roadmap |
 | [`dev/22_bayesian_adaptive_designs_reference.md`](dev/22_bayesian_adaptive_designs_reference.md) | Bayesian adaptive reference |
 | [`dev/23_api_roadmap.md`](dev/23_api_roadmap.md) | API evolution roadmap |
+| [`dev/24_api_improvement_plan.md`](dev/24_api_improvement_plan.md) | API improvement plan |
 
 ### Optimization Plans (30-31)
 
