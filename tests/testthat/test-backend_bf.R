@@ -90,10 +90,10 @@ test_that("summarize_post_bf returns correct structure", {
   result <- rctbayespower:::summarize_post_bf(
     draws_mat = draws_mat,
     target_param = "b_arm_treat",
-    thr_scs = 0.2,
-    thr_ftl = 0,
-    p_sig_scs = 0.975,
-    p_sig_ftl = 0.5,
+    thr_fx_eff = 0.2,
+    thr_fx_fut = 0,
+    thr_dec_eff = 0.975,
+    thr_dec_fut = 0.5,
     id_iter = 1:50,
     id_cond = rep(1L, 50),
     id_look = 1L,
@@ -105,8 +105,8 @@ test_that("summarize_post_bf returns correct structure", {
 
   # Check required columns exist
   expected_cols <- c(
-    "par_name", "thr_scs", "thr_ftl", "p_sig_scs", "p_sig_ftl",
-    "pr_scs", "pr_ftl", "dec_scs", "dec_ftl",
+    "par_name", "thr_fx_eff", "thr_fx_fut", "thr_dec_eff", "thr_dec_fut",
+    "pr_eff", "pr_fut", "dec_eff", "dec_fut",
     "post_med", "post_mad", "post_mn", "post_sd",
     "rhat", "ess_bulk", "ess_tail",
     "id_iter", "id_cond", "id_look", "n_analyzed",
@@ -124,24 +124,24 @@ test_that("summarize_post_bf computes probabilities correctly", {
   result <- rctbayespower:::summarize_post_bf(
     draws_mat = draws_mat,
     target_param = "b_arm_treat",
-    thr_scs = 0.2,
-    thr_ftl = 0.6,
-    p_sig_scs = 0.975,
-    p_sig_ftl = 0.975,
+    thr_fx_eff = 0.2,
+    thr_fx_fut = 0.6,
+    thr_dec_eff = 0.975,
+    thr_dec_fut = 0.975,
     id_iter = 1:10,
     id_cond = rep(1L, 10),
     id_look = 1L,
     n_analyzed = 50L
   )
 
-  # All pr_scs should be 1.0 (all draws > 0.2)
-  expect_equal(unique(result$pr_scs), 1.0)
+  # All pr_eff should be 1.0 (all draws > 0.2)
+  expect_equal(unique(result$pr_eff), 1.0)
 
-  # All pr_ftl should be 1.0 (all draws < 0.6)
-  expect_equal(unique(result$pr_ftl), 1.0)
+  # All pr_fut should be 1.0 (all draws < 0.6)
+  expect_equal(unique(result$pr_fut), 1.0)
 
-  # All should declare success
-  expect_equal(unique(result$dec_scs), 1L)
+  # All should declare efficacy
+  expect_equal(unique(result$dec_eff), 1L)
 })
 
 # =============================================================================

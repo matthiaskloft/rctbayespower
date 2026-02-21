@@ -50,7 +50,7 @@ init_bf("rctbp-3-12")
 
 # Then use BayesFlow backend in design
 design <- build_design(
-  model_name = "ancova_cont_2arms",
+  predefined_model = "ancova_cont_2arms",
   backend = "bf",
   target_params = "b_arm2"
 )

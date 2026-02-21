@@ -198,10 +198,10 @@ Computed by backend-specific summarization functions:
 
 | Metric | Description |
 |--------|-------------|
-| `pr_scs` | P(parameter > thr_scs) |
-| `pr_ftl` | P(parameter < thr_ftl) |
-| `dec_scs` | 1 if pr_scs >= p_sig_scs, else 0 |
-| `dec_ftl` | 1 if pr_ftl >= p_sig_ftl, else 0 |
+| `pr_eff` | P(parameter > thr_fx_eff) |
+| `pr_fut` | P(parameter < thr_fx_fut) |
+| `dec_eff` | 1 if pr_eff >= thr_dec_eff, else 0 |
+| `dec_fut` | 1 if pr_fut >= thr_dec_fut, else 0 |
 | `post_med`, `post_mad` | Posterior median and MAD |
 | `post_mn`, `post_sd` | Posterior mean and SD |
 | `rhat` | Convergence diagnostic (brms only) |

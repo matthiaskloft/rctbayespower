@@ -30,7 +30,7 @@ parameters that should co-vary 1-to-1.
 show_condition_args()
 
 # Show required args for a design
-design <- build_design(model_name = "ancova_cont_2arms", target_params = "b_arm2")
+design <- build_design(predefined_model = "ancova_cont_2arms", target_params = "b_arm2")
 show_condition_args(design)
 }
 

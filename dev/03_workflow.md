@@ -216,10 +216,10 @@ static_values = list(
 |--------|-------------|
 | `id_cond` | Condition identifier |
 | `parameter` | Parameter name |
-| `power_success` | Estimated power for success |
-| `power_futility` | Estimated power for futility |
-| `prob_success` | Mean P(effect > threshold) |
-| `prob_futility` | Mean P(effect < threshold) |
+| `pwr_eff` | Estimated power for efficacy |
+| `pwr_fut` | Estimated power for futility |
+| `pr_eff` | Mean P(effect > thr_fx_eff) |
+| `pr_fut` | Mean P(effect < thr_fx_fut) |
 | `median`, `mean` | Posterior point estimates |
 | `rhat`, `ess_bulk` | Convergence diagnostics (brms only) |
 | `*_se` | Monte Carlo standard errors |
@@ -239,4 +239,4 @@ One row per simulation × condition × parameter, with all metrics from each ind
 | Convergence issues | Check `conv_rate` and `rhat` columns |
 | BayesFlow not available | Run `check_bf_available()` to diagnose |
 | Mock mode not working | Ensure `RCTBP_MOCK_BF = "TRUE"` (string) |
-| Backend not switching | Check `model@active_backend` after setting |
+| Backend not switching | Check `design@backend` after setting |

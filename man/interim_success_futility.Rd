@@ -8,11 +8,11 @@ interim_success_futility(success_threshold = 0.99, futility_threshold = 0.9)
 }
 \arguments{
 \item{success_threshold}{Numeric threshold (0-1) for stopping for success.
-If the maximum \code{pr_scs} across target parameters exceeds this threshold,
+If the maximum \code{pr_eff} across target parameters exceeds this threshold,
 the trial stops for success. Default is 0.99.}
 
 \item{futility_threshold}{Numeric threshold (0-1) for stopping for futility.
-If the maximum \code{pr_ftl} across target parameters exceeds this threshold,
+If the maximum \code{pr_fut} across target parameters exceeds this threshold,
 the trial stops for futility. Default is 0.90.}
 }
 \value{
@@ -32,16 +32,21 @@ This is the most common interim analysis setup for confirmatory trials.
 }
 \examples{
 \dontrun{
-# Stop for overwhelming success or clear futility
 design <- build_design(
-  model = my_model,
-  target_params = "b_arm2",
-  p_sig_scs = 0.975,
-  p_sig_ftl = 0.5,
-  analysis_at = c(50, 100),
-  interim_function = interim_success_futility(
-    success_threshold = 0.995,
-    futility_threshold = 0.90
+  predefined_model = "ancova_cont_2arms",
+  target_params = "b_arm2"
+)
+cond <- build_conditions(
+  design,
+  crossed = list(n_total = 100),
+  constant = list(
+    thr_fx_eff = 0, thr_fx_fut = 0,
+    thr_dec_eff = 0.975, thr_dec_fut = 0.5,
+    analysis_at = c(0.5, 1.0),
+    interim_function = interim_success_futility(
+      success_threshold = 0.995,
+      futility_threshold = 0.90
+    )
   )
 )
 }

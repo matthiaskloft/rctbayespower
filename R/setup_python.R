@@ -590,27 +590,6 @@ verify_bf_installation <- function() {
 }
 
 
-#' Show Python Environment Status
-#'
-#' Displays current Python configuration and BayesFlow availability.
-#' Automatically initializes Python if not already active.
-#'
-#' @param envname Optional name of Python virtual environment to check.
-#'   If NULL (default), uses the currently active environment or auto-detects.
-#'
-#' @return Invisibly returns list with status results
-#' @export
-#'
-#' @examples
-#' \dontrun{
-#' # Check current/default environment
-#' check_bf_status()
-#'
-#' # Check specific environment
-#' check_bf_status(envname = "r-rctbayespower")
-#' }
-
-
 #' Check BayesFlow Environment Status
 #'
 #' Displays current Python configuration and BayesFlow availability.

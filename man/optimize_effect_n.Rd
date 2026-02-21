@@ -75,7 +75,7 @@ Designs that do not meet the power constraint are excluded from the Pareto front
 }
 \examples{
 \dontrun{
-design <- build_design(model_name = "ancova_cont_2arms", target_params = "b_arm2")
+design <- build_design(predefined_model = "ancova_cont_2arms", target_params = "b_arm2")
 
 result <- optimize_effect_n(
   design = design,

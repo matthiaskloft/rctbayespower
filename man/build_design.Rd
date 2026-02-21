@@ -5,11 +5,10 @@
 \title{Build a Design for Power Analysis}
 \usage{
 build_design(
-  model_name = NULL,
+  predefined_model = NULL,
   sim_fn = NULL,
   inference_model = NULL,
   backend = c("brms", "bf"),
-  backend_args_brms = list(),
   backend_args_bf = list(batch_size = NULL, n_posterior_samples = 1000L),
   n_endpoints = NULL,
   endpoint_types = NULL,
@@ -21,23 +20,21 @@ build_design(
 )
 }
 \arguments{
-\item{model_name}{Character. Name of a predefined model. Use \code{\link[=show_predefined_models]{show_predefined_models()}}
+\item{predefined_model}{Character. Name of a predefined model. Use \code{\link[=show_predefined_models]{show_predefined_models()}}
 to see available options. If provided, model components are loaded automatically.
 Takes precedence over explicit component arguments.}
 
 \item{sim_fn}{A function that simulates trial data. Must accept parameters
-\code{n_total} and \code{p_alloc} at minimum. Required if \code{model_name} is NULL.}
+\code{n_total} and \code{p_alloc} at minimum. Required if \code{predefined_model} is NULL.}
 
 \item{inference_model}{A brmsfit object (for brms backend) or BayesFlow model
-(for bf backend). Required if \code{model_name} is NULL.}
+(for bf backend). Required if \code{predefined_model} is NULL.}
 
 \item{backend}{Which backend to use: "brms" (default) or "bf".
 \itemize{
 \item "brms": Load brms model (default, always available)
 \item "bf": Try BayesFlow, fall back to brms with warning if unavailable
 }}
-
-\item{backend_args_brms}{List of brms-specific arguments (chains, iter, etc.)}
 
 \item{backend_args_bf}{List of BayesFlow-specific arguments:
 \itemize{
@@ -48,12 +45,12 @@ Takes precedence over explicit component arguments.}
 Note: Python environment should be set before using BayesFlow via
 \code{\link[=bf_status]{bf_status()}} or \code{\link[=setup_bf_python]{setup_bf_python()}}, not at runtime.}
 
-\item{n_endpoints}{Number of endpoints (positive integer). Required if \code{model_name} is NULL.}
+\item{n_endpoints}{Number of endpoints (positive integer). Required if \code{predefined_model} is NULL.}
 
 \item{endpoint_types}{Character vector of endpoint types ("continuous", "binary", "count").
-Required if \code{model_name} is NULL.}
+Required if \code{predefined_model} is NULL.}
 
-\item{n_arms}{Number of arms including control (positive integer). Required if \code{model_name} is NULL.}
+\item{n_arms}{Number of arms including control (positive integer). Required if \code{predefined_model} is NULL.}
 
 \item{n_repeated_measures}{Number of repeated measures (NULL or 0 for single timepoint)}
 
@@ -79,21 +76,24 @@ and analysis configuration.
 \details{
 This function creates a design object that contains the model specification
 (simulation function, inference model) and target parameters. Decision
-thresholds (\code{p_sig_scs}, \code{p_sig_ftl}, \code{thresh_scs}, \code{thresh_ftl}) and
+thresholds (\code{thr_dec_eff}, \code{thr_dec_fut}, \code{thr_fx_eff}, \code{thr_fx_fut}) and
 sequential analysis settings (\code{analysis_at}) are specified in \code{\link[=build_conditions]{build_conditions()}}.
 
-\strong{Predefined Models:} For most users, specify \code{model_name} to use a
+\strong{Predefined Models:} For most users, specify \code{predefined_model} to use a
 predefined model configuration. Available models can be listed with
 \code{\link[=show_predefined_models]{show_predefined_models()}}.
 
 \strong{Custom Models:} For custom analyses, provide explicit \code{sim_fn} and
 \code{inference_model} arguments along with trial metadata.
+
+\strong{brms MCMC settings} (chains, iter, warmup, etc.) are configured via
+\code{brms_args} in \code{\link[=power_analysis]{power_analysis()}}, not in \code{build_design()}.
 }
 \examples{
 \dontrun{
 # Using a predefined model (recommended)
 design <- build_design(
-  model_name = "ancova_cont_2arms",
+  predefined_model = "ancova_cont_2arms",
   target_params = "b_arm2"
 )
 

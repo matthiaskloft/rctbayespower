@@ -240,13 +240,11 @@ build_conditions <- function(design,
     constant <- static_values
   }
   if (!is.null(linked)) {
-    cli::cli_inform(c(
-      "i" = "{.arg linked} is deprecated, use {.fn link} inside {.arg crossed} instead"
+    cli::cli_abort(c(
+      "The {.arg linked} parameter has been removed.",
+      "i" = "Use {.fn link} inside {.arg crossed} instead.",
+      "i" = "Example: {.code crossed = list(link(n_total = c(80, 160), analysis_at = list(c(40,80), c(80,160))))}"
     ))
-    # Attempt to convert old linked format to new format
-    # Old format: linked = list(n_total = list(analysis_at = list(...)))
-    # New format: crossed contains link(n_total = ..., analysis_at = ...)
-    # This is complex, so we'll just warn and not attempt conversion
   }
 
   # Initialize to empty lists if NULL
@@ -400,7 +398,7 @@ build_conditions <- function(design,
 
   # Sensible defaults for non-sequential trial design
   # Parameters that have defaults and don't need explicit specification
-  # NOTE: p_sig_scs, p_sig_ftl are now REQUIRED in conditions (no longer inherited from design)
+  # NOTE: thr_dec_eff, thr_dec_fut are now REQUIRED in conditions (no longer inherited from design)
   # analysis_at is optional (NULL = single-look design)
   params_with_defaults <- c("analysis_at", "interim_function")
 
@@ -512,11 +510,22 @@ build_conditions <- function(design,
       }
     }
 
+    # Validate p_alloc sums to 1
+    if (!is.null(sim_args$p_alloc)) {
+      alloc_val <- if (is.list(sim_args$p_alloc)) sim_args$p_alloc[[1]] else sim_args$p_alloc
+      if (abs(sum(alloc_val) - 1) > 1e-10) {
+        cli::cli_abort(c(
+          "`p_alloc` must sum to 1.",
+          "x" = "Got {.val {alloc_val}} (sum = {round(sum(alloc_val), 6)})"
+        ))
+      }
+    }
+
     # --- Decision arguments (per-condition) ---
     decision_args <- list()
 
     # Decision parameter defaults
-    # NOTE: p_sig_scs, p_sig_ftl are REQUIRED - must be specified in conditions
+    # NOTE: thr_dec_eff, thr_dec_fut are REQUIRED - must be specified in conditions
     # analysis_at is optional (NULL = single-look design with final analysis only)
     # interim_function = NULL is valid for sequential monitoring without stopping rules
     decision_defaults <- list(
@@ -540,6 +549,18 @@ build_conditions <- function(design,
           "i" = "Add {.val {param}} to {.arg crossed} or {.arg constant}"
         ))
       }
+    }
+
+    # Warn if ROPE boundaries appear inverted (thr_fx_eff <= thr_fx_fut is unusual)
+    thr_eff_val <- decision_args$thr_fx_eff
+    thr_fut_val <- decision_args$thr_fx_fut
+    if (!is.null(thr_eff_val) && !is.null(thr_fut_val) &&
+        !is.function(thr_eff_val) && !is.function(thr_fut_val) &&
+        thr_eff_val <= thr_fut_val) {
+      cli::cli_warn(c(
+        "`thr_fx_eff` ({thr_eff_val}) <= `thr_fx_fut` ({thr_fut_val}): ROPE boundaries may be inverted.",
+        "i" = "Typically thr_fx_eff > thr_fx_fut (e.g., thr_fx_eff = 0.1, thr_fx_fut = -0.1)"
+      ))
     }
 
     # Process analysis_at: accept both proportions and absolute sample sizes
@@ -583,6 +604,20 @@ build_conditions <- function(design,
         analysis_vals <- as.integer(round(analysis_vals))
       }
 
+      # Validate sorted and no duplicates (after conversion so errors show integers)
+      if (anyDuplicated(analysis_vals) > 0) {
+        cli::cli_abort(c(
+          "'analysis_at' must not contain duplicate values.",
+          "x" = "Got (as sample sizes): {.val {analysis_vals}}"
+        ))
+      }
+      if (any(diff(analysis_vals) <= 0)) {
+        cli::cli_abort(c(
+          "'analysis_at' must be strictly increasing.",
+          "x" = "Got (as sample sizes): {.val {analysis_vals}}"
+        ))
+      }
+
       # Auto-append n_total if not already the last element
       if (analysis_vals[length(analysis_vals)] != n_total) {
         analysis_vals <- c(analysis_vals, as.integer(n_total))
@@ -594,7 +629,7 @@ build_conditions <- function(design,
     # =========================================================================
     # PRE-RESOLVE BOUNDARY FUNCTIONS
     # =========================================================================
-    # Boundary functions (p_sig_scs, p_sig_ftl) cannot be serialized to PSOCK workers.
+    # Boundary functions (thr_dec_eff, thr_dec_fut) cannot be serialized to PSOCK workers.
     # Pre-resolve them to numeric vectors using information fractions.
     # Format: vector of thresholds, one per analysis point (interim + final).
 

@@ -21,7 +21,7 @@ containing operating characteristics:
 \item \code{boundary}: Name of the boundary configuration
 \item \code{id_cond}: Condition identifier
 \item \code{n_planned}, \code{n_mn}, \code{n_mdn}: Sample size statistics
-\item \code{prop_stp_early}, \code{prop_stp_scs}, \code{prop_stp_ftl}: Stopping proportions
+\item \code{prop_stp_early}, \code{prop_stp_eff}, \code{prop_stp_fut}: Stopping proportions
 }
 }
 \description{

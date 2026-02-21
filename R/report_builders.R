@@ -197,7 +197,7 @@ build_report.rctbp_model <- function(x) {
       list(
         name = "Model Information",
         items = list(
-          "Model name" = x@model_name,
+          "Model name" = x@display_name,
           "Backend" = x@backend,
           "Predefined model" = if (is.null(x@predefined_model)) "None" else x@predefined_model,
           "Number of endpoints" = x@n_endpoints,
@@ -242,7 +242,7 @@ build_report.rctbp_design <- function(x) {
       list(
         name = "Model Specifications",
         items = list(
-          "Model name" = if (is.null(x@model_name)) "Custom" else x@model_name,
+          "Model name" = x@display_name,
           "Backend" = x@backend,
           "Number of endpoints" = x@n_endpoints,
           "Endpoint types" = paste(x@endpoint_types, collapse = ", "),

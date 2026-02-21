@@ -374,7 +374,7 @@ prepare_design_for_workers <- function(design) {
     backend_args_bf = design@backend_args_bf,
     # Design parameters
     target_params = design@target_params
-    # NOTE: p_sig_scs, p_sig_ftl, analysis_at, interim_function, adaptive
+    # NOTE: thr_dec_eff, thr_dec_fut, analysis_at, interim_function, adaptive
     # are now in conditions (via decision_args), not design
   )
 }

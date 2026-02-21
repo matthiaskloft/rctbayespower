@@ -744,7 +744,7 @@ resummarize_boundaries <- function(power_result,
 #'     \item `boundary`: Name of the boundary configuration
 #'     \item `id_cond`: Condition identifier
 #'     \item `n_planned`, `n_mn`, `n_mdn`: Sample size statistics
-#'     \item `prop_stp_early`, `prop_stp_scs`, `prop_stp_ftl`: Stopping proportions
+#'     \item `prop_stp_early`, `prop_stp_eff`, `prop_stp_fut`: Stopping proportions
 #'   }
 #'
 #' @export

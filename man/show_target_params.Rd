@@ -24,7 +24,7 @@ These are the model parameters that can be tested for success/futility.
 show_target_params("ancova_cont_2arms")
 
 # From a design object
-design <- build_design(model_name = "ancova_cont_2arms", target_params = "b_arm2")
+design <- build_design(predefined_model = "ancova_cont_2arms", target_params = "b_arm2")
 show_target_params(design)
 
 # From a brmsfit object

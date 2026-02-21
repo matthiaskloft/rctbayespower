@@ -8,7 +8,7 @@ interim_futility_only(futility_threshold = 0.9)
 }
 \arguments{
 \item{futility_threshold}{Numeric threshold (0-1) for stopping for futility.
-If the maximum \code{pr_ftl} across target parameters exceeds this threshold,
+If the maximum \code{pr_fut} across target parameters exceeds this threshold,
 the trial stops for futility. Default is 0.90.}
 }
 \value{
@@ -21,7 +21,7 @@ the specified threshold.
 }
 \details{
 At each interim analysis, this function checks if any target parameter
-has a posterior probability of futility (\code{pr_ftl}) exceeding the threshold.
+has a posterior probability of futility (\code{pr_fut}) exceeding the threshold.
 If so, it returns "stop_futility"; otherwise "continue".
 
 This is useful for trials where you want to stop early if the treatment
@@ -30,14 +30,19 @@ efficacy assessment.
 }
 \examples{
 \dontrun{
-# Stop if P(futility) > 0.95
 design <- build_design(
-  model = my_model,
-  target_params = "b_arm2",
-  p_sig_scs = 0.975,
-  p_sig_ftl = 0.5,
-  analysis_at = c(50, 100),
-  interim_function = interim_futility_only(futility_threshold = 0.95)
+  predefined_model = "ancova_cont_2arms",
+  target_params = "b_arm2"
+)
+cond <- build_conditions(
+  design,
+  crossed = list(n_total = 100),
+  constant = list(
+    thr_fx_eff = 0, thr_fx_fut = 0,
+    thr_dec_eff = 0.975, thr_dec_fut = 0.5,
+    analysis_at = c(0.5, 1.0),
+    interim_function = interim_futility_only(futility_threshold = 0.95)
+  )
 )
 }
 }

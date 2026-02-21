@@ -40,12 +40,18 @@
 #' # Create a design with sequential monitoring but no early stopping
 #' \dontrun{
 #' design <- build_design(
-#'   model = my_model,
-#'   target_params = "b_arm2",
-#'   p_sig_scs = 0.975,
-#'   p_sig_ftl = 0.5,
-#'   analysis_at = c(50, 100, 150),
-#'   interim_function = interim_continue()  # Or omit - this is the default
+#'   predefined_model = "ancova_cont_2arms",
+#'   target_params = "b_arm2"
+#' )
+#' cond <- build_conditions(
+#'   design,
+#'   crossed = list(n_total = c(100, 200)),
+#'   constant = list(
+#'     thr_fx_eff = 0, thr_fx_fut = 0,
+#'     thr_dec_eff = 0.975, thr_dec_fut = 0.5,
+#'     analysis_at = c(0.5, 1.0),
+#'     interim_function = interim_continue()
+#'   )
 #' )
 #' }
 interim_continue <- function() {
@@ -65,14 +71,14 @@ interim_continue <- function() {
 #' the specified threshold.
 #'
 #' @param futility_threshold Numeric threshold (0-1) for stopping for futility.
-#'   If the maximum `pr_ftl` across target parameters exceeds this threshold,
+#'   If the maximum `pr_fut` across target parameters exceeds this threshold,
 #'   the trial stops for futility. Default is 0.90.
 #'
 #' @return A function with the standard interim function interface
 #'
 #' @details
 #' At each interim analysis, this function checks if any target parameter
-#' has a posterior probability of futility (`pr_ftl`) exceeding the threshold.
+#' has a posterior probability of futility (`pr_fut`) exceeding the threshold.
 #' If so, it returns "stop_futility"; otherwise "continue".
 #'
 #' This is useful for trials where you want to stop early if the treatment
@@ -84,14 +90,19 @@ interim_continue <- function() {
 #'
 #' @examples
 #' \dontrun{
-#' # Stop if P(futility) > 0.95
 #' design <- build_design(
-#'   model = my_model,
-#'   target_params = "b_arm2",
-#'   p_sig_scs = 0.975,
-#'   p_sig_ftl = 0.5,
-#'   analysis_at = c(50, 100),
-#'   interim_function = interim_futility_only(futility_threshold = 0.95)
+#'   predefined_model = "ancova_cont_2arms",
+#'   target_params = "b_arm2"
+#' )
+#' cond <- build_conditions(
+#'   design,
+#'   crossed = list(n_total = 100),
+#'   constant = list(
+#'     thr_fx_eff = 0, thr_fx_fut = 0,
+#'     thr_dec_eff = 0.975, thr_dec_fut = 0.5,
+#'     analysis_at = c(0.5, 1.0),
+#'     interim_function = interim_futility_only(futility_threshold = 0.95)
+#'   )
 #' )
 #' }
 interim_futility_only <- function(futility_threshold = 0.90) {
@@ -106,9 +117,9 @@ interim_futility_only <- function(futility_threshold = 0.90) {
 
   function(interim_summaries, current_n, analysis_at, n_total) {
     # Check if any parameter exceeds futility threshold
-    max_pr_ftl <- max(interim_summaries$pr_ftl, na.rm = TRUE)
+    max_pr_fut <- max(interim_summaries$pr_fut, na.rm = TRUE)
 
-    if (!is.na(max_pr_ftl) && max_pr_ftl >= futility_threshold) {
+    if (!is.na(max_pr_fut) && max_pr_fut >= futility_threshold) {
       return(list(
         decision = "stop_futility",
         modified_params = NULL
@@ -130,10 +141,10 @@ interim_futility_only <- function(futility_threshold = 0.90) {
 #' success or futility exceeds the respective threshold.
 #'
 #' @param success_threshold Numeric threshold (0-1) for stopping for success.
-#'   If the maximum `pr_scs` across target parameters exceeds this threshold,
+#'   If the maximum `pr_eff` across target parameters exceeds this threshold,
 #'   the trial stops for success. Default is 0.99.
 #' @param futility_threshold Numeric threshold (0-1) for stopping for futility.
-#'   If the maximum `pr_ftl` across target parameters exceeds this threshold,
+#'   If the maximum `pr_fut` across target parameters exceeds this threshold,
 #'   the trial stops for futility. Default is 0.90.
 #'
 #' @return A function with the standard interim function interface
@@ -150,16 +161,21 @@ interim_futility_only <- function(futility_threshold = 0.90) {
 #'
 #' @examples
 #' \dontrun{
-#' # Stop for overwhelming success or clear futility
 #' design <- build_design(
-#'   model = my_model,
-#'   target_params = "b_arm2",
-#'   p_sig_scs = 0.975,
-#'   p_sig_ftl = 0.5,
-#'   analysis_at = c(50, 100),
-#'   interim_function = interim_success_futility(
-#'     success_threshold = 0.995,
-#'     futility_threshold = 0.90
+#'   predefined_model = "ancova_cont_2arms",
+#'   target_params = "b_arm2"
+#' )
+#' cond <- build_conditions(
+#'   design,
+#'   crossed = list(n_total = 100),
+#'   constant = list(
+#'     thr_fx_eff = 0, thr_fx_fut = 0,
+#'     thr_dec_eff = 0.975, thr_dec_fut = 0.5,
+#'     analysis_at = c(0.5, 1.0),
+#'     interim_function = interim_success_futility(
+#'       success_threshold = 0.995,
+#'       futility_threshold = 0.90
+#'     )
 #'   )
 #' )
 #' }
@@ -182,21 +198,21 @@ interim_success_futility <- function(success_threshold = 0.99,
   }
 
   function(interim_summaries, current_n, analysis_at, n_total) {
-    max_pr_scs <- max(interim_summaries$pr_scs, na.rm = TRUE)
-    max_pr_ftl <- max(interim_summaries$pr_ftl, na.rm = TRUE)
+    max_pr_eff <- max(interim_summaries$pr_eff, na.rm = TRUE)
+    max_pr_fut <- max(interim_summaries$pr_fut, na.rm = TRUE)
 
-    # Check for conflicting decisions (both success AND futility triggered)
+    # Check for conflicting decisions (both efficacy AND futility triggered)
     # This indicates misconfigured thresholds
-    success_met <- !is.na(max_pr_scs) && max_pr_scs >= success_threshold
-    futility_met <- !is.na(max_pr_ftl) && max_pr_ftl >= futility_threshold
+    success_met <- !is.na(max_pr_eff) && max_pr_eff >= success_threshold
+    futility_met <- !is.na(max_pr_fut) && max_pr_fut >= futility_threshold
 
     if (success_met && futility_met) {
       cli::cli_abort(c(
-        "Conflicting stopping decisions: both success and futility criteria met",
-        "x" = "At n = {current_n}: P(success) = {round(max_pr_scs, 3)} >= {success_threshold}, P(futility) = {round(max_pr_ftl, 3)} >= {futility_threshold}",
+        "Conflicting stopping decisions: both efficacy and futility criteria met",
+        "x" = "At n = {current_n}: P(efficacy) = {round(max_pr_eff, 3)} >= {success_threshold}, P(futility) = {round(max_pr_fut, 3)} >= {futility_threshold}",
         "i" = "This indicates misconfigured decision thresholds. Consider:",
-        "*" = "Widening the gap between 'thresh_scs' and 'thresh_ftl' in conditions",
-        "*" = "Increasing 'p_sig_scs' and/or 'p_sig_ftl' to require stronger evidence",
+        "*" = "Widening the gap between 'thr_fx_eff' and 'thr_fx_fut' in conditions",
+        "*" = "Increasing 'thr_dec_eff' and/or 'thr_dec_fut' to require stronger evidence",
         "*" = "Reviewing priors to ensure posteriors aren't unreasonably wide"
       ))
     }

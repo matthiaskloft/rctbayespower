@@ -51,6 +51,7 @@ Meta/
 # Temporary files
 *.tmp
 *.temp
+tmpclaude-*
 
 # IDE files
 .vscode/

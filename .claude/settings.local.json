@@ -36,7 +36,8 @@
       "WebFetch(domain:rdrr.io)",
       "WebFetch(domain:www.rpact.com)",
       "WebFetch(domain:docs.rpact.org)",
-      "Bash(git check-ignore:*)"
+      "Bash(git check-ignore:*)",
+      "Bash(git -C \"C:\\\\Users\\\\Matze\\\\Documents\\\\GitHub\\\\rctbayespower\" log --oneline -15)"
     ],
     "deny": []
   }

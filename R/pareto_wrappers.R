@@ -41,7 +41,7 @@
 #' @export
 #' @examples
 #' \dontrun{
-#' design <- build_design(model_name = "ancova_cont_2arms", target_params = "b_arm2")
+#' design <- build_design(predefined_model = "ancova_cont_2arms", target_params = "b_arm2")
 #'
 #' result <- optimize_power_n(
 #'   design = design,
@@ -156,7 +156,7 @@ optimize_power_n <- function(design,
 #' @export
 #' @examples
 #' \dontrun{
-#' design <- build_design(model_name = "ancova_cont_2arms", target_params = "b_arm2")
+#' design <- build_design(predefined_model = "ancova_cont_2arms", target_params = "b_arm2")
 #'
 #' result <- optimize_power_effect(
 #'   design = design,
@@ -274,7 +274,7 @@ optimize_power_effect <- function(design,
 #' @export
 #' @examples
 #' \dontrun{
-#' design <- build_design(model_name = "ancova_cont_2arms", target_params = "b_arm2")
+#' design <- build_design(predefined_model = "ancova_cont_2arms", target_params = "b_arm2")
 #'
 #' result <- optimize_effect_n(
 #'   design = design,

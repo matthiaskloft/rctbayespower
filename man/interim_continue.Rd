@@ -33,12 +33,18 @@ The returned function accepts the standard interim function parameters:
 # Create a design with sequential monitoring but no early stopping
 \dontrun{
 design <- build_design(
-  model = my_model,
-  target_params = "b_arm2",
-  p_sig_scs = 0.975,
-  p_sig_ftl = 0.5,
-  analysis_at = c(50, 100, 150),
-  interim_function = interim_continue()  # Or omit - this is the default
+  predefined_model = "ancova_cont_2arms",
+  target_params = "b_arm2"
+)
+cond <- build_conditions(
+  design,
+  crossed = list(n_total = c(100, 200)),
+  constant = list(
+    thr_fx_eff = 0, thr_fx_fut = 0,
+    thr_dec_eff = 0.975, thr_dec_fut = 0.5,
+    analysis_at = c(0.5, 1.0),
+    interim_function = interim_continue()
+  )
 )
 }
 }

@@ -49,7 +49,7 @@ rctbp_design <- S7::new_class(
 
     # Model metadata
     predefined_model = S7::new_union(S7::class_character, NULL),
-    model_name = S7::class_character,
+    display_name = S7::class_character,
     n_endpoints = S7::class_numeric,
     endpoint_types = S7::class_character,
     n_arms = S7::class_numeric,
@@ -224,7 +224,7 @@ get_bf_parameter_names <- function(model) {
 # =============================================================================
 # User-friendly interface to create merged rctbp_design objects.
 # Accepts either:
-#   1. A predefined model name (model_name = "ancova_cont_2arms")
+#   1. A predefined model name (predefined_model = "ancova_cont_2arms")
 #   2. Explicit model components (sim_fn, inference_model, etc.)
 
 #' Build a Design for Power Analysis
@@ -233,27 +233,26 @@ get_bf_parameter_names <- function(model) {
 #' Bayesian power analysis: simulation function, inference model, trial metadata,
 #' and analysis configuration.
 #'
-#' @param model_name Character. Name of a predefined model. Use [show_predefined_models()]
+#' @param predefined_model Character. Name of a predefined model. Use [show_predefined_models()]
 #'   to see available options. If provided, model components are loaded automatically.
 #'   Takes precedence over explicit component arguments.
 #' @param sim_fn A function that simulates trial data. Must accept parameters
-#'   `n_total` and `p_alloc` at minimum. Required if `model_name` is NULL.
+#'   `n_total` and `p_alloc` at minimum. Required if `predefined_model` is NULL.
 #' @param inference_model A brmsfit object (for brms backend) or BayesFlow model
-#'   (for bf backend). Required if `model_name` is NULL.
+#'   (for bf backend). Required if `predefined_model` is NULL.
 #' @param backend Which backend to use: "brms" (default) or "bf".
 #'   - "brms": Load brms model (default, always available)
 #'   - "bf": Try BayesFlow, fall back to brms with warning if unavailable
-#' @param backend_args_brms List of brms-specific arguments (chains, iter, etc.)
 #' @param backend_args_bf List of BayesFlow-specific arguments:
 #'   - `batch_size`: Batch size for inference (NULL uses n_sims)
 #'   - `n_posterior_samples`: Number of posterior samples to draw
 #'
 #'   Note: Python environment should be set before using BayesFlow via
 #'   [bf_status()] or [setup_bf_python()], not at runtime.
-#' @param n_endpoints Number of endpoints (positive integer). Required if `model_name` is NULL.
+#' @param n_endpoints Number of endpoints (positive integer). Required if `predefined_model` is NULL.
 #' @param endpoint_types Character vector of endpoint types ("continuous", "binary", "count").
-#'   Required if `model_name` is NULL.
-#' @param n_arms Number of arms including control (positive integer). Required if `model_name` is NULL.
+#'   Required if `predefined_model` is NULL.
+#' @param n_arms Number of arms including control (positive integer). Required if `predefined_model` is NULL.
 #' @param n_repeated_measures Number of repeated measures (NULL or 0 for single timepoint)
 #' @param target_params Character vector specifying which model parameters to
 #'   analyze for power. Must be valid parameter names from the inference model.
@@ -267,15 +266,18 @@ get_bf_parameter_names <- function(model) {
 #' @details
 #' This function creates a design object that contains the model specification
 #' (simulation function, inference model) and target parameters. Decision
-#' thresholds (`p_sig_scs`, `p_sig_ftl`, `thresh_scs`, `thresh_ftl`) and
+#' thresholds (`thr_dec_eff`, `thr_dec_fut`, `thr_fx_eff`, `thr_fx_fut`) and
 #' sequential analysis settings (`analysis_at`) are specified in [build_conditions()].
 #'
-#' **Predefined Models:** For most users, specify `model_name` to use a
+#' **Predefined Models:** For most users, specify `predefined_model` to use a
 #' predefined model configuration. Available models can be listed with
 #' [show_predefined_models()].
 #'
 #' **Custom Models:** For custom analyses, provide explicit `sim_fn` and
 #' `inference_model` arguments along with trial metadata.
+#'
+#' **brms MCMC settings** (chains, iter, warmup, etc.) are configured via
+#' `brms_args` in [power_analysis()], not in `build_design()`.
 #'
 #' @return An S7 object of class "rctbp_design"
 #'
@@ -286,7 +288,7 @@ get_bf_parameter_names <- function(model) {
 #' \dontrun{
 #' # Using a predefined model (recommended)
 #' design <- build_design(
-#'   model_name = "ancova_cont_2arms",
+#'   predefined_model = "ancova_cont_2arms",
 #'   target_params = "b_arm2"
 #' )
 #'
@@ -305,11 +307,10 @@ get_bf_parameter_names <- function(model) {
 #'   target_params = "b_treatment"
 #' )
 #' }
-build_design <- function(model_name = NULL,
+build_design <- function(predefined_model = NULL,
                          sim_fn = NULL,
                          inference_model = NULL,
                          backend = c("brms", "bf"),
-                         backend_args_brms = list(),
                          backend_args_bf = list(
                            batch_size = NULL,
                            n_posterior_samples = 1000L
@@ -327,16 +328,16 @@ build_design <- function(model_name = NULL,
   # =========================================================================
   # Load predefined model if specified
   # =========================================================================
-  if (!is.null(model_name)) {
-    if (!is.character(model_name) || length(model_name) != 1) {
+  if (!is.null(predefined_model)) {
+    if (!is.character(predefined_model) || length(predefined_model) != 1) {
       cli::cli_abort(c(
-        "{.arg model_name} must be a single character string",
+        "{.arg predefined_model} must be a single character string",
         "i" = "Use {.fn show_predefined_models} to see available models"
       ))
     }
 
     # Load model components from predefined model
-    model_components <- load_predefined_model_components(model_name, backend)
+    model_components <- load_predefined_model_components(predefined_model, backend)
 
     # Use predefined components (user-supplied args override)
     sim_fn <- model_components$sim_fn
@@ -354,7 +355,7 @@ build_design <- function(model_name = NULL,
   if (is.null(sim_fn)) {
     cli::cli_abort(c(
       "{.arg sim_fn} must be provided",
-      "i" = "Provide a simulation function or specify {.arg model_name}"
+      "i" = "Provide a simulation function or specify {.arg predefined_model}"
     ))
   }
   # Accept either rctbp_sim_fn or plain function
@@ -369,7 +370,7 @@ build_design <- function(model_name = NULL,
   if (is.null(inference_model)) {
     cli::cli_abort(c(
       "{.arg inference_model} must be provided",
-      "i" = "Provide a brmsfit/BayesFlow model or specify {.arg model_name}"
+      "i" = "Provide a brmsfit/BayesFlow model or specify {.arg predefined_model}"
     ))
   }
 
@@ -411,8 +412,8 @@ build_design <- function(model_name = NULL,
 
   # Set default design_name
   if (is.null(design_name)) {
-    if (!is.null(model_name)) {
-      design_name <- model_name
+    if (!is.null(predefined_model)) {
+      design_name <- predefined_model
     } else {
       design_name <- paste0("Custom Design (", backend, ")")
     }
@@ -425,10 +426,9 @@ build_design <- function(model_name = NULL,
     sim_fn = sim_fn,
     inference_model = inference_model,
     backend = backend,
-    backend_args_brms = backend_args_brms,
     backend_args_bf = backend_args_bf,
-    predefined_model = model_name,
-    model_name = if (!is.null(model_name)) model_name else "Custom Model",
+    predefined_model = predefined_model,
+    display_name = if (!is.null(predefined_model)) predefined_model else "Custom Model",
     n_endpoints = n_endpoints,
     endpoint_types = endpoint_types,
     n_arms = n_arms,

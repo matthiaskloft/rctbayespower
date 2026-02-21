@@ -2,22 +2,11 @@
 % Please edit documentation in R/backend_bf.R
 \name{get_bf_envs}
 \alias{get_bf_envs}
-\title{Initialize BayesFlow Python Environment}
+\title{Discover Available BayesFlow Virtual Environments}
 \usage{
 get_bf_envs()
 }
-\arguments{
-\item{envname}{Name of Python virtual environment to use.
-Default is "r-rctbayespower" (created by \code{\link[=setup_bf_python]{setup_bf_python()}}).
-Set to NULL to use the currently active Python environment.
-\strong{Important}: Environment can only be set BEFORE Python is initialized
-in the R session. Restart R to switch environments.}
-
-\item{verbose}{If TRUE (default), print initialization status message.}
-}
 \value{
-List with bf, np, and keras Python modules (invisibly)
-
 Named list with:
 \itemize{
 \item \code{all_envs}: All available virtual environments
@@ -26,44 +15,7 @@ Named list with:
 }
 }
 \description{
-Imports BayesFlow, Keras, and NumPy modules, caching them for reuse.
-This should be called at the beginning of scripts using the BayesFlow backend.
-}
-\details{
-\strong{Recommended workflow:}
-\enumerate{
-\item First time: Run \code{setup_bf_python()} to create dedicated virtual environment
-\item Each session: Call \code{init_bf_python()} at script start (uses default env)
-}
-
-This function:
-\enumerate{
-\item Sets KERAS_BACKEND=torch via R environment variable (before Python init)
-\item Activates the specified virtual environment (only before Python init)
-\item Returns cached modules if already initialized and valid
-\item Imports modules eagerly to surface errors immediately
-\item Validates all dependencies (torch, keras, numpy, bayesflow)
-}
-}
-\examples{
-\dontrun{
-# Recommended: Initialize at the start of your script
-init_bf_python()  # Uses default "r-rctbayespower" environment
-
-# Or specify environment explicitly
-init_bf_python("r-rctbayespower")
-
-# Then use BayesFlow backend in design
-design <- build_design(
-  model_name = "ancova_cont_2arms",
-  backend = "bf",
-  target_params = "b_arm2"
-)
-}
-Discover Available BayesFlow Virtual Environments
-
 Discovers available Python virtual environments and identifies which ones
 are likely BayesFlow environments based on naming patterns.
-
 }
 \keyword{internal}

@@ -447,7 +447,7 @@ estimate_sequential_brms <- function(full_data, model, backend_args, target_para
     # Rationale: Complete data collection provides better understanding of trial
     # behavior even when stopping rule would have terminated early.
     #
-    # Default stopping rule: dec_scs = 1 (success) or dec_ftl = 1 (futility)
+    # Default stopping rule: dec_eff = 1 (efficacy) or dec_fut = 1 (futility)
     # Custom interim_function can override this with more complex logic.
     interim_decision <- NULL
     if (!is_final && !stopped) {

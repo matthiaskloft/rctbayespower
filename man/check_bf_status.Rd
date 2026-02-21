@@ -2,7 +2,7 @@
 % Please edit documentation in R/setup_python.R
 \name{check_bf_status}
 \alias{check_bf_status}
-\title{Show Python Environment Status}
+\title{Check BayesFlow Environment Status}
 \usage{
 check_bf_status(envname = NULL)
 }
@@ -12,31 +12,18 @@ If NULL (default), uses the currently active environment or auto-detects.}
 }
 \value{
 Invisibly returns list with status results
-
-Invisibly returns list with status results
 }
 \description{
 Displays current Python configuration and BayesFlow availability.
-Automatically initializes Python if not already active.
-}
-\examples{
-\dontrun{
-# Check current/default environment
-check_bf_status()
-
-# Check specific environment
-check_bf_status(envname = "r-rctbayespower")
-}
-Check BayesFlow Environment Status
-
-Displays current Python configuration and BayesFlow availability.
 This is the new, refactored version that uses shared helper functions
 to reduce code duplication.
-
+}
+\details{
 The function automatically initializes Python if not already active and
 shows comprehensive status information including Python version, virtual
 environment, package versions, and GPU availability.
-
+}
+\examples{
 \dontrun{
 # Check current/default environment
 check_bf_status()
