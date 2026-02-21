@@ -254,10 +254,23 @@ get_predefined_model <- function(model_name, backend = "brms") {
           "i" = "Call {.code init_bf()} at the start of your script"
         ))
       } else {
-        cli::cli_warn(c(
-          "BayesFlow backend unavailable, using brms",
-          "i" = "To use BayesFlow: install Python + bayesflow package"
-        ))
+        is_cloud_issue <- !is.null(bf_error_msg) && grepl("AttributeError", bf_error_msg) &&
+          grepl("OneDrive|Dropbox|iCloudDrive", reticulate::virtualenv_root(), ignore.case = TRUE)
+        if (is_cloud_issue) {
+          cli::cli_warn(c(
+            "BayesFlow backend unavailable (OneDrive path), using brms",
+            "!" = "Virtualenv is on cloud-synced storage; Python files may be evicted.",
+            "i" = paste0(
+              "Fix: set {.code RETICULATE_VIRTUALENV_ROOT} to a local path and ",
+              "re-run {.code setup_bf_python(force = TRUE)}"
+            )
+          ))
+        } else {
+          cli::cli_warn(c(
+            "BayesFlow backend unavailable, using brms",
+            "i" = "To use BayesFlow: install Python + bayesflow package"
+          ))
+        }
       }
     }
   }

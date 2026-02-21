@@ -286,9 +286,13 @@ is_bf_cache_valid <- function() {
 #' @keywords internal
 require_bf_init <- function() {
  if (!is_bf_cache_valid()) {
-    # Try to auto-reinitialize if we have a stored envname
-    # This handles cases where Python GC made cached objects stale
-    if (!is.null(.bf_cache$envname) && nzchar(.bf_cache$envname)) {
+    # Try to auto-reinitialize in two cases:
+    # 1. Python is already active (e.g. check_bf_status() ran but init_bf() was skipped)
+    # 2. We have a stored envname from a previous init_bf() call (GC-staled objects)
+    can_reinit <- reticulate::py_available(initialize = FALSE) ||
+      (!is.null(.bf_cache$envname) && nzchar(.bf_cache$envname))
+
+    if (can_reinit) {
       tryCatch({
         # Silent reinit - just refresh the module references
         reinit_bf_cache()
@@ -681,10 +685,8 @@ init_bf <- function(envname = "r-rctbayespower", verbose = TRUE) {
   })
 
   # torch import (validates CUDA if available)
-  tryCatch({
-    torch <- reticulate::import("torch")
-    # Quick CUDA check (no GPU memory allocation)
-    .bf_cache$has_cuda <- torch$cuda$is_available()
+  torch <- tryCatch({
+    reticulate::import("torch")
   }, error = function(e) {
     cli::cli_abort(c(
       "Failed to import PyTorch",
@@ -692,6 +694,9 @@ init_bf <- function(envname = "r-rctbayespower", verbose = TRUE) {
       "i" = "Run {.code setup_bf_python()} to install dependencies"
     ))
   })
+  # CUDA check is optional — degrade gracefully if torch.cuda is unavailable
+  # (e.g., cuda submodule files evicted by OneDrive Files On-Demand)
+  .bf_cache$has_cuda <- tryCatch(torch$cuda$is_available(), error = function(e) FALSE)
 
   .bf_cache$keras <- tryCatch({
     reticulate::import("keras")
