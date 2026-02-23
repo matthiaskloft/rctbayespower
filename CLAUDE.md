@@ -87,6 +87,7 @@ Essential rules not in skill:
 | [`dev/10_backend_abstraction_plan.md`](dev/10_backend_abstraction_plan.md) | Backend abstraction |
 | [`dev/11_bayesflow_integration_roadmap.md`](dev/11_bayesflow_integration_roadmap.md) | BayesFlow integration |
 | [`dev/12_gpu_support_plan.md`](dev/12_gpu_support_plan.md) | GPU support |
+| [`dev/13_bf_model_retraining.md`](dev/13_bf_model_retraining.md) | BF model retraining (version fix) |
 
 ### Trial Design Plans (20-24)
 

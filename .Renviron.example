@@ -1,0 +1,18 @@
+# Copy this file to .Renviron and adjust values for your machine.
+# .Renviron is gitignored so your local settings stay private.
+#
+# After editing .Renviron, restart R for changes to take effect.
+
+# Enable parallel test execution (recommended for local development)
+PARALLEL_TESTS=true
+
+# ── BayesFlow / reticulate ────────────────────────────────────────────────────
+# Override the virtualenv root if the default (~/.virtualenvs) resolves to a
+# cloud-synced folder (common on Windows where R's ~ = Documents/OneDrive).
+# OneDrive Files On-Demand evicts .py files, breaking Python imports.
+#
+# Uncomment and set to a local (non-cloud) path:
+# RETICULATE_VIRTUALENV_ROOT=C:/Users/<you>/.virtualenvs
+#
+# CAUTION: On Windows, R's ~ is the Documents folder, often inside OneDrive.
+# Use usethis::edit_r_environ() in R to edit the file R actually reads.

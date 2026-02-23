@@ -295,17 +295,25 @@ setup_bf_python <- function(envname = "r-rctbayespower",
     if (grepl("OneDrive|Dropbox|iCloudDrive|Google Drive", local_suggestion, ignore.case = TRUE)) {
       local_suggestion <- "C:/virtualenvs"
     }
+    # Auto-redirect to local path for this session so setup can proceed
+    Sys.setenv(RETICULATE_VIRTUALENV_ROOT = local_suggestion)
     cli::cli_warn(c(
       "Virtualenv root is on cloud-synced storage: {.path {venv_root}}",
       "!" = paste0(
         "Cloud sync (OneDrive Files On-Demand, Dropbox) evicts .py files to ",
         "cloud-only storage. Python cannot import from evicted files."
       ),
-      "i" = paste0(
-        "To avoid this, set before calling {.code setup_bf_python()}:\n",
-        "  {.code Sys.setenv(RETICULATE_VIRTUALENV_ROOT = \"", local_suggestion, "\")}"
+      "v" = paste0(
+        "Auto-redirected to local path for this session: {.path {local_suggestion}}"
       ),
-      "i" = "Or add that line to your {.file .Renviron} for a permanent fix.",
+      "i" = paste0(
+        "To make this permanent, add to your {.file .Renviron}:\n",
+        "  {.code RETICULATE_VIRTUALENV_ROOT=", local_suggestion, "}\n",
+        "CAUTION: On Windows, R's {.code ~} is the Documents folder ",
+        "(often inside OneDrive), NOT your user home folder. ",
+        "Use {.code usethis::edit_r_environ()} in R to open the correct file, ",
+        "add the line, then restart R."
+      ),
       "i" = paste0(
         "Alternatively, disable OneDrive Files On-Demand: ",
         "OneDrive tray icon -> Settings -> Sync and backup -> ",
