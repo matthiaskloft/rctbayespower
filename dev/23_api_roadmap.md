@@ -65,6 +65,7 @@ This document defines the strategic API evolution for `rctbayespower` to support
 
 | Feature | API Addition | Location |
 |---------|--------------|----------|
+| Sample accrual | `accrual_rate`, `followup_time`, `analysis_timing`, `calendar_analysis_at` | build_conditions() |
 | Survival/events | `analysis_timing = "events"` | build_conditions() |
 | Multi-endpoint | `endpoint_roles`, `decision_gate` | build_design() |
 | Historical borrowing | `borrowing_method`, `borrowing_weight` | build_design() |
@@ -97,10 +98,12 @@ This document defines the strategic API evolution for `rctbayespower` to support
 - [ ] `interim_rar()` - Response-adaptive randomization
 - [ ] `interim_ssr()` - Sample size re-estimation
 - [ ] Allocation tracking in results
+- [ ] Sample accrual: enrollment timing, calendar-time interims (see [`25_sample_accrual_plan.md`](25_sample_accrual_plan.md))
 
 ### Phase 3: Extended Features
 
-- [ ] Survival / event-driven analysis
+- [ ] Survival / event-driven analysis (depends on sample accrual from Phase 2)
+- [ ] Dropout / loss-to-follow-up modeling (extends sample accrual)
 - [ ] Conditional power computation
 - [ ] Historical data borrowing
 - [ ] Multi-endpoint structure
@@ -187,10 +190,35 @@ conditions <- build_conditions(
 )
 ```
 
+### Group Sequential with Sample Accrual (Phase 2)
+
+```r
+design <- build_design(
+  predefined_model = "ancova_cont_2arms",
+  target_params = "b_arm2",
+  trial_type = "group_sequential"
+)
+
+conditions <- build_conditions(
+  design = design,
+  crossed = list(n_total = 200),
+  constant = list(
+    thr_dec_eff = boundary_obf(0.975), thr_dec_fut = 0.5,
+    thr_fx_eff = 0.2, thr_fx_fut = 0,
+    accrual_rate = 15,                    # 15 patients/month
+    followup_time = 3,                    # 3-month outcome
+    analysis_timing = "calendar",         # Calendar-time interims
+    calendar_analysis_at = c(12, 18, 24)  # Analyze at months 12, 18, 24
+  )
+)
+```
+
 ---
+
 ## 7. Cross-References
 
 - Interim/sequential details: `20_interim_analysis_plan.md`
 - Outcome type roadmap: `21_adaptive_trials_roadmap.md`
 - Bayesian design reference: `22_bayesian_adaptive_designs_reference.md`
 - BayesFlow integration: `11_bayesflow_integration_roadmap.md`
+- Sample accrual plan: `25_sample_accrual_plan.md`

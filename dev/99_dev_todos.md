@@ -62,7 +62,21 @@
   
   
   
-  # API 
+# Sample Accrual (see [25\_sample\_accrual\_plan.md](25_sample_accrual_plan.md))
+
+* Phase 1 (MVP): enrollment time generation, calendar-time subsetting, trial duration metrics
+  * New file `R/accrual.R`: `generate_enrollment_times()`, `patients_with_data()`, `calendar_to_available_n()`
+  * Modify `R/class_conditions.R`: accrual parameter defaults, validation, calendar-time conversion
+  * Modify `R/required_fn_args.R`: show accrual params in `show_condition_args()`
+  * Modify `R/worker_functions.R`: post-process sim data with enrollment times
+  * Modify `R/backend_brms.R` + `R/backend_bf.R`: accrual-aware subsetting
+  * Modify `R/compute_measures.R`: trial duration metrics
+* Phase 2: reporting & accrual plot type
+* Phase 3: dropout / loss-to-follow-up
+* Phase 4: survival/event-driven integration (dual routing for `accrual_rate`)
+
+
+  # API
   
   
   

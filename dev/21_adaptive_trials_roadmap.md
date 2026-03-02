@@ -15,6 +15,7 @@ The `rctbayespower` package currently supports:
 - ✅ Bayesian optimization for design search
 
 The package currently LACKS:
+- ❌ Sample accrual / calendar time (see [`25_sample_accrual_plan.md`](25_sample_accrual_plan.md))
 - ❌ Binary, survival, count outcomes
 - ❌ Adaptive parameter modification (RAR, SSR) - infrastructure exists
 - ❌ Dose finding
@@ -83,6 +84,7 @@ Based on industry analysis, these are the most valuable adaptive trial scenarios
 - Primary: Time to first MACE
 
 **Required features:**
+- Sample accrual / calendar time ❌ (prerequisite, see [`25_sample_accrual_plan.md`](25_sample_accrual_plan.md))
 - Survival outcomes ❌
 - Event-driven interims ❌
 - Hazard ratio calculations ❌
@@ -321,6 +323,8 @@ conditions <- build_conditions(
 ```
 
 ### Survival Outcomes
+
+> **Dependency:** Survival outcomes require sample accrual infrastructure (enrollment times, calendar-time subsetting). See [`25_sample_accrual_plan.md`](25_sample_accrual_plan.md) Phase 4 for the dual-routing design where `accrual_rate` routes to both `sim_args` and `decision_args`.
 
 #### Model Registry Entry
 ```r
@@ -575,8 +579,11 @@ The package will be considered ready for adaptive trials when it can:
    - "Probability of stopping early?"
    - "Expected sample size savings?"
    - "Type I error with early stopping?"
+   - "How long will the trial take?" (requires sample accrual)
+   - "At month 12, how many patients have completed follow-up?" (requires sample accrual)
 
 3. **Handle realistic scenarios**
+   - Sample accrual / calendar time (see [`25_sample_accrual_plan.md`](25_sample_accrual_plan.md))
    - Missing data
    - Delayed outcomes
    - Multiple endpoints

@@ -89,7 +89,7 @@ Essential rules not in skill:
 | [`dev/12_gpu_support_plan.md`](dev/12_gpu_support_plan.md) | GPU support |
 | [`dev/13_bf_model_retraining.md`](dev/13_bf_model_retraining.md) | BF model retraining (version fix) |
 
-### Trial Design Plans (20-24)
+### Trial Design Plans (20-25)
 
 | File | Topic |
 |------|-------|
@@ -98,6 +98,7 @@ Essential rules not in skill:
 | [`dev/22_bayesian_adaptive_designs_reference.md`](dev/22_bayesian_adaptive_designs_reference.md) | Bayesian adaptive reference |
 | [`dev/23_api_roadmap.md`](dev/23_api_roadmap.md) | API evolution roadmap |
 | [`dev/24_api_improvement_plan.md`](dev/24_api_improvement_plan.md) | API improvement plan |
+| [`dev/25_sample_accrual_plan.md`](dev/25_sample_accrual_plan.md) | Sample accrual / calendar time |
 
 ### Optimization Plans (30-31)
 
@@ -105,6 +106,13 @@ Essential rules not in skill:
 |------|-------|
 | [`dev/30_bayesian_optimization_plan.md`](dev/30_bayesian_optimization_plan.md) | Bayesian optimization |
 | [`dev/31_BO_implementation_guide.md`](dev/31_BO_implementation_guide.md) | BO implementation guide |
+
+### Competitor Analysis (40-41)
+
+| File | Topic |
+|------|-------|
+| [`dev/40_competitor_analysis.md`](dev/40_competitor_analysis.md) | Competitor landscape overview |
+| [`dev/41_mediana_comparison.md`](dev/41_mediana_comparison.md) | Mediana API comparison |
 
 ### Tooling (90-99)
 
