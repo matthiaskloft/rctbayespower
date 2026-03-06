@@ -81,7 +81,7 @@
 
 1. ~~**Integration tests**~~ (done) — 5 integration tests in `test-integration.R` exercising the full pipeline with real brms fitting: single-core, multi-core (S7 serialization), crossed conditions, group sequential + resummarize_boundaries, print/summary. See `06_testing.md`.
 
-2. **`get_code()` reproducibility** — Store `match.call()` in each pipeline object, add `get_code()` generic to reconstruct the full `build_design()` → `build_conditions()` → `power_analysis()` call chain. High user impact for preregistration/sharing. See `24_api_improvement_plan.md` §3.1.
+2. ~~**`get_code()` reproducibility**~~ (done) — `get_code()` generic with methods for all 3 pipeline classes. Stores `match.call()` in `.call` property, walks the chain to reconstruct full `build_design()` → `build_conditions()` → `power_analysis()` call. 32 tests in `test-get_code.R`. See `24_api_improvement_plan.md` §3.1.
 
 3. **BayesFlow model training** — Actually train the 2-arm ANCOVA `.pkl` model using the training script sketch in `11_bayesflow_integration_roadmap.md`. Upload to GitHub releases. This makes the BF backend usable for real analyses.
 

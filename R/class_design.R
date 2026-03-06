@@ -105,7 +105,10 @@ rctbp_design <- S7::new_class(
       }
     ),
 
-    design_name = S7::class_character | NULL
+    design_name = S7::class_character | NULL,
+
+    # Stored call for get_code() reproducibility
+    .call = S7::new_property(class = S7::class_any, default = NULL)
   ),
 
   # Validator ensures object consistency
@@ -323,6 +326,7 @@ build_design <- function(predefined_model = NULL,
                          trial_type = "fixed",
                          design_name = NULL) {
 
+  .call <- match.call()
   backend <- match.arg(backend)
 
   # =========================================================================
@@ -436,7 +440,8 @@ build_design <- function(predefined_model = NULL,
     par_names_inference = par_names_inference,
     target_params = target_params,
     trial_type = trial_type,
-    design_name = design_name
+    design_name = design_name,
+    .call = .call
   )
 }
 
