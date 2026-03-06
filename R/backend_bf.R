@@ -367,52 +367,6 @@ check_bf_dependencies <- function(silent = FALSE) {
 }
 
 
-<<<<<<< Updated upstream
-=======
-#' Initialize BayesFlow Python Environment
-#'
-#' Imports BayesFlow, Keras, and NumPy modules, caching them for reuse.
-#' This should be called at the beginning of scripts using the BayesFlow backend.
-#'
-#' **Recommended workflow:**
-#' 1. First time: Run `setup_bf_python()` to create dedicated virtual environment
-#' 2. Each session: Call `init_bf_python()` at script start (uses default env)
-#'
-#' This function:
-#' 1. Sets KERAS_BACKEND=torch via R environment variable (before Python init)
-#' 2. Activates the specified virtual environment (only before Python init)
-#' 3. Returns cached modules if already initialized and valid
-#' 4. Imports modules eagerly to surface errors immediately
-#' 5. Validates all dependencies (torch, keras, numpy, bayesflow)
-#'
-#' @param envname Name of Python virtual environment to use.
-#'   Default is "r-rctbayespower" (created by [setup_bf_python()]).
-#'   Set to NULL to use the currently active Python environment.
-#'   **Important**: Environment can only be set BEFORE Python is initialized
-#'   in the R session. Restart R to switch environments.
-#' @param verbose If TRUE (default), print initialization status message.
-#'
-#' @return List with bf, np, and keras Python modules (invisibly)
-#' @export
-#'
-#' @examples
-#' \dontrun{
-#' # Recommended: Initialize at the start of your script
-#' init_bf_python()  # Uses default "r-rctbayespower" environment
-#'
-#' # Or specify environment explicitly
-#' init_bf_python("r-rctbayespower")
-#'
-#' # Then use BayesFlow backend in design
-#' design <- build_design(
-#'   model_name = "ancova_cont_2arms",
-#'   backend = "bf",
-#'   target_params = "b_group"
-#' )
-#' }
-
-
->>>>>>> Stashed changes
 # =============================================================================
 # SHARED PYTHON ENVIRONMENT HELPERS
 # =============================================================================

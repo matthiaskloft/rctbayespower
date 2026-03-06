@@ -16,7 +16,7 @@
 #' }
 #'
 expect_cli_abort <- function(object, ...) {
-  testthat::expect_error(object, class = "rlib_error_3_0", ...)
+  testthat::expect_error(object, class = "rlang_error", ...)
 }
 
 #' Test CLI Warnings
@@ -35,7 +35,7 @@ expect_cli_abort <- function(object, ...) {
 #' }
 #'
 expect_cli_warn <- function(object, ...) {
-  testthat::expect_warning(object, class = "rlib_warning_3_0", ...)
+  testthat::expect_warning(object, class = "rlang_warning", ...)
 }
 
 #' Capture CLI Output for Testing
@@ -60,22 +60,27 @@ capture_cli <- function(expr) {
   old_interactive <- options(rlang_interactive = FALSE)
   on.exit(options(old_interactive))
 
-  # Capture both stdout and messages
-  utils::capture.output(
+  # CLI output goes to stderr (messages), so capture both stdout and messages
+  stdout_lines <- character(0)
+  msg_lines <- character(0)
+
+  stdout_lines <- utils::capture.output(
     {
-      result <- tryCatch(
+      msg_lines <- utils::capture.output(
         {
-          force(expr)
-          NULL
+          tryCatch(
+            force(expr),
+            error = function(e) NULL
+          )
         },
-        message = function(m) {
-          message(m$message, appendLF = FALSE)
-          NULL
-        }
+        type = "message"
       )
     },
     type = "output"
   )
+
+  # Combine both sources (messages first since CLI uses messages)
+  c(msg_lines, stdout_lines)
 }
 
 #' Test That Output Contains Expected Content

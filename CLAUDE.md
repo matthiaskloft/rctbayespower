@@ -58,6 +58,10 @@ Essential rules not in skill:
 - NEVER duplicate default values in `@param` docs and function signature
 - NEVER create documentation files unless explicitly requested
 - NEVER over-engineer: simple changes should stay simple
+- NEVER use `inherits(obj, "rctbp_design")` — S7 requires the namespace: `inherits(obj, "rctbayespower::rctbp_design")`
+- NEVER use `class = "rlib_error_3_0"` or `"rlib_warning_3_0"` in tests — use `"rlang_error"` / `"rlang_warning"`
+- NEVER use `capture.output(type = "output")` to capture CLI output — CLI sends to stderr. Use `capture_cli()` from `helper-cli.R`
+- NEVER give mock sim_fn parameters real defaults (e.g., `b_arm_treat = 0`) when they should be `NULL`. The package treats `NULL` defaults as required params via `get_args_without_defaults()`
 
 ## File Organization
 
