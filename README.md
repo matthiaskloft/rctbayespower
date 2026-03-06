@@ -51,7 +51,7 @@ introductory vignette:
   - [Introduction](https://matthiaskloft.github.io/rctbayespower/articles/01-introduction.html):
     Basic usage and concepts
 
-  - [Prior Specification](https://matthiaskloft.github.io/rctbayespower/articles/02-prior-specification.html):
+  - [Prior Specifications](https://matthiaskloft.github.io/rctbayespower/articles/02-prior-specification.html):
     Working with priors
 
   - [Algorithm Performance](https://matthiaskloft.github.io/rctbayespower/articles/03-algorithm-performance.html):
