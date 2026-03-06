@@ -52,7 +52,7 @@ init_bf("rctbp-3-12")
 design <- build_design(
   predefined_model = "ancova_cont_2arms",
   backend = "bf",
-  target_params = "b_arm2"
+  target_params = "b_group"
 )
 }
 }
