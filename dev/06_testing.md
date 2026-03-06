@@ -4,7 +4,7 @@
 
 ## Current Status
 
-**Test suite**: ~350 tests across 12 files. Covers S7 classes, boundaries, compute measures, output system, verbosity, backend (mock mode), and utilities. No integration tests yet (require brms compilation or BayesFlow).
+**Test suite**: ~414 tests across 13 files. Covers S7 classes, boundaries, compute measures, output system, verbosity, backend (mock mode), utilities, and full pipeline integration tests with real brms model fitting.
 
 ## Test Files
 
@@ -24,12 +24,28 @@
 | `test-s7_helpers.R` | 3 | `update_S7_with_dots` |
 | `test-utilities.R` | 4 | `format_duration`, `get_cpu_info` |
 | `test-verbosity.R` | 25 | Three-level verbosity control |
+| `test-integration.R` | 67 | Full pipeline: build_design → build_conditions → power_analysis with real brms |
+
+## Integration Tests
+
+`test-integration.R` exercises the full pipeline with real brms model fitting (not mocks). Skipped on CRAN and when brms/posterior not installed.
+
+| Test | What it exercises |
+|------|-------------------|
+| Fixed trial, single core | Full pipeline end-to-end: sim_fn → brms fit → posterior → ROPE decision → aggregation |
+| Fixed trial, multi-core | S7→list serialization via `prepare_design_for_workers()`, PSOCK cluster setup, function export |
+| Multiple crossed conditions | 2×2 grid expansion, per-condition parameter separation, multi-condition aggregation |
+| Group sequential + resummarize | Sequential analysis with interim looks, boundary functions, `resummarize_boundaries()` re-analysis |
+| Print/summary on real results | Print method on real (non-mock) power analysis objects |
+
+**Design choices:**
+- `chains=1, iter=150, warmup=50` (minimal brms for ~1-2s per fit)
+- `n_sims=5` (enough for pipeline validation, not statistical accuracy)
+- `verbosity=0` with `suppressMessages(suppressWarnings(...))` for clean output
+- Shared `design_fixed` at file scope (reuses cached compiled model)
 
 ## Not Yet Covered
 
-- `R/worker_functions.R` (parallel dispatch — needs real brms)
-- `R/backend_brms.R` (needs brms compilation)
-- `R/class_power_analysis.R` (needs full simulation run)
 - `R/pareto_optimize.R` and optimization wrappers
 - `R/plot_*.R` (plot output)
 - `R/model_cache.R`

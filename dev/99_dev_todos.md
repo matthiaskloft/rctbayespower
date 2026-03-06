@@ -76,14 +76,13 @@
 * Phase 4: survival/event-driven integration (dual routing for `accrual_rate`)
 
 
-  # API
-  
-  
-  
-  
-    
-    
-    
-    
-    
-    
+
+# Next Development Tasks (prioritized)
+
+1. ~~**Integration tests**~~ (done) — 5 integration tests in `test-integration.R` exercising the full pipeline with real brms fitting: single-core, multi-core (S7 serialization), crossed conditions, group sequential + resummarize_boundaries, print/summary. See `06_testing.md`.
+
+2. **`get_code()` reproducibility** — Store `match.call()` in each pipeline object, add `get_code()` generic to reconstruct the full `build_design()` → `build_conditions()` → `power_analysis()` call chain. High user impact for preregistration/sharing. See `24_api_improvement_plan.md` §3.1.
+
+3. **BayesFlow model training** — Actually train the 2-arm ANCOVA `.pkl` model using the training script sketch in `11_bayesflow_integration_roadmap.md`. Upload to GitHub releases. This makes the BF backend usable for real analyses.
+
+4. **Sample accrual MVP** (Phase 1) — Enrollment time generation, calendar-time subsetting, trial duration metrics. See `25_sample_accrual_plan.md`.
