@@ -888,7 +888,10 @@ summarize_post_bf <- function(draws_mat, target_param,
     ess_tail <- convergence$ess_tail
   }
 
-  data.frame(
+  # Compute quantile profiles
+  quantile_mat <- matrixStats::rowQuantiles(draws_mat, probs = QUANTILE_PROBS)
+
+  base_df <- data.frame(
     par_name = rep(target_param, n_sims),
     thr_fx_eff = rep(thr_fx_eff, n_sims),
     thr_fx_fut = rep(thr_fx_fut, n_sims),
@@ -902,6 +905,11 @@ summarize_post_bf <- function(draws_mat, target_param,
     post_mad = matrixStats::rowMads(draws_mat),
     post_mn = rowMeans(draws_mat),
     post_sd = matrixStats::rowSds(draws_mat),
+    stringsAsFactors = FALSE
+  )
+  quantile_df <- as.data.frame(quantile_mat)
+  names(quantile_df) <- QUANTILE_COLS
+  tail_df <- data.frame(
     rhat = rhat,
     ess_bulk = ess_bulk,
     ess_tail = ess_tail,
@@ -915,6 +923,7 @@ summarize_post_bf <- function(draws_mat, target_param,
     error_msg = rep(NA_character_, n_sims),
     stringsAsFactors = FALSE
   )
+  cbind(base_df, quantile_df, tail_df)
 }
 
 

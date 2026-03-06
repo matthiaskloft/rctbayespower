@@ -122,7 +122,10 @@ summarize_post_brms_single <- function(draws_arr, target_param,
   ess_bulk <- posterior::ess_bulk(draws_for_diag)
   ess_tail <- posterior::ess_tail(draws_for_diag)
 
-  data.frame(
+  # Compute quantile profile
+  quantiles <- stats::quantile(draws_vec, probs = QUANTILE_PROBS, names = FALSE)
+
+  base_df <- data.frame(
     par_name = target_param,
     thr_fx_eff = thr_fx_eff,
     thr_fx_fut = thr_fx_fut,
@@ -136,11 +139,16 @@ summarize_post_brms_single <- function(draws_arr, target_param,
     post_mad = stats::mad(draws_vec),
     post_mn = mean(draws_vec),
     post_sd = stats::sd(draws_vec),
+    stringsAsFactors = FALSE
+  )
+  quantile_cols <- do.call(data.frame, stats::setNames(as.list(quantiles), QUANTILE_COLS))
+  tail_df <- data.frame(
     rhat = rhat,
     ess_bulk = ess_bulk,
     ess_tail = ess_tail,
     stringsAsFactors = FALSE
   )
+  cbind(base_df, quantile_cols, tail_df)
 }
 
 
@@ -198,7 +206,7 @@ summarize_post_brms <- function(draws_arr, target_params,
     union_pr_eff <- mean(exceeds_eff)
     union_pr_fut <- mean(below_fut)
 
-    union_row <- data.frame(
+    union_base <- data.frame(
       par_name = "union",
       thr_fx_eff = NA_real_,
       thr_fx_fut = NA_real_,
@@ -212,11 +220,18 @@ summarize_post_brms <- function(draws_arr, target_params,
       post_mad = NA_real_,
       post_mn = NA_real_,
       post_sd = NA_real_,
+      stringsAsFactors = FALSE
+    )
+    union_quantiles <- do.call(data.frame,
+      stats::setNames(as.list(rep(NA_real_, length(QUANTILE_COLS))), QUANTILE_COLS)
+    )
+    union_tail <- data.frame(
       rhat = NA_real_,
       ess_bulk = NA_real_,
       ess_tail = NA_real_,
       stringsAsFactors = FALSE
     )
+    union_row <- cbind(union_base, union_quantiles, union_tail)
     results_list <- c(results_list, list(union_row))
   }
 

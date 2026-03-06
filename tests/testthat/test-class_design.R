@@ -311,3 +311,131 @@ test_that("print.rctbp_design produces output without error", {
   output <- capture_cli(print(d))
   expect_true(length(output) > 0)
 })
+
+# =============================================================================
+# format_default_value()
+# =============================================================================
+
+test_that("format_default_value returns 'NULL' for NULL", {
+  result <- rctbayespower:::format_default_value(NULL)
+  expect_equal(result, "NULL")
+})
+
+test_that("format_default_value formats numeric scalar as integer-style when whole number", {
+  result <- rctbayespower:::format_default_value(1)
+  expect_equal(result, "1")
+})
+
+test_that("format_default_value formats numeric scalar with decimal when fractional", {
+  result <- rctbayespower:::format_default_value(0.5)
+  expect_type(result, "character")
+  expect_true(grepl("0.5", result, fixed = TRUE))
+})
+
+test_that("format_default_value formats numeric vector as c(...)", {
+  result <- rctbayespower:::format_default_value(c(0.5, 0.5))
+  expect_equal(result, "c(0.5, 0.5)")
+})
+
+test_that("format_default_value wraps character scalar in quotes", {
+  result <- rctbayespower:::format_default_value("hello")
+  expect_equal(result, '"hello"')
+})
+
+test_that("format_default_value wraps character vector in c(...) with quotes", {
+  result <- rctbayespower:::format_default_value(c("a", "b"))
+  expect_equal(result, 'c("a", "b")')
+})
+
+test_that("format_default_value formats logical scalar as TRUE/FALSE string", {
+  expect_equal(rctbayespower:::format_default_value(TRUE), "TRUE")
+  expect_equal(rctbayespower:::format_default_value(FALSE), "FALSE")
+})
+
+test_that("format_default_value formats logical vector as c(...)", {
+  result <- rctbayespower:::format_default_value(c(TRUE, FALSE))
+  expect_equal(result, "c(TRUE, FALSE)")
+})
+
+test_that("format_default_value falls back to deparse for complex expressions", {
+  result <- rctbayespower:::format_default_value(list(a = 1))
+  expect_type(result, "character")
+  expect_true(nchar(result) > 0)
+})
+
+# =============================================================================
+# build_sim_params_section()
+# =============================================================================
+
+test_that("build_sim_params_section returns section with both required and fixed items", {
+  # mock_sim_fn() has b_arm_treat = NULL etc. (required) and no fixed defaults
+  # Use a function with mixed defaults
+  mixed_fn <- function(n_total, p_alloc, b_treat = NULL, sigma = 1.0) {
+    data.frame()
+  }
+
+  section <- rctbayespower:::build_sim_params_section(mixed_fn)
+
+  expect_type(section, "list")
+  expect_equal(section$name, "Simulation Function Parameters")
+  expect_true("Required (set in build_conditions)" %in% names(section$items))
+  expect_true("Fixed defaults" %in% names(section$items))
+  expect_true(grepl("b_treat", section$items[["Required (set in build_conditions)"]]))
+  expect_true(grepl("sigma", section$items[["Fixed defaults"]]))
+})
+
+test_that("build_sim_params_section returns only fixed defaults when no required params", {
+  fixed_only_fn <- function(n_total, p_alloc, sigma = 1.0, intercept = 0.0) {
+    data.frame()
+  }
+
+  section <- rctbayespower:::build_sim_params_section(fixed_only_fn)
+
+  expect_type(section, "list")
+  expect_false("Required (set in build_conditions)" %in% names(section$items))
+  expect_true("Fixed defaults" %in% names(section$items))
+})
+
+test_that("build_sim_params_section returns NULL when no params beyond n_total/p_alloc", {
+  minimal_fn <- function(n_total, p_alloc) {
+    data.frame()
+  }
+
+  section <- rctbayespower:::build_sim_params_section(minimal_fn)
+
+  expect_null(section)
+})
+
+test_that("build_sim_params_section skips n_total and p_alloc", {
+  fn <- function(n_total, p_alloc, b_treat = NULL) {
+    data.frame()
+  }
+
+  section <- rctbayespower:::build_sim_params_section(fn)
+
+  required_str <- section$items[["Required (set in build_conditions)"]]
+  expect_false(grepl("n_total", required_str))
+  expect_false(grepl("p_alloc", required_str))
+  expect_true(grepl("b_treat", required_str))
+})
+
+test_that("build_sim_params_section with mock_sim_fn shows all sim params as required", {
+  section <- rctbayespower:::build_sim_params_section(mock_sim_fn())
+
+  expect_type(section, "list")
+  expect_equal(section$name, "Simulation Function Parameters")
+  required_str <- section$items[["Required (set in build_conditions)"]]
+  expect_true(grepl("b_arm_treat", required_str))
+  expect_true(grepl("sigma", required_str))
+})
+
+# =============================================================================
+# PRINT METHOD — Simulation Function Parameters section
+# =============================================================================
+
+test_that("print(design) includes 'Simulation Function Parameters' in output", {
+  d <- mock_design()
+  output <- capture_cli(print(d))
+  output_text <- paste(output, collapse = "\n")
+  expect_true(grepl("Simulation Function Parameters", output_text))
+})

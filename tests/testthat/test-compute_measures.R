@@ -177,3 +177,56 @@ test_that("calculate_mcse_mean uses length(values) not n_sims for denominator", 
   expect_equal(result_n100, result_n5)
   expect_equal(result_n5, sd(values) / sqrt(length(values)))
 })
+
+# =============================================================================
+# QUANTILE COLUMNS IN SUMMARIZE_SIMS()
+# =============================================================================
+
+test_that("QUANTILE_COLS has exactly 9 column names with correct pattern", {
+  cols <- rctbayespower:::QUANTILE_COLS
+  expect_length(cols, 9)
+  expect_true(all(grepl("^post_q[0-9]{3}$", cols)))
+  expect_true("post_q025" %in% cols)
+  expect_true("post_q500" %in% cols)
+  expect_true("post_q975" %in% cols)
+})
+
+test_that("summarize_sims includes quantile columns with mean and SE", {
+  results <- mock_raw_results(n_sims = 10, n_conditions = 1)
+  # Add quantile columns to raw results (normally produced by backend functions)
+  q_cols <- rctbayespower:::QUANTILE_COLS
+  for (qc in q_cols) {
+    results[[qc]] <- stats::runif(nrow(results), 0, 1)
+  }
+
+  summary <- rctbayespower:::summarize_sims(results, n_sims = 10)
+
+  for (qc in q_cols) {
+    expect_true(qc %in% names(summary),
+                info = paste("Missing quantile column:", qc))
+    expect_true(paste0("se_", qc) %in% names(summary),
+                info = paste("Missing SE column for:", qc))
+  }
+})
+
+test_that("summarize_sims quantile columns appear between post_sd and rhat", {
+  results <- mock_raw_results(n_sims = 10, n_conditions = 1)
+  q_cols <- rctbayespower:::QUANTILE_COLS
+  for (qc in q_cols) {
+    results[[qc]] <- stats::runif(nrow(results), 0, 1)
+  }
+
+  summary <- rctbayespower:::summarize_sims(results, n_sims = 10)
+  col_names <- names(summary)
+
+  post_sd_idx <- which(col_names == "post_sd")
+  rhat_idx <- which(col_names == "rhat")
+  q025_idx <- which(col_names == "post_q025")
+  q975_idx <- which(col_names == "post_q975")
+
+  expect_true(length(post_sd_idx) > 0, info = "post_sd not found")
+  expect_true(length(rhat_idx) > 0, info = "rhat not found")
+  expect_true(length(q025_idx) > 0, info = "post_q025 not found")
+  expect_true(q025_idx > post_sd_idx, info = "post_q025 should come after post_sd")
+  expect_true(q975_idx < rhat_idx, info = "post_q975 should come before rhat")
+})
