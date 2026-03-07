@@ -400,13 +400,19 @@ build_conditions <- function(design,
   # required parameters
   params_needed <- show_condition_args(design, print = FALSE)
 
-  # Sensible defaults for non-sequential trial design
-  # Parameters that have defaults and don't need explicit specification
-  # NOTE: thr_dec_eff, thr_dec_fut are now REQUIRED in conditions (no longer inherited from design)
-  # analysis_at is optional (NULL = single-look design)
-  params_with_defaults <- c("analysis_at", "interim_function",
-                            "accrual_rate", "accrual_pattern", "followup_time",
-                            "analysis_timing", "calendar_analysis_at")
+  # Analysis parameter defaults (optional params that don't need explicit specification)
+  # NOTE: thr_dec_eff, thr_dec_fut are REQUIRED - not in this list
+  # Hoisted here so params_with_defaults can be derived from it
+  analysis_defaults <- list(
+    analysis_at = NULL,              # NULL = single final analysis
+    interim_function = NULL,         # NULL = no stopping rules
+    accrual_rate = NULL,             # NULL = no accrual modeling
+    accrual_pattern = "uniform",     # Constant inter-arrival
+    followup_time = 0,               # 0 = immediate outcome
+    analysis_timing = "sample_size", # "sample_size" or "calendar"
+    calendar_analysis_at = NULL      # NULL = not calendar-based
+  )
+  params_with_defaults <- names(analysis_defaults)
 
   # Exclude parameters with defaults from required validation
   params_required <- setdiff(params_needed$params_all, params_with_defaults)
@@ -529,20 +535,6 @@ build_conditions <- function(design,
 
     # --- Analysis arguments (per-condition) ---
     analysis_args <- list()
-
-    # Analysis parameter defaults
-    # NOTE: thr_dec_eff, thr_dec_fut are REQUIRED - must be specified in conditions
-    # analysis_at is optional (NULL = single-look design with final analysis only)
-    # interim_function = NULL is valid for sequential monitoring without stopping rules
-    analysis_defaults <- list(
-      analysis_at = NULL,           # NULL = single final analysis
-      interim_function = NULL,      # NULL = no stopping rules
-      accrual_rate = NULL,          # NULL = no accrual modeling
-      accrual_pattern = "uniform",  # Constant inter-arrival
-      followup_time = 0,            # 0 = immediate outcome
-      analysis_timing = "sample_size", # "sample_size" or "calendar"
-      calendar_analysis_at = NULL   # NULL = not calendar-based
-    )
 
     for (param in params_needed$params_analysis) {
       if (param %in% names(condition)) {
