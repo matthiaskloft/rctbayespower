@@ -21,12 +21,19 @@ skip_if_not_installed("posterior")
 minimal_brms_args <- list(chains = 1, iter = 150, warmup = 50)
 
 # Build fixed design once (uses cached compiled model if available)
-design_fixed <- suppressMessages(suppressWarnings(
-  build_design(
-    predefined_model = "ancova_cont_2arms",
-    target_params = "b_arm2"
-  )
-))
+# Skip entire file if Stan compilation fails (e.g., missing BH package)
+design_fixed <- tryCatch(
+  suppressMessages(suppressWarnings(
+    build_design(
+      predefined_model = "ancova_cont_2arms",
+      target_params = "b_arm2"
+    )
+  )),
+  error = function(e) NULL
+)
+if (is.null(design_fixed)) {
+  skip("Stan model compilation failed (missing BH or compiler)")
+}
 
 # Expected columns in results_conditions (grid cols + summary cols)
 expected_summary_cols <- c(
