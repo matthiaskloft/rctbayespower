@@ -115,6 +115,41 @@ calendar_to_available_n <- function(calendar_times, enrollment_times,
 }
 
 
+#' Subset Data to an Analysis Point (Accrual-Aware)
+#'
+#' Returns the rows of `full_data` that are analyzable at the point when
+#' `current_n` patients have completed follow-up. When `full_data` contains
+#' an `enrollment_time` column, subsetting is calendar-time-aware; otherwise
+#' it falls back to simple row-index subsetting (`full_data[1:current_n, ]`).
+#'
+#' @param full_data Data frame (possibly with `enrollment_time` column).
+#' @param current_n Integer. Target number of analyzable patients.
+#' @param followup_time Numeric. Required follow-up per patient.
+#' @param completion_times Optional pre-sorted vector of completion times
+#'   (`enrollment_time + followup_time`). Pass this when calling inside a loop
+#'   to avoid redundant sorting.
+#'
+#' @return Data frame with approximately `current_n` rows and `enrollment_time`
+#'   column removed.
+#' @keywords internal
+subset_analysis_data <- function(full_data, current_n, followup_time = 0,
+                                  completion_times = NULL) {
+  if ("enrollment_time" %in% names(full_data)) {
+    if (is.null(completion_times)) {
+      completion_times <- sort(full_data$enrollment_time + followup_time)
+    }
+    calendar_time <- completion_times[current_n]
+    mask <- patients_with_data(full_data$enrollment_time, followup_time,
+                               calendar_time)
+    analysis_data <- full_data[mask, , drop = FALSE]
+    analysis_data$enrollment_time <- NULL
+    analysis_data
+  } else {
+    full_data[1:current_n, ]
+  }
+}
+
+
 #' Validate Accrual Parameters
 #'
 #' Validates accrual-related parameters. Called during condition building.
