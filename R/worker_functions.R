@@ -91,6 +91,16 @@ worker_process_single <- function(id_cond, id_iter, condition_args, design) {
     if (is.null(full_data)) {
       return(create_error_result(id_iter, id_cond, id_analysis = 0L, "Data simulation failed"))
     }
+
+    # Attach enrollment times when accrual modeling is active
+    accrual_rate <- analysis_args$accrual_rate
+    if (!is.null(accrual_rate)) {
+      full_data$enrollment_time <- generate_enrollment_times(
+        n_total = nrow(full_data),
+        accrual_rate = accrual_rate,
+        accrual_pattern = analysis_args$accrual_pattern %||% "uniform"
+      )
+    }
   }
 
   # Call appropriate estimation function
@@ -144,7 +154,8 @@ worker_process_single <- function(id_cond, id_iter, condition_args, design) {
           analysis_at = analysis_at,
           interim_function = interim_function,
           id_iter = id_iter,
-          id_cond = id_cond
+          id_cond = id_cond,
+          followup_time = analysis_args$followup_time %||% 0
         )
       } else if (backend == "bf") {
         # For single simulation with BayesFlow sequential, pass as list
@@ -161,7 +172,8 @@ worker_process_single <- function(id_cond, id_iter, condition_args, design) {
           interim_function = interim_function,
           id_iter = id_iter,
           id_cond = id_cond,
-          sim_fn = sim_fn
+          sim_fn = sim_fn,
+          followup_time = analysis_args$followup_time %||% 0
         )
       } else {
         cli::cli_abort(c(
@@ -298,6 +310,19 @@ worker_process_batch <- function(work_units, design) {
     error_results <- list()
   }
 
+  # Attach enrollment times when accrual modeling is active
+  accrual_rate <- analysis_args$accrual_rate
+  if (!is.null(accrual_rate)) {
+    full_data_list <- lapply(full_data_list, function(fd) {
+      fd$enrollment_time <- generate_enrollment_times(
+        n_total = nrow(fd),
+        accrual_rate = accrual_rate,
+        accrual_pattern = analysis_args$accrual_pattern %||% "uniform"
+      )
+      fd
+    })
+  }
+
   # Call appropriate estimation function (BayesFlow backend)
   result <- switch(strategy,
     single = {
@@ -329,7 +354,8 @@ worker_process_batch <- function(work_units, design) {
         interim_function = interim_function,
         id_iter = id_iter_vec,
         id_cond = id_cond_vec,
-        sim_fn = sim_fn
+        sim_fn = sim_fn,
+        followup_time = analysis_args$followup_time %||% 0
       )
     }
   )

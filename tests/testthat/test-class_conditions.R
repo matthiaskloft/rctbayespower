@@ -593,6 +593,37 @@ test_that("build_conditions validates calendar timing requires accrual_rate", {
   )
 })
 
+test_that("build_conditions converts calendar timing to analysis_at", {
+  d <- mock_design(trial_type = "group_sequential")
+  # 200 patients, accrual_rate=10 -> enrollment takes ~20 months
+  # followup_time=3 -> first patient analyzable at t=3
+  # calendar_analysis_at=c(12, 24) -> compute approx n analyzable at those times
+  cond <- build_conditions(
+    design = d,
+    crossed = list(n_total = 200),
+    constant = list(
+      p_alloc = list(c(0.5, 0.5)),
+      b_arm_treat = 0.3, intercept = 0, b_covariate = 0.3, sigma = 1,
+      thr_dec_eff = 0.975, thr_dec_fut = 0.5,
+      thr_fx_eff = 0.2, thr_fx_fut = 0,
+      accrual_rate = 10,
+      followup_time = 3,
+      analysis_timing = "calendar",
+      calendar_analysis_at = c(12, 24)
+    )
+  )
+
+  analysis_at <- cond@params_by_cond[[1]]$analysis_args$analysis_at
+  # Should be integer vector derived from calendar times
+  expect_true(is.integer(analysis_at))
+  # At t=12, ~90 patients analyzable (enrolled by t=9, need 3mo followup)
+  # At t=24, all 200 analyzable
+  expect_true(analysis_at[1] > 0 && analysis_at[1] < 200)
+  expect_equal(analysis_at[length(analysis_at)], 200L)
+  # Should be strictly increasing
+  expect_false(is.unsorted(analysis_at, strictly = TRUE))
+})
+
 # =============================================================================
 # PRINT METHOD
 # =============================================================================

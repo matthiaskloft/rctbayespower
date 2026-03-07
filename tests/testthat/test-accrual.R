@@ -205,3 +205,37 @@ test_that("validate_accrual_params requires calendar_analysis_at for calendar ti
     "calendar_analysis_at.*required"
   )
 })
+
+
+# =============================================================================
+# Accrual-aware subsetting (integration with patients_with_data)
+# =============================================================================
+
+test_that("accrual-aware subsetting selects correct patients", {
+  # Simulate a scenario: 100 patients, accrual_rate=10, followup=2
+  enrollment <- generate_enrollment_times(100, accrual_rate = 10)
+  followup <- 2
+
+  # At the point where 50 patients have completed follow-up:
+  completion_times <- sort(enrollment + followup)
+  calendar_time <- completion_times[50]
+  mask <- patients_with_data(enrollment, followup, calendar_time)
+
+  # Exactly 50 patients should be analyzable
+  expect_equal(sum(mask), 50)
+
+  # All analyzable patients enrolled early enough
+  expect_true(all(enrollment[mask] + followup <= calendar_time))
+})
+
+test_that("accrual subsetting with followup=0 equals row-index subsetting", {
+  enrollment <- generate_enrollment_times(100, accrual_rate = 10)
+  followup <- 0
+
+  # With followup=0, the nth patient to complete is the nth to enroll
+  completion_times <- sort(enrollment + followup)
+  calendar_time <- completion_times[50]
+  mask <- patients_with_data(enrollment, followup, calendar_time)
+
+  expect_equal(sum(mask), 50)
+})

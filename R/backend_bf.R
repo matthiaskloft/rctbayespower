@@ -1825,10 +1825,12 @@ estimate_sequential_bf <- function(full_data_list, model, backend_args, target_p
                                     thr_fx_eff, thr_fx_fut,
                                     thr_dec_eff, thr_dec_fut, analysis_at,
                                     interim_function, id_iter, id_cond,
-                                    sim_fn = NULL) {
+                                    sim_fn = NULL,
+                                    followup_time = 0) {
 
   batch_size <- length(full_data_list)
   n_total <- nrow(full_data_list[[1]])
+  has_enrollment <- "enrollment_time" %in% names(full_data_list[[1]])
   n_analyses <- length(analysis_at)
 
   # Initialize tracking for each sim
@@ -1853,7 +1855,18 @@ estimate_sequential_bf <- function(full_data_list, model, backend_args, target_p
     if (length(active_idx) == 0) active_idx <- seq_len(batch_size)
 
     # Subset data to current analysis point for active simulations
-    analysis_data_list <- lapply(full_data_list[active_idx], function(fd) fd[1:current_n, ])
+    analysis_data_list <- lapply(full_data_list[active_idx], function(fd) {
+      if (has_enrollment) {
+        completion_times <- sort(fd$enrollment_time + followup_time)
+        calendar_time <- completion_times[current_n]
+        mask <- patients_with_data(fd$enrollment_time, followup_time, calendar_time)
+        subset_data <- fd[mask, , drop = FALSE]
+        subset_data$enrollment_time <- NULL
+        subset_data
+      } else {
+        fd[1:current_n, ]
+      }
+    })
 
     # Prepare batch data
     data_batch <- prepare_data_list_as_batch_bf(analysis_data_list, backend_args, sim_fn = sim_fn)

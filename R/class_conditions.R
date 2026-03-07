@@ -445,11 +445,17 @@ build_conditions <- function(design,
   # Validate analysis_at requirements based on trial_type
   analysis_at_provided <- "analysis_at" %in% names(crossed_flat) ||
                           "analysis_at" %in% names(constant)
+  # calendar_analysis_at also satisfies the requirement (converted to analysis_at later)
+  calendar_timing_provided <- ("calendar_analysis_at" %in% names(crossed_flat) ||
+                               "calendar_analysis_at" %in% names(constant)) &&
+                              ("analysis_timing" %in% names(crossed_flat) ||
+                               "analysis_timing" %in% names(constant))
 
-  if (trial_type != "fixed" && !analysis_at_provided) {
+  if (trial_type != "fixed" && !analysis_at_provided && !calendar_timing_provided) {
     cli::cli_abort(c(
       "Trial type {.val {trial_type}} requires {.arg analysis_at}",
       "i" = "Add {.arg analysis_at} to {.arg crossed} or {.arg constant}",
+      "i" = "Or use {.code analysis_timing = \"calendar\"} with {.arg calendar_analysis_at}",
       "i" = "Or change {.arg trial_type} to 'fixed' in {.fn build_design}"
     ))
   }
@@ -575,8 +581,31 @@ build_conditions <- function(design,
       calendar_analysis_at = analysis_args$calendar_analysis_at
     )
 
-    # Process analysis_at: accept both proportions and absolute sample sizes
+    # =========================================================================
+    # CALENDAR-TIME TO SAMPLE-SIZE CONVERSION
+    # =========================================================================
+    # When analysis_timing = "calendar", compute approximate analysis_at from
+    # enrollment curve. Uses expected (deterministic uniform) enrollment to
+    # estimate how many patients have completed follow-up at each calendar time.
     n_total <- sim_args$n_total
+    if (identical(analysis_args$analysis_timing, "calendar") &&
+        !is.null(analysis_args$calendar_analysis_at)) {
+      expected_enrollment <- generate_enrollment_times(
+        n_total, analysis_args$accrual_rate, accrual_pattern = "uniform"
+      )
+      avail <- calendar_to_available_n(
+        analysis_args$calendar_analysis_at, expected_enrollment,
+        analysis_args$followup_time
+      )
+      approx_n <- avail$n_analyzable
+      # Ensure at least 1 patient per analysis and cap at n_total
+      approx_n <- pmin(pmax(approx_n, 1L), as.integer(n_total))
+      # Remove duplicates (multiple calendar times may map to same n)
+      approx_n <- unique(approx_n)
+      analysis_args$analysis_at <- approx_n
+    }
+
+    # Process analysis_at: accept both proportions and absolute sample sizes
     if (!is.null(analysis_args$analysis_at)) {
       if (is.null(n_total)) {
         cli::cli_abort(c(

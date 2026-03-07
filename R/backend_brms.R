@@ -362,9 +362,11 @@ estimate_sequential_brms <- function(full_data, model, backend_args, target_para
                                      thr_fx_eff, thr_fx_fut,
                                      thr_dec_eff, thr_dec_fut,
                                      analysis_at, interim_function,
-                                     id_iter, id_cond) {
+                                     id_iter, id_cond,
+                                     followup_time = 0) {
 
   n_total <- nrow(full_data)
+  has_enrollment <- "enrollment_time" %in% names(full_data)
   # analysis_at now includes the final analysis at n_total (last value = n_total)
   analysis_schedule <- analysis_at
   results_list <- list()
@@ -383,8 +385,18 @@ estimate_sequential_brms <- function(full_data, model, backend_args, target_para
     current_thr_dec_eff <- resolve_threshold(thr_dec_eff, info_frac)
     current_thr_dec_fut <- resolve_threshold(thr_dec_fut, info_frac)
 
-    # Subset data to current analysis point
-    analysis_data <- full_data[1:current_n, ]
+    # Subset data to current analysis point (accrual-aware when enrollment_time present)
+    if (has_enrollment) {
+      # Find calendar time when current_n patients have completed follow-up
+      completion_times <- sort(full_data$enrollment_time + followup_time)
+      calendar_time <- completion_times[current_n]
+      mask <- patients_with_data(full_data$enrollment_time, followup_time, calendar_time)
+      analysis_data <- full_data[mask, , drop = FALSE]
+      # Drop enrollment_time before model fitting
+      analysis_data$enrollment_time <- NULL
+    } else {
+      analysis_data <- full_data[1:current_n, ]
+    }
 
     # Estimate posterior
     estimation_result <- tryCatch({
