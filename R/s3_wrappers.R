@@ -50,6 +50,28 @@ run.rctbp_power_analysis <- function(x, ...) {
 }
 
 # =============================================================================
+# GET_CODE GENERIC
+# =============================================================================
+
+#' @method get_code rctbp_design
+#' @export
+get_code.rctbp_design <- function(x, ...) {
+  S7::method(get_code, rctbp_design)(x, ...)
+}
+
+#' @method get_code rctbp_conditions
+#' @export
+get_code.rctbp_conditions <- function(x, ...) {
+  S7::method(get_code, rctbp_conditions)(x, ...)
+}
+
+#' @method get_code rctbp_power_analysis
+#' @export
+get_code.rctbp_power_analysis <- function(x, ...) {
+  S7::method(get_code, rctbp_power_analysis)(x, ...)
+}
+
+# =============================================================================
 # PARETO OPTIMIZATION CLASSES
 # =============================================================================
 

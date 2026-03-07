@@ -2,7 +2,7 @@
 
 This file contains reference material moved from CLAUDE.md to keep that file concise per [Boris Cherny's best practices](https://howborisusesclaudecode.com/).
 
-## Current Status (2025-11-29)
+## Current Status (2026-03-06)
 
 **Core Package State**: Functional with dual-backend support. API refactoring completed (model merged into design).
 
@@ -47,7 +47,7 @@ This file contains reference material moved from CLAUDE.md to keep that file con
 | Adaptive interim analysis (parameter modification) | Planning | `20_interim_analysis_plan.md` |
 | Train BayesFlow models | Next step | `11_bayesflow_integration_roadmap.md` |
 | Binary/survival outcomes | Not started | `21_adaptive_trials_roadmap.md` |
-| Test suite | 0% | `06_testing.md` |
+| Test suite | ~350 tests (unit) | `06_testing.md` |
 
 ---
 

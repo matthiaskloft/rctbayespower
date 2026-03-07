@@ -225,6 +225,72 @@ build_report.rctbp_model <- function(x) {
   )
 }
 
+#' Format a Default Value for Display
+#'
+#' @param val A default value from a function formal
+#' @return Character string representation
+#' @keywords internal
+format_default_value <- function(val) {
+  if (is.null(val)) return("NULL")
+  if (is.character(val)) {
+    if (length(val) == 1) return(paste0('"', val, '"'))
+    return(paste0('c(', paste0('"', val, '"', collapse = ", "), ')'))
+  }
+  if (is.numeric(val)) {
+    formatted <- vapply(val, function(v) {
+      if (v == round(v)) format(v, nsmall = 0) else format(round(v, 4), nsmall = 1)
+    }, character(1))
+    if (length(formatted) == 1) return(formatted)
+    return(paste0("c(", paste(formatted, collapse = ", "), ")"))
+  }
+  if (is.logical(val)) {
+    if (length(val) == 1) return(as.character(val))
+    return(paste0("c(", paste(val, collapse = ", "), ")"))
+  }
+  deparse(val, width.cutoff = 60)[1]
+}
+
+#' Build Simulation Function Parameters Section
+#'
+#' @param sim_fn The simulation function from a design object
+#' @return A report section list, or NULL if no parameters
+#' @keywords internal
+build_sim_params_section <- function(sim_fn) {
+  skip_params <- c("n_total", "p_alloc")
+  arg_info <- get_arg_defaults(sim_fn)
+
+  missing <- setdiff(arg_info$missing_default %||% character(0), skip_params)
+  nulls <- setdiff(arg_info$null_default %||% character(0), skip_params)
+  required <- c(missing, nulls)
+
+  all_defaults <- arg_info$evaluated_defaults
+  fixed_names <- setdiff(
+    names(all_defaults),
+    c(skip_params, arg_info$null_default %||% character(0))
+  )
+
+  items <- list()
+
+  if (length(required) > 0) {
+    items[["Required (set in build_conditions)"]] <- paste(required, collapse = ", ")
+  }
+
+  if (length(fixed_names) > 0) {
+    formatted <- vapply(fixed_names, function(nm) {
+      paste0(nm, " = ", format_default_value(all_defaults[[nm]]))
+    }, character(1))
+    items[["Fixed defaults"]] <- paste(formatted, collapse = ", ")
+  }
+
+  if (length(items) == 0) return(NULL)
+
+  list(
+    name = "Simulation Function Parameters",
+    items = items,
+    note = "Required params have no defaults; fixed params can be overridden in build_conditions()."
+  )
+}
+
 #' Build Report for rctbp_design
 #'
 #' Creates structured report data for a design object.
@@ -260,6 +326,7 @@ build_report.rctbp_design <- function(x) {
         ),
         note = "Decision thresholds and analysis schedule are specified in build_conditions()."
       ),
+      build_sim_params_section(x@sim_fn),
       if (x@backend == "brms") {
         list(
           name = "brms Model",

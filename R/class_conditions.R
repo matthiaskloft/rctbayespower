@@ -95,7 +95,9 @@ rctbp_conditions <- S7::new_class("rctbp_conditions",
     linked_params = S7::new_property(             # List of linked parameter groups
       class = S7::class_list,                     # Each element is a character vector of param names
       default = list()
-    )
+    ),
+    # Stored call for get_code() reproducibility
+    .call = S7::new_property(class = S7::class_any, default = NULL)
   ),
   # Validator ensures grid and arguments are consistent
   validator = function(self) {
@@ -215,6 +217,8 @@ build_conditions <- function(design,
                              condition_values = NULL,
                              static_values = NULL,
                              linked = NULL) {
+  .call <- match.call()
+
   # validate design (allow both namespaced and non-namespaced class for testing)
   if (!inherits(design, "rctbayespower::rctbp_design") && !inherits(design, "rctbp_design")) {
     cli::cli_abort(c(
@@ -696,7 +700,8 @@ build_conditions <- function(design,
     crossed = crossed_original,
     constant = constant,
     target_pwr = target_pwr,
-    linked_params = linked_params
+    linked_params = linked_params,
+    .call = .call
   )
 
   return(conditions_obj)

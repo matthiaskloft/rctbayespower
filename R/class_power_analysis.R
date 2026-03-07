@@ -73,7 +73,10 @@ rctbp_power_analysis <- S7::new_class(
     # Computed property for interim analysis detection
     has_interim = S7::new_property(
       getter = function(self) nrow(self@results_interim) > 0
-    )
+    ),
+
+    # Stored call for get_code() reproducibility
+    .call = S7::new_property(class = S7::class_any, default = NULL)
   ),
   validator = function(self) {
     # Validate conditions object
@@ -267,6 +270,8 @@ format_duration <- function(minutes) {
 #' config <- run(config)  # Execute later
 #' }
 power_analysis <- function(conditions, ..., run = TRUE) {
+  .call <- match.call()
+
   # Validate conditions early for better error messages
   if (!inherits(conditions, "rctbayespower::rctbp_conditions") &&
       !inherits(conditions, "rctbp_conditions")) {
@@ -277,7 +282,7 @@ power_analysis <- function(conditions, ..., run = TRUE) {
     ))
   }
 
-  power_object <- rctbp_power_analysis(conditions = conditions, ...)
+  power_object <- rctbp_power_analysis(conditions = conditions, ..., .call = .call)
 
   # Run the power analysis immediately if requested
   if (run) {

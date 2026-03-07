@@ -2,7 +2,7 @@
 
 * dots for brms arguments like link functions for family
   -> implemented link\_sigma as argument for ancova
-* print() should show default values for the data\_simulation\_fn as well as required arguments to specify
+* ~~print() should show default values for the data\_simulation\_fn as well as required arguments to specify~~ (done: "Simulation Function Parameters" section in print output)
 
 * allocation probs need to be disambiguated
 
@@ -13,14 +13,14 @@
 * ~~no differentiation between condition\_values and static\_values~~ (done: grid shows only varying cols; fixed params listed below)
 * ~~automatic detection of static values and varying parameters~~ (done: warns when crossed param has 1 level)
 * ~~n\_total is always included in grid, even when unique(n\_total) == 1~~ (done: single-value columns excluded from grid display)
-* inclusion of brms priors as varying parameters
+* inclusion of brms priors as varying parameters (deferred: requires architectural changes — priors baked into pre-compiled Stan model at design time, varying them needs recompilation per condition)
 
   * parallelization of model compilation
   * compiled models in list are beeing expanded into conditions\*n\_sims list
   
   
 # Power Analysis
-* save full quantile profile for target parameter posterior to enable post-hoc exploration of alternative thresholds
+* ~~save full quantile profile for target parameter posterior to enable post-hoc exploration of alternative thresholds~~ (done: 9 quantile columns post\_q025-post\_q975 in results\_raw and aggregated in results\_conditions)
 
 * reports: report for convergence
 
@@ -76,14 +76,13 @@
 * Phase 4: survival/event-driven integration (dual routing for `accrual_rate`)
 
 
-  # API
-  
-  
-  
-  
-    
-    
-    
-    
-    
-    
+
+# Next Development Tasks (prioritized)
+
+1. ~~**Integration tests**~~ (done) — 5 integration tests in `test-integration.R` exercising the full pipeline with real brms fitting: single-core, multi-core (S7 serialization), crossed conditions, group sequential + resummarize_boundaries, print/summary. See `06_testing.md`.
+
+2. ~~**`get_code()` reproducibility**~~ (done) — `get_code()` generic with methods for all 3 pipeline classes. Stores `match.call()` in `.call` property, walks the chain to reconstruct full `build_design()` → `build_conditions()` → `power_analysis()` call. 32 tests in `test-get_code.R`. See `24_api_improvement_plan.md` §3.1.
+
+3. **BayesFlow model training** — Actually train the 2-arm ANCOVA `.pkl` model using the training script sketch in `11_bayesflow_integration_roadmap.md`. Upload to GitHub releases. This makes the BF backend usable for real analyses.
+
+4. **Sample accrual MVP** (Phase 1) — Enrollment time generation, calendar-time subsetting, trial duration metrics. See `25_sample_accrual_plan.md`.

@@ -1,12 +1,120 @@
 # Testing & CI
 
-**Last Updated:** 2025-11-24
+**Last Updated:** 2026-03-06
 
 ## Current Status
 
-**Test suite**: Placeholder files only (0% implemented)
+**Test suite**: ~414 tests across 13 files. Covers S7 classes, boundaries, compute measures, output system, verbosity, backend (mock mode), utilities, and full pipeline integration tests with real brms model fitting.
 
-Test files exist in `tests/testthat/` but contain only TODO comments.
+## Test Files
+
+| File | Tests | What it covers |
+|------|-------|----------------|
+| `helper-mock-objects.R` | — | Mock factories: brmsfit, sim_fn, design, conditions, raw_results |
+| `helper-cli.R` | — | `expect_cli_abort`, `expect_cli_warn`, `capture_cli`, `expect_output_contains` |
+| `test-backend_bf.R` | 34 | BayesFlow backend (mock mode) |
+| `test-boundaries.R` | 63 | All 6 boundary functions + resolve helpers |
+| `test-class_conditions.R` | 56 | `link()`, `build_conditions` (full coverage) |
+| `test-class_design.R` | 40 | S7 validators, properties, predefined models |
+| `test-class_sim_fn.R` | 38 | `build_sim_fn`, schema derivation, validation |
+| `test-compute_measures.R` | 38 | `summarize_sims`, interim summaries, MCSE |
+| `test-output_system.R` | 18 | Output mode switching, markdown helpers |
+| `test-required_fn_args.R` | 25 | Arg discovery, `show_condition_args` |
+| `test-s3_methods.R` | 7 | S3 print method dispatch + content checks |
+| `test-s7_helpers.R` | 3 | `update_S7_with_dots` |
+| `test-utilities.R` | 4 | `format_duration`, `get_cpu_info` |
+| `test-verbosity.R` | 25 | Three-level verbosity control |
+| `test-integration.R` | 67 | Full pipeline: build_design → build_conditions → power_analysis with real brms |
+
+## Integration Tests
+
+`test-integration.R` exercises the full pipeline with real brms model fitting (not mocks). Skipped on CRAN and when brms/posterior not installed.
+
+| Test | What it exercises |
+|------|-------------------|
+| Fixed trial, single core | Full pipeline end-to-end: sim_fn → brms fit → posterior → ROPE decision → aggregation |
+| Fixed trial, multi-core | S7→list serialization via `prepare_design_for_workers()`, PSOCK cluster setup, function export |
+| Multiple crossed conditions | 2×2 grid expansion, per-condition parameter separation, multi-condition aggregation |
+| Group sequential + resummarize | Sequential analysis with interim looks, boundary functions, `resummarize_boundaries()` re-analysis |
+| Print/summary on real results | Print method on real (non-mock) power analysis objects |
+
+**Design choices:**
+- `chains=1, iter=150, warmup=50` (minimal brms for ~1-2s per fit)
+- `n_sims=5` (enough for pipeline validation, not statistical accuracy)
+- `verbosity=0` with `suppressMessages(suppressWarnings(...))` for clean output
+- Shared `design_fixed` at file scope (reuses cached compiled model)
+
+## Not Yet Covered
+
+- `R/pareto_optimize.R` and optimization wrappers
+- `R/plot_*.R` (plot output)
+- `R/model_cache.R`
+- `R/setup_python.R`
+
+## Mock Object System
+
+All tests use lightweight mocks defined in `helper-mock-objects.R` that bypass expensive operations:
+
+- **`mock_brmsfit()`** — Minimal list with `class = "brmsfit"`, no compilation
+- **`mock_sim_fn()`** — Function with `NULL` defaults (matches real ANCOVA pattern so `get_args_without_defaults()` treats them as "required")
+- **`mock_rctbp_sim_fn()`** — Full `rctbp_sim_fn` via `build_sim_fn()` with cached test output
+- **`mock_design()`** — Direct `rctbp_design()` constructor call, bypasses `build_design()`
+- **`mock_conditions()`** — Direct `rctbp_conditions()` constructor, bypasses `build_conditions()`
+- **`mock_raw_results()`** — Deterministic data.frame with evenly-spaced values (no randomness)
+
+## Test Infrastructure (helper-cli.R)
+
+| Helper | Purpose |
+|--------|---------|
+| `expect_cli_abort(expr)` | Expects `rlang_error` class (from `cli::cli_abort()`) |
+| `expect_cli_warn(expr)` | Expects `rlang_warning` class (from `cli::cli_warn()`) |
+| `capture_cli(expr)` | Captures both stdout and stderr (CLI outputs to messages) |
+| `expect_output_contains(expr, expected)` | Checks captured output contains strings |
+| `expect_markdown_output(object, expected)` | Tests markdown output mode |
+
+## Key Testing Gotchas
+
+### S7 Class Names Require Namespace
+
+```r
+# WRONG — inherits() returns FALSE for bare S7 class names
+expect_s3_class(obj, "rctbp_design")
+
+# CORRECT — S7 registers classes with namespace prefix
+expect_s3_class(obj, "rctbayespower::rctbp_design")
+```
+
+### CLI Output Goes to stderr
+
+```r
+# WRONG — capture.output(type = "output") misses CLI output
+output <- capture.output(print(obj), type = "output")
+
+# CORRECT — use capture_cli() which captures both channels
+output <- capture_cli(print(obj))
+```
+
+### Mock sim_fn Defaults Must Be NULL
+
+```r
+# WRONG — real defaults make params disappear from params_sim
+function(n_total, p_alloc, b_arm_treat = 0, sigma = 1) { ... }
+
+# CORRECT — NULL defaults are treated as "required but configurable"
+function(n_total, p_alloc, b_arm_treat = NULL, sigma = NULL) { ... }
+```
+
+### Error/Warning Classes
+
+```r
+# WRONG — outdated class names
+expect_error(expr, class = "rlib_error_3_0")
+expect_warning(expr, class = "rlib_warning_3_0")
+
+# CORRECT — current rlang class names
+expect_error(expr, class = "rlang_error")
+expect_warning(expr, class = "rlang_warning")
+```
 
 ## Parallel Testing Support
 
@@ -29,115 +137,6 @@ The test runner (`tests/testthat.R`) checks `PARALLEL_TESTS`:
 - **Parallel mode**: Uses `testthat::ParallelProgressReporter`
 - **Sequential mode**: Standard `testthat::test_check()`
 
-## Recommended Testing Strategy
-
-### Unit Tests (per component)
-
-1. **Class constructors**
-   - Valid inputs create objects
-   - Invalid inputs produce clear errors
-   - Validators catch edge cases
-
-2. **Class validators**
-   - Required fields must be present
-   - Types must match specifications
-   - Cross-field consistency checks
-
-3. **Simulation functions**
-   - Output has correct structure
-   - Parameters affect output correctly
-   - Edge cases (n=1, extreme values)
-
-4. **Compute functions**
-   - Metrics calculated correctly
-   - Handle convergence failures
-   - Union measures computed properly
-
-### Integration Tests
-
-1. **Full workflow**
-   - build_model → build_design → build_conditions → power_analysis
-   - Verify results have expected structure
-   - Check print and plot methods work
-
-2. **Parallelization**
-   - Same results with n_cores=1 and n_cores>1
-   - No crashes with parallel execution
-
-3. **Edge cases**
-   - Single condition
-   - Missing parameters (expect errors)
-   - Convergence failures (expect warnings)
-
-### Test File Structure
-
-```
-tests/
-├── testthat.R
-└── testthat/
-    ├── test-class_model.R
-    ├── test-class_design.R
-    ├── test-class_conditions.R
-    ├── test-class_power_analysis.R
-    ├── test-simulate_single_run.R
-    └── test-integration.R
-```
-
-## Test Patterns
-
-### Testing S7 Classes
-
-```r
-test_that("rctbp_model validates inputs", {
-  # Valid creation
-  model <- build_model(predefined_model = "ancova_cont_2arms")
-  expect_s3_class(model, "rctbp_model")
-
-  # Invalid model name
-
-  expect_error(
-    build_model(predefined_model = "nonexistent"),
-    "not found"
-  )
-})
-```
-
-### Testing with Long-Running Operations
-
-```r
-test_that("power_analysis produces valid results", {
-  skip_on_cran()  # Skip slow tests on CRAN
-
-  # Minimal simulation for speed
-  result <- power_analysis(conditions, n_sims = 5, n_cores = 1)
-
-  expect_true(nrow(result@results_summ) > 0)
-  expect_true(all(c("power_success", "power_futility") %in%
-                  names(result@results_summ)))
-})
-```
-
-### Testing Parallel Execution
-
-```r
-test_that("parallel produces same results as sequential", {
-  skip_on_cran()
-  skip_if(parallel::detectCores() < 2)
-
-  set.seed(123)
-  result_seq <- power_analysis(conditions, n_sims = 10, n_cores = 1)
-
-  set.seed(123)
-  result_par <- power_analysis(conditions, n_sims = 10, n_cores = 2)
-
-  expect_equal(
-    result_seq@results_summ$power_success,
-    result_par@results_summ$power_success,
-    tolerance = 0.1  # Some variance expected
-  )
-})
-```
-
 ## Running Tests
 
 ### During Development
@@ -147,7 +146,7 @@ test_that("parallel produces same results as sequential", {
 devtools::test()
 
 # Run specific file
-testthat::test_file("tests/testthat/test-class_model.R")
+testthat::test_file("tests/testthat/test-boundaries.R")
 
 # Run with parallel (if configured)
 devtools::test()
@@ -159,19 +158,7 @@ devtools::test()
 R CMD check .
 ```
 
-## Troubleshooting
+## Windows-Specific Issues
 
-### Tests Fail in Parallel but Pass Sequential
-
-Check for:
-- Shared state between tests
-- Race conditions
-- Resource contention
-
-**Fix**: Set `PARALLEL_TESTS=false` to debug, then isolate tests.
-
-### Tests Too Slow
-
-- Use `skip_on_cran()` for slow tests
-- Minimize `n_sims` in tests (5-10 is usually enough)
-- Use model caching where possible
+- **CLI reporter crash**: `devtools::test()` sometimes crashes with paste overflow in `rule_left`. Workaround: use `reporter = "summary"` or `reporter = "check"`.
+- **Transient Rscript segfaults**: Long `-e` inline strings can segfault. Workaround: write to temp `.R` script file and run that instead.

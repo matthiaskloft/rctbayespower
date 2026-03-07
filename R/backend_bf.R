@@ -367,52 +367,6 @@ check_bf_dependencies <- function(silent = FALSE) {
 }
 
 
-<<<<<<< Updated upstream
-=======
-#' Initialize BayesFlow Python Environment
-#'
-#' Imports BayesFlow, Keras, and NumPy modules, caching them for reuse.
-#' This should be called at the beginning of scripts using the BayesFlow backend.
-#'
-#' **Recommended workflow:**
-#' 1. First time: Run `setup_bf_python()` to create dedicated virtual environment
-#' 2. Each session: Call `init_bf_python()` at script start (uses default env)
-#'
-#' This function:
-#' 1. Sets KERAS_BACKEND=torch via R environment variable (before Python init)
-#' 2. Activates the specified virtual environment (only before Python init)
-#' 3. Returns cached modules if already initialized and valid
-#' 4. Imports modules eagerly to surface errors immediately
-#' 5. Validates all dependencies (torch, keras, numpy, bayesflow)
-#'
-#' @param envname Name of Python virtual environment to use.
-#'   Default is "r-rctbayespower" (created by [setup_bf_python()]).
-#'   Set to NULL to use the currently active Python environment.
-#'   **Important**: Environment can only be set BEFORE Python is initialized
-#'   in the R session. Restart R to switch environments.
-#' @param verbose If TRUE (default), print initialization status message.
-#'
-#' @return List with bf, np, and keras Python modules (invisibly)
-#' @export
-#'
-#' @examples
-#' \dontrun{
-#' # Recommended: Initialize at the start of your script
-#' init_bf_python()  # Uses default "r-rctbayespower" environment
-#'
-#' # Or specify environment explicitly
-#' init_bf_python("r-rctbayespower")
-#'
-#' # Then use BayesFlow backend in design
-#' design <- build_design(
-#'   model_name = "ancova_cont_2arms",
-#'   backend = "bf",
-#'   target_params = "b_group"
-#' )
-#' }
-
-
->>>>>>> Stashed changes
 # =============================================================================
 # SHARED PYTHON ENVIRONMENT HELPERS
 # =============================================================================
@@ -934,7 +888,10 @@ summarize_post_bf <- function(draws_mat, target_param,
     ess_tail <- convergence$ess_tail
   }
 
-  data.frame(
+  # Compute quantile profiles
+  quantile_mat <- matrixStats::rowQuantiles(draws_mat, probs = QUANTILE_PROBS)
+
+  base_df <- data.frame(
     par_name = rep(target_param, n_sims),
     thr_fx_eff = rep(thr_fx_eff, n_sims),
     thr_fx_fut = rep(thr_fx_fut, n_sims),
@@ -948,6 +905,11 @@ summarize_post_bf <- function(draws_mat, target_param,
     post_mad = matrixStats::rowMads(draws_mat),
     post_mn = rowMeans(draws_mat),
     post_sd = matrixStats::rowSds(draws_mat),
+    stringsAsFactors = FALSE
+  )
+  quantile_df <- as.data.frame(quantile_mat)
+  names(quantile_df) <- QUANTILE_COLS
+  tail_df <- data.frame(
     rhat = rhat,
     ess_bulk = ess_bulk,
     ess_tail = ess_tail,
@@ -961,6 +923,7 @@ summarize_post_bf <- function(draws_mat, target_param,
     error_msg = rep(NA_character_, n_sims),
     stringsAsFactors = FALSE
   )
+  cbind(base_df, quantile_df, tail_df)
 }
 
 

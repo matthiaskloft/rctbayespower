@@ -128,7 +128,7 @@ summarize_sims <- function(results_df_raw, n_sims) {
 
   # Aggregation function for each group
   agg_fn <- function(grp) {
-    data.frame(
+    base_agg <- data.frame(
       pr_eff = mean(get_col(grp, "pr_eff"), na.rm = TRUE),
       se_pr_eff = calculate_mcse_mean(get_col(grp, "pr_eff"), n_sims),
       pr_fut = mean(get_col(grp, "pr_fut"), na.rm = TRUE),
@@ -145,6 +145,19 @@ summarize_sims <- function(results_df_raw, n_sims) {
       se_post_mn = calculate_mcse_mean(get_col(grp, "post_mn"), n_sims),
       post_sd = mean(get_col(grp, "post_sd"), na.rm = TRUE),
       se_post_sd = calculate_mcse_mean(get_col(grp, "post_sd"), n_sims),
+      stringsAsFactors = FALSE
+    )
+    quantile_agg <- do.call(data.frame, c(
+      unlist(lapply(QUANTILE_COLS, function(qc) {
+        vals <- get_col(grp, qc)
+        stats::setNames(list(
+          mean(vals, na.rm = TRUE),
+          calculate_mcse_mean(vals, n_sims)
+        ), c(qc, paste0("se_", qc)))
+      }), recursive = FALSE),
+      list(stringsAsFactors = FALSE)
+    ))
+    tail_agg <- data.frame(
       rhat = mean(get_col(grp, "rhat"), na.rm = TRUE),
       se_rhat = calculate_mcse_mean(get_col(grp, "rhat"), n_sims),
       ess_bulk = mean(get_col(grp, "ess_bulk"), na.rm = TRUE),
@@ -155,6 +168,7 @@ summarize_sims <- function(results_df_raw, n_sims) {
       se_conv_rate = calculate_mcse_power(get_col(grp, "converged"), n_sims),
       stringsAsFactors = FALSE
     )
+    cbind(base_agg, quantile_agg, tail_agg)
   }
 
   # Split-apply-combine using base R
@@ -378,7 +392,7 @@ summarize_sims_with_interim <- function(results_df_raw, n_sims) {
   by_look_groups <- split(df, by_look_key, drop = TRUE)
 
   by_look_agg <- function(grp) {
-    data.frame(
+    base_agg <- data.frame(
       pr_eff = mean(get_col(grp, "pr_eff"), na.rm = TRUE),
       se_pr_eff = calculate_mcse_mean(get_col(grp, "pr_eff"), n_sims),
       pr_fut = mean(get_col(grp, "pr_fut"), na.rm = TRUE),
@@ -393,11 +407,25 @@ summarize_sims_with_interim <- function(results_df_raw, n_sims) {
       se_post_mn = calculate_mcse_mean(get_col(grp, "post_mn"), n_sims),
       post_sd = mean(get_col(grp, "post_sd"), na.rm = TRUE),
       se_post_sd = calculate_mcse_mean(get_col(grp, "post_sd"), n_sims),
+      stringsAsFactors = FALSE
+    )
+    quantile_agg <- do.call(data.frame, c(
+      unlist(lapply(QUANTILE_COLS, function(qc) {
+        vals <- get_col(grp, qc)
+        stats::setNames(list(
+          mean(vals, na.rm = TRUE),
+          calculate_mcse_mean(vals, n_sims)
+        ), c(qc, paste0("se_", qc)))
+      }), recursive = FALSE),
+      list(stringsAsFactors = FALSE)
+    ))
+    tail_agg <- data.frame(
       rhat = mean(get_col(grp, "rhat"), na.rm = TRUE),
       ess_bulk = mean(get_col(grp, "ess_bulk"), na.rm = TRUE),
       conv_rate = mean(get_col(grp, "converged"), na.rm = TRUE),
       stringsAsFactors = FALSE
     )
+    cbind(base_agg, quantile_agg, tail_agg)
   }
 
   by_look_list <- lapply(by_look_groups, by_look_agg)
