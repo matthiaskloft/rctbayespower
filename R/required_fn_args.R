@@ -127,9 +127,11 @@ show_condition_args <- function(design = NULL, print = TRUE) {
 
   params_sim <- get_args_without_defaults(design@sim_fn)
 
-  # Analysis parameters (per-condition): thresholds, boundaries, analysis_at, interim
+  # Analysis parameters (per-condition): thresholds, boundaries, analysis_at, interim, accrual
   params_analysis <- c("thr_fx_eff", "thr_fx_fut", "thr_dec_eff", "thr_dec_fut",
-                       "analysis_at", "interim_function")
+                       "analysis_at", "interim_function",
+                       "accrual_rate", "accrual_pattern", "followup_time",
+                       "analysis_timing", "calendar_analysis_at")
 
   params_all <- c(params_sim, params_analysis)
 
@@ -172,6 +174,17 @@ show_condition_args <- function(design = NULL, print = TRUE) {
       " " = "fixed (default): No interim analyses",
       " " = "group_sequential: Interim stopping, requires analysis_at",
       " " = "adaptive: Parameter modification (future), requires analysis_at"
+    ))
+    cli::cli_text("")
+
+    # Accrual parameters (optional)
+    cli::cli_text("{.strong Accrual (optional):}")
+    cli::cli_bullets(c(
+      "*" = "accrual_rate {.emph (patients per time unit; required for calendar timing)}",
+      "*" = "accrual_pattern {.emph (\"uniform\", \"poisson\", \"ramp\", or custom function)}",
+      "*" = "followup_time {.emph (required follow-up duration after enrollment)}",
+      "*" = "analysis_timing {.emph (\"sample_size\" [default] or \"calendar\")}",
+      "*" = "calendar_analysis_at {.emph (calendar times for analyses; requires analysis_timing = \"calendar\")}"
     ))
     cli::cli_text("")
 

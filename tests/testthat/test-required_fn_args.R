@@ -82,6 +82,26 @@ test_that("show_condition_args prints output when print=TRUE", {
   expect_true(length(output) > 0)
 })
 
+test_that("show_condition_args includes accrual params in params_analysis", {
+  d <- mock_design()
+  result <- show_condition_args(d, print = FALSE)
+
+  accrual_params <- c("accrual_rate", "accrual_pattern", "followup_time",
+                      "analysis_timing", "calendar_analysis_at")
+  for (p in accrual_params) {
+    expect_true(p %in% result$params_analysis, info = paste("missing:", p))
+    expect_true(p %in% result$params_all, info = paste("missing from all:", p))
+  }
+})
+
+test_that("show_condition_args prints Accrual section", {
+  d <- mock_design()
+  output <- capture_cli(show_condition_args(d, print = TRUE))
+  combined <- paste(output, collapse = "\n")
+  expect_true(grepl("Accrual", combined))
+  expect_true(grepl("accrual_rate", combined))
+})
+
 # =============================================================================
 # show_target_params()
 # =============================================================================

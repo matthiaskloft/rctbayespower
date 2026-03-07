@@ -488,6 +488,112 @@ test_that("rctbp_conditions validates design type", {
 })
 
 # =============================================================================
+# build_conditions() - ACCRUAL PARAMETERS
+# =============================================================================
+
+test_that("build_conditions stores accrual params in analysis_args", {
+  d <- mock_design()
+  cond <- build_conditions(
+    design = d,
+    crossed = list(n_total = c(100, 200)),
+    constant = list(
+      p_alloc = list(c(0.5, 0.5)),
+      b_arm_treat = 0.3, intercept = 0, b_covariate = 0.3, sigma = 1,
+      thr_dec_eff = 0.975, thr_dec_fut = 0.5,
+      thr_fx_eff = 0.2, thr_fx_fut = 0,
+      accrual_rate = 5,
+      followup_time = 4
+    )
+  )
+
+  args1 <- cond@params_by_cond[[1]]$analysis_args
+  expect_equal(args1$accrual_rate, 5)
+  expect_equal(args1$followup_time, 4)
+  expect_equal(args1$accrual_pattern, "uniform")
+  expect_equal(args1$analysis_timing, "sample_size")
+  expect_null(args1$calendar_analysis_at)
+})
+
+test_that("build_conditions accrual params work in crossed", {
+  d <- mock_design()
+  cond <- build_conditions(
+    design = d,
+    crossed = list(
+      n_total = c(100, 200),
+      accrual_rate = c(5, 10)
+    ),
+    constant = list(
+      p_alloc = list(c(0.5, 0.5)),
+      b_arm_treat = 0.3, intercept = 0, b_covariate = 0.3, sigma = 1,
+      thr_dec_eff = 0.975, thr_dec_fut = 0.5,
+      thr_fx_eff = 0.2, thr_fx_fut = 0
+    )
+  )
+
+  # 2 x 2 = 4 conditions
+  expect_equal(nrow(cond@grid), 4)
+  # First condition has accrual_rate = 5
+  expect_equal(cond@params_by_cond[[1]]$analysis_args$accrual_rate, 5)
+})
+
+test_that("build_conditions uses accrual defaults when not specified", {
+  d <- mock_design()
+  cond <- build_conditions(
+    design = d,
+    crossed = list(n_total = c(100, 200)),
+    constant = list(
+      p_alloc = list(c(0.5, 0.5)),
+      b_arm_treat = 0.3, intercept = 0, b_covariate = 0.3, sigma = 1,
+      thr_dec_eff = 0.975, thr_dec_fut = 0.5,
+      thr_fx_eff = 0.2, thr_fx_fut = 0
+    )
+  )
+
+  args1 <- cond@params_by_cond[[1]]$analysis_args
+  # Defaults applied
+  expect_null(args1$accrual_rate)
+  expect_equal(args1$accrual_pattern, "uniform")
+  expect_equal(args1$followup_time, 0)
+  expect_equal(args1$analysis_timing, "sample_size")
+  expect_null(args1$calendar_analysis_at)
+})
+
+test_that("build_conditions validates bad accrual_rate", {
+  d <- mock_design()
+  expect_cli_abort(
+    build_conditions(
+      design = d,
+      crossed = list(n_total = c(100, 200)),
+      constant = list(
+        p_alloc = list(c(0.5, 0.5)),
+        b_arm_treat = 0.3, intercept = 0, b_covariate = 0.3, sigma = 1,
+        thr_dec_eff = 0.975, thr_dec_fut = 0.5,
+        thr_fx_eff = 0.2, thr_fx_fut = 0,
+        accrual_rate = -1
+      )
+    )
+  )
+})
+
+test_that("build_conditions validates calendar timing requires accrual_rate", {
+  d <- mock_design()
+  expect_cli_abort(
+    build_conditions(
+      design = d,
+      crossed = list(n_total = c(100, 200)),
+      constant = list(
+        p_alloc = list(c(0.5, 0.5)),
+        b_arm_treat = 0.3, intercept = 0, b_covariate = 0.3, sigma = 1,
+        thr_dec_eff = 0.975, thr_dec_fut = 0.5,
+        thr_fx_eff = 0.2, thr_fx_fut = 0,
+        analysis_timing = "calendar",
+        calendar_analysis_at = c(12, 24)
+      )
+    )
+  )
+})
+
+# =============================================================================
 # PRINT METHOD
 # =============================================================================
 

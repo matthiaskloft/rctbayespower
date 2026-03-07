@@ -404,7 +404,9 @@ build_conditions <- function(design,
   # Parameters that have defaults and don't need explicit specification
   # NOTE: thr_dec_eff, thr_dec_fut are now REQUIRED in conditions (no longer inherited from design)
   # analysis_at is optional (NULL = single-look design)
-  params_with_defaults <- c("analysis_at", "interim_function")
+  params_with_defaults <- c("analysis_at", "interim_function",
+                            "accrual_rate", "accrual_pattern", "followup_time",
+                            "analysis_timing", "calendar_analysis_at")
 
   # Exclude parameters with defaults from required validation
   params_required <- setdiff(params_needed$params_all, params_with_defaults)
@@ -532,9 +534,14 @@ build_conditions <- function(design,
     # NOTE: thr_dec_eff, thr_dec_fut are REQUIRED - must be specified in conditions
     # analysis_at is optional (NULL = single-look design with final analysis only)
     # interim_function = NULL is valid for sequential monitoring without stopping rules
-    decision_defaults <- list(
+    analysis_defaults <- list(
       analysis_at = NULL,           # NULL = single final analysis
-      interim_function = NULL       # NULL = no stopping rules
+      interim_function = NULL,      # NULL = no stopping rules
+      accrual_rate = NULL,          # NULL = no accrual modeling
+      accrual_pattern = "uniform",  # Constant inter-arrival
+      followup_time = 0,            # 0 = immediate outcome
+      analysis_timing = "sample_size", # "sample_size" or "calendar"
+      calendar_analysis_at = NULL   # NULL = not calendar-based
     )
 
     for (param in params_needed$params_analysis) {
@@ -544,9 +551,9 @@ build_conditions <- function(design,
       } else if (param %in% names(constant)) {
         # From constant
         analysis_args[[param]] <- constant[[param]]
-      } else if (param %in% names(decision_defaults)) {
-        # Apply default for non-sequential parameters
-        analysis_args[[param]] <- decision_defaults[[param]]
+      } else if (param %in% names(analysis_defaults)) {
+        # Apply default for optional parameters
+        analysis_args[[param]] <- analysis_defaults[[param]]
       } else {
         cli::cli_abort(c(
           "Missing analysis parameter: {.val {param}}",
@@ -566,6 +573,15 @@ build_conditions <- function(design,
         "i" = "Typically thr_fx_eff > thr_fx_fut (e.g., thr_fx_eff = 0.1, thr_fx_fut = -0.1)"
       ))
     }
+
+    # Validate accrual parameters
+    validate_accrual_params(
+      accrual_rate = analysis_args$accrual_rate,
+      accrual_pattern = analysis_args$accrual_pattern,
+      followup_time = analysis_args$followup_time,
+      analysis_timing = analysis_args$analysis_timing,
+      calendar_analysis_at = analysis_args$calendar_analysis_at
+    )
 
     # Process analysis_at: accept both proportions and absolute sample sizes
     n_total <- sim_args$n_total
