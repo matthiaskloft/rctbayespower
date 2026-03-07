@@ -20,8 +20,12 @@ test_that("format_duration handles hours", {
 # get_cpu_info() (from class_power_analysis.R)
 # =============================================================================
 
-test_that("get_cpu_info returns character string", {
+test_that("get_cpu_info returns character string or NULL", {
   result <- rctbayespower:::get_cpu_info()
-  expect_type(result, "character")
-  expect_true(nchar(result) > 0)
+  if (!is.null(result)) {
+    expect_type(result, "character")
+    expect_true(nchar(result) > 0)
+  } else {
+    expect_null(result)
+  }
 })

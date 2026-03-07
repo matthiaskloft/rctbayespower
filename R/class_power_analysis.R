@@ -20,11 +20,14 @@ get_cpu_info <- function() {
     os <- Sys.info()["sysname"]
 
     cpu_name <- if (os == "Windows") {
-      # Windows: use wmic
-      result <- system("wmic cpu get name", intern = TRUE, ignore.stderr = TRUE)
-      # Filter out empty lines and header
+      # Windows: prefer PowerShell (wmic is deprecated on newer Windows)
+      result <- tryCatch(
+        system("powershell -Command \"(Get-CimInstance Win32_Processor).Name\"",
+               intern = TRUE, ignore.stderr = TRUE),
+        error = function(e) NULL
+      )
       result <- trimws(result[nchar(trimws(result)) > 0])
-      if (length(result) > 1) result[2] else NULL
+      if (length(result) > 0) result[1] else NULL
     } else if (os == "Darwin") {
       # macOS: use sysctl
       result <- system("sysctl -n machdep.cpu.brand_string", intern = TRUE, ignore.stderr = TRUE)
@@ -633,13 +636,10 @@ S7::method(run, rctbp_power_analysis) <- function(x, ...) {
       parallel::clusterEvalQ(cl, {
         library(brms)
         library(dplyr)
-        library(progressr)
         library(posterior)
-        library(purrr)
         library(stats)
         library(utils)
         library(S7)
-        library(stringr)
         
         # For development with devtools/pkgload, try to load the package
         tryCatch({
@@ -818,13 +818,10 @@ S7::method(run, rctbp_power_analysis) <- function(x, ...) {
       parallel::clusterEvalQ(cl, {
         library(brms)
         library(dplyr)
-        library(progressr)
         library(posterior)
-        library(purrr)
         library(stats)
         library(utils)
         library(S7)
-        library(stringr)
 
         # For development with devtools/pkgload, try to load the package
         tryCatch({
