@@ -133,7 +133,7 @@ mock_conditions <- function(design = NULL, n_conditions = 2L) {
         b_covariate = 0.3,
         sigma = 1
       ),
-      decision_args = list(
+      analysis_args = list(
         thr_fx_eff = 0.2,
         thr_fx_fut = 0,
         thr_dec_eff = 0.975,

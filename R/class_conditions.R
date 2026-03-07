@@ -78,7 +78,7 @@ link <- function(...) {
 # Stores parameter combinations for power analysis simulations. Creates an
 # expanded grid of varying parameters combined with static values, then
 # organizes arguments into simulation args (for data generation) and
-# decision args (for analysis criteria).
+# analysis args (for analysis criteria).
 
 #' @importFrom S7 new_class class_list class_any class_data.frame new_property
 rctbp_conditions <- S7::new_class("rctbp_conditions",
@@ -159,7 +159,7 @@ rctbp_conditions <- S7::new_class("rctbp_conditions",
 #' @return An S7 object of class "rctbp_conditions" containing:
 #'   \item{grid}{A data.frame with all parameter combinations}
 #'   \item{params_by_cond}{A list of argument lists for each condition,
-#'     separated into simulation and decision arguments}
+#'     separated into simulation and analysis arguments}
 #'   \item{design}{The original rctbp_design object}
 #'   \item{crossed}{The original crossed specification (may contain link() groups)}
 #'   \item{constant}{Constant parameters across all conditions}
@@ -468,8 +468,8 @@ build_conditions <- function(design,
   # 1. Cross all units (regular params and link groups) together
   # 2. Add condition IDs for tracking
   # 3. For each condition row, extract crossed params, merge constant
-  # 4. Separate params into sim_args (data generation) and decision_args (analysis)
-  # 5. Apply defaults for optional decision parameters
+  # 4. Separate params into sim_args (data generation) and analysis_args (analysis)
+  # 5. Apply defaults for optional analysis parameters
 
   # Create condition grid by crossing all units together
   if (length(units_to_cross) > 0) {
@@ -495,7 +495,7 @@ build_conditions <- function(design,
     })
   })
 
-  # Combine simulation and decision arguments per condition
+  # Combine simulation and analysis arguments per condition
   condition_arguments <- lapply(condition_arguments_flat, function(condition) {
     # --- Simulation arguments ---
     sim_args <- list()
@@ -525,10 +525,10 @@ build_conditions <- function(design,
       }
     }
 
-    # --- Decision arguments (per-condition) ---
-    decision_args <- list()
+    # --- Analysis arguments (per-condition) ---
+    analysis_args <- list()
 
-    # Decision parameter defaults
+    # Analysis parameter defaults
     # NOTE: thr_dec_eff, thr_dec_fut are REQUIRED - must be specified in conditions
     # analysis_at is optional (NULL = single-look design with final analysis only)
     # interim_function = NULL is valid for sequential monitoring without stopping rules
@@ -537,27 +537,27 @@ build_conditions <- function(design,
       interim_function = NULL       # NULL = no stopping rules
     )
 
-    for (param in params_needed$params_decision) {
+    for (param in params_needed$params_analysis) {
       if (param %in% names(condition)) {
         # From crossed (including link() parameters)
-        decision_args[[param]] <- condition[[param]]
+        analysis_args[[param]] <- condition[[param]]
       } else if (param %in% names(constant)) {
         # From constant
-        decision_args[[param]] <- constant[[param]]
+        analysis_args[[param]] <- constant[[param]]
       } else if (param %in% names(decision_defaults)) {
         # Apply default for non-sequential parameters
-        decision_args[[param]] <- decision_defaults[[param]]
+        analysis_args[[param]] <- decision_defaults[[param]]
       } else {
         cli::cli_abort(c(
-          "Missing decision parameter: {.val {param}}",
+          "Missing analysis parameter: {.val {param}}",
           "i" = "Add {.val {param}} to {.arg crossed} or {.arg constant}"
         ))
       }
     }
 
     # Warn if ROPE boundaries appear inverted (thr_fx_eff <= thr_fx_fut is unusual)
-    thr_eff_val <- decision_args$thr_fx_eff
-    thr_fut_val <- decision_args$thr_fx_fut
+    thr_eff_val <- analysis_args$thr_fx_eff
+    thr_fut_val <- analysis_args$thr_fx_fut
     if (!is.null(thr_eff_val) && !is.null(thr_fut_val) &&
         !is.function(thr_eff_val) && !is.function(thr_fut_val) &&
         thr_eff_val <= thr_fut_val) {
@@ -569,7 +569,7 @@ build_conditions <- function(design,
 
     # Process analysis_at: accept both proportions and absolute sample sizes
     n_total <- sim_args$n_total
-    if (!is.null(decision_args$analysis_at)) {
+    if (!is.null(analysis_args$analysis_at)) {
       if (is.null(n_total)) {
         cli::cli_abort(c(
           "'n_total' is required when 'analysis_at' is specified",
@@ -577,7 +577,7 @@ build_conditions <- function(design,
         ))
       }
 
-      analysis_vals <- decision_args$analysis_at
+      analysis_vals <- analysis_args$analysis_at
 
       # Validate all values are positive
       if (any(analysis_vals <= 0)) {
@@ -627,7 +627,7 @@ build_conditions <- function(design,
         analysis_vals <- c(analysis_vals, as.integer(n_total))
       }
 
-      decision_args$analysis_at <- analysis_vals
+      analysis_args$analysis_at <- analysis_vals
     }
 
     # =========================================================================
@@ -639,8 +639,8 @@ build_conditions <- function(design,
 
     # Determine analysis points for boundary resolution
     # If analysis_at is NULL (single-look), use n_total as sole analysis point
-    analysis_points <- if (!is.null(decision_args$analysis_at)) {
-      decision_args$analysis_at
+    analysis_points <- if (!is.null(analysis_args$analysis_at)) {
+      analysis_args$analysis_at
     } else {
       n_total  # Single final analysis
     }
@@ -650,25 +650,25 @@ build_conditions <- function(design,
 
     # Pre-resolve thr_dec_eff if it's a function
     # Boundary functions accept vector of info_fracs and return vector of thresholds
-    if (is.function(decision_args$thr_dec_eff)) {
-      decision_args$thr_dec_eff_display <- "boundary_function"
-      decision_args$thr_dec_eff <- decision_args$thr_dec_eff(info_fracs)
+    if (is.function(analysis_args$thr_dec_eff)) {
+      analysis_args$thr_dec_eff_display <- "boundary_function"
+      analysis_args$thr_dec_eff <- analysis_args$thr_dec_eff(info_fracs)
     }
 
     # Pre-resolve thr_dec_fut if it's a function
-    if (is.function(decision_args$thr_dec_fut)) {
-      decision_args$thr_dec_fut_display <- "boundary_function"
-      decision_args$thr_dec_fut <- decision_args$thr_dec_fut(info_fracs)
+    if (is.function(analysis_args$thr_dec_fut)) {
+      analysis_args$thr_dec_fut_display <- "boundary_function"
+      analysis_args$thr_dec_fut <- analysis_args$thr_dec_fut(info_fracs)
     }
 
     # Add trial_type for worker dispatch
-    decision_args$trial_type <- trial_type
+    analysis_args$trial_type <- trial_type
 
     # Return both sets of args
     list(
       id_cond = condition$id_cond,
       sim_args = sim_args,
-      decision_args = decision_args
+      analysis_args = analysis_args
     )
   })
 
@@ -683,7 +683,7 @@ build_conditions <- function(design,
         original_val <- df_grid[[col]][[i]]
         if (is.function(original_val)) {
           # Get resolved value from params_by_cond
-          condition_arguments[[i]]$decision_args[[col]]
+          condition_arguments[[i]]$analysis_args[[col]]
         } else {
           original_val
         }

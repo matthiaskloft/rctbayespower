@@ -59,12 +59,12 @@ test_that("show_condition_args returns params list for valid design", {
 
   expect_type(result, "list")
   expect_true("params_sim" %in% names(result))
-  expect_true("params_decision" %in% names(result))
+  expect_true("params_analysis" %in% names(result))
   expect_true("params_all" %in% names(result))
 
-  # Decision params always include thresholds
-  expect_true("thr_dec_eff" %in% result$params_decision)
-  expect_true("thr_fx_eff" %in% result$params_decision)
+  # Analysis params always include thresholds
+  expect_true("thr_dec_eff" %in% result$params_analysis)
+  expect_true("thr_fx_eff" %in% result$params_analysis)
 })
 
 test_that("show_condition_args returns NULL for NULL design", {

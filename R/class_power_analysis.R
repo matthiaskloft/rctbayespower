@@ -391,11 +391,11 @@ S7::method(run, rctbp_power_analysis) <- function(x, ...) {
 
  # Calculate total model fits (including interim analyses)
   # analysis_at is now in conditions (can vary per condition)
-  # Check first condition's decision_args as representative
+  # Check first condition's analysis_args as representative
   n_analyses <- 1L
-  first_decision_args <- x@conditions@params_by_cond[[1]]$decision_args
-  if (!is.null(first_decision_args$analysis_at)) {
-    n_analyses <- length(first_decision_args$analysis_at)
+  first_analysis_args <- x@conditions@params_by_cond[[1]]$analysis_args
+  if (!is.null(first_analysis_args$analysis_at)) {
+    n_analyses <- length(first_analysis_args$analysis_at)
   }
   total_model_fits <- total_work_units * n_analyses
 

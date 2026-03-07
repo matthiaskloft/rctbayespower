@@ -88,7 +88,7 @@ show_target_params <- function(x = NULL) {
 #' @param design An rctbp_design object (default NULL). If NULL, shows usage info.
 #' @param print Logical. If TRUE (default), prints the required parameters to console
 #'
-#' @return A list with simulation and decision parameters (returned invisibly).
+#' @return A list with simulation and analysis parameters (returned invisibly).
 #'   If design is NULL, returns NULL invisibly after showing usage info.
 #'
 #' @examples
@@ -127,11 +127,11 @@ show_condition_args <- function(design = NULL, print = TRUE) {
 
   params_sim <- get_args_without_defaults(design@sim_fn)
 
-  # Decision parameters (per-condition): thresholds, boundaries, analysis_at, interim
-  params_decision <- c("thr_fx_eff", "thr_fx_fut", "thr_dec_eff", "thr_dec_fut",
+  # Analysis parameters (per-condition): thresholds, boundaries, analysis_at, interim
+  params_analysis <- c("thr_fx_eff", "thr_fx_fut", "thr_dec_eff", "thr_dec_fut",
                        "analysis_at", "interim_function")
 
-  params_all <- c(params_sim, params_decision)
+  params_all <- c(params_sim, params_analysis)
 
   # Print the parameters if requested
   if (print) {
@@ -149,8 +149,8 @@ show_condition_args <- function(design = NULL, print = TRUE) {
     }
     cli::cli_text("")
 
-    # Decision parameters
-    cli::cli_text("{.strong Decision parameters:}")
+    # Analysis parameters
+    cli::cli_text("{.strong Analysis parameters:}")
     cli::cli_bullets(c(
       "*" = "thr_dec_eff {.emph (probability threshold for efficacy decision; numeric or boundary function)}",
       "*" = "thr_dec_fut {.emph (probability threshold for futility decision; numeric or boundary function)}",
@@ -187,7 +187,7 @@ show_condition_args <- function(design = NULL, print = TRUE) {
   # Return the parameters needed
   invisible(list(
     params_sim = params_sim,
-    params_decision = params_decision,
+    params_analysis = params_analysis,
     params_all = params_all
   ))
 }

@@ -113,7 +113,7 @@ test_that("build_conditions handles link() correctly", {
 # build_conditions() - PARAMETER SEPARATION
 # =============================================================================
 
-test_that("build_conditions separates sim_args and decision_args", {
+test_that("build_conditions separates sim_args and analysis_args", {
   d <- mock_design()
   cond <- build_conditions(
     design = d,
@@ -133,17 +133,17 @@ test_that("build_conditions separates sim_args and decision_args", {
 
   params <- cond@params_by_cond[[1]]
   expect_true("sim_args" %in% names(params))
-  expect_true("decision_args" %in% names(params))
+  expect_true("analysis_args" %in% names(params))
 
   # Sim args should contain simulation parameters
   expect_true("n_total" %in% names(params$sim_args))
   expect_true("p_alloc" %in% names(params$sim_args))
   expect_true("b_arm_treat" %in% names(params$sim_args))
 
-  # Decision args should contain threshold parameters
-  expect_true("thr_dec_eff" %in% names(params$decision_args))
-  expect_true("thr_fx_eff" %in% names(params$decision_args))
-  expect_true("trial_type" %in% names(params$decision_args))
+  # Analysis args should contain threshold parameters
+  expect_true("thr_dec_eff" %in% names(params$analysis_args))
+  expect_true("thr_fx_eff" %in% names(params$analysis_args))
+  expect_true("trial_type" %in% names(params$analysis_args))
 })
 
 # =============================================================================
@@ -289,7 +289,7 @@ test_that("build_conditions converts proportional analysis_at to integers", {
     )
   )
 
-  analysis_at <- cond@params_by_cond[[1]]$decision_args$analysis_at
+  analysis_at <- cond@params_by_cond[[1]]$analysis_args$analysis_at
   expect_equal(analysis_at, c(100L, 200L))
 })
 
@@ -307,7 +307,7 @@ test_that("build_conditions auto-appends n_total to analysis_at", {
     )
   )
 
-  analysis_at <- cond@params_by_cond[[1]]$decision_args$analysis_at
+  analysis_at <- cond@params_by_cond[[1]]$analysis_args$analysis_at
   expect_equal(analysis_at[length(analysis_at)], 200L)
 })
 
@@ -347,8 +347,8 @@ test_that("build_conditions pre-resolves boundary functions", {
     )
   )
 
-  eff <- cond@params_by_cond[[1]]$decision_args$thr_dec_eff
-  fut <- cond@params_by_cond[[1]]$decision_args$thr_dec_fut
+  eff <- cond@params_by_cond[[1]]$analysis_args$thr_dec_eff
+  fut <- cond@params_by_cond[[1]]$analysis_args$thr_dec_fut
 
   # Should be numeric vectors, not functions
 
