@@ -20,11 +20,14 @@ get_cpu_info <- function() {
     os <- Sys.info()["sysname"]
 
     cpu_name <- if (os == "Windows") {
-      # Windows: use wmic
-      result <- system("wmic cpu get name", intern = TRUE, ignore.stderr = TRUE)
-      # Filter out empty lines and header
+      # Windows: prefer PowerShell (wmic is deprecated on newer Windows)
+      result <- tryCatch(
+        system("powershell -Command \"(Get-CimInstance Win32_Processor).Name\"",
+               intern = TRUE, ignore.stderr = TRUE),
+        error = function(e) NULL
+      )
       result <- trimws(result[nchar(trimws(result)) > 0])
-      if (length(result) > 1) result[2] else NULL
+      if (length(result) > 0) result[1] else NULL
     } else if (os == "Darwin") {
       # macOS: use sysctl
       result <- system("sysctl -n machdep.cpu.brand_string", intern = TRUE, ignore.stderr = TRUE)
@@ -390,14 +393,12 @@ S7::method(run, rctbp_power_analysis) <- function(x, ...) {
   total_work_units <- x@n_sims * n_conditions
 
  # Calculate total model fits (including interim analyses)
-  # analysis_at is now in conditions (can vary per condition)
-  # Check first condition's decision_args as representative
-  n_analyses <- 1L
-  first_decision_args <- x@conditions@params_by_cond[[1]]$decision_args
-  if (!is.null(first_decision_args$analysis_at)) {
-    n_analyses <- length(first_decision_args$analysis_at)
-  }
-  total_model_fits <- total_work_units * n_analyses
+  # analysis_at can vary per condition, so sum across all conditions
+  total_analyses <- sum(vapply(x@conditions@params_by_cond, function(cond) {
+    aa <- cond$analysis_args$analysis_at
+    if (!is.null(aa)) length(aa) else 1L
+  }, integer(1)))
+  total_model_fits <- x@n_sims * total_analyses
 
   if (should_show(1)) {
     cli::cli_h3("Power Analysis Configuration")
@@ -635,13 +636,10 @@ S7::method(run, rctbp_power_analysis) <- function(x, ...) {
       parallel::clusterEvalQ(cl, {
         library(brms)
         library(dplyr)
-        library(progressr)
         library(posterior)
-        library(purrr)
         library(stats)
         library(utils)
         library(S7)
-        library(stringr)
         
         # For development with devtools/pkgload, try to load the package
         tryCatch({
@@ -820,13 +818,10 @@ S7::method(run, rctbp_power_analysis) <- function(x, ...) {
       parallel::clusterEvalQ(cl, {
         library(brms)
         library(dplyr)
-        library(progressr)
         library(posterior)
-        library(purrr)
         library(stats)
         library(utils)
         library(S7)
-        library(stringr)
 
         # For development with devtools/pkgload, try to load the package
         tryCatch({

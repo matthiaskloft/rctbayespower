@@ -324,7 +324,7 @@ conditions <- build_conditions(
 
 ### Survival Outcomes
 
-> **Dependency:** Survival outcomes require sample accrual infrastructure (enrollment times, calendar-time subsetting). See [`25_sample_accrual_plan.md`](25_sample_accrual_plan.md) Phase 4 for the dual-routing design where `accrual_rate` routes to both `sim_args` and `decision_args`.
+> **Dependency:** Survival outcomes require sample accrual infrastructure (enrollment times, calendar-time subsetting). See [`25_sample_accrual_plan.md`](25_sample_accrual_plan.md) Phase 4 for the dual-routing design where `accrual_rate` routes to both `sim_args` and `analysis_args`.
 
 #### Model Registry Entry
 ```r

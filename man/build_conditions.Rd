@@ -39,7 +39,7 @@ least this power when displaying results.}
 An S7 object of class "rctbp_conditions" containing:
 \item{grid}{A data.frame with all parameter combinations}
 \item{params_by_cond}{A list of argument lists for each condition,
-separated into simulation and decision arguments}
+separated into simulation and analysis arguments}
 \item{design}{The original rctbp_design object}
 \item{crossed}{The original crossed specification (may contain link() groups)}
 \item{constant}{Constant parameters across all conditions}

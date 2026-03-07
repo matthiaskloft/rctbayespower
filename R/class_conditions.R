@@ -78,7 +78,7 @@ link <- function(...) {
 # Stores parameter combinations for power analysis simulations. Creates an
 # expanded grid of varying parameters combined with static values, then
 # organizes arguments into simulation args (for data generation) and
-# decision args (for analysis criteria).
+# analysis args (for analysis criteria).
 
 #' @importFrom S7 new_class class_list class_any class_data.frame new_property
 rctbp_conditions <- S7::new_class("rctbp_conditions",
@@ -159,7 +159,7 @@ rctbp_conditions <- S7::new_class("rctbp_conditions",
 #' @return An S7 object of class "rctbp_conditions" containing:
 #'   \item{grid}{A data.frame with all parameter combinations}
 #'   \item{params_by_cond}{A list of argument lists for each condition,
-#'     separated into simulation and decision arguments}
+#'     separated into simulation and analysis arguments}
 #'   \item{design}{The original rctbp_design object}
 #'   \item{crossed}{The original crossed specification (may contain link() groups)}
 #'   \item{constant}{Constant parameters across all conditions}
@@ -400,11 +400,19 @@ build_conditions <- function(design,
   # required parameters
   params_needed <- show_condition_args(design, print = FALSE)
 
-  # Sensible defaults for non-sequential trial design
-  # Parameters that have defaults and don't need explicit specification
-  # NOTE: thr_dec_eff, thr_dec_fut are now REQUIRED in conditions (no longer inherited from design)
-  # analysis_at is optional (NULL = single-look design)
-  params_with_defaults <- c("analysis_at", "interim_function")
+  # Analysis parameter defaults (optional params that don't need explicit specification)
+  # NOTE: thr_dec_eff, thr_dec_fut are REQUIRED - not in this list
+  # Hoisted here so params_with_defaults can be derived from it
+  analysis_defaults <- list(
+    analysis_at = NULL,              # NULL = single final analysis
+    interim_function = NULL,         # NULL = no stopping rules
+    accrual_rate = NULL,             # NULL = no accrual modeling
+    accrual_pattern = "uniform",     # Constant inter-arrival
+    followup_time = 0,               # 0 = immediate outcome
+    analysis_timing = "sample_size", # "sample_size" or "calendar"
+    calendar_analysis_at = NULL      # NULL = not calendar-based
+  )
+  params_with_defaults <- names(analysis_defaults)
 
   # Exclude parameters with defaults from required validation
   params_required <- setdiff(params_needed$params_all, params_with_defaults)
@@ -437,11 +445,19 @@ build_conditions <- function(design,
   # Validate analysis_at requirements based on trial_type
   analysis_at_provided <- "analysis_at" %in% names(crossed_flat) ||
                           "analysis_at" %in% names(constant)
+  # calendar_analysis_at also satisfies the requirement (converted to analysis_at later)
+  # Must verify analysis_timing is actually "calendar", not just present
+  calendar_timing_value <- constant[["analysis_timing"]] %||%
+                           crossed_flat[["analysis_timing"]]
+  calendar_timing_provided <- identical(calendar_timing_value, "calendar") &&
+                              ("calendar_analysis_at" %in% names(crossed_flat) ||
+                               "calendar_analysis_at" %in% names(constant))
 
-  if (trial_type != "fixed" && !analysis_at_provided) {
+  if (trial_type != "fixed" && !analysis_at_provided && !calendar_timing_provided) {
     cli::cli_abort(c(
       "Trial type {.val {trial_type}} requires {.arg analysis_at}",
       "i" = "Add {.arg analysis_at} to {.arg crossed} or {.arg constant}",
+      "i" = "Or use {.code analysis_timing = \"calendar\"} with {.arg calendar_analysis_at}",
       "i" = "Or change {.arg trial_type} to 'fixed' in {.fn build_design}"
     ))
   }
@@ -468,8 +484,8 @@ build_conditions <- function(design,
   # 1. Cross all units (regular params and link groups) together
   # 2. Add condition IDs for tracking
   # 3. For each condition row, extract crossed params, merge constant
-  # 4. Separate params into sim_args (data generation) and decision_args (analysis)
-  # 5. Apply defaults for optional decision parameters
+  # 4. Separate params into sim_args (data generation) and analysis_args (analysis)
+  # 5. Apply defaults for optional analysis parameters
 
   # Create condition grid by crossing all units together
   if (length(units_to_cross) > 0) {
@@ -495,7 +511,7 @@ build_conditions <- function(design,
     })
   })
 
-  # Combine simulation and decision arguments per condition
+  # Combine simulation and analysis arguments per condition
   condition_arguments <- lapply(condition_arguments_flat, function(condition) {
     # --- Simulation arguments ---
     sim_args <- list()
@@ -525,39 +541,30 @@ build_conditions <- function(design,
       }
     }
 
-    # --- Decision arguments (per-condition) ---
-    decision_args <- list()
+    # --- Analysis arguments (per-condition) ---
+    analysis_args <- list()
 
-    # Decision parameter defaults
-    # NOTE: thr_dec_eff, thr_dec_fut are REQUIRED - must be specified in conditions
-    # analysis_at is optional (NULL = single-look design with final analysis only)
-    # interim_function = NULL is valid for sequential monitoring without stopping rules
-    decision_defaults <- list(
-      analysis_at = NULL,           # NULL = single final analysis
-      interim_function = NULL       # NULL = no stopping rules
-    )
-
-    for (param in params_needed$params_decision) {
+    for (param in params_needed$params_analysis) {
       if (param %in% names(condition)) {
         # From crossed (including link() parameters)
-        decision_args[[param]] <- condition[[param]]
+        analysis_args[[param]] <- condition[[param]]
       } else if (param %in% names(constant)) {
         # From constant
-        decision_args[[param]] <- constant[[param]]
-      } else if (param %in% names(decision_defaults)) {
-        # Apply default for non-sequential parameters
-        decision_args[[param]] <- decision_defaults[[param]]
+        analysis_args[[param]] <- constant[[param]]
+      } else if (param %in% names(analysis_defaults)) {
+        # Apply default for optional parameters
+        analysis_args[[param]] <- analysis_defaults[[param]]
       } else {
         cli::cli_abort(c(
-          "Missing decision parameter: {.val {param}}",
+          "Missing analysis parameter: {.val {param}}",
           "i" = "Add {.val {param}} to {.arg crossed} or {.arg constant}"
         ))
       }
     }
 
     # Warn if ROPE boundaries appear inverted (thr_fx_eff <= thr_fx_fut is unusual)
-    thr_eff_val <- decision_args$thr_fx_eff
-    thr_fut_val <- decision_args$thr_fx_fut
+    thr_eff_val <- analysis_args$thr_fx_eff
+    thr_fut_val <- analysis_args$thr_fx_fut
     if (!is.null(thr_eff_val) && !is.null(thr_fut_val) &&
         !is.function(thr_eff_val) && !is.function(thr_fut_val) &&
         thr_eff_val <= thr_fut_val) {
@@ -567,9 +574,49 @@ build_conditions <- function(design,
       ))
     }
 
-    # Process analysis_at: accept both proportions and absolute sample sizes
+    # Validate accrual parameters
+    validate_accrual_params(
+      accrual_rate = analysis_args$accrual_rate,
+      accrual_pattern = analysis_args$accrual_pattern,
+      followup_time = analysis_args$followup_time,
+      analysis_timing = analysis_args$analysis_timing,
+      calendar_analysis_at = analysis_args$calendar_analysis_at
+    )
+
+    # =========================================================================
+    # CALENDAR-TIME TO SAMPLE-SIZE CONVERSION
+    # =========================================================================
+    # When analysis_timing = "calendar", compute approximate analysis_at from
+    # enrollment curve. Uses expected (deterministic uniform) enrollment to
+    # estimate how many patients have completed follow-up at each calendar time.
     n_total <- sim_args$n_total
-    if (!is.null(decision_args$analysis_at)) {
+    if (identical(analysis_args$analysis_timing, "calendar") &&
+        !is.null(analysis_args$calendar_analysis_at)) {
+      expected_enrollment <- generate_enrollment_times(
+        n_total, analysis_args$accrual_rate, accrual_pattern = "uniform"
+      )
+      avail <- calendar_to_available_n(
+        analysis_args$calendar_analysis_at, expected_enrollment,
+        analysis_args$followup_time
+      )
+      approx_n <- avail$n_analyzable
+      # Ensure at least 1 patient per analysis and cap at n_total
+      approx_n <- pmin(pmax(approx_n, 1L), as.integer(n_total))
+      # Remove duplicates (multiple calendar times may map to same n)
+      n_before <- length(approx_n)
+      approx_n <- unique(approx_n)
+      if (length(approx_n) < n_before) {
+        cli::cli_warn(c(
+          "Some {.arg calendar_analysis_at} times map to the same sample size",
+          "i" = "{n_before} calendar times collapsed to {length(approx_n)} unique analysis point{?s}",
+          "i" = "Resulting {.arg analysis_at}: {.val {approx_n}}"
+        ))
+      }
+      analysis_args$analysis_at <- approx_n
+    }
+
+    # Process analysis_at: accept both proportions and absolute sample sizes
+    if (!is.null(analysis_args$analysis_at)) {
       if (is.null(n_total)) {
         cli::cli_abort(c(
           "'n_total' is required when 'analysis_at' is specified",
@@ -577,7 +624,7 @@ build_conditions <- function(design,
         ))
       }
 
-      analysis_vals <- decision_args$analysis_at
+      analysis_vals <- analysis_args$analysis_at
 
       # Validate all values are positive
       if (any(analysis_vals <= 0)) {
@@ -627,7 +674,7 @@ build_conditions <- function(design,
         analysis_vals <- c(analysis_vals, as.integer(n_total))
       }
 
-      decision_args$analysis_at <- analysis_vals
+      analysis_args$analysis_at <- analysis_vals
     }
 
     # =========================================================================
@@ -639,8 +686,8 @@ build_conditions <- function(design,
 
     # Determine analysis points for boundary resolution
     # If analysis_at is NULL (single-look), use n_total as sole analysis point
-    analysis_points <- if (!is.null(decision_args$analysis_at)) {
-      decision_args$analysis_at
+    analysis_points <- if (!is.null(analysis_args$analysis_at)) {
+      analysis_args$analysis_at
     } else {
       n_total  # Single final analysis
     }
@@ -650,25 +697,25 @@ build_conditions <- function(design,
 
     # Pre-resolve thr_dec_eff if it's a function
     # Boundary functions accept vector of info_fracs and return vector of thresholds
-    if (is.function(decision_args$thr_dec_eff)) {
-      decision_args$thr_dec_eff_display <- "boundary_function"
-      decision_args$thr_dec_eff <- decision_args$thr_dec_eff(info_fracs)
+    if (is.function(analysis_args$thr_dec_eff)) {
+      analysis_args$thr_dec_eff_display <- "boundary_function"
+      analysis_args$thr_dec_eff <- analysis_args$thr_dec_eff(info_fracs)
     }
 
     # Pre-resolve thr_dec_fut if it's a function
-    if (is.function(decision_args$thr_dec_fut)) {
-      decision_args$thr_dec_fut_display <- "boundary_function"
-      decision_args$thr_dec_fut <- decision_args$thr_dec_fut(info_fracs)
+    if (is.function(analysis_args$thr_dec_fut)) {
+      analysis_args$thr_dec_fut_display <- "boundary_function"
+      analysis_args$thr_dec_fut <- analysis_args$thr_dec_fut(info_fracs)
     }
 
     # Add trial_type for worker dispatch
-    decision_args$trial_type <- trial_type
+    analysis_args$trial_type <- trial_type
 
     # Return both sets of args
     list(
       id_cond = condition$id_cond,
       sim_args = sim_args,
-      decision_args = decision_args
+      analysis_args = analysis_args
     )
   })
 
@@ -683,7 +730,7 @@ build_conditions <- function(design,
         original_val <- df_grid[[col]][[i]]
         if (is.function(original_val)) {
           # Get resolved value from params_by_cond
-          condition_arguments[[i]]$decision_args[[col]]
+          condition_arguments[[i]]$analysis_args[[col]]
         } else {
           original_val
         }

@@ -1818,6 +1818,8 @@ estimate_single_bf <- function(data, model, backend_args, target_params,
 #' @param id_cond Vector of condition identifiers (one per sim in batch)
 #' @param sim_fn Optional rctbp_sim_fn object for schema-based batch preparation.
 #'   If provided, uses sim_fn@@output_schema for field mapping.
+#' @param followup_time Numeric. Required follow-up per patient for
+#'   accrual-aware subsetting. Default 0 (immediate outcome).
 #'
 #' @return Data frame with (batch_size x n_analyses) rows
 #' @keywords internal
@@ -1825,10 +1827,17 @@ estimate_sequential_bf <- function(full_data_list, model, backend_args, target_p
                                     thr_fx_eff, thr_fx_fut,
                                     thr_dec_eff, thr_dec_fut, analysis_at,
                                     interim_function, id_iter, id_cond,
-                                    sim_fn = NULL) {
+                                    sim_fn = NULL,
+                                    followup_time = 0) {
 
   batch_size <- length(full_data_list)
   n_total <- nrow(full_data_list[[1]])
+  # Pre-compute completion times per simulation (invariant across analysis points)
+  completion_times_list <- if ("enrollment_time" %in% names(full_data_list[[1]])) {
+    lapply(full_data_list, function(fd) sort(fd$enrollment_time + followup_time))
+  } else {
+    NULL
+  }
   n_analyses <- length(analysis_at)
 
   # Initialize tracking for each sim
@@ -1853,7 +1862,11 @@ estimate_sequential_bf <- function(full_data_list, model, backend_args, target_p
     if (length(active_idx) == 0) active_idx <- seq_len(batch_size)
 
     # Subset data to current analysis point for active simulations
-    analysis_data_list <- lapply(full_data_list[active_idx], function(fd) fd[1:current_n, ])
+    ct_list <- completion_times_list[active_idx]
+    analysis_data_list <- mapply(function(fd, ct) {
+      subset_analysis_data(fd, current_n, followup_time, ct)
+    }, full_data_list[active_idx], ct_list %||% vector("list", length(active_idx)),
+    SIMPLIFY = FALSE)
 
     # Prepare batch data
     data_batch <- prepare_data_list_as_batch_bf(analysis_data_list, backend_args, sim_fn = sim_fn)

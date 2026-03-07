@@ -113,7 +113,7 @@ test_that("build_conditions handles link() correctly", {
 # build_conditions() - PARAMETER SEPARATION
 # =============================================================================
 
-test_that("build_conditions separates sim_args and decision_args", {
+test_that("build_conditions separates sim_args and analysis_args", {
   d <- mock_design()
   cond <- build_conditions(
     design = d,
@@ -133,17 +133,17 @@ test_that("build_conditions separates sim_args and decision_args", {
 
   params <- cond@params_by_cond[[1]]
   expect_true("sim_args" %in% names(params))
-  expect_true("decision_args" %in% names(params))
+  expect_true("analysis_args" %in% names(params))
 
   # Sim args should contain simulation parameters
   expect_true("n_total" %in% names(params$sim_args))
   expect_true("p_alloc" %in% names(params$sim_args))
   expect_true("b_arm_treat" %in% names(params$sim_args))
 
-  # Decision args should contain threshold parameters
-  expect_true("thr_dec_eff" %in% names(params$decision_args))
-  expect_true("thr_fx_eff" %in% names(params$decision_args))
-  expect_true("trial_type" %in% names(params$decision_args))
+  # Analysis args should contain threshold parameters
+  expect_true("thr_dec_eff" %in% names(params$analysis_args))
+  expect_true("thr_fx_eff" %in% names(params$analysis_args))
+  expect_true("trial_type" %in% names(params$analysis_args))
 })
 
 # =============================================================================
@@ -289,7 +289,7 @@ test_that("build_conditions converts proportional analysis_at to integers", {
     )
   )
 
-  analysis_at <- cond@params_by_cond[[1]]$decision_args$analysis_at
+  analysis_at <- cond@params_by_cond[[1]]$analysis_args$analysis_at
   expect_equal(analysis_at, c(100L, 200L))
 })
 
@@ -307,7 +307,7 @@ test_that("build_conditions auto-appends n_total to analysis_at", {
     )
   )
 
-  analysis_at <- cond@params_by_cond[[1]]$decision_args$analysis_at
+  analysis_at <- cond@params_by_cond[[1]]$analysis_args$analysis_at
   expect_equal(analysis_at[length(analysis_at)], 200L)
 })
 
@@ -347,8 +347,8 @@ test_that("build_conditions pre-resolves boundary functions", {
     )
   )
 
-  eff <- cond@params_by_cond[[1]]$decision_args$thr_dec_eff
-  fut <- cond@params_by_cond[[1]]$decision_args$thr_dec_fut
+  eff <- cond@params_by_cond[[1]]$analysis_args$thr_dec_eff
+  fut <- cond@params_by_cond[[1]]$analysis_args$thr_dec_fut
 
   # Should be numeric vectors, not functions
 
@@ -485,6 +485,167 @@ test_that("rctbp_conditions validates design type", {
     ),
     "design"
   )
+})
+
+# =============================================================================
+# build_conditions() - ACCRUAL PARAMETERS
+# =============================================================================
+
+test_that("build_conditions stores accrual params in analysis_args", {
+  d <- mock_design()
+  cond <- build_conditions(
+    design = d,
+    crossed = list(n_total = c(100, 200)),
+    constant = list(
+      p_alloc = list(c(0.5, 0.5)),
+      b_arm_treat = 0.3, intercept = 0, b_covariate = 0.3, sigma = 1,
+      thr_dec_eff = 0.975, thr_dec_fut = 0.5,
+      thr_fx_eff = 0.2, thr_fx_fut = 0,
+      accrual_rate = 5,
+      followup_time = 4
+    )
+  )
+
+  args1 <- cond@params_by_cond[[1]]$analysis_args
+  expect_equal(args1$accrual_rate, 5)
+  expect_equal(args1$followup_time, 4)
+  expect_equal(args1$accrual_pattern, "uniform")
+  expect_equal(args1$analysis_timing, "sample_size")
+  expect_null(args1$calendar_analysis_at)
+})
+
+test_that("build_conditions accrual params work in crossed", {
+  d <- mock_design()
+  cond <- build_conditions(
+    design = d,
+    crossed = list(
+      n_total = c(100, 200),
+      accrual_rate = c(5, 10)
+    ),
+    constant = list(
+      p_alloc = list(c(0.5, 0.5)),
+      b_arm_treat = 0.3, intercept = 0, b_covariate = 0.3, sigma = 1,
+      thr_dec_eff = 0.975, thr_dec_fut = 0.5,
+      thr_fx_eff = 0.2, thr_fx_fut = 0
+    )
+  )
+
+  # 2 x 2 = 4 conditions
+  expect_equal(nrow(cond@grid), 4)
+  # First condition has accrual_rate = 5
+  expect_equal(cond@params_by_cond[[1]]$analysis_args$accrual_rate, 5)
+})
+
+test_that("build_conditions uses accrual defaults when not specified", {
+  d <- mock_design()
+  cond <- build_conditions(
+    design = d,
+    crossed = list(n_total = c(100, 200)),
+    constant = list(
+      p_alloc = list(c(0.5, 0.5)),
+      b_arm_treat = 0.3, intercept = 0, b_covariate = 0.3, sigma = 1,
+      thr_dec_eff = 0.975, thr_dec_fut = 0.5,
+      thr_fx_eff = 0.2, thr_fx_fut = 0
+    )
+  )
+
+  args1 <- cond@params_by_cond[[1]]$analysis_args
+  # Defaults applied
+  expect_null(args1$accrual_rate)
+  expect_equal(args1$accrual_pattern, "uniform")
+  expect_equal(args1$followup_time, 0)
+  expect_equal(args1$analysis_timing, "sample_size")
+  expect_null(args1$calendar_analysis_at)
+})
+
+test_that("build_conditions validates bad accrual_rate", {
+  d <- mock_design()
+  expect_cli_abort(
+    build_conditions(
+      design = d,
+      crossed = list(n_total = c(100, 200)),
+      constant = list(
+        p_alloc = list(c(0.5, 0.5)),
+        b_arm_treat = 0.3, intercept = 0, b_covariate = 0.3, sigma = 1,
+        thr_dec_eff = 0.975, thr_dec_fut = 0.5,
+        thr_fx_eff = 0.2, thr_fx_fut = 0,
+        accrual_rate = -1
+      )
+    )
+  )
+})
+
+test_that("build_conditions validates calendar timing requires accrual_rate", {
+  d <- mock_design()
+  expect_cli_abort(
+    build_conditions(
+      design = d,
+      crossed = list(n_total = c(100, 200)),
+      constant = list(
+        p_alloc = list(c(0.5, 0.5)),
+        b_arm_treat = 0.3, intercept = 0, b_covariate = 0.3, sigma = 1,
+        thr_dec_eff = 0.975, thr_dec_fut = 0.5,
+        thr_fx_eff = 0.2, thr_fx_fut = 0,
+        analysis_timing = "calendar",
+        calendar_analysis_at = c(12, 24)
+      )
+    )
+  )
+})
+
+test_that("build_conditions converts calendar timing to analysis_at", {
+  d <- mock_design(trial_type = "group_sequential")
+  # 200 patients, accrual_rate=10 -> enrollment takes ~20 months
+  # followup_time=3 -> first patient analyzable at t=3
+  # calendar_analysis_at=c(12, 24) -> compute approx n analyzable at those times
+  cond <- build_conditions(
+    design = d,
+    crossed = list(n_total = 200),
+    constant = list(
+      p_alloc = list(c(0.5, 0.5)),
+      b_arm_treat = 0.3, intercept = 0, b_covariate = 0.3, sigma = 1,
+      thr_dec_eff = 0.975, thr_dec_fut = 0.5,
+      thr_fx_eff = 0.2, thr_fx_fut = 0,
+      accrual_rate = 10,
+      followup_time = 3,
+      analysis_timing = "calendar",
+      calendar_analysis_at = c(12, 24)
+    )
+  )
+
+  analysis_at <- cond@params_by_cond[[1]]$analysis_args$analysis_at
+  # Should be integer vector derived from calendar times
+  expect_true(is.integer(analysis_at))
+  # At t=12, ~90 patients analyzable (enrolled by t=9, need 3mo followup)
+  # At t=24, all 200 analyzable
+  expect_true(analysis_at[1] > 0 && analysis_at[1] < 200)
+  expect_equal(analysis_at[length(analysis_at)], 200L)
+  # Should be strictly increasing
+  expect_false(is.unsorted(analysis_at, strictly = TRUE))
+})
+
+test_that("build_conditions warns when calendar times collapse to same sample size", {
+  d <- mock_design(trial_type = "group_sequential")
+  # Two very close calendar times that map to the same n_analyzable
+  # Use n_total in constant to avoid the single-level-crossed warning
+  warnings <- testthat::capture_warnings(
+    build_conditions(
+      design = d,
+      crossed = list(b_arm_treat = c(0.2, 0.4)),
+      constant = list(
+        n_total = 200,
+        p_alloc = list(c(0.5, 0.5)),
+        intercept = 0, b_covariate = 0.3, sigma = 1,
+        thr_dec_eff = 0.975, thr_dec_fut = 0.5,
+        thr_fx_eff = 0.2, thr_fx_fut = 0,
+        accrual_rate = 10,
+        followup_time = 3,
+        analysis_timing = "calendar",
+        calendar_analysis_at = c(3.0, 3.05, 24)
+      )
+    )
+  )
+  expect_true(any(grepl("same sample size", warnings)))
 })
 
 # =============================================================================

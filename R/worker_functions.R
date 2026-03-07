@@ -8,7 +8,7 @@
 #'
 #' @param id_cond Condition identifier
 #' @param id_iter Iteration identifier (within condition)
-#' @param condition_args Condition arguments with sim_args and decision_args
+#' @param condition_args Condition arguments with sim_args and analysis_args
 #' @param design Design object (S7 or list for parallel workers)
 #'
 #' @return Data frame with results for all analyses (1 row for single, n rows for sequential)
@@ -37,16 +37,16 @@ worker_process_single <- function(id_cond, id_iter, condition_args, design) {
     ))
   }
 
-  # Extract decision parameters from condition_args
-  # NOTE: thr_dec_eff, thr_dec_fut now come from decision_args (not design)
-  decision_args <- condition_args$decision_args
-  thr_fx_eff <- decision_args$thr_fx_eff
-  thr_fx_fut <- decision_args$thr_fx_fut
-  thr_dec_eff <- decision_args$thr_dec_eff
-  thr_dec_fut <- decision_args$thr_dec_fut
-  analysis_at <- decision_args$analysis_at
-  interim_function <- decision_args$interim_function
-  trial_type <- decision_args$trial_type %||% "fixed"
+  # Extract analysis parameters from condition_args
+  # NOTE: thr_dec_eff, thr_dec_fut now come from analysis_args (not design)
+  analysis_args <- condition_args$analysis_args
+  thr_fx_eff <- analysis_args$thr_fx_eff
+  thr_fx_fut <- analysis_args$thr_fx_fut
+  thr_dec_eff <- analysis_args$thr_dec_eff
+  thr_dec_fut <- analysis_args$thr_dec_fut
+  analysis_at <- analysis_args$analysis_at
+  interim_function <- analysis_args$interim_function
+  trial_type <- analysis_args$trial_type %||% "fixed"
 
   # =============================================================================
   # STRATEGY DETECTION (from trial_type)
@@ -90,6 +90,16 @@ worker_process_single <- function(id_cond, id_iter, condition_args, design) {
 
     if (is.null(full_data)) {
       return(create_error_result(id_iter, id_cond, id_analysis = 0L, "Data simulation failed"))
+    }
+
+    # Attach enrollment times when accrual modeling is active
+    accrual_rate <- analysis_args$accrual_rate
+    if (!is.null(accrual_rate)) {
+      full_data$enrollment_time <- generate_enrollment_times(
+        n_total = nrow(full_data),
+        accrual_rate = accrual_rate,
+        accrual_pattern = analysis_args$accrual_pattern
+      )
     }
   }
 
@@ -144,7 +154,8 @@ worker_process_single <- function(id_cond, id_iter, condition_args, design) {
           analysis_at = analysis_at,
           interim_function = interim_function,
           id_iter = id_iter,
-          id_cond = id_cond
+          id_cond = id_cond,
+          followup_time = analysis_args$followup_time %||% 0
         )
       } else if (backend == "bf") {
         # For single simulation with BayesFlow sequential, pass as list
@@ -161,7 +172,8 @@ worker_process_single <- function(id_cond, id_iter, condition_args, design) {
           interim_function = interim_function,
           id_iter = id_iter,
           id_cond = id_cond,
-          sim_fn = sim_fn
+          sim_fn = sim_fn,
+          followup_time = analysis_args$followup_time %||% 0
         )
       } else {
         cli::cli_abort(c(
@@ -231,16 +243,24 @@ worker_process_batch <- function(work_units, design) {
   id_cond_vec <- sapply(work_units, function(wu) wu$id_cond)
   id_iter_vec <- sapply(work_units, function(wu) wu$id_iter)
 
-  # Extract decision parameters from first work unit (assume homogenous batch)
-  # NOTE: thr_dec_eff, thr_dec_fut now come from decision_args
-  decision_args <- work_units[[1]]$condition_args$decision_args
-  thr_fx_eff <- decision_args$thr_fx_eff
-  thr_fx_fut <- decision_args$thr_fx_fut
-  thr_dec_eff <- decision_args$thr_dec_eff
-  thr_dec_fut <- decision_args$thr_dec_fut
-  analysis_at <- decision_args$analysis_at
-  interim_function <- decision_args$interim_function
-  trial_type <- decision_args$trial_type %||% "fixed"
+  # Batches must contain a single condition (analysis_args are per-condition)
+  if (length(unique(id_cond_vec)) > 1L) {
+    cli::cli_abort(c(
+      "BayesFlow batches must contain a single condition",
+      "x" = "This batch mixes condition ids {.val {unique(id_cond_vec)}}",
+      "i" = "Ensure work units are grouped by condition before batching"
+    ))
+  }
+
+  # Extract analysis parameters from first work unit (homogenous batch)
+  analysis_args <- work_units[[1]]$condition_args$analysis_args
+  thr_fx_eff <- analysis_args$thr_fx_eff
+  thr_fx_fut <- analysis_args$thr_fx_fut
+  thr_dec_eff <- analysis_args$thr_dec_eff
+  thr_dec_fut <- analysis_args$thr_dec_fut
+  analysis_at <- analysis_args$analysis_at
+  interim_function <- analysis_args$interim_function
+  trial_type <- analysis_args$trial_type %||% "fixed"
 
   if (trial_type == "adaptive") {
     cli::cli_abort(c(
@@ -298,6 +318,19 @@ worker_process_batch <- function(work_units, design) {
     error_results <- list()
   }
 
+  # Attach enrollment times when accrual modeling is active
+  accrual_rate <- analysis_args$accrual_rate
+  if (!is.null(accrual_rate)) {
+    full_data_list <- lapply(full_data_list, function(fd) {
+      fd$enrollment_time <- generate_enrollment_times(
+        n_total = nrow(fd),
+        accrual_rate = accrual_rate,
+        accrual_pattern = analysis_args$accrual_pattern
+      )
+      fd
+    })
+  }
+
   # Call appropriate estimation function (BayesFlow backend)
   result <- switch(strategy,
     single = {
@@ -329,7 +362,8 @@ worker_process_batch <- function(work_units, design) {
         interim_function = interim_function,
         id_iter = id_iter_vec,
         id_cond = id_cond_vec,
-        sim_fn = sim_fn
+        sim_fn = sim_fn,
+        followup_time = analysis_args$followup_time %||% 0
       )
     }
   )
@@ -375,6 +409,6 @@ prepare_design_for_workers <- function(design) {
     # Design parameters
     target_params = design@target_params
     # NOTE: thr_dec_eff, thr_dec_fut, analysis_at, interim_function, adaptive
-    # are now in conditions (via decision_args), not design
+    # are now in conditions (via analysis_args), not design
   )
 }

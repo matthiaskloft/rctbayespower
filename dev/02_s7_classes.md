@@ -76,7 +76,7 @@ design <- build_design(model_name = "ancova_cont_2arms", target_params = "b_arm2
 - Use `crossed` for parameters that vary across conditions (creates Cartesian product)
 - Use `link()` within crossed to co-vary parameters 1-to-1
 - Use `constant` for parameters that stay the same across all conditions
-- Separates arguments into `sim_args` and `decision_args` based on function signatures
+- Separates arguments into `sim_args` and `analysis_args` based on function signatures
 
 **Example**:
 ```r

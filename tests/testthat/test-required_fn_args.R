@@ -59,12 +59,12 @@ test_that("show_condition_args returns params list for valid design", {
 
   expect_type(result, "list")
   expect_true("params_sim" %in% names(result))
-  expect_true("params_decision" %in% names(result))
+  expect_true("params_analysis" %in% names(result))
   expect_true("params_all" %in% names(result))
 
-  # Decision params always include thresholds
-  expect_true("thr_dec_eff" %in% result$params_decision)
-  expect_true("thr_fx_eff" %in% result$params_decision)
+  # Analysis params always include thresholds
+  expect_true("thr_dec_eff" %in% result$params_analysis)
+  expect_true("thr_fx_eff" %in% result$params_analysis)
 })
 
 test_that("show_condition_args returns NULL for NULL design", {
@@ -80,6 +80,26 @@ test_that("show_condition_args prints output when print=TRUE", {
   d <- mock_design()
   output <- capture_cli(show_condition_args(d, print = TRUE))
   expect_true(length(output) > 0)
+})
+
+test_that("show_condition_args includes accrual params in params_analysis", {
+  d <- mock_design()
+  result <- show_condition_args(d, print = FALSE)
+
+  accrual_params <- c("accrual_rate", "accrual_pattern", "followup_time",
+                      "analysis_timing", "calendar_analysis_at")
+  for (p in accrual_params) {
+    expect_true(p %in% result$params_analysis, info = paste("missing:", p))
+    expect_true(p %in% result$params_all, info = paste("missing from all:", p))
+  }
+})
+
+test_that("show_condition_args prints Accrual section", {
+  d <- mock_design()
+  output <- capture_cli(show_condition_args(d, print = TRUE))
+  combined <- paste(output, collapse = "\n")
+  expect_true(grepl("Accrual", combined))
+  expect_true(grepl("accrual_rate", combined))
 })
 
 # =============================================================================

@@ -17,7 +17,8 @@ estimate_sequential_bf(
   interim_function,
   id_iter,
   id_cond,
-  sim_fn = NULL
+  sim_fn = NULL,
+  followup_time = 0
 )
 }
 \arguments{
@@ -47,6 +48,9 @@ estimate_sequential_bf(
 
 \item{sim_fn}{Optional rctbp_sim_fn object for schema-based batch preparation.
 If provided, uses sim_fn@output_schema for field mapping.}
+
+\item{followup_time}{Numeric. Required follow-up per patient for
+accrual-aware subsetting. Default 0 (immediate outcome).}
 }
 \value{
 Data frame with (batch_size x n_analyses) rows

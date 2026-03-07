@@ -88,8 +88,9 @@ show_target_params <- function(x = NULL) {
 #' @param design An rctbp_design object (default NULL). If NULL, shows usage info.
 #' @param print Logical. If TRUE (default), prints the required parameters to console
 #'
-#' @return A list with simulation and decision parameters (returned invisibly).
-#'   If design is NULL, returns NULL invisibly after showing usage info.
+#' @return A list with elements `params_sim`, `params_analysis`, and
+#'   `params_all` (returned invisibly). If design is NULL, returns NULL
+#'   invisibly after showing usage info.
 #'
 #' @examples
 #' \dontrun{
@@ -127,11 +128,13 @@ show_condition_args <- function(design = NULL, print = TRUE) {
 
   params_sim <- get_args_without_defaults(design@sim_fn)
 
-  # Decision parameters (per-condition): thresholds, boundaries, analysis_at, interim
-  params_decision <- c("thr_fx_eff", "thr_fx_fut", "thr_dec_eff", "thr_dec_fut",
-                       "analysis_at", "interim_function")
+  # Analysis parameters (per-condition): thresholds, boundaries, analysis_at, interim, accrual
+  params_analysis <- c("thr_fx_eff", "thr_fx_fut", "thr_dec_eff", "thr_dec_fut",
+                       "analysis_at", "interim_function",
+                       "accrual_rate", "accrual_pattern", "followup_time",
+                       "analysis_timing", "calendar_analysis_at")
 
-  params_all <- c(params_sim, params_decision)
+  params_all <- c(params_sim, params_analysis)
 
   # Print the parameters if requested
   if (print) {
@@ -149,8 +152,8 @@ show_condition_args <- function(design = NULL, print = TRUE) {
     }
     cli::cli_text("")
 
-    # Decision parameters
-    cli::cli_text("{.strong Decision parameters:}")
+    # Analysis parameters
+    cli::cli_text("{.strong Analysis parameters:}")
     cli::cli_bullets(c(
       "*" = "thr_dec_eff {.emph (probability threshold for efficacy decision; numeric or boundary function)}",
       "*" = "thr_dec_fut {.emph (probability threshold for futility decision; numeric or boundary function)}",
@@ -175,6 +178,17 @@ show_condition_args <- function(design = NULL, print = TRUE) {
     ))
     cli::cli_text("")
 
+    # Accrual parameters (optional)
+    cli::cli_text("{.strong Accrual (optional):}")
+    cli::cli_bullets(c(
+      "*" = "accrual_rate {.emph (patients per time unit; required for calendar timing)}",
+      "*" = "accrual_pattern {.emph (\"uniform\", \"poisson\", \"ramp\", or custom function)}",
+      "*" = "followup_time {.emph (required follow-up duration after enrollment)}",
+      "*" = "analysis_timing {.emph (\"sample_size\" [default] or \"calendar\")}",
+      "*" = "calendar_analysis_at {.emph (calendar times for analyses; requires analysis_timing = \"calendar\")}"
+    ))
+    cli::cli_text("")
+
     # Usage note
     cli::cli_text("{.emph Parameters go into one of two arguments:}")
     cli::cli_text("{.emph   - crossed: Cartesian product (all combinations)}")
@@ -187,7 +201,7 @@ show_condition_args <- function(design = NULL, print = TRUE) {
   # Return the parameters needed
   invisible(list(
     params_sim = params_sim,
-    params_decision = params_decision,
+    params_analysis = params_analysis,
     params_all = params_all
   ))
 }
