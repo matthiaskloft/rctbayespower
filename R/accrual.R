@@ -177,6 +177,16 @@ validate_accrual_params <- function(accrual_rate = NULL,
     }
   }
 
+  if (!is.null(accrual_pattern)) {
+    valid_patterns <- c("uniform", "poisson", "ramp")
+    if (!is.function(accrual_pattern) && !accrual_pattern %in% valid_patterns) {
+      cli::cli_abort(c(
+        "{.arg accrual_pattern} must be a function or one of: {.val {valid_patterns}}",
+        "x" = "Got {.val {accrual_pattern}}"
+      ))
+    }
+  }
+
   if (!is.null(followup_time)) {
     if (!is.numeric(followup_time) || length(followup_time) != 1 ||
         followup_time < 0) {

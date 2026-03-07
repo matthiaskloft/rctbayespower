@@ -17,7 +17,8 @@ estimate_sequential_bf(
   interim_function,
   id_iter,
   id_cond,
-  sim_fn = NULL
+  sim_fn = NULL,
+  followup_time = 0
 )
 }
 \arguments{

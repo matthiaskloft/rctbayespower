@@ -15,7 +15,7 @@ required_fn_args(design = NULL, print = TRUE)
 \item{print}{Logical. If TRUE (default), prints the required parameters to console}
 }
 \value{
-A list with simulation and decision parameters (returned invisibly).
+A list with simulation and analysis parameters (returned invisibly).
 If design is NULL, returns NULL invisibly after showing usage info.
 }
 \description{

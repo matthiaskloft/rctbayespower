@@ -98,7 +98,7 @@ worker_process_single <- function(id_cond, id_iter, condition_args, design) {
       full_data$enrollment_time <- generate_enrollment_times(
         n_total = nrow(full_data),
         accrual_rate = accrual_rate,
-        accrual_pattern = analysis_args$accrual_pattern %||% "uniform"
+        accrual_pattern = analysis_args$accrual_pattern
       )
     }
   }
@@ -317,7 +317,7 @@ worker_process_batch <- function(work_units, design) {
       fd$enrollment_time <- generate_enrollment_times(
         n_total = nrow(fd),
         accrual_rate = accrual_rate,
-        accrual_pattern = analysis_args$accrual_pattern %||% "uniform"
+        accrual_pattern = analysis_args$accrual_pattern
       )
       fd
     })

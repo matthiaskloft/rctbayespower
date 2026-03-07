@@ -601,7 +601,15 @@ build_conditions <- function(design,
       # Ensure at least 1 patient per analysis and cap at n_total
       approx_n <- pmin(pmax(approx_n, 1L), as.integer(n_total))
       # Remove duplicates (multiple calendar times may map to same n)
+      n_before <- length(approx_n)
       approx_n <- unique(approx_n)
+      if (length(approx_n) < n_before) {
+        cli::cli_warn(c(
+          "Some {.arg calendar_analysis_at} times map to the same sample size",
+          "i" = "{n_before} calendar times collapsed to {length(approx_n)} unique analysis point{?s}",
+          "i" = "Resulting {.arg analysis_at}: {.val {approx_n}}"
+        ))
+      }
       analysis_args$analysis_at <- approx_n
     }
 

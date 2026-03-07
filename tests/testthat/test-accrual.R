@@ -175,6 +175,13 @@ test_that("validate_accrual_params rejects invalid accrual_rate", {
   expect_error(validate_accrual_params(accrual_rate = "fast"), "positive")
 })
 
+test_that("validate_accrual_params rejects invalid accrual_pattern", {
+  expect_error(validate_accrual_params(accrual_pattern = 42), "must be a function")
+  expect_error(validate_accrual_params(accrual_pattern = "linear"), "must be a function")
+  expect_true(validate_accrual_params(accrual_pattern = "uniform"))
+  expect_true(validate_accrual_params(accrual_pattern = function(n, r) seq(0, n/r, length.out = n)))
+})
+
 test_that("validate_accrual_params rejects invalid followup_time", {
   expect_error(validate_accrual_params(followup_time = -1), "non-negative")
 })
@@ -204,6 +211,50 @@ test_that("validate_accrual_params requires calendar_analysis_at for calendar ti
                              accrual_rate = 10),
     "calendar_analysis_at.*required"
   )
+})
+
+
+# =============================================================================
+# subset_analysis_data()
+# =============================================================================
+
+test_that("subset_analysis_data with enrollment_time returns correct subset", {
+  df <- data.frame(
+    y = 1:5,
+    enrollment_time = c(0, 1, 2, 3, 4)
+  )
+  result <- subset_analysis_data(df, current_n = 3, followup_time = 2)
+  expect_equal(nrow(result), 3)
+  expect_equal(result$y, 1:3)
+  expect_false("enrollment_time" %in% names(result))
+})
+
+test_that("subset_analysis_data without enrollment_time uses row subsetting", {
+  df <- data.frame(y = 1:10, x = rnorm(10))
+  result <- subset_analysis_data(df, current_n = 5)
+  expect_equal(nrow(result), 5)
+  expect_equal(result$y, 1:5)
+})
+
+test_that("subset_analysis_data accepts pre-computed completion_times", {
+  df <- data.frame(
+    y = 1:5,
+    enrollment_time = c(0, 1, 2, 3, 4)
+  )
+  ct <- sort(df$enrollment_time + 2)
+  result <- subset_analysis_data(df, current_n = 3, followup_time = 2,
+                                  completion_times = ct)
+  expect_equal(nrow(result), 3)
+  expect_equal(result$y, 1:3)
+})
+
+test_that("subset_analysis_data with followup_time=0 matches row subsetting", {
+  enrollment <- generate_enrollment_times(50, accrual_rate = 10)
+  df <- data.frame(y = seq_len(50), enrollment_time = enrollment)
+  result_accrual <- subset_analysis_data(df, current_n = 25, followup_time = 0)
+  df_no_enroll <- data.frame(y = seq_len(50), x = rnorm(50))
+  result_row <- subset_analysis_data(df_no_enroll, current_n = 25)
+  expect_equal(nrow(result_accrual), nrow(result_row))
 })
 
 

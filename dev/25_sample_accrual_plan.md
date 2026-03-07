@@ -26,7 +26,7 @@ Every downstream consumer can detect accrual from parameter presence or column e
 |---|---|
 | `build_conditions()` | `!is.null(accrual_rate)` in params |
 | `show_condition_args()` | Accrual shown as optional; survival sim_fns declare `accrual_rate` as formal (auto-detected by `get_args_without_defaults()`) |
-| `worker_functions.R` | `!is.null(decision_args$accrual_rate)` |
+| `worker_functions.R` | `!is.null(analysis_args$accrual_rate)` |
 | `estimate_sequential_*()` | `"enrollment_time" %in% names(full_data)` |
 | `compute_measures.R` | Check for accrual columns in results |
 
@@ -40,7 +40,7 @@ Accrual parameters are operational/simulation parameters users may want to vary 
 
 For non-survival endpoints, enrollment timing is orthogonal to outcome generation. Enrollment times are added after `do.call(sim_fn, ...)` as a column, keeping all existing sim_fn implementations unchanged.
 
-For survival endpoints (future Phase 4), the sim_fn accepts `accrual_rate` directly because enrollment time affects censoring. In that case, `accrual_rate` routes to both `sim_args` and `decision_args`.
+For survival endpoints (future Phase 4), the sim_fn accepts `accrual_rate` directly because enrollment time affects censoring. In that case, `accrual_rate` routes to both `sim_args` and `analysis_args`.
 
 ### 2.4 No new S7 class
 
@@ -139,7 +139,7 @@ Core utility functions:
 
 - Connects with survival models (API roadmap Phase 3)
 - Survival sim_fns accept `accrual_rate` directly (enrollment time affects censoring)
-- **Dual routing:** `build_conditions()` routes `accrual_rate` to both `sim_args` AND `decision_args` when param appears in sim_fn formals
+- **Dual routing:** `build_conditions()` routes `accrual_rate` to both `sim_args` AND `analysis_args` when param appears in sim_fn formals
 - `analysis_timing = "events"`: analyze when event count reaches threshold
 
 ---
