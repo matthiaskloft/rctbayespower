@@ -5,9 +5,8 @@
 
 <!-- badges: start -->
 
-<!-- Note: Badges are placeholders for when the package is published -->
-
 [![R-CMD-check](https://github.com/matthiaskloft/rctbayespower/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/matthiaskloft/rctbayespower/actions/workflows/R-CMD-check.yaml)
+[![Codecov test coverage](https://codecov.io/gh/matthiaskloft/rctbayespower/graph/badge.svg)](https://codecov.io/gh/matthiaskloft/rctbayespower)
 <!-- badges: end -->
 
 ## Disclaimer

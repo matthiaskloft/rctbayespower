@@ -17,9 +17,9 @@
   - After significant changes: run `/verify-package`
   - Before commits: run `/check` and `/test`
   - Verification loop: implement → test → fix → repeat
-8. Check changes for potential security issues
-9. If problems occured in he session: note down learnings and patterns to avoid in the CLAUDE.md
-10. Commit
+8. Code Simplifacation and Review with independent agents, use available skills. Fix found issues and iterate until no issues are found.
+9. If problems occured in the session: note down learnings and anti-patterns to avoid in the CLAUDE.md
+10. Commit and push.
 11. If changes re on a worktree: PR and delete the local worktree
 
 ## Commands
