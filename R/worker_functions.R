@@ -243,8 +243,16 @@ worker_process_batch <- function(work_units, design) {
   id_cond_vec <- sapply(work_units, function(wu) wu$id_cond)
   id_iter_vec <- sapply(work_units, function(wu) wu$id_iter)
 
-  # Extract analysis parameters from first work unit (assume homogenous batch)
-  # NOTE: thr_dec_eff, thr_dec_fut now come from analysis_args
+  # Batches must contain a single condition (analysis_args are per-condition)
+  if (length(unique(id_cond_vec)) > 1L) {
+    cli::cli_abort(c(
+      "BayesFlow batches must contain a single condition",
+      "x" = "This batch mixes condition ids {.val {unique(id_cond_vec)}}",
+      "i" = "Ensure work units are grouped by condition before batching"
+    ))
+  }
+
+  # Extract analysis parameters from first work unit (homogenous batch)
   analysis_args <- work_units[[1]]$condition_args$analysis_args
   thr_fx_eff <- analysis_args$thr_fx_eff
   thr_fx_fut <- analysis_args$thr_fx_fut

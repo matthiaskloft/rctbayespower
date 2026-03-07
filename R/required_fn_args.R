@@ -88,8 +88,9 @@ show_target_params <- function(x = NULL) {
 #' @param design An rctbp_design object (default NULL). If NULL, shows usage info.
 #' @param print Logical. If TRUE (default), prints the required parameters to console
 #'
-#' @return A list with simulation and analysis parameters (returned invisibly).
-#'   If design is NULL, returns NULL invisibly after showing usage info.
+#' @return A list with elements `params_sim`, `params_analysis`, and
+#'   `params_all` (returned invisibly). If design is NULL, returns NULL
+#'   invisibly after showing usage info.
 #'
 #' @examples
 #' \dontrun{

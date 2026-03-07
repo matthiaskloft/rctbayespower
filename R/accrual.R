@@ -186,8 +186,8 @@ validate_accrual_params <- function(accrual_rate = NULL,
                                      analysis_timing = NULL,
                                      calendar_analysis_at = NULL) {
   if (!is.null(accrual_rate)) {
-    if (!is.numeric(accrual_rate) || length(accrual_rate) != 1 ||
-        accrual_rate <= 0) {
+    if (!is.numeric(accrual_rate) || length(accrual_rate) != 1L ||
+        is.na(accrual_rate) || accrual_rate <= 0) {
       cli::cli_abort(c(
         "{.arg accrual_rate} must be a positive number",
         "x" = "Got {.val {accrual_rate}}"
@@ -197,7 +197,9 @@ validate_accrual_params <- function(accrual_rate = NULL,
 
   if (!is.null(accrual_pattern)) {
     valid_patterns <- c("uniform", "poisson", "ramp")
-    if (!is.function(accrual_pattern) && !accrual_pattern %in% valid_patterns) {
+    if (!is.function(accrual_pattern) &&
+        (!is.character(accrual_pattern) || length(accrual_pattern) != 1L ||
+         is.na(accrual_pattern) || !accrual_pattern %in% valid_patterns)) {
       cli::cli_abort(c(
         "{.arg accrual_pattern} must be a function or one of: {.val {valid_patterns}}",
         "x" = "Got {.val {accrual_pattern}}"
@@ -206,8 +208,8 @@ validate_accrual_params <- function(accrual_rate = NULL,
   }
 
   if (!is.null(followup_time)) {
-    if (!is.numeric(followup_time) || length(followup_time) != 1 ||
-        followup_time < 0) {
+    if (!is.numeric(followup_time) || length(followup_time) != 1L ||
+        is.na(followup_time) || followup_time < 0) {
       cli::cli_abort(c(
         "{.arg followup_time} must be a non-negative number",
         "x" = "Got {.val {followup_time}}"
@@ -217,7 +219,8 @@ validate_accrual_params <- function(accrual_rate = NULL,
 
   if (!is.null(analysis_timing)) {
     valid_timings <- c("sample_size", "calendar")
-    if (!analysis_timing %in% valid_timings) {
+    if (!is.character(analysis_timing) || length(analysis_timing) != 1L ||
+        is.na(analysis_timing) || !analysis_timing %in% valid_timings) {
       cli::cli_abort(c(
         "{.arg analysis_timing} must be one of: {.val {valid_timings}}",
         "x" = "Got {.val {analysis_timing}}"
@@ -226,7 +229,8 @@ validate_accrual_params <- function(accrual_rate = NULL,
   }
 
   if (!is.null(calendar_analysis_at)) {
-    if (!is.numeric(calendar_analysis_at) || any(calendar_analysis_at <= 0)) {
+    if (!is.numeric(calendar_analysis_at) || length(calendar_analysis_at) == 0L ||
+        anyNA(calendar_analysis_at) || any(calendar_analysis_at <= 0)) {
       cli::cli_abort(c(
         "{.arg calendar_analysis_at} must be positive numbers",
         "x" = "Got {.val {calendar_analysis_at}}"

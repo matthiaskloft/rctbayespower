@@ -390,14 +390,12 @@ S7::method(run, rctbp_power_analysis) <- function(x, ...) {
   total_work_units <- x@n_sims * n_conditions
 
  # Calculate total model fits (including interim analyses)
-  # analysis_at is now in conditions (can vary per condition)
-  # Check first condition's analysis_args as representative
-  n_analyses <- 1L
-  first_analysis_args <- x@conditions@params_by_cond[[1]]$analysis_args
-  if (!is.null(first_analysis_args$analysis_at)) {
-    n_analyses <- length(first_analysis_args$analysis_at)
-  }
-  total_model_fits <- total_work_units * n_analyses
+  # analysis_at can vary per condition, so sum across all conditions
+  total_analyses <- sum(vapply(x@conditions@params_by_cond, function(cond) {
+    aa <- cond$analysis_args$analysis_at
+    if (!is.null(aa)) length(aa) else 1L
+  }, integer(1)))
+  total_model_fits <- x@n_sims * total_analyses
 
   if (should_show(1)) {
     cli::cli_h3("Power Analysis Configuration")

@@ -15,8 +15,9 @@ required_fn_args(design = NULL, print = TRUE)
 \item{print}{Logical. If TRUE (default), prints the required parameters to console}
 }
 \value{
-A list with simulation and analysis parameters (returned invisibly).
-If design is NULL, returns NULL invisibly after showing usage info.
+A list with elements \code{params_sim}, \code{params_analysis}, and
+\code{params_all} (returned invisibly). If design is NULL, returns NULL
+invisibly after showing usage info.
 }
 \description{
 Displays the required arguments for \code{\link[=build_conditions]{build_conditions()}} based on a design object.
