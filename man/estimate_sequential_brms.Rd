@@ -44,6 +44,9 @@ estimate_sequential_brms(
 \item{id_iter}{Iteration identifier}
 
 \item{id_cond}{Condition identifier}
+
+\item{followup_time}{Numeric. Required follow-up per patient for
+accrual-aware subsetting. Default 0 (immediate outcome).}
 }
 \value{
 Data frame with n_analyses rows (one per interim + final)

@@ -624,6 +624,30 @@ test_that("build_conditions converts calendar timing to analysis_at", {
   expect_false(is.unsorted(analysis_at, strictly = TRUE))
 })
 
+test_that("build_conditions warns when calendar times collapse to same sample size", {
+  d <- mock_design(trial_type = "group_sequential")
+  # Two very close calendar times that map to the same n_analyzable
+  # Use n_total in constant to avoid the single-level-crossed warning
+  warnings <- testthat::capture_warnings(
+    build_conditions(
+      design = d,
+      crossed = list(b_arm_treat = c(0.2, 0.4)),
+      constant = list(
+        n_total = 200,
+        p_alloc = list(c(0.5, 0.5)),
+        intercept = 0, b_covariate = 0.3, sigma = 1,
+        thr_dec_eff = 0.975, thr_dec_fut = 0.5,
+        thr_fx_eff = 0.2, thr_fx_fut = 0,
+        accrual_rate = 10,
+        followup_time = 3,
+        analysis_timing = "calendar",
+        calendar_analysis_at = c(3.0, 3.05, 24)
+      )
+    )
+  )
+  expect_true(any(grepl("same sample size", warnings)))
+})
+
 # =============================================================================
 # PRINT METHOD
 # =============================================================================

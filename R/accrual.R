@@ -11,7 +11,7 @@
 #' @param accrual_pattern Character or function. One of `"uniform"` (constant
 #'   inter-arrival), `"poisson"` (exponential inter-arrival), `"ramp"` (linearly
 #'   increasing rate), or a custom function `f(n_total, accrual_rate)` returning
-#'   a sorted numeric vector.
+#'   a numeric vector of length `n_total` (sorted internally).
 #'
 #' @return Sorted numeric vector of length `n_total` (time 0 = trial start).
 #' @keywords internal
@@ -19,10 +19,22 @@ generate_enrollment_times <- function(n_total, accrual_rate,
                                        accrual_pattern = "uniform") {
   if (is.function(accrual_pattern)) {
     times <- accrual_pattern(n_total, accrual_rate)
+    if (!is.numeric(times)) {
+      cli::cli_abort(c(
+        "Custom {.arg accrual_pattern} must return a numeric vector",
+        "x" = "Got {.cls {class(times)}}"
+      ))
+    }
     if (length(times) != n_total) {
       cli::cli_abort(c(
         "Custom {.arg accrual_pattern} must return {n_total} values",
         "x" = "Got {length(times)} values"
+      ))
+    }
+    if (anyNA(times)) {
+      cli::cli_abort(c(
+        "Custom {.arg accrual_pattern} must not return NA values",
+        "x" = "Got {sum(is.na(times))} NA value{?s}"
       ))
     }
     return(sort(times))
@@ -137,6 +149,12 @@ subset_analysis_data <- function(full_data, current_n, followup_time = 0,
   if ("enrollment_time" %in% names(full_data)) {
     if (is.null(completion_times)) {
       completion_times <- sort(full_data$enrollment_time + followup_time)
+    }
+    if (current_n > length(completion_times)) {
+      cli::cli_abort(c(
+        "Requested {current_n} analyzable patients but only {length(completion_times)} exist",
+        "i" = "Check that {.arg analysis_at} values do not exceed {.arg n_total}"
+      ))
     }
     calendar_time <- completion_times[current_n]
     mask <- patients_with_data(full_data$enrollment_time, followup_time,

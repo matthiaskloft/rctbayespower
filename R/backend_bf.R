@@ -1818,6 +1818,8 @@ estimate_single_bf <- function(data, model, backend_args, target_params,
 #' @param id_cond Vector of condition identifiers (one per sim in batch)
 #' @param sim_fn Optional rctbp_sim_fn object for schema-based batch preparation.
 #'   If provided, uses sim_fn@@output_schema for field mapping.
+#' @param followup_time Numeric. Required follow-up per patient for
+#'   accrual-aware subsetting. Default 0 (immediate outcome).
 #'
 #' @return Data frame with (batch_size x n_analyses) rows
 #' @keywords internal
@@ -1833,6 +1835,8 @@ estimate_sequential_bf <- function(full_data_list, model, backend_args, target_p
   # Pre-compute completion times per simulation (invariant across analysis points)
   completion_times_list <- if ("enrollment_time" %in% names(full_data_list[[1]])) {
     lapply(full_data_list, function(fd) sort(fd$enrollment_time + followup_time))
+  } else {
+    NULL
   }
   n_analyses <- length(analysis_at)
 

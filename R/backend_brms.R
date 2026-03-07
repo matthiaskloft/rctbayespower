@@ -354,6 +354,8 @@ estimate_single_brms <- function(data, model, backend_args, target_params,
 #' @param interim_function Function to make interim decisions
 #' @param id_iter Iteration identifier
 #' @param id_cond Condition identifier
+#' @param followup_time Numeric. Required follow-up per patient for
+#'   accrual-aware subsetting. Default 0 (immediate outcome).
 #'
 #' @return Data frame with n_analyses rows (one per interim + final)
 #' @importFrom dplyr if_else
@@ -369,6 +371,8 @@ estimate_sequential_brms <- function(full_data, model, backend_args, target_para
   # Pre-compute completion times once (invariant across analysis points)
   completion_times <- if ("enrollment_time" %in% names(full_data)) {
     sort(full_data$enrollment_time + followup_time)
+  } else {
+    NULL
   }
   # analysis_at now includes the final analysis at n_total (last value = n_total)
   analysis_schedule <- analysis_at

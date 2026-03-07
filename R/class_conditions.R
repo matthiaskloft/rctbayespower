@@ -446,10 +446,12 @@ build_conditions <- function(design,
   analysis_at_provided <- "analysis_at" %in% names(crossed_flat) ||
                           "analysis_at" %in% names(constant)
   # calendar_analysis_at also satisfies the requirement (converted to analysis_at later)
-  calendar_timing_provided <- ("calendar_analysis_at" %in% names(crossed_flat) ||
-                               "calendar_analysis_at" %in% names(constant)) &&
-                              ("analysis_timing" %in% names(crossed_flat) ||
-                               "analysis_timing" %in% names(constant))
+  # Must verify analysis_timing is actually "calendar", not just present
+  calendar_timing_value <- constant[["analysis_timing"]] %||%
+                           crossed_flat[["analysis_timing"]]
+  calendar_timing_provided <- identical(calendar_timing_value, "calendar") &&
+                              ("calendar_analysis_at" %in% names(crossed_flat) ||
+                               "calendar_analysis_at" %in% names(constant))
 
   if (trial_type != "fixed" && !analysis_at_provided && !calendar_timing_provided) {
     cli::cli_abort(c(

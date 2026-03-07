@@ -43,6 +43,22 @@ test_that("custom accrual_pattern with wrong length aborts", {
   )
 })
 
+test_that("custom accrual_pattern returning non-numeric aborts", {
+  char_fn <- function(n, rate) letters[1:n]
+  expect_error(
+    generate_enrollment_times(5, accrual_rate = 1, accrual_pattern = char_fn),
+    "numeric vector"
+  )
+})
+
+test_that("custom accrual_pattern returning NAs aborts", {
+  na_fn <- function(n, rate) c(rep(1, n - 1), NA)
+  expect_error(
+    generate_enrollment_times(5, accrual_rate = 1, accrual_pattern = na_fn),
+    "NA"
+  )
+})
+
 test_that("single patient enrollment works for all patterns", {
   for (pattern in c("uniform", "poisson", "ramp")) {
     set.seed(1)
@@ -246,6 +262,30 @@ test_that("subset_analysis_data accepts pre-computed completion_times", {
                                   completion_times = ct)
   expect_equal(nrow(result), 3)
   expect_equal(result$y, 1:3)
+})
+
+test_that("subset_analysis_data works with shuffled row order", {
+  df <- data.frame(
+    y = 1:10,
+    enrollment_time = c(0, 1, 2, 3, 4, 5, 6, 7, 8, 9)
+  )
+  # Shuffle rows
+  shuffled <- df[c(5, 3, 8, 1, 10, 6, 2, 9, 4, 7), ]
+  result <- subset_analysis_data(shuffled, current_n = 5, followup_time = 2)
+  # Should select patients enrolled by t=4 (enrollment_time <= 4)
+  expect_equal(nrow(result), 5)
+  expect_true(all(result$y %in% 1:5))
+})
+
+test_that("subset_analysis_data aborts when current_n exceeds patients", {
+  df <- data.frame(
+    y = 1:5,
+    enrollment_time = c(0, 1, 2, 3, 4)
+  )
+  expect_error(
+    subset_analysis_data(df, current_n = 10, followup_time = 0),
+    "only 5 exist"
+  )
 })
 
 test_that("subset_analysis_data with followup_time=0 matches row subsetting", {

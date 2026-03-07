@@ -14,7 +14,7 @@ generate_enrollment_times(n_total, accrual_rate, accrual_pattern = "uniform")
 \item{accrual_pattern}{Character or function. One of \code{"uniform"} (constant
 inter-arrival), \code{"poisson"} (exponential inter-arrival), \code{"ramp"} (linearly
 increasing rate), or a custom function \code{f(n_total, accrual_rate)} returning
-a sorted numeric vector.}
+a numeric vector of length \code{n_total} (sorted internally).}
 }
 \value{
 Sorted numeric vector of length \code{n_total} (time 0 = trial start).
