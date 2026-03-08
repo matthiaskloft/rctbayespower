@@ -388,6 +388,10 @@ summarize_sims_with_interim <- function(results_df_raw, n_sims) {
     names(df)
   )
 
+  # Check once whether accrual data exists (consistent across all groups)
+  has_accrual_data <- "calendar_time" %in% names(df) &&
+    any(!is.na(df$calendar_time))
+
   by_look_key <- do.call(paste, c(df[by_look_by_cols], sep = "|||"))
   by_look_groups <- split(df, by_look_key, drop = TRUE)
 
@@ -425,7 +429,17 @@ summarize_sims_with_interim <- function(results_df_raw, n_sims) {
       conv_rate = mean(get_col(grp, "converged"), na.rm = TRUE),
       stringsAsFactors = FALSE
     )
-    cbind(base_agg, quantile_agg, tail_agg)
+    if (has_accrual_data) {
+      accrual_agg <- data.frame(
+        calendar_time_mn = mean(get_col(grp, "calendar_time"), na.rm = TRUE),
+        calendar_time_mdn = stats::median(get_col(grp, "calendar_time"), na.rm = TRUE),
+        n_enrolled_mn = mean(get_col(grp, "n_enrolled"), na.rm = TRUE),
+        stringsAsFactors = FALSE
+      )
+      cbind(base_agg, quantile_agg, tail_agg, accrual_agg)
+    } else {
+      cbind(base_agg, quantile_agg, tail_agg)
+    }
   }
 
   by_look_list <- lapply(by_look_groups, by_look_agg)
@@ -506,12 +520,47 @@ summarize_sims_with_interim <- function(results_df_raw, n_sims) {
                                       sim_outcomes$stop_n)
   sim_outcomes$stopped_early <- !is.na(sim_outcomes$stop_n)
 
+  # Compute effective calendar time per simulation (accrual-aware)
+  if (has_accrual_data) {
+    # Deduplicate: one row per (id_cond, id_iter, id_look)
+    dedup_key <- paste(df$id_cond, df$id_iter, df$id_look, sep = "|||")
+    df_dedup <- df[!duplicated(dedup_key), , drop = FALSE]
+
+    # Final-look calendar_time for ALL sims (fallback for non-stopped)
+    final_look_id <- max(df_dedup$id_look)
+    final_rows <- df_dedup[df_dedup$id_look == final_look_id, , drop = FALSE]
+    cal_lookup <- data.frame(
+      id_cond = final_rows$id_cond,
+      id_iter = final_rows$id_iter,
+      effective_calendar_time = final_rows$calendar_time,
+      enrollment_duration = final_rows$enrollment_duration,
+      stringsAsFactors = FALSE
+    )
+
+    # Override with stop-point calendar_time for stopped sims
+    if (nrow(stopping_info) > 0 && "calendar_time" %in% names(first_stops)) {
+      stop_cal <- data.frame(
+        id_cond = first_stops$id_cond, id_iter = first_stops$id_iter,
+        stop_calendar_time = first_stops$calendar_time,
+        stringsAsFactors = FALSE
+      )
+      cal_lookup <- merge(cal_lookup, stop_cal,
+                          by = c("id_cond", "id_iter"), all.x = TRUE)
+      has_stop <- !is.na(cal_lookup$stop_calendar_time)
+      cal_lookup$effective_calendar_time[has_stop] <- cal_lookup$stop_calendar_time[has_stop]
+      cal_lookup$stop_calendar_time <- NULL
+    }
+
+    sim_outcomes <- merge(sim_outcomes, cal_lookup,
+                          by = c("id_cond", "id_iter"), all.x = TRUE)
+  }
+
   # Compute overall summaries by condition
   overall_groups <- split(sim_outcomes, sim_outcomes$id_cond, drop = TRUE)
 
   overall_list <- lapply(overall_groups, function(grp) {
     n_grp <- nrow(grp)
-    data.frame(
+    base <- data.frame(
       n_planned = grp$n_planned[1],
       n_mn = mean(grp$effective_n, na.rm = TRUE),
       se_n_mn = stats::sd(grp$effective_n, na.rm = TRUE) / sqrt(n_grp),
@@ -523,6 +572,17 @@ summarize_sims_with_interim <- function(results_df_raw, n_sims) {
       prop_stp_fut = sum(grp$stop_reason == "stop_futility", na.rm = TRUE) / n_grp,
       stringsAsFactors = FALSE
     )
+    if (has_accrual_data) {
+      accrual <- data.frame(
+        trial_dur_mn = mean(grp$effective_calendar_time, na.rm = TRUE),
+        trial_dur_mdn = calc_robust_median(grp$effective_calendar_time),
+        enrollment_dur_mn = mean(grp$enrollment_duration, na.rm = TRUE),
+        stringsAsFactors = FALSE
+      )
+      cbind(base, accrual)
+    } else {
+      base
+    }
   })
 
   overall_results <- do.call(rbind, overall_list)
@@ -548,6 +608,9 @@ summarize_sims_with_interim <- function(results_df_raw, n_sims) {
   col_order <- c("id_cond", "n_planned", "n_mn", "n_mdn", "n_mode", "se_n_mn",
                  "prop_at_mode", "pwr_eff", "pwr_fut", "se_pwr_eff", "se_pwr_fut",
                  "prop_stp_early", "prop_stp_eff", "prop_stp_fut", "prop_no_dec")
+  if ("trial_dur_mn" %in% names(overall_df)) {
+    col_order <- c(col_order, "trial_dur_mn", "trial_dur_mdn", "enrollment_dur_mn")
+  }
   col_order <- intersect(col_order, names(overall_df))
   overall <- overall_df[, col_order, drop = FALSE]
 

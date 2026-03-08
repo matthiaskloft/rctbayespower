@@ -1838,6 +1838,11 @@ estimate_sequential_bf <- function(full_data_list, model, backend_args, target_p
   } else {
     NULL
   }
+  enrollment_duration_vec <- if (!is.null(completion_times_list)) {
+    vapply(full_data_list, function(fd) max(fd$enrollment_time), numeric(1))
+  } else {
+    NULL
+  }
   n_analyses <- length(analysis_at)
 
   # Initialize tracking for each sim
@@ -1867,6 +1872,14 @@ estimate_sequential_bf <- function(full_data_list, model, backend_args, target_p
       subset_analysis_data(fd, current_n, followup_time, ct)
     }, full_data_list[active_idx], ct_list %||% vector("list", length(active_idx)),
     SIMPLIFY = FALSE)
+
+    # Extract accrual attributes before data is consumed
+    if (!is.null(completion_times_list)) {
+      accrual_cal_times <- vapply(analysis_data_list,
+        function(d) attr(d, "calendar_time") %||% NA_real_, numeric(1))
+      accrual_n_enrolled <- vapply(analysis_data_list,
+        function(d) attr(d, "n_enrolled") %||% NA_integer_, integer(1))
+    }
 
     # Prepare batch data
     data_batch <- prepare_data_list_as_batch_bf(analysis_data_list, backend_args, sim_fn = sim_fn)
@@ -1905,6 +1918,17 @@ estimate_sequential_bf <- function(full_data_list, model, backend_args, target_p
       n_analyzed = current_n,
       skip_convergence = backend_args$skip_convergence %||% TRUE
     )
+
+    # Add accrual metadata columns (always present for consistent schema)
+    if (!is.null(completion_times_list)) {
+      batch_results$calendar_time <- accrual_cal_times
+      batch_results$n_enrolled <- accrual_n_enrolled
+      batch_results$enrollment_duration <- enrollment_duration_vec[active_idx]
+    } else {
+      batch_results$calendar_time <- NA_real_
+      batch_results$n_enrolled <- NA_integer_
+      batch_results$enrollment_duration <- NA_real_
+    }
 
     # Clean up large objects to free RAM after each interim analysis
     rm(draws_matrix, data_batch, analysis_data_list)

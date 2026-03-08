@@ -159,8 +159,11 @@ subset_analysis_data <- function(full_data, current_n, followup_time = 0,
     calendar_time <- completion_times[current_n]
     mask <- patients_with_data(full_data$enrollment_time, followup_time,
                                calendar_time)
+    n_enrolled <- as.integer(sum(patients_enrolled(full_data$enrollment_time, calendar_time)))
     analysis_data <- full_data[mask, , drop = FALSE]
     analysis_data$enrollment_time <- NULL
+    attr(analysis_data, "calendar_time") <- calendar_time
+    attr(analysis_data, "n_enrolled") <- n_enrolled
     analysis_data
   } else {
     full_data[1:current_n, ]

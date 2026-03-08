@@ -319,6 +319,25 @@ test_that("accrual-aware subsetting selects correct patients", {
   expect_true(all(enrollment[mask] + followup <= calendar_time))
 })
 
+test_that("subset_analysis_data attaches calendar_time and n_enrolled attributes", {
+  df <- data.frame(
+    y = 1:5,
+    enrollment_time = c(0, 1, 2, 3, 4)
+  )
+  result <- subset_analysis_data(df, current_n = 3, followup_time = 2)
+  expect_equal(attr(result, "calendar_time"), 4)  # enrollment[3] + followup = 2 + 2
+
+  # At calendar_time=4, patients enrolled at 0,1,2,3,4 are all enrolled
+  expect_equal(attr(result, "n_enrolled"), 5L)
+})
+
+test_that("subset_analysis_data without enrollment_time has NULL attributes", {
+  df <- data.frame(y = 1:10, x = rnorm(10))
+  result <- subset_analysis_data(df, current_n = 5)
+  expect_null(attr(result, "calendar_time"))
+  expect_null(attr(result, "n_enrolled"))
+})
+
 test_that("accrual subsetting with followup=0 equals row-index subsetting", {
   enrollment <- generate_enrollment_times(100, accrual_rate = 10)
   followup <- 0
