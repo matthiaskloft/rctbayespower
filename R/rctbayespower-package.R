@@ -109,7 +109,13 @@ if (getRversion() >= "2.15.1") {
       "already_stopped",
       "is_stop_point",
       "thr_dec_eff_new",
-      "thr_dec_fut_new"
+      "thr_dec_fut_new",
+      # Accrual plot variables
+      "calendar_time",
+      "count",
+      "status",
+      "condition",
+      "xintercept"
     )
   )
 }

@@ -1227,6 +1227,22 @@ S7::method(print, rctbp_power_analysis) <- function(x, ...) {
       }
     }
 
+    # Trial Duration section (when accrual data is present)
+    has_accrual <- !is.null(interim_overall) &&
+      "trial_dur_mn" %in% names(interim_overall) &&
+      any(!is.na(interim_overall$trial_dur_mn))
+    if (has_accrual) {
+      cli::cli_h2("Trial Duration {.emph (range across conditions)}")
+      bullets <- character()
+      dur_range <- safe_range(interim_overall$trial_dur_mn, digits = 1)
+      bullets <- c(bullets, "*" = "Mean duration: {dur_range}")
+      if ("enrollment_dur_mn" %in% names(interim_overall)) {
+        enroll_range <- safe_range(interim_overall$enrollment_dur_mn, digits = 1)
+        bullets <- c(bullets, "*" = "Enrollment phase: {enroll_range}")
+      }
+      cli::cli_bullets(bullets)
+    }
+
     # Find optimal condition
     optimal <- find_optimal_condition(
       results_summ = results_df,
@@ -1455,6 +1471,26 @@ S7::method(summary, rctbp_power_analysis) <- function(object, ...) {
       }
     }
 
+    # Trial Duration section (when accrual data is present) — summary version
+    has_accrual_summ <- !is.null(interim_overall) &&
+      "trial_dur_mn" %in% names(interim_overall) &&
+      any(!is.na(interim_overall$trial_dur_mn))
+    if (has_accrual_summ) {
+      cli::cli_h2("Trial Duration")
+      bullets <- character()
+      dur_mn_range <- safe_range(interim_overall$trial_dur_mn, digits = 1)
+      bullets <- c(bullets, "*" = "Mean trial duration (range): {dur_mn_range}")
+      if ("trial_dur_mdn" %in% names(interim_overall)) {
+        dur_mdn_range <- safe_range(interim_overall$trial_dur_mdn, digits = 1)
+        bullets <- c(bullets, "*" = "Median trial duration (range): {dur_mdn_range}")
+      }
+      if ("enrollment_dur_mn" %in% names(interim_overall)) {
+        enroll_range <- safe_range(interim_overall$enrollment_dur_mn, digits = 1)
+        bullets <- c(bullets, "*" = "Mean enrollment duration (range): {enroll_range}")
+      }
+      cli::cli_bullets(bullets)
+    }
+
     # Find optimal condition
     optimal <- find_optimal_condition(
       results_summ = results_df,
@@ -1550,8 +1586,18 @@ S7::method(summary, rctbp_power_analysis) <- function(object, ...) {
           by = "id_cond",
           all.x = TRUE
         )
+        # Include trial duration if accrual data is present
+        if (has_accrual_summ && "trial_dur_mn" %in% names(interim_overall)) {
+          accrual_cols <- intersect(c("id_cond", "trial_dur_mn"), names(interim_overall))
+          cond_table <- merge(
+            cond_table,
+            interim_overall[, accrual_cols, drop = FALSE],
+            by = "id_cond",
+            all.x = TRUE
+          )
+        }
         # Reorder columns
-        col_order <- c("id_cond", "n_total", "pwr_eff", "pwr_fut", "prop_stp_early", "n_mn")
+        col_order <- c("id_cond", "n_total", "pwr_eff", "pwr_fut", "prop_stp_early", "n_mn", "trial_dur_mn")
         col_order <- intersect(col_order, names(cond_table))
         cond_table <- cond_table[, col_order, drop = FALSE]
         # Sort by power
