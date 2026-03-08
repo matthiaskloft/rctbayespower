@@ -12,6 +12,7 @@
 \item "power_curve" - Power curve across single varying dimension
 \item "heatmap" - 2D heatmap when both sample sizes and effect sizes vary
 \item "comparison" - Compare power vs posterior probabilities
+\item "accrual" - Enrollment curve over calendar time (requires accrual data)
 }}
 
 \item{metric}{Which statistic type to display:

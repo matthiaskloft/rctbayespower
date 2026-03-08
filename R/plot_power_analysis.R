@@ -10,6 +10,7 @@
 #'     \item "power_curve" - Power curve across single varying dimension
 #'     \item "heatmap" - 2D heatmap when both sample sizes and effect sizes vary
 #'     \item "comparison" - Compare power vs posterior probabilities
+#'     \item "accrual" - Enrollment curve over calendar time (requires accrual data)
 #'   }
 #' @param metric Which statistic type to display:
 #'   \itemize{
@@ -286,10 +287,30 @@ create_power_plot <- function(x,
       decision,
       ...
     )
+  } else if (type == "accrual") {
+    # Validate: accrual plot requires sequential design with accrual data
+    if (!x@has_interim) {
+      cli::cli_abort(c(
+        "Accrual plot requires a sequential design with interim analyses",
+        "i" = "Use {.code plot(x, type = \"power_curve\")} for single-look designs"
+      ))
+    }
+    if (!"calendar_time_mn" %in% names(plot_data) ||
+        all(is.na(plot_data$calendar_time_mn))) {
+      cli::cli_abort(c(
+        "Accrual plot requires accrual modeling data",
+        "i" = "Set {.arg accrual_rate} in {.fn build_conditions} to enable accrual modeling"
+      ))
+    }
+    p <- create_accrual_plot(
+      plot_data,
+      x@conditions,
+      ...
+    )
   } else {
     cli::cli_abort(c(
       "Unknown plot type: {.val {type}}",
-      "i" = "Use {.val power_curve}, {.val heatmap}, or {.val comparison}"
+      "i" = "Use {.val power_curve}, {.val heatmap}, {.val comparison}, or {.val accrual}"
     ))
   }
 
