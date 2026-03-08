@@ -75,6 +75,17 @@ test_that("create_error_result has NA for all posterior summary columns", {
   }
 })
 
+test_that("create_error_result includes NA accrual columns for rbind compatibility", {
+  result <- rctbayespower:::create_error_result(
+    id_iter = 1L, id_cond = 1L, id_analysis = 1L, error_msg = "test"
+  )
+  accrual_cols <- c("calendar_time", "n_enrolled", "enrollment_duration")
+  for (col in accrual_cols) {
+    expect_true(col %in% names(result), info = paste("Missing column:", col))
+    expect_true(is.na(result[[col]]), info = paste("Expected NA in:", col))
+  }
+})
+
 test_that("create_error_result quantile columns are ordered between post_sd and rhat", {
   result <- rctbayespower:::create_error_result(
     id_iter = 1L, id_cond = 1L, id_analysis = 0L, error_msg = "test"

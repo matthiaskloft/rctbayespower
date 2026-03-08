@@ -374,6 +374,11 @@ estimate_sequential_brms <- function(full_data, model, backend_args, target_para
   } else {
     NULL
   }
+  enrollment_duration <- if (!is.null(completion_times)) {
+    max(full_data$enrollment_time)
+  } else {
+    NA_real_
+  }
   # analysis_at now includes the final analysis at n_total (last value = n_total)
   analysis_schedule <- analysis_at
   results_list <- list()
@@ -395,6 +400,8 @@ estimate_sequential_brms <- function(full_data, model, backend_args, target_para
     # Subset data to current analysis point (accrual-aware when enrollment_time present)
     analysis_data <- subset_analysis_data(full_data, current_n, followup_time,
                                            completion_times)
+    accrual_calendar_time <- attr(analysis_data, "calendar_time")
+    accrual_n_enrolled <- attr(analysis_data, "n_enrolled")
 
     # Estimate posterior
     estimation_result <- tryCatch({
@@ -519,6 +526,9 @@ estimate_sequential_brms <- function(full_data, model, backend_args, target_para
     measures$id_cond <- id_cond
     measures$id_look <- id_analysis
     measures$n_analyzed <- current_n
+    measures$calendar_time <- accrual_calendar_time %||% NA_real_
+    measures$n_enrolled <- as.integer(accrual_n_enrolled %||% NA_integer_)
+    measures$enrollment_duration <- enrollment_duration
     measures$stopped <- stopped
     measures$stop_reason <- if (stopped) stop_reason else NA_character_
     measures$interim_decision <- if (!is.null(interim_decision)) {
