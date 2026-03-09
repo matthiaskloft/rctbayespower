@@ -74,6 +74,7 @@ test_that("n_cores validation rejects invalid values", {
   expect_cli_abort(power_analysis(conditions = conds, n_cores = 0, run = FALSE))
   expect_cli_abort(power_analysis(conditions = conds, n_cores = -1, run = FALSE))
   n_available <- parallel::detectCores()
+  skip_if(is.na(n_available), "parallel::detectCores() returned NA")
   expect_cli_abort(
     power_analysis(conditions = conds, n_cores = n_available + 1, run = FALSE)
   )

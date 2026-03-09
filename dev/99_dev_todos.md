@@ -122,7 +122,7 @@
 ## Infrastructure
 
 * GPU support for BayesFlow backend (see [12_gpu_support_plan.md](12_gpu_support_plan.md)) — detection, backend selection, configuration
-* Test coverage: `test-power_grid_analysis.R` is a placeholder with 7 untested areas
+* ~~Test coverage: `test-power_grid_analysis.R` placeholder~~ (done — 77 tests covering constructor, validators, design prior, find_optimal, print/summary, get_code, grid)
 
 ## Long-term (see [21_adaptive_trials_roadmap.md](21_adaptive_trials_roadmap.md))
 
