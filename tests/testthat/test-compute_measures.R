@@ -234,10 +234,9 @@ test_that("effective_n uses per-sim n_analyzed, not n_planned, with mixed dropou
   combined <- rbind(results1, results2)
   summary <- rctbayespower:::summarize_sims_with_interim(combined, n_sims = 10)
 
-  # Mixed n_analyzed creates multiple by_look rows per condition at the final
-
-  # look (n_analyzed is a grouping key). Deduplicate overall to the first row.
-  overall <- summary$overall[!duplicated(summary$overall$id_cond), ]
+  # Overall should have exactly one row per condition (no row duplication)
+  expect_equal(nrow(summary$overall), 1L)
+  overall <- summary$overall
 
   # n_mn should be mean of actual n_analyzed at final look: (5*90 + 5*100)/10 = 95
   expect_equal(overall$n_mn, 95)
@@ -245,7 +244,7 @@ test_that("effective_n uses per-sim n_analyzed, not n_planned, with mixed dropou
   # sims 1-5: 10/(90+10)=0.1, sims 6-10: 0/(100+0)=0
   expect_equal(overall$dropout_pct, 0.05, tolerance = 1e-10)
   # n_planned is the max n_analyzed across condition = 100
-  expect_true(overall$n_planned >= 95)
+  expect_equal(overall$n_planned, 100)
 })
 
 test_that("effective_n equals n_planned when no dropout column present", {

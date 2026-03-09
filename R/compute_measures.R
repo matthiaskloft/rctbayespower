@@ -674,6 +674,8 @@ summarize_sims_with_interim <- function(results_df_raw, n_sims) {
   power_cols <- intersect(power_cols, names(by_look_df))
   final_power_df <- by_look_df[by_look_df[["id_look"]] == final_look_id,
                                 power_cols, drop = FALSE]
+  # Deduplicate: multiple rows per id_cond possible when n_analyzed varies
+  final_power_df <- final_power_df[!duplicated(final_power_df$id_cond), , drop = FALSE]
 
   # Merge and reorder columns logically
   overall_df <- merge(overall_df, final_power_df, by = "id_cond", all.x = TRUE)
