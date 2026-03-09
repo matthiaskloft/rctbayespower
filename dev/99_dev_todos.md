@@ -64,16 +64,16 @@
   
 # Sample Accrual (see [25\_sample\_accrual\_plan.md](25_sample_accrual_plan.md))
 
-* Phase 1 (MVP): enrollment time generation, calendar-time subsetting, trial duration metrics
-  * New file `R/accrual.R`: `generate_enrollment_times()`, `patients_with_data()`, `calendar_to_available_n()`
-  * Modify `R/class_conditions.R`: accrual parameter defaults, validation, calendar-time conversion
-  * Modify `R/required_fn_args.R`: show accrual params in `show_condition_args()`
-  * Modify `R/worker_functions.R`: post-process sim data with enrollment times
-  * Modify `R/backend_brms.R` + `R/backend_bf.R`: accrual-aware subsetting
-  * Modify `R/compute_measures.R`: trial duration metrics
-* Phase 2: reporting & accrual plot type
-* Phase 3: dropout / loss-to-follow-up
+* ~~Phase 1 (MVP): enrollment time generation, calendar-time subsetting, trial duration metrics~~ (done)
+* ~~Phase 2: reporting & accrual plot type~~ (done)
+* ~~Phase 3: dropout / loss-to-follow-up~~ (done)
 * Phase 4: survival/event-driven integration (dual routing for `accrual_rate`)
+
+## Dropout: Known Limitations / Follow-up Work
+
+* **BayesFlow batch processing with variable completer counts**: `prepare_data_list_as_batch_bf()` assumes all simulations at a given look have the same row count (pre-allocates fixed-width matrices at line 1263). With stochastic dropout, different simulations can have different completer counts at the same look, causing matrix dimension mismatches. Fix requires splitting batches by data size or padding. See CodeRabbit review on PR #11.
+* **`effective_n` for non-stopped target\_not\_met sims**: In `compute_measures.R`, `effective_n` for non-stopped sims equals `n_planned` (condition-level max of `n_analyzed`). When `target_not_met` at the final look reduces actual analyzed count, `effective_n` overstates the denominator for `dropout_pct`. Rare edge case (requires very high dropout at the final look). Fix: carry per-sim `n_analyzed_final` into `sim_outcomes`.
+* **Threshold resolution before dropout-aware subsetting** (brms backend): `resolve_threshold()` for `thr_dec_eff/fut` uses the scheduled `current_n` information fraction before `subset_analysis_data()` reduces the actual analyzed count. With dropout, this overstates the information fraction. Fix: move threshold resolution after subsetting, using actual completer count.
 
 
 
