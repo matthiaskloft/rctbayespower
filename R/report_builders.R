@@ -1136,7 +1136,9 @@ report_stopping_by_look <- function(x, format = c("cli", "markdown"),
 #' }
 #'
 #' For sequential designs, convergence metrics are from the final analysis look.
-#' BayesFlow results produce NaN for MCMC diagnostics and are silently skipped.
+#' BayesFlow results produce NaN for MCMC diagnostics; in `print()` and
+#' `summary()` the convergence section is silently omitted, but calling
+#' `report_convergence()` directly will raise an error.
 #'
 #' @seealso [report()], [report_power()], [report_stopping()]
 #'
@@ -1244,7 +1246,7 @@ report_conditions <- report_power
 #' @return Invisibly returns the input object.
 #'
 #' @seealso [report_power()], [report_stopping()], [report_stopping_by_look()],
-#'   [summary.rctbp_power_analysis()]
+#'   [report_convergence()], [summary.rctbp_power_analysis()]
 #'
 #' @export
 #'

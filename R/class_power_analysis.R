@@ -1280,10 +1280,21 @@ S7::method(print, rctbp_power_analysis) <- function(x, ...) {
         ess_range <- safe_range(conv_source$ess_bulk, digits = 0)
         bullets <- c(bullets, "*" = "Mean ESS (bulk): {ess_range}")
       }
+      if ("ess_tail" %in% names(conv_source) && any(is.finite(conv_source$ess_tail))) {
+        ess_range <- safe_range(conv_source$ess_tail, digits = 0)
+        bullets <- c(bullets, "*" = "Mean ESS (tail): {ess_range}")
+      }
       cli::cli_bullets(bullets)
       # Warn if convergence issues detected
-      if (any(conv_source$conv_rate < 1.0, na.rm = TRUE)) {
-        cli::cli_alert_warning("Some conditions have non-converged simulations")
+      worst_conv <- min(conv_source$conv_rate, na.rm = TRUE)
+      if (worst_conv < 0.95) {
+        cli::cli_alert_warning(
+          "Lowest convergence rate: {round(worst_conv * 100, 1)}%"
+        )
+      } else if (worst_conv < 1.0) {
+        cli::cli_alert_info(
+          "Minor convergence issues in some conditions (lowest: {round(worst_conv * 100, 1)}%)"
+        )
       }
       if ("rhat" %in% names(conv_source) &&
           any(conv_source$rhat > 1.05, na.rm = TRUE)) {
@@ -1583,8 +1594,15 @@ S7::method(summary, rctbp_power_analysis) <- function(object, ...) {
       }
       cli::cli_bullets(bullets)
       # Warn if convergence issues detected
-      if (any(conv_source_summ$conv_rate < 1.0, na.rm = TRUE)) {
-        cli::cli_alert_warning("Some conditions have non-converged simulations")
+      worst_conv <- min(conv_source_summ$conv_rate, na.rm = TRUE)
+      if (worst_conv < 0.95) {
+        cli::cli_alert_warning(
+          "Lowest convergence rate: {round(worst_conv * 100, 1)}%"
+        )
+      } else if (worst_conv < 1.0) {
+        cli::cli_alert_info(
+          "Minor convergence issues in some conditions (lowest: {round(worst_conv * 100, 1)}%)"
+        )
       }
       if ("rhat" %in% names(conv_source_summ) &&
           any(conv_source_summ$rhat > 1.05, na.rm = TRUE)) {

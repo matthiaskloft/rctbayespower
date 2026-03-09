@@ -247,8 +247,10 @@ test_that("effective_n uses per-sim n_analyzed, not n_planned, with mixed dropou
   expect_equal(overall$n_planned, 100)
 })
 
-test_that("effective_n equals n_planned when no dropout column present", {
-  # Backward compat: no n_dropped column, all sims reach final look
+test_that("effective_n uses n_analyzed_final (not n_planned) even without n_dropped", {
+  # Regression test: n_analyzed at final look differs from n_planned (max).
+  # Old code used n_planned for all non-stopped sims; new code uses per-sim
+  # n_analyzed at the final look. Without this fix, n_mn would be 100 (n_planned).
   results1 <- mock_raw_results(n_sims = 10, n_conditions = 1)
   results1$id_look <- 1L
   results1$n_analyzed <- 50L
@@ -257,16 +259,18 @@ test_that("effective_n equals n_planned when no dropout column present", {
 
   results2 <- mock_raw_results(n_sims = 10, n_conditions = 1)
   results2$id_look <- 2L
-  results2$n_analyzed <- 100L
+  # Sims 1-5 have 90, sims 6-10 have 100 (no n_dropped column)
+  results2$n_analyzed <- ifelse(results2$id_iter <= 5, 90L, 100L)
   results2$stopped <- FALSE
   results2$stop_reason <- NA_character_
 
   combined <- rbind(results1, results2)
   summary <- rctbayespower:::summarize_sims_with_interim(combined, n_sims = 10)
 
-  # All sims have n_analyzed = 100 at final look, same as n_planned
-  expect_equal(summary$overall$n_mn, 100)
-  expect_equal(summary$overall$n_planned, 100)
+  # n_planned = 100 (max), but n_mn should be 95 (actual per-sim mean)
+  overall <- summary$overall[!duplicated(summary$overall$id_cond), ]
+  expect_equal(overall$n_planned, 100)
+  expect_equal(overall$n_mn, 95)
 })
 
 test_that("effective_n uses stop_n for stopped sims and n_analyzed for others", {
@@ -313,6 +317,49 @@ test_that("effective_n uses stop_n for all sims when all stop early", {
 
   # All sims stopped at look 1 with n=50, so n_mn = 50
   expect_equal(summary$overall$n_mn, 50)
+})
+
+test_that("summarize_sims_with_interim computes convergence metrics correctly", {
+  results1 <- mock_raw_results(n_sims = 10, n_conditions = 1)
+  results1$id_look <- 1L
+  results1$n_analyzed <- 50L
+  results1$stopped <- FALSE
+  results1$stop_reason <- NA_character_
+  # Vary convergence metrics across sims
+  results1$rhat <- seq(1.0, 1.1, length.out = 10)
+  results1$ess_bulk <- seq(800, 1200, length.out = 10)
+  results1$ess_tail <- seq(600, 1000, length.out = 10)
+  results1$converged <- c(rep(TRUE, 8), rep(FALSE, 2))
+
+  results2 <- results1
+  results2$id_look <- 2L
+  results2$n_analyzed <- 100L
+  # Better convergence at final look
+  results2$rhat <- seq(1.0, 1.02, length.out = 10)
+  results2$ess_bulk <- seq(1000, 1500, length.out = 10)
+  results2$ess_tail <- seq(800, 1200, length.out = 10)
+  results2$converged <- c(rep(TRUE, 9), FALSE)
+
+  combined <- rbind(results1, results2)
+  summary <- rctbayespower:::summarize_sims_with_interim(combined, n_sims = 10)
+
+  # by_look should have convergence columns with correct means at final look
+  look2 <- summary$by_look[summary$by_look$id_look == 2, ]
+  expect_equal(look2$rhat, mean(results2$rhat), tolerance = 1e-10)
+  expect_equal(look2$ess_bulk, mean(results2$ess_bulk), tolerance = 1e-10)
+  expect_true("ess_tail" %in% names(look2))
+  expect_equal(look2$ess_tail, mean(results2$ess_tail), tolerance = 1e-10)
+  expect_equal(look2$conv_rate, 0.9)
+  # SE columns should be finite
+  expect_true(is.finite(look2$se_rhat))
+  expect_true(is.finite(look2$se_ess_bulk))
+  expect_true(is.finite(look2$se_ess_tail))
+  expect_true(is.finite(look2$se_conv_rate))
+
+  # overall should have convergence from final look
+  expect_true("conv_rate" %in% names(summary$overall))
+  expect_true("rhat" %in% names(summary$overall))
+  expect_true("ess_tail" %in% names(summary$overall))
 })
 
 test_that("summarize_sims quantile columns appear between post_sd and rhat", {

@@ -202,11 +202,17 @@ test_that("print() does NOT show convergence when all NaN (BayesFlow)", {
 })
 
 test_that("print() shows warning when conv_rate < 1.0", {
-  pa <- mock_pa_with_convergence(conv_rate = 0.95)
-  output <- capture_cli(print(pa))
-  output_text <- paste(output, collapse = "\n")
+  # Severe: < 0.95
+  pa_severe <- mock_pa_with_convergence(conv_rate = 0.90)
+  output_severe <- capture_cli(print(pa_severe))
+  output_text_severe <- paste(output_severe, collapse = "\n")
+  expect_true(grepl("Lowest convergence rate", output_text_severe, fixed = TRUE))
 
-  expect_true(grepl("non-converged", output_text, fixed = TRUE))
+  # Minor: >= 0.95 but < 1.0
+  pa_minor <- mock_pa_with_convergence(conv_rate = 0.98)
+  output_minor <- capture_cli(print(pa_minor))
+  output_text_minor <- paste(output_minor, collapse = "\n")
+  expect_true(grepl("Minor convergence issues", output_text_minor, fixed = TRUE))
 })
 
 test_that("print() shows warning when rhat > 1.05", {
@@ -271,7 +277,7 @@ test_that("summary() shows warnings for convergence issues", {
   output <- capture_cli(summary(pa))
   output_text <- paste(output, collapse = "\n")
 
-  expect_true(grepl("non-converged", output_text, fixed = TRUE))
+  expect_true(grepl("Lowest convergence rate", output_text, fixed = TRUE))
   expect_true(grepl("Rhat > 1.05", output_text, fixed = TRUE))
 })
 
