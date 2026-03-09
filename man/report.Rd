@@ -67,5 +67,5 @@ report(result, topic = "stopping", format = "markdown", heading_level = 3)
 }
 \seealso{
 \code{\link[=report_power]{report_power()}}, \code{\link[=report_stopping]{report_stopping()}}, \code{\link[=report_stopping_by_look]{report_stopping_by_look()}},
-\code{\link[=summary.rctbp_power_analysis]{summary.rctbp_power_analysis()}}
+\code{\link[=report_convergence]{report_convergence()}}, \code{\link[=summary.rctbp_power_analysis]{summary.rctbp_power_analysis()}}
 }

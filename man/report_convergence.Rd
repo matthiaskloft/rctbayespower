@@ -33,7 +33,9 @@ The report includes a table with:
 }
 
 For sequential designs, convergence metrics are from the final analysis look.
-BayesFlow results produce NaN for MCMC diagnostics and are silently skipped.
+BayesFlow results produce NaN for MCMC diagnostics; in \code{print()} and
+\code{summary()} the convergence section is silently omitted, but calling
+\code{report_convergence()} directly will raise an error.
 }
 \examples{
 \dontrun{
