@@ -279,7 +279,7 @@ test_that("effective_n uses stop_n for stopped sims and n_analyzed for others", 
   results1$id_look <- 1L
   results1$n_analyzed <- 50L
   results1$stopped <- ifelse(results1$id_iter <= 3, TRUE, FALSE)
-  results1$stop_reason <- ifelse(results1$id_iter <= 3, "efficacy", NA_character_)
+  results1$stop_reason <- ifelse(results1$id_iter <= 3, "stop_efficacy", NA_character_)
   results1$n_dropped <- 0L
 
   results2 <- mock_raw_results(n_sims = 10, n_conditions = 1)
@@ -302,7 +302,7 @@ test_that("effective_n uses stop_n for all sims when all stop early", {
   results1$id_look <- 1L
   results1$n_analyzed <- 50L
   results1$stopped <- TRUE
-  results1$stop_reason <- "efficacy"
+  results1$stop_reason <- "stop_efficacy"
   results1$n_dropped <- 5L
 
   results2 <- mock_raw_results(n_sims = 10, n_conditions = 1)

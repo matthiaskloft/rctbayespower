@@ -1171,7 +1171,6 @@ report_convergence <- function(x, format = c("cli", "markdown"),
   }
 
   # Get convergence metrics — use results_conditions for both sequential and
-
   # single-look, matching the data source used by print() and summary()
   conv_df <- x@results_conditions
 
