@@ -4,7 +4,7 @@
   -> implemented link\_sigma as argument for ancova
 * ~~print() should show default values for the data\_simulation\_fn as well as required arguments to specify~~ (done: "Simulation Function Parameters" section in print output)
 
-* allocation probs need to be disambiguated
+* ~~allocation probs need to be disambiguated~~ (done: length validation in build_conditions, p_alloc data flow fix for BayesFlow backend, floating-point tolerance fix in batch sim, fixed dead sim_fn_args reference in pareto_optimize, cleaned up k-1 convention docs)
 
 
 ## class 'conditions'

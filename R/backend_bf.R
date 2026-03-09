@@ -1131,7 +1131,14 @@ prepare_single_as_batch_bf <- function(data, backend_args, field_map = NULL, sim
     names(result) <- names(field_map)
 
     result$N <- data$N %||% ncol(result[[1]])
-    result$p_alloc <- data$p_alloc %||% backend_args$p_alloc %||% 0.5
+    p_alloc <- data$p_alloc %||% backend_args$p_alloc
+    if (is.null(p_alloc)) {
+      cli::cli_abort(c(
+        "{.arg p_alloc} not available for BayesFlow inference",
+        "i" = "Ensure {.arg p_alloc} is set in {.fn build_conditions}"
+      ))
+    }
+    result$p_alloc <- p_alloc
     return(result)
   }
 
@@ -1157,7 +1164,13 @@ prepare_single_as_batch_bf <- function(data, backend_args, field_map = NULL, sim
   names(result) <- names(field_map)
 
   result$N <- n_obs
-  result$p_alloc <- backend_args$p_alloc %||% 0.5
+  if (is.null(backend_args$p_alloc)) {
+    cli::cli_abort(c(
+      "{.arg p_alloc} not available for BayesFlow inference",
+      "i" = "Ensure {.arg p_alloc} is set in {.fn build_conditions}"
+    ))
+  }
+  result$p_alloc <- backend_args$p_alloc
   result
 }
 
@@ -1302,7 +1315,14 @@ prepare_data_list_as_batch_bf <- function(data_list, backend_args, field_map = N
 
   # Add metadata
   result$N <- n_obs
-  result$p_alloc <- first$p_alloc %||% backend_args$p_alloc %||% 0.5
+  p_alloc <- first$p_alloc %||% backend_args$p_alloc
+  if (is.null(p_alloc)) {
+    cli::cli_abort(c(
+      "{.arg p_alloc} not available for BayesFlow inference",
+      "i" = "Ensure {.arg p_alloc} is set in {.fn build_conditions}"
+    ))
+  }
+  result$p_alloc <- p_alloc
 
   result
 }

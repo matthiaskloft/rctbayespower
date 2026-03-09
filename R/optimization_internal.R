@@ -306,10 +306,10 @@ compute_fidelity_weights <- function(n_sims_used, n_sims_max) {
 # - analysis_at: Interim look timings (ordered, final = 1)
 #
 # Convention for p_alloc:
-# - k entries (k = n_arms): All explicit [p_ctrl, p_treat1, p_treat2, ...]
-# - k-1 entries: Control implicit [p_treat1, p_treat2, ...], ctrl = 1 - sum
+# - Always k entries (k = n_arms): [p_ctrl, p_treat1, p_treat2, ...]
 #
-# For optimization, we search over treatment probabilities and derive control.
+# For optimization, the search space is k-1 dimensional (ILR transform),
+# but the output is always a full k-entry vector.
 
 #' Get Search Parameter Transform
 #'
@@ -330,13 +330,9 @@ compute_fidelity_weights <- function(n_sims_used, n_sims_max) {
 #' The optimizer searches over treatment allocation probabilities. The transform
 #' produces the full allocation vector with control probability derived.
 #'
-#' Convention:
-#' \itemize{
-#'   \item k entries: `[p_ctrl, p_treat1, p_treat2, ...]` - all explicit
-#'   \item k-1 entries: `[p_treat1, ...]` - control implicit (1 - sum)
-#' }
-#'
-#' For optimization, output always has k entries (control + treatments).
+#' Convention: always k entries `[p_ctrl, p_treat1, p_treat2, ...]`.
+#' The search space is k-1 dimensional (ILR transform), but the output
+#' is always a full k-entry allocation vector.
 #'
 #' | n_arms | Search dims | Transform |
 #' |--------|-------------|-----------|
