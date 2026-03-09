@@ -299,7 +299,7 @@ test_that("report_convergence() works with markdown format", {
   expect_true(grepl("Convergence", output_text, fixed = TRUE))
 })
 
-test_that("report_convergence() sorts by conv_rate ascending", {
+test_that("report_convergence() renders with mixed conv_rates", {
   pa <- mock_pa_with_convergence()
   # Modify to have different conv_rates
   pa@results_conditions$conv_rate <- c(0.9, 1.0)
@@ -307,10 +307,6 @@ test_that("report_convergence() sorts by conv_rate ascending", {
   output <- capture_cli(report_convergence(pa))
   output_text <- paste(output, collapse = "\n")
 
-  # The condition with lower conv_rate (id_cond=1) should appear first
-  pos_09 <- regexpr("0.9", output_text)
-  pos_10 <- regexpr("1.0", output_text)
-  # Just check it renders without error (order depends on table formatting)
   expect_true(grepl("conv_rate", output_text, fixed = TRUE))
 })
 
@@ -377,4 +373,50 @@ test_that("sequential overall (results_conditions) contains convergence columns"
   expect_true("ess_bulk" %in% names(overall))
   expect_true("ess_tail" %in% names(overall))
   expect_true("conv_rate" %in% names(overall))
+})
+
+
+# =============================================================================
+# Input validation tests
+# =============================================================================
+
+test_that("report_convergence() errors with non-PA object", {
+  expect_cli_abort(report_convergence("not a PA object"))
+})
+
+test_that("report_convergence() errors before analysis is run", {
+  d <- mock_design()
+  cond <- build_conditions(
+    design = d,
+    crossed = list(n_total = c(100, 200)),
+    constant = list(
+      p_alloc = c(0.5, 0.5),
+      b_arm_treat = 0.3, intercept = 0, b_covariate = 0.2, sigma = 1,
+      thr_dec_eff = 0.975, thr_dec_fut = 0.5,
+      thr_fx_eff = 0.2, thr_fx_fut = 0
+    )
+  )
+  pa <- power_analysis(cond, n_sims = 10, run = FALSE)
+  expect_cli_abort(report_convergence(pa))
+})
+
+test_that("print() skips convergence when conv_rate column absent", {
+  pa <- mock_pa_with_convergence()
+  # Remove convergence columns entirely
+  pa@results_conditions$conv_rate <- NULL
+  pa@results_conditions$rhat <- NULL
+  pa@results_conditions$ess_bulk <- NULL
+  pa@results_conditions$ess_tail <- NULL
+
+  output <- capture_cli(print(pa))
+  output_text <- paste(output, collapse = "\n")
+
+  expect_false(grepl("Convergence rate", output_text, fixed = TRUE))
+})
+
+test_that("report_convergence() errors when conv_rate column absent", {
+  pa <- mock_pa_with_convergence()
+  pa@results_conditions$conv_rate <- NULL
+
+  expect_cli_abort(report_convergence(pa))
 })

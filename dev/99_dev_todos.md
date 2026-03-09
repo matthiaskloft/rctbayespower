@@ -71,9 +71,9 @@
 
 ## Dropout: Known Limitations / Follow-up Work
 
-* ~~**BayesFlow batch processing with variable completer counts**~~ (done — being fixed in parallel session)
-* ~~**`effective_n` for non-stopped target\_not\_met sims**~~ (done — being fixed in parallel session)
-* ~~**Threshold resolution before dropout-aware subsetting**~~ (done — being fixed in parallel session)
+* **BayesFlow batch processing with variable completer counts**: `prepare_data_list_as_batch_bf()` assumes all simulations at a given look have the same row count (pre-allocates fixed-width matrices at line 1263). With stochastic dropout, different simulations can have different completer counts at the same look, causing matrix dimension mismatches. Fix requires splitting batches by data size or padding. See CodeRabbit review on PR #11.
+* ~~**`effective_n` for non-stopped target\_not\_met sims**~~: Fixed — now uses per-sim `n_analyzed_final` from final look instead of `n_planned`, with defensive fallback.
+* **Threshold resolution before dropout-aware subsetting** (brms backend): `resolve_threshold()` for `thr_dec_eff/fut` uses the scheduled `current_n` information fraction before `subset_analysis_data()` reduces the actual analyzed count. With dropout, this overstates the information fraction. Fix: move threshold resolution after subsetting, using actual completer count.
 
 
 

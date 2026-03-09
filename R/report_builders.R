@@ -1168,15 +1168,10 @@ report_convergence <- function(x, format = c("cli", "markdown"),
     ))
   }
 
-  # Get convergence metrics
-  if (x@has_interim) {
-    # For sequential: use final look from results_interim
-    results_interim <- x@results_interim
-    final_look <- max(results_interim$id_look)
-    conv_df <- results_interim[results_interim$id_look == final_look, , drop = FALSE]
-  } else {
-    conv_df <- x@results_conditions
-  }
+  # Get convergence metrics — use results_conditions for both sequential and
+
+  # single-look, matching the data source used by print() and summary()
+  conv_df <- x@results_conditions
 
   # Check convergence data exists and is finite
   if (!"conv_rate" %in% names(conv_df) || !any(is.finite(conv_df$conv_rate))) {

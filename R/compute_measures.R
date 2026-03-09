@@ -554,6 +554,11 @@ summarize_sims_with_interim <- function(results_df_raw, n_sims) {
   sim_outcomes$effective_n <- ifelse(is.na(sim_outcomes$stop_n),
                                       sim_outcomes$n_analyzed_final,
                                       sim_outcomes$stop_n)
+  # Defensive: fall back to n_planned if n_analyzed_final was NA
+  still_na <- is.na(sim_outcomes$effective_n)
+  if (any(still_na)) {
+    sim_outcomes$effective_n[still_na] <- sim_outcomes$n_planned[still_na]
+  }
   sim_outcomes$stopped_early <- !is.na(sim_outcomes$stop_n)
   sim_outcomes$n_analyzed_final <- NULL  # cleanup
 
@@ -679,6 +684,8 @@ summarize_sims_with_interim <- function(results_df_raw, n_sims) {
   if (length(conv_cols) > 1) {
     final_conv_df <- by_look_df[by_look_df[["id_look"]] == final_look_id,
                                  conv_cols, drop = FALSE]
+    # Deduplicate: multiple rows per id_cond possible (multiple par_names)
+    final_conv_df <- final_conv_df[!duplicated(final_conv_df$id_cond), , drop = FALSE]
     overall_df <- merge(overall_df, final_conv_df, by = "id_cond", all.x = TRUE)
   }
 
