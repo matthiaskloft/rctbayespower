@@ -129,11 +129,17 @@ Core utility functions:
 - New plot type `type = "accrual"`: enrollment curve with analysis timepoint markers
 - Enhance interim plots with enrolled-vs-analyzed distinction
 
-### Phase 3: Dropout/Loss-to-Follow-Up
+### Phase 3: Dropout/Loss-to-Follow-Up ✅ IMPLEMENTED
 
-- New parameters: `dropout_rate`, `dropout_pattern`
-- Per-patient dropout indicators after enrollment time assignment
-- Exclude dropped-out patients from available data
+- `dropout()` constructor: `dropout(rate, type = "proportion"|"hazard")`
+- Exponential (constant hazard) dropout model
+- Per-patient dropout times generated after enrollment
+- Dropped-out patients excluded from analysis data in `subset_analysis_data()`
+- `n_dropped` metric carried through both backends
+- Aggregated dropout metrics: `n_dropped_mn`, `n_dropped_mdn`, `dropout_pct`
+- Display in print/summary output
+- Requires `accrual_rate` and `followup_time > 0`
+- Graceful handling when dropout is high (target_not_met attribute)
 
 ### Phase 4: Survival/Event-Driven Integration
 

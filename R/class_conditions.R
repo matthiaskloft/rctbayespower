@@ -410,7 +410,8 @@ build_conditions <- function(design,
     accrual_pattern = "uniform",     # Constant inter-arrival
     followup_time = 0,               # 0 = immediate outcome
     analysis_timing = "sample_size", # "sample_size" or "calendar"
-    calendar_analysis_at = NULL      # NULL = not calendar-based
+    calendar_analysis_at = NULL,     # NULL = not calendar-based
+    dropout = NULL                   # NULL = no dropout modeling
   )
   params_with_defaults <- names(analysis_defaults)
 
@@ -580,8 +581,17 @@ build_conditions <- function(design,
       accrual_pattern = analysis_args$accrual_pattern,
       followup_time = analysis_args$followup_time,
       analysis_timing = analysis_args$analysis_timing,
-      calendar_analysis_at = analysis_args$calendar_analysis_at
+      calendar_analysis_at = analysis_args$calendar_analysis_at,
+      dropout = analysis_args$dropout
     )
+
+    # Resolve dropout object to hazard rate
+    if (!is.null(analysis_args$dropout)) {
+      dropout_obj <- analysis_args$dropout
+      analysis_args$dropout_hazard <- dropout_obj(analysis_args$followup_time)
+      # Keep original dropout object for display but remove from worker args
+      analysis_args$dropout <- NULL
+    }
 
     # =========================================================================
     # CALENDAR-TIME TO SAMPLE-SIZE CONVERSION

@@ -369,12 +369,14 @@ estimate_sequential_brms <- function(full_data, model, backend_args, target_para
 
   n_total <- nrow(full_data)
   # Pre-compute completion times once (invariant across analysis points)
-  completion_times <- if ("enrollment_time" %in% names(full_data)) {
+  # Skip when dropout is present (subset_analysis_data handles it internally)
+  has_dropout <- "dropout_time" %in% names(full_data)
+  completion_times <- if ("enrollment_time" %in% names(full_data) && !has_dropout) {
     sort(full_data$enrollment_time + followup_time)
   } else {
     NULL
   }
-  enrollment_duration <- if (!is.null(completion_times)) {
+  enrollment_duration <- if ("enrollment_time" %in% names(full_data)) {
     max(full_data$enrollment_time)
   } else {
     NA_real_
@@ -402,6 +404,7 @@ estimate_sequential_brms <- function(full_data, model, backend_args, target_para
                                            completion_times)
     accrual_calendar_time <- attr(analysis_data, "calendar_time")
     accrual_n_enrolled <- attr(analysis_data, "n_enrolled")
+    accrual_n_dropped <- attr(analysis_data, "n_dropped")
 
     # Estimate posterior
     estimation_result <- tryCatch({
@@ -525,9 +528,10 @@ estimate_sequential_brms <- function(full_data, model, backend_args, target_para
     measures$id_iter <- id_iter
     measures$id_cond <- id_cond
     measures$id_look <- id_analysis
-    measures$n_analyzed <- current_n
+    measures$n_analyzed <- nrow(analysis_data)
     measures$calendar_time <- accrual_calendar_time %||% NA_real_
     measures$n_enrolled <- as.integer(accrual_n_enrolled %||% NA_integer_)
+    measures$n_dropped <- as.integer(accrual_n_dropped %||% NA_integer_)
     measures$enrollment_duration <- enrollment_duration
     measures$stopped <- stopped
     measures$stop_reason <- if (stopped) stop_reason else NA_character_

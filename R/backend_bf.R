@@ -1833,8 +1833,13 @@ estimate_sequential_bf <- function(full_data_list, model, backend_args, target_p
   batch_size <- length(full_data_list)
   n_total <- nrow(full_data_list[[1]])
   # Pre-compute completion times per simulation (invariant across analysis points)
-  completion_times_list <- if ("enrollment_time" %in% names(full_data_list[[1]])) {
+  # Skip pre-computation when dropout is present (subset_analysis_data handles it)
+  has_dropout <- "dropout_time" %in% names(full_data_list[[1]])
+  completion_times_list <- if ("enrollment_time" %in% names(full_data_list[[1]]) && !has_dropout) {
     lapply(full_data_list, function(fd) sort(fd$enrollment_time + followup_time))
+  } else if ("enrollment_time" %in% names(full_data_list[[1]])) {
+    # Dropout present: still need non-NULL list for accrual attribute extraction
+    rep(list(NULL), length(full_data_list))
   } else {
     NULL
   }
@@ -1879,6 +1884,8 @@ estimate_sequential_bf <- function(full_data_list, model, backend_args, target_p
         function(d) attr(d, "calendar_time") %||% NA_real_, numeric(1))
       accrual_n_enrolled <- vapply(analysis_data_list,
         function(d) attr(d, "n_enrolled") %||% NA_integer_, integer(1))
+      accrual_n_dropped <- vapply(analysis_data_list,
+        function(d) attr(d, "n_dropped") %||% NA_integer_, integer(1))
     }
 
     # Prepare batch data
@@ -1919,14 +1926,20 @@ estimate_sequential_bf <- function(full_data_list, model, backend_args, target_p
       skip_convergence = backend_args$skip_convergence %||% TRUE
     )
 
+    # Override n_analyzed with actual row counts (may differ from current_n with dropout)
+    actual_n_analyzed <- vapply(analysis_data_list, nrow, integer(1))
+    batch_results$n_analyzed <- actual_n_analyzed
+
     # Add accrual metadata columns (always present for consistent schema)
     if (!is.null(completion_times_list)) {
       batch_results$calendar_time <- accrual_cal_times
       batch_results$n_enrolled <- accrual_n_enrolled
+      batch_results$n_dropped <- accrual_n_dropped
       batch_results$enrollment_duration <- enrollment_duration_vec[active_idx]
     } else {
       batch_results$calendar_time <- NA_real_
       batch_results$n_enrolled <- NA_integer_
+      batch_results$n_dropped <- NA_integer_
       batch_results$enrollment_duration <- NA_real_
     }
 

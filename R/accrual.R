@@ -64,6 +64,23 @@ generate_enrollment_times <- function(n_total, accrual_rate,
 }
 
 
+#' Generate Dropout Times
+#'
+#' Generates random dropout times for each patient using an exponential
+#' (constant hazard) model. A patient drops out if their dropout time
+#' is less than the required follow-up time.
+#'
+#' @param n_total Integer. Total number of patients.
+#' @param hazard_rate Numeric. Exponential hazard rate for dropout.
+#'
+#' @return Numeric vector of length `n_total` with dropout times (time after
+#'   enrollment).
+#' @keywords internal
+generate_dropout_times <- function(n_total, hazard_rate) {
+  stats::rexp(n_total, rate = hazard_rate)
+}
+
+
 #' Identify Patients with Completed Follow-up
 #'
 #' Returns a logical mask of patients whose follow-up is complete at a given
@@ -147,24 +164,65 @@ calendar_to_available_n <- function(calendar_times, enrollment_times,
 subset_analysis_data <- function(full_data, current_n, followup_time = 0,
                                   completion_times = NULL) {
   if ("enrollment_time" %in% names(full_data)) {
-    if (is.null(completion_times)) {
-      completion_times <- sort(full_data$enrollment_time + followup_time)
+    has_dropout <- "dropout_time" %in% names(full_data)
+
+    if (has_dropout) {
+      # Dropout-aware: only patients who didn't drop out have completion times
+      completed_mask <- full_data$dropout_time >= followup_time
+      completed_times <- sort(full_data$enrollment_time[completed_mask] + followup_time)
+      n_completers <- length(completed_times)
+      target_not_met <- current_n > n_completers
+
+      if (n_completers == 0L) {
+        analysis_data <- full_data[integer(0), , drop = FALSE]
+        analysis_data$enrollment_time <- NULL
+        analysis_data$dropout_time <- NULL
+        attr(analysis_data, "calendar_time") <- NA_real_
+        attr(analysis_data, "n_enrolled") <- as.integer(nrow(full_data))
+        attr(analysis_data, "n_dropped") <- as.integer(sum(!completed_mask))
+        attr(analysis_data, "target_not_met") <- TRUE
+        return(analysis_data)
+      }
+
+      effective_n <- if (target_not_met) n_completers else current_n
+      calendar_time <- completed_times[effective_n]
+
+      # Patients with data at this calendar time AND not dropped out
+      time_mask <- patients_with_data(full_data$enrollment_time, followup_time,
+                                       calendar_time)
+      mask <- time_mask & completed_mask
+      n_enrolled <- as.integer(sum(patients_enrolled(full_data$enrollment_time, calendar_time)))
+      n_dropped <- as.integer(sum(time_mask & !completed_mask))
+
+      analysis_data <- full_data[mask, , drop = FALSE]
+      analysis_data$enrollment_time <- NULL
+      analysis_data$dropout_time <- NULL
+      attr(analysis_data, "calendar_time") <- calendar_time
+      attr(analysis_data, "n_enrolled") <- n_enrolled
+      attr(analysis_data, "n_dropped") <- n_dropped
+      if (target_not_met) attr(analysis_data, "target_not_met") <- TRUE
+      analysis_data
+    } else {
+      # No dropout: original logic
+      if (is.null(completion_times)) {
+        completion_times <- sort(full_data$enrollment_time + followup_time)
+      }
+      if (current_n > length(completion_times)) {
+        cli::cli_abort(c(
+          "Requested {current_n} analyzable patients but only {length(completion_times)} exist",
+          "i" = "Check that {.arg analysis_at} values do not exceed {.arg n_total}"
+        ))
+      }
+      calendar_time <- completion_times[current_n]
+      mask <- patients_with_data(full_data$enrollment_time, followup_time,
+                                  calendar_time)
+      n_enrolled <- as.integer(sum(patients_enrolled(full_data$enrollment_time, calendar_time)))
+      analysis_data <- full_data[mask, , drop = FALSE]
+      analysis_data$enrollment_time <- NULL
+      attr(analysis_data, "calendar_time") <- calendar_time
+      attr(analysis_data, "n_enrolled") <- n_enrolled
+      analysis_data
     }
-    if (current_n > length(completion_times)) {
-      cli::cli_abort(c(
-        "Requested {current_n} analyzable patients but only {length(completion_times)} exist",
-        "i" = "Check that {.arg analysis_at} values do not exceed {.arg n_total}"
-      ))
-    }
-    calendar_time <- completion_times[current_n]
-    mask <- patients_with_data(full_data$enrollment_time, followup_time,
-                               calendar_time)
-    n_enrolled <- as.integer(sum(patients_enrolled(full_data$enrollment_time, calendar_time)))
-    analysis_data <- full_data[mask, , drop = FALSE]
-    analysis_data$enrollment_time <- NULL
-    attr(analysis_data, "calendar_time") <- calendar_time
-    attr(analysis_data, "n_enrolled") <- n_enrolled
-    analysis_data
   } else {
     full_data[1:current_n, ]
   }
@@ -180,6 +238,7 @@ subset_analysis_data <- function(full_data, current_n, followup_time = 0,
 #' @param followup_time Numeric or NULL.
 #' @param analysis_timing Character or NULL.
 #' @param calendar_analysis_at Numeric vector or NULL.
+#' @param dropout rctbp_dropout object or NULL.
 #'
 #' @return TRUE invisibly if valid; aborts on invalid input.
 #' @keywords internal
@@ -187,7 +246,8 @@ validate_accrual_params <- function(accrual_rate = NULL,
                                      accrual_pattern = NULL,
                                      followup_time = NULL,
                                      analysis_timing = NULL,
-                                     calendar_analysis_at = NULL) {
+                                     calendar_analysis_at = NULL,
+                                     dropout = NULL) {
   if (!is.null(accrual_rate)) {
     if (!is.numeric(accrual_rate) || length(accrual_rate) != 1L ||
         is.na(accrual_rate) || accrual_rate <= 0) {
@@ -258,6 +318,29 @@ validate_accrual_params <- function(accrual_rate = NULL,
       cli::cli_abort(c(
         "{.arg calendar_analysis_at} is required when {.code analysis_timing = \"calendar\"}",
         "i" = "Specify calendar times for analyses (e.g., {.code c(12, 18, 24)})"
+      ))
+    }
+  }
+
+  # Validate dropout
+  if (!is.null(dropout)) {
+    if (!inherits(dropout, "rctbp_dropout")) {
+      cli::cli_abort(c(
+        "{.arg dropout} must be a {.cls rctbp_dropout} object",
+        "x" = "Got {.cls {class(dropout)}}",
+        "i" = "Use {.fn dropout} to create a dropout specification"
+      ))
+    }
+    if (is.null(accrual_rate)) {
+      cli::cli_abort(c(
+        "{.arg accrual_rate} is required when {.arg dropout} is specified",
+        "i" = "Dropout modeling requires calendar-time enrollment"
+      ))
+    }
+    if (is.null(followup_time) || followup_time <= 0) {
+      cli::cli_abort(c(
+        "{.arg followup_time} must be positive when {.arg dropout} is specified",
+        "i" = "Instant outcomes (followup_time = 0) cannot have dropout"
       ))
     }
   }

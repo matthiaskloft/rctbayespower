@@ -78,6 +78,13 @@ This file contains reference material moved from CLAUDE.md to keep that file con
 - `get_batch_field_map(model_type)` - Field mapping registry for batch prep
 - `prepare_data_list_as_batch_bf()` - Pre-allocated O(n) batch preparation
 
+### Accrual & Dropout
+
+| File | Purpose |
+|------|---------|
+| `R/accrual.R` | Enrollment times, subset_analysis_data, validate_accrual_params |
+| `R/dropout.R` | `dropout()` constructor, print/format methods |
+
 ### Boundaries
 
 | File | Purpose |

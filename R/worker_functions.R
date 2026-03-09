@@ -101,6 +101,13 @@ worker_process_single <- function(id_cond, id_iter, condition_args, design) {
         accrual_pattern = analysis_args$accrual_pattern
       )
     }
+
+    # Generate dropout times when dropout modeling is active
+    if (!is.null(analysis_args$dropout_hazard)) {
+      full_data$dropout_time <- generate_dropout_times(
+        nrow(full_data), analysis_args$dropout_hazard
+      )
+    }
   }
 
   # Call appropriate estimation function
@@ -326,6 +333,16 @@ worker_process_batch <- function(work_units, design) {
         n_total = nrow(fd),
         accrual_rate = accrual_rate,
         accrual_pattern = analysis_args$accrual_pattern
+      )
+      fd
+    })
+  }
+
+  # Generate dropout times when dropout modeling is active
+  if (!is.null(analysis_args$dropout_hazard)) {
+    full_data_list <- lapply(full_data_list, function(fd) {
+      fd$dropout_time <- generate_dropout_times(
+        nrow(fd), analysis_args$dropout_hazard
       )
       fd
     })
