@@ -9,7 +9,8 @@ validate_accrual_params(
   accrual_pattern = NULL,
   followup_time = NULL,
   analysis_timing = NULL,
-  calendar_analysis_at = NULL
+  calendar_analysis_at = NULL,
+  dropout = NULL
 )
 }
 \arguments{
@@ -22,6 +23,8 @@ validate_accrual_params(
 \item{analysis_timing}{Character or NULL.}
 
 \item{calendar_analysis_at}{Numeric vector or NULL.}
+
+\item{dropout}{rctbp_dropout object or NULL.}
 }
 \value{
 TRUE invisibly if valid; aborts on invalid input.

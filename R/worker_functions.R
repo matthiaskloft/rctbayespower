@@ -101,6 +101,22 @@ worker_process_single <- function(id_cond, id_iter, condition_args, design) {
         accrual_pattern = analysis_args$accrual_pattern
       )
     }
+
+    # Generate dropout times when dropout modeling is active
+    if (!is.null(analysis_args$dropout_hazard)) {
+      full_data$dropout_time <- generate_dropout_times(
+        nrow(full_data), analysis_args$dropout_hazard
+      )
+    }
+  }
+
+  # For single-analysis designs, filter out dropped patients before estimation
+  if (strategy == "single" && "dropout_time" %in% names(full_data)) {
+    followup_time <- analysis_args$followup_time %||% 0
+    keep <- full_data$dropout_time >= followup_time
+    full_data <- full_data[keep, , drop = FALSE]
+    full_data$enrollment_time <- NULL
+    full_data$dropout_time <- NULL
   }
 
   # Call appropriate estimation function
@@ -327,6 +343,29 @@ worker_process_batch <- function(work_units, design) {
         accrual_rate = accrual_rate,
         accrual_pattern = analysis_args$accrual_pattern
       )
+      fd
+    })
+  }
+
+  # Generate dropout times when dropout modeling is active
+  if (!is.null(analysis_args$dropout_hazard)) {
+    full_data_list <- lapply(full_data_list, function(fd) {
+      fd$dropout_time <- generate_dropout_times(
+        nrow(fd), analysis_args$dropout_hazard
+      )
+      fd
+    })
+  }
+
+  # For single-analysis designs, filter out dropped patients before estimation
+  if (strategy == "single" && length(full_data_list) > 0 &&
+      "dropout_time" %in% names(full_data_list[[1]])) {
+    followup_time <- analysis_args$followup_time %||% 0
+    full_data_list <- lapply(full_data_list, function(fd) {
+      keep <- fd$dropout_time >= followup_time
+      fd <- fd[keep, , drop = FALSE]
+      fd$enrollment_time <- NULL
+      fd$dropout_time <- NULL
       fd
     })
   }

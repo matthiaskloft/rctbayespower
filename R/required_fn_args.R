@@ -132,7 +132,8 @@ show_condition_args <- function(design = NULL, print = TRUE) {
   params_analysis <- c("thr_fx_eff", "thr_fx_fut", "thr_dec_eff", "thr_dec_fut",
                        "analysis_at", "interim_function",
                        "accrual_rate", "accrual_pattern", "followup_time",
-                       "analysis_timing", "calendar_analysis_at")
+                       "analysis_timing", "calendar_analysis_at",
+                       "dropout")
 
   params_all <- c(params_sim, params_analysis)
 
@@ -185,7 +186,8 @@ show_condition_args <- function(design = NULL, print = TRUE) {
       "*" = "accrual_pattern {.emph (\"uniform\", \"poisson\", \"ramp\", or custom function)}",
       "*" = "followup_time {.emph (required follow-up duration after enrollment)}",
       "*" = "analysis_timing {.emph (\"sample_size\" [default] or \"calendar\")}",
-      "*" = "calendar_analysis_at {.emph (calendar times for analyses; requires analysis_timing = \"calendar\")}"
+      "*" = "calendar_analysis_at {.emph (calendar times for analyses; requires analysis_timing = \"calendar\")}",
+      "*" = "dropout {.emph (dropout(rate, type) \u2014 expected patient dropout; requires accrual_rate and followup_time > 0)}"
     ))
     cli::cli_text("")
 

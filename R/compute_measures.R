@@ -392,6 +392,10 @@ summarize_sims_with_interim <- function(results_df_raw, n_sims) {
   has_accrual_data <- "calendar_time" %in% names(df) &&
     any(!is.na(df$calendar_time))
 
+  # Check once whether dropout data exists
+  has_dropout_data <- "n_dropped" %in% names(df) &&
+    any(!is.na(df$n_dropped))
+
   by_look_key <- do.call(paste, c(df[by_look_by_cols], sep = "|||"))
   by_look_groups <- split(df, by_look_key, drop = TRUE)
 
@@ -429,6 +433,7 @@ summarize_sims_with_interim <- function(results_df_raw, n_sims) {
       conv_rate = mean(get_col(grp, "converged"), na.rm = TRUE),
       stringsAsFactors = FALSE
     )
+    combined <- cbind(base_agg, quantile_agg, tail_agg)
     if (has_accrual_data) {
       accrual_agg <- data.frame(
         calendar_time_mn = mean(get_col(grp, "calendar_time"), na.rm = TRUE),
@@ -436,10 +441,16 @@ summarize_sims_with_interim <- function(results_df_raw, n_sims) {
         n_enrolled_mn = mean(get_col(grp, "n_enrolled"), na.rm = TRUE),
         stringsAsFactors = FALSE
       )
-      cbind(base_agg, quantile_agg, tail_agg, accrual_agg)
-    } else {
-      cbind(base_agg, quantile_agg, tail_agg)
+      combined <- cbind(combined, accrual_agg)
     }
+    if (has_dropout_data) {
+      dropout_agg <- data.frame(
+        n_dropped_mn = mean(get_col(grp, "n_dropped"), na.rm = TRUE),
+        stringsAsFactors = FALSE
+      )
+      combined <- cbind(combined, dropout_agg)
+    }
+    combined
   }
 
   by_look_list <- lapply(by_look_groups, by_look_agg)
@@ -520,15 +531,44 @@ summarize_sims_with_interim <- function(results_df_raw, n_sims) {
                                       sim_outcomes$stop_n)
   sim_outcomes$stopped_early <- !is.na(sim_outcomes$stop_n)
 
-  # Compute effective calendar time per simulation (accrual-aware)
-  if (has_accrual_data) {
-    # Deduplicate: one row per (id_cond, id_iter, id_look)
+  # Shared dedup: one row per (id_cond, id_iter, id_look) — used by both
+  # dropout and accrual lookups below
+  if (has_dropout_data || has_accrual_data) {
     dedup_key <- paste(df$id_cond, df$id_iter, df$id_look, sep = "|||")
     df_dedup <- df[!duplicated(dedup_key), , drop = FALSE]
-
-    # Final-look calendar_time for ALL sims (fallback for non-stopped)
     final_look_id <- max(df_dedup$id_look)
     final_rows <- df_dedup[df_dedup$id_look == final_look_id, , drop = FALSE]
+  }
+
+  # Compute total dropout per simulation (at final look, overridden for stopped)
+  if (has_dropout_data) {
+    dropout_lookup <- data.frame(
+      id_cond = final_rows$id_cond,
+      id_iter = final_rows$id_iter,
+      n_dropped_final = final_rows$n_dropped,
+      stringsAsFactors = FALSE
+    )
+
+    # Override with stop-point n_dropped for early-stopped sims
+    if (nrow(stopping_info) > 0 && "n_dropped" %in% names(first_stops)) {
+      stop_drop <- data.frame(
+        id_cond = first_stops$id_cond, id_iter = first_stops$id_iter,
+        stop_n_dropped = first_stops$n_dropped,
+        stringsAsFactors = FALSE
+      )
+      dropout_lookup <- merge(dropout_lookup, stop_drop,
+                              by = c("id_cond", "id_iter"), all.x = TRUE)
+      has_stop <- !is.na(dropout_lookup$stop_n_dropped)
+      dropout_lookup$n_dropped_final[has_stop] <- dropout_lookup$stop_n_dropped[has_stop]
+      dropout_lookup$stop_n_dropped <- NULL
+    }
+
+    sim_outcomes <- merge(sim_outcomes, dropout_lookup,
+                          by = c("id_cond", "id_iter"), all.x = TRUE)
+  }
+
+  # Compute effective calendar time per simulation (accrual-aware)
+  if (has_accrual_data) {
     cal_lookup <- data.frame(
       id_cond = final_rows$id_cond,
       id_iter = final_rows$id_iter,
@@ -572,6 +612,7 @@ summarize_sims_with_interim <- function(results_df_raw, n_sims) {
       prop_stp_fut = sum(grp$stop_reason == "stop_futility", na.rm = TRUE) / n_grp,
       stringsAsFactors = FALSE
     )
+    result <- base
     if (has_accrual_data) {
       accrual <- data.frame(
         trial_dur_mn = mean(grp$effective_calendar_time, na.rm = TRUE),
@@ -579,10 +620,21 @@ summarize_sims_with_interim <- function(results_df_raw, n_sims) {
         enrollment_dur_mn = mean(grp$enrollment_duration, na.rm = TRUE),
         stringsAsFactors = FALSE
       )
-      cbind(base, accrual)
-    } else {
-      base
+      result <- cbind(result, accrual)
     }
+    if (has_dropout_data) {
+      dropped_vals <- grp$n_dropped_final
+      at_risk_vals <- grp$effective_n + dropped_vals
+      per_sim_pct <- ifelse(at_risk_vals > 0, dropped_vals / at_risk_vals, NA_real_)
+      dropout <- data.frame(
+        n_dropped_mn = mean(dropped_vals, na.rm = TRUE),
+        n_dropped_mdn = calc_robust_median(dropped_vals),
+        dropout_pct = mean(per_sim_pct, na.rm = TRUE),
+        stringsAsFactors = FALSE
+      )
+      result <- cbind(result, dropout)
+    }
+    result
   })
 
   overall_results <- do.call(rbind, overall_list)
@@ -610,6 +662,9 @@ summarize_sims_with_interim <- function(results_df_raw, n_sims) {
                  "prop_stp_early", "prop_stp_eff", "prop_stp_fut", "prop_no_dec")
   if ("trial_dur_mn" %in% names(overall_df)) {
     col_order <- c(col_order, "trial_dur_mn", "trial_dur_mdn", "enrollment_dur_mn")
+  }
+  if ("n_dropped_mn" %in% names(overall_df)) {
+    col_order <- c(col_order, "n_dropped_mn", "n_dropped_mdn", "dropout_pct")
   }
   col_order <- intersect(col_order, names(overall_df))
   overall <- overall_df[, col_order, drop = FALSE]

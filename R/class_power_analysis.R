@@ -1243,6 +1243,22 @@ S7::method(print, rctbp_power_analysis) <- function(x, ...) {
       cli::cli_bullets(bullets)
     }
 
+    # Dropout section (when dropout data is present)
+    has_dropout <- !is.null(interim_overall) &&
+      "n_dropped_mn" %in% names(interim_overall) &&
+      any(!is.na(interim_overall$n_dropped_mn))
+    if (has_dropout) {
+      cli::cli_h2("Dropout {.emph (range across conditions)}")
+      bullets <- character()
+      dropped_range <- safe_range(interim_overall$n_dropped_mn, digits = 1)
+      bullets <- c(bullets, "*" = "Mean patients dropped: {dropped_range}")
+      if ("dropout_pct" %in% names(interim_overall)) {
+        pct_range <- safe_range(interim_overall$dropout_pct * 100, digits = 1)
+        bullets <- c(bullets, "*" = "Observed dropout rate: {pct_range}%")
+      }
+      cli::cli_bullets(bullets)
+    }
+
     # Find optimal condition
     optimal <- find_optimal_condition(
       results_summ = results_df,
@@ -1491,6 +1507,26 @@ S7::method(summary, rctbp_power_analysis) <- function(object, ...) {
       cli::cli_bullets(bullets)
     }
 
+    # Dropout section (summary version)
+    has_dropout_summ <- !is.null(interim_overall) &&
+      "n_dropped_mn" %in% names(interim_overall) &&
+      any(!is.na(interim_overall$n_dropped_mn))
+    if (has_dropout_summ) {
+      cli::cli_h2("Dropout")
+      bullets <- character()
+      dropped_range <- safe_range(interim_overall$n_dropped_mn, digits = 1)
+      bullets <- c(bullets, "*" = "Mean patients dropped (range): {dropped_range}")
+      if ("n_dropped_mdn" %in% names(interim_overall)) {
+        dropped_mdn_range <- safe_range(interim_overall$n_dropped_mdn, digits = 0)
+        bullets <- c(bullets, "*" = "Median patients dropped (range): {dropped_mdn_range}")
+      }
+      if ("dropout_pct" %in% names(interim_overall)) {
+        pct_range <- safe_range(interim_overall$dropout_pct * 100, digits = 1)
+        bullets <- c(bullets, "*" = "Observed dropout rate (range): {pct_range}%")
+      }
+      cli::cli_bullets(bullets)
+    }
+
     # Find optimal condition
     optimal <- find_optimal_condition(
       results_summ = results_df,
@@ -1596,8 +1632,18 @@ S7::method(summary, rctbp_power_analysis) <- function(object, ...) {
             all.x = TRUE
           )
         }
+        # Include dropout if data is present
+        if (has_dropout_summ && "dropout_pct" %in% names(interim_overall)) {
+          dropout_cols <- intersect(c("id_cond", "dropout_pct"), names(interim_overall))
+          cond_table <- merge(
+            cond_table,
+            interim_overall[, dropout_cols, drop = FALSE],
+            by = "id_cond",
+            all.x = TRUE
+          )
+        }
         # Reorder columns
-        col_order <- c("id_cond", "n_total", "pwr_eff", "pwr_fut", "prop_stp_early", "n_mn", "trial_dur_mn")
+        col_order <- c("id_cond", "n_total", "pwr_eff", "pwr_fut", "prop_stp_early", "n_mn", "trial_dur_mn", "dropout_pct")
         col_order <- intersect(col_order, names(cond_table))
         cond_table <- cond_table[, col_order, drop = FALSE]
         # Sort by power
