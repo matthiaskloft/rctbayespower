@@ -22,7 +22,7 @@
 # Power Analysis
 * ~~save full quantile profile for target parameter posterior to enable post-hoc exploration of alternative thresholds~~ (done: 9 quantile columns post\_q025-post\_q975 in results\_raw and aggregated in results\_conditions)
 
-* reports: report for convergence
+* ~~reports: report for convergence~~ (done: `report_convergence()` function, convergence sections in `print()`/`summary()`, `report(x, "convergence")` dispatch)
 
 # Across Package
 
