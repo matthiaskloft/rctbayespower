@@ -365,7 +365,8 @@ estimate_sequential_brms <- function(full_data, model, backend_args, target_para
                                      thr_dec_eff, thr_dec_fut,
                                      analysis_at, interim_function,
                                      id_iter, id_cond,
-                                     followup_time = 0) {
+                                     followup_time = 0,
+                                     analysis_timing = "sample_size") {
 
   n_total <- nrow(full_data)
   # Pre-compute completion times once (invariant across analysis points)
@@ -392,19 +393,34 @@ estimate_sequential_brms <- function(full_data, model, backend_args, target_para
     current_n <- analysis_schedule[id_analysis]
     is_final <- id_analysis == length(analysis_schedule)
 
-    # Calculate information fraction for threshold resolution
-    info_frac <- current_n / n_total
+    # Subset data to current analysis point (accrual-aware when enrollment_time present)
+    analysis_data <- subset_analysis_data(full_data, current_n, followup_time,
+                                           completion_times,
+                                           analysis_timing = analysis_timing)
+    accrual_calendar_time <- attr(analysis_data, "calendar_time")
+    accrual_n_enrolled <- attr(analysis_data, "n_enrolled")
+    accrual_n_dropped <- attr(analysis_data, "n_dropped")
+    accrual_n_events <- attr(analysis_data, "n_events")
+
+    # Guard: skip when zero completers (e.g. severe dropout) — must be before
+    # threshold resolution to avoid info_frac = 0 producing NaN from boundary fns.
+    if (nrow(analysis_data) == 0) {
+      results_list[[id_analysis]] <- create_error_result(
+        id_iter, id_cond, id_analysis,
+        "insufficient_data"
+      )
+      next
+    }
+
+    # Calculate information fraction AFTER subsetting so dropout is reflected.
+    # Uses actual completers: when dropout reduces the sample, boundary functions
+    # (e.g. boundary_obf()) receive the true information fraction, producing
+    # appropriately conservative thresholds.
+    info_frac <- nrow(analysis_data) / n_total
 
     # Resolve probability thresholds (handle function or numeric)
     current_thr_dec_eff <- resolve_threshold(thr_dec_eff, info_frac)
     current_thr_dec_fut <- resolve_threshold(thr_dec_fut, info_frac)
-
-    # Subset data to current analysis point (accrual-aware when enrollment_time present)
-    analysis_data <- subset_analysis_data(full_data, current_n, followup_time,
-                                           completion_times)
-    accrual_calendar_time <- attr(analysis_data, "calendar_time")
-    accrual_n_enrolled <- attr(analysis_data, "n_enrolled")
-    accrual_n_dropped <- attr(analysis_data, "n_dropped")
 
     # Estimate posterior
     estimation_result <- tryCatch({
@@ -532,6 +548,7 @@ estimate_sequential_brms <- function(full_data, model, backend_args, target_para
     measures$calendar_time <- accrual_calendar_time %||% NA_real_
     measures$n_enrolled <- as.integer(accrual_n_enrolled %||% NA_integer_)
     measures$n_dropped <- as.integer(accrual_n_dropped %||% NA_integer_)
+    measures$n_events <- as.integer(accrual_n_events %||% NA_integer_)
     measures$enrollment_duration <- enrollment_duration
     measures$stopped <- stopped
     measures$stop_reason <- if (stopped) stop_reason else NA_character_

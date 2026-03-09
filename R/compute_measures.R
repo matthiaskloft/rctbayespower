@@ -396,6 +396,10 @@ summarize_sims_with_interim <- function(results_df_raw, n_sims) {
   has_dropout_data <- "n_dropped" %in% names(df) &&
     any(!is.na(df$n_dropped))
 
+  # Check once whether event count data exists (event-driven designs)
+  has_event_data <- "n_events" %in% names(df) &&
+    any(!is.na(df$n_events))
+
   by_look_key <- do.call(paste, c(df[by_look_by_cols], sep = "|||"))
   by_look_groups <- split(df, by_look_key, drop = TRUE)
 
@@ -454,6 +458,14 @@ summarize_sims_with_interim <- function(results_df_raw, n_sims) {
         stringsAsFactors = FALSE
       )
       combined <- cbind(combined, dropout_agg)
+    }
+    if (has_event_data) {
+      event_agg <- data.frame(
+        n_events_mn = mean(get_col(grp, "n_events"), na.rm = TRUE),
+        n_events_mdn = stats::median(get_col(grp, "n_events"), na.rm = TRUE),
+        stringsAsFactors = FALSE
+      )
+      combined <- cbind(combined, event_agg)
     }
     combined
   }

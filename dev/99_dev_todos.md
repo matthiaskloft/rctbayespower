@@ -4,7 +4,7 @@
   -> implemented link\_sigma as argument for ancova
 * ~~print() should show default values for the data\_simulation\_fn as well as required arguments to specify~~ (done: "Simulation Function Parameters" section in print output)
 
-* allocation probs need to be disambiguated
+* ~~allocation probs need to be disambiguated~~ (done: p_alloc documented in show_condition_args, validation error improved with format guidance)
 
 
 ## class 'conditions'
@@ -67,13 +67,17 @@
 * ~~Phase 1 (MVP): enrollment time generation, calendar-time subsetting, trial duration metrics~~ (done)
 * ~~Phase 2: reporting & accrual plot type~~ (done)
 * ~~Phase 3: dropout / loss-to-follow-up~~ (done)
-* Phase 4: survival/event-driven integration (dual routing for `accrual_rate`)
+* ~~Phase 4: survival/event-driven integration~~ (done: dual routing, survival sim_fn, event-driven subsetting, n_events metric)
 
 ## Dropout: Known Limitations / Follow-up Work
 
-* **BayesFlow batch processing with variable completer counts**: `prepare_data_list_as_batch_bf()` assumes all simulations at a given look have the same row count (pre-allocates fixed-width matrices at line 1263). With stochastic dropout, different simulations can have different completer counts at the same look, causing matrix dimension mismatches. Fix requires splitting batches by data size or padding. See CodeRabbit review on PR #11.
+* ~~**BayesFlow batch processing with variable completer counts**~~: Fixed — split-by-size batching groups sims by completer count, runs separate forward passes per group, reassembles in original order. No Python changes needed. Assertion added to `prepare_data_list_as_batch_bf()` to catch mixed row counts.
 * ~~**`effective_n` for non-stopped target\_not\_met sims**~~: Fixed — now uses per-sim `n_analyzed_final` from final look instead of `n_planned`, with defensive fallback.
-* **Threshold resolution before dropout-aware subsetting** (brms backend): `resolve_threshold()` for `thr_dec_eff/fut` uses the scheduled `current_n` information fraction before `subset_analysis_data()` reduces the actual analyzed count. With dropout, this overstates the information fraction. Fix: move threshold resolution after subsetting, using actual completer count.
+* ~~**Threshold resolution before dropout-aware subsetting** (brms backend)~~: Fixed — brms backend now computes `info_frac = nrow(analysis_data) / n_total` after `subset_analysis_data()`. BF backend keeps scheduled info_frac (deterministic, shared across batch). Zero-completer guard added. Also fixed `resolve_boundary_vector()` to pass full info_frac vector (was calling per-element, breaking gsDesign).
+
+## Out-of-scope issues discovered during threshold fix
+
+* **Bayesian OBF boundary single-scalar behavior**: `boundary_obf(threshold=)` self-normalizes by the last element of the info_frac vector. When called with a single scalar (as in `resolve_threshold()` per-look), it always returns `threshold` regardless of info_frac. The OBF shape only manifests with vector context. This is a design limitation of the Bayesian mode boundary functions — they need the full look schedule to compute the shape. Consider pre-resolving all thresholds as a vector at the start of the sequential loop rather than per-look.
 
 
 
