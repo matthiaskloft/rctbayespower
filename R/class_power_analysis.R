@@ -983,7 +983,10 @@ S7::method(run, rctbp_power_analysis) <- function(x, ...) {
   results_raw_list <- results_raw_list[!sapply(results_raw_list, is.null)]
   
   if (length(results_raw_list) == 0) {
-    stop("All simulations failed. Check your model and data simulation parameters.")
+    cli::cli_abort(c(
+      "All simulations failed.",
+      "i" = "Check your model and data simulation parameters."
+    ))
   }
   
   # Combine results - use bind_rows for robustness
@@ -1663,7 +1666,7 @@ S7::method(summary, rctbp_power_analysis) <- function(object, ...) {
       }
     }
     table_lines <- format_table_cli(cond_table)
-    cat(paste(table_lines, collapse = "\n"), "\n")
+    cli::cat_line(table_lines)
 
     # Hints
     cli::cli_text("")
@@ -1710,7 +1713,7 @@ S7::method(summary, rctbp_power_analysis) <- function(object, ...) {
     cli::cli_h2("Conditions Grid")
     grid_preview <- object@conditions@grid
     table_lines <- format_table_cli(grid_preview)
-    cat(paste(table_lines, collapse = "\n"), "\n")
+    cli::cat_line(table_lines)
 
     cli::cli_text("")
     cli::cli_rule()

@@ -333,7 +333,7 @@ render_cli <- function(report) {
     if (!is.null(section$grid)) {
       cli::cli_text("")
       table_lines <- format_table_cli(section$grid)
-      cat(paste(table_lines, collapse = "\n"), "\n")
+      cli::cat_line(table_lines)
 
       # Show fixed (non-varying) crossed params and constant params below grid
       fmt_val <- function(v) {
@@ -366,7 +366,7 @@ render_cli <- function(report) {
       if (length(fixed_parts) > 0) {
         cli::cli_text("")
         cli::cli_text("{.emph Fixed parameters:}")
-        cat(paste(fixed_parts, collapse = "\n"), "\n")
+        cli::cat_line(fixed_parts)
       }
     }
 

@@ -170,7 +170,7 @@ S7::method(print, rctbp_pareto_result) <- function(x, ...) {
 #' @name summary.rctbp_pareto_result
 #' @export
 S7::method(summary, rctbp_pareto_result) <- function(object, ...) {
-  cat("Pareto Front:\n")
+  cli::cli_h3("Pareto Front")
   print(object@pareto_front)
   invisible(object@pareto_front)
 }

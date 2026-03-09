@@ -63,7 +63,7 @@ get_code <- S7::new_generic("get_code", "x")
 
 S7::method(get_code, rctbp_design) <- function(x, ...) {
   code <- format_call(x@.call, "design", "build_design")
-  cat(code, sep = "\n")
+  cli::cat_line(code)
   invisible(paste(code, collapse = "\n"))
 }
 
@@ -84,7 +84,7 @@ S7::method(get_code, rctbp_conditions) <- function(x, ...) {
   cond_call <- replace_arg_with_symbol(cond_call, "design", "design")
   lines <- c(lines, format_call(cond_call, "conditions", "build_conditions"))
 
-  cat(lines, sep = "\n")
+  cli::cat_line(lines)
   invisible(paste(lines, collapse = "\n"))
 }
 
@@ -111,7 +111,7 @@ S7::method(get_code, rctbp_power_analysis) <- function(x, ...) {
   pa_call <- replace_arg_with_symbol(pa_call, "conditions", "conditions")
   lines <- c(lines, format_call(pa_call, "result", "power_analysis"))
 
-  cat(lines, sep = "\n")
+  cli::cat_line(lines)
   invisible(paste(lines, collapse = "\n"))
 }
 
