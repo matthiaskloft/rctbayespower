@@ -201,26 +201,17 @@ parse_design_prior <- function(design_prior, effect_sizes, verbose = TRUE) {
         }
 
         if (verbose) {
-          cat("Successfully parsed design prior:", design_prior, "\n")
-          cat("  Distribution:", dist_name, "\n")
-          cat(
-            "  Density function:",
-            density_call,
-            "(using",
-            source_package,
-            "package)\n"
-          )
-          if (quantile_available) {
-            cat(
-              "  Quantile function:",
-              quantile_call,
-              "(using",
-              source_package,
-              "package)\n"
-            )
+          quantile_msg <- if (quantile_available) {
+            "Quantile function: {quantile_call} (using {source_package} package)"
           } else {
-            cat("  Quantile function: Not available (coverage checking disabled)\n")
+            "Quantile function: Not available (coverage checking disabled)"
           }
+          cli::cli_inform(c(
+            "v" = "Successfully parsed design prior: {design_prior}",
+            "*" = "Distribution: {dist_name}",
+            "*" = "Density function: {density_call} (using {source_package} package)",
+            "*" = quantile_msg
+          ))
         }
       },
       error = function(e) {

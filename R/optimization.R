@@ -73,7 +73,7 @@ search_p_alloc <- function(min = 0.1) {
 
 #' @export
 print.rctbp_search_p_alloc <- function(x, ...) {
-  cat(sprintf("search_p_alloc(min = %g)\n", x$min_prop))
+  cli::cat_line(sprintf("search_p_alloc(min = %g)", x$min_prop))
   invisible(x)
 }
 
@@ -155,6 +155,6 @@ search_looks <- function(n = 2, min_spacing = 0.2) {
 
 #' @export
 print.rctbp_search_looks <- function(x, ...) {
-  cat(sprintf("search_looks(n = %d, min_spacing = %g)\n", x$n_looks, x$min_spacing))
+  cli::cat_line(sprintf("search_looks(n = %d, min_spacing = %g)", x$n_looks, x$min_spacing))
   invisible(x)
 }

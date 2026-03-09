@@ -142,7 +142,7 @@ dropout <- function(rate, type = "proportion") {
 
 #' @export
 print.rctbp_dropout <- function(x, ...) {
-  cat(format(x), "\n")
+  cli::cat_line(format(x))
   invisible(x)
 }
 
