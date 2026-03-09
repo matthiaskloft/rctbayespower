@@ -209,6 +209,113 @@ test_that("summarize_sims includes quantile columns with mean and SE", {
   }
 })
 
+# =============================================================================
+# effective_n with dropout (per-sim n_analyzed at final look)
+# =============================================================================
+
+test_that("effective_n uses per-sim n_analyzed, not n_planned, with mixed dropout", {
+  # 10 sims, 2 looks, none stopped
+  # Sims 1-5: n_analyzed = 90 at look 2 (dropout reduced)
+  # Sims 6-10: n_analyzed = 100 at look 2 (no dropout)
+  results1 <- mock_raw_results(n_sims = 10, n_conditions = 1)
+  results1$id_look <- 1L
+  results1$n_analyzed <- 50L
+  results1$stopped <- FALSE
+  results1$stop_reason <- NA_character_
+  results1$n_dropped <- 0L
+
+  results2 <- mock_raw_results(n_sims = 10, n_conditions = 1)
+  results2$id_look <- 2L
+  results2$n_analyzed <- ifelse(results2$id_iter <= 5, 90L, 100L)
+  results2$stopped <- FALSE
+  results2$stop_reason <- NA_character_
+  results2$n_dropped <- ifelse(results2$id_iter <= 5, 10L, 0L)
+
+  combined <- rbind(results1, results2)
+  summary <- rctbayespower:::summarize_sims_with_interim(combined, n_sims = 10)
+
+  # Mixed n_analyzed creates multiple by_look rows per condition at the final
+
+  # look (n_analyzed is a grouping key). Deduplicate overall to the first row.
+  overall <- summary$overall[!duplicated(summary$overall$id_cond), ]
+
+  # n_mn should be mean of actual n_analyzed at final look: (5*90 + 5*100)/10 = 95
+  expect_equal(overall$n_mn, 95)
+  # dropout_pct: mean of per-sim dropout fraction
+  # sims 1-5: 10/(90+10)=0.1, sims 6-10: 0/(100+0)=0
+  expect_equal(overall$dropout_pct, 0.05, tolerance = 1e-10)
+  # n_planned is the max n_analyzed across condition = 100
+  expect_true(overall$n_planned >= 95)
+})
+
+test_that("effective_n equals n_planned when no dropout column present", {
+  # Backward compat: no n_dropped column, all sims reach final look
+  results1 <- mock_raw_results(n_sims = 10, n_conditions = 1)
+  results1$id_look <- 1L
+  results1$n_analyzed <- 50L
+  results1$stopped <- FALSE
+  results1$stop_reason <- NA_character_
+
+  results2 <- mock_raw_results(n_sims = 10, n_conditions = 1)
+  results2$id_look <- 2L
+  results2$n_analyzed <- 100L
+  results2$stopped <- FALSE
+  results2$stop_reason <- NA_character_
+
+  combined <- rbind(results1, results2)
+  summary <- rctbayespower:::summarize_sims_with_interim(combined, n_sims = 10)
+
+  # All sims have n_analyzed = 100 at final look, same as n_planned
+  expect_equal(summary$overall$n_mn, 100)
+  expect_equal(summary$overall$n_planned, 100)
+})
+
+test_that("effective_n uses stop_n for stopped sims and n_analyzed for others", {
+  # Sims 1-3 stopped at look 1 (n=50), sims 4-10 reach look 2 with dropout (n=85)
+  results1 <- mock_raw_results(n_sims = 10, n_conditions = 1)
+  results1$id_look <- 1L
+  results1$n_analyzed <- 50L
+  results1$stopped <- ifelse(results1$id_iter <= 3, TRUE, FALSE)
+  results1$stop_reason <- ifelse(results1$id_iter <= 3, "efficacy", NA_character_)
+  results1$n_dropped <- 0L
+
+  results2 <- mock_raw_results(n_sims = 10, n_conditions = 1)
+  results2$id_look <- 2L
+  results2$n_analyzed <- 85L
+  results2$stopped <- FALSE
+  results2$stop_reason <- NA_character_
+  results2$n_dropped <- 15L
+
+  combined <- rbind(results1, results2)
+  summary <- rctbayespower:::summarize_sims_with_interim(combined, n_sims = 10)
+
+  # n_mn = (3*50 + 7*85) / 10 = (150 + 595) / 10 = 74.5
+  expect_equal(summary$overall$n_mn, 74.5)
+})
+
+test_that("effective_n uses stop_n for all sims when all stop early", {
+  # All 10 sims stop at look 1 (n=50)
+  results1 <- mock_raw_results(n_sims = 10, n_conditions = 1)
+  results1$id_look <- 1L
+  results1$n_analyzed <- 50L
+  results1$stopped <- TRUE
+  results1$stop_reason <- "efficacy"
+  results1$n_dropped <- 5L
+
+  results2 <- mock_raw_results(n_sims = 10, n_conditions = 1)
+  results2$id_look <- 2L
+  results2$n_analyzed <- 100L
+  results2$stopped <- FALSE
+  results2$stop_reason <- NA_character_
+  results2$n_dropped <- 0L
+
+  combined <- rbind(results1, results2)
+  summary <- rctbayespower:::summarize_sims_with_interim(combined, n_sims = 10)
+
+  # All sims stopped at look 1 with n=50, so n_mn = 50
+  expect_equal(summary$overall$n_mn, 50)
+})
+
 test_that("summarize_sims quantile columns appear between post_sd and rhat", {
   results <- mock_raw_results(n_sims = 10, n_conditions = 1)
   q_cols <- rctbayespower:::QUANTILE_COLS

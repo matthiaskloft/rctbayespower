@@ -1262,6 +1262,35 @@ S7::method(print, rctbp_power_analysis) <- function(x, ...) {
       cli::cli_bullets(bullets)
     }
 
+    # Convergence Diagnostics section
+    conv_source <- if (has_interim) interim_overall else results_df
+    has_convergence <- !is.null(conv_source) &&
+      "conv_rate" %in% names(conv_source) &&
+      any(is.finite(conv_source$conv_rate))
+    if (has_convergence) {
+      cli::cli_h2("Convergence {.emph (range across conditions)}")
+      bullets <- character()
+      conv_range <- safe_range(conv_source$conv_rate, pct = TRUE, digits = 1)
+      bullets <- c(bullets, "*" = "Convergence rate: {conv_range}")
+      if ("rhat" %in% names(conv_source) && any(is.finite(conv_source$rhat))) {
+        rhat_range <- safe_range(conv_source$rhat, digits = 3)
+        bullets <- c(bullets, "*" = "Mean Rhat: {rhat_range}")
+      }
+      if ("ess_bulk" %in% names(conv_source) && any(is.finite(conv_source$ess_bulk))) {
+        ess_range <- safe_range(conv_source$ess_bulk, digits = 0)
+        bullets <- c(bullets, "*" = "Mean ESS (bulk): {ess_range}")
+      }
+      cli::cli_bullets(bullets)
+      # Warn if convergence issues detected
+      if (any(conv_source$conv_rate < 1.0, na.rm = TRUE)) {
+        cli::cli_alert_warning("Some conditions have non-converged simulations")
+      }
+      if ("rhat" %in% names(conv_source) &&
+          any(conv_source$rhat > 1.05, na.rm = TRUE)) {
+        cli::cli_alert_warning("Some conditions have mean Rhat > 1.05")
+      }
+    }
+
     # Find optimal condition
     optimal <- find_optimal_condition(
       results_summ = results_df,
@@ -1530,6 +1559,40 @@ S7::method(summary, rctbp_power_analysis) <- function(object, ...) {
       cli::cli_bullets(bullets)
     }
 
+    # Convergence Diagnostics section (summary version)
+    conv_source_summ <- if (has_interim) interim_overall else results_df
+    has_convergence_summ <- !is.null(conv_source_summ) &&
+      "conv_rate" %in% names(conv_source_summ) &&
+      any(is.finite(conv_source_summ$conv_rate))
+    if (has_convergence_summ) {
+      cli::cli_h2("Convergence Diagnostics")
+      bullets <- character()
+      conv_range <- safe_range(conv_source_summ$conv_rate, pct = TRUE, digits = 1)
+      bullets <- c(bullets, "*" = "Convergence rate (range): {conv_range}")
+      if ("rhat" %in% names(conv_source_summ) && any(is.finite(conv_source_summ$rhat))) {
+        rhat_range <- safe_range(conv_source_summ$rhat, digits = 3)
+        bullets <- c(bullets, "*" = "Mean Rhat (range): {rhat_range}")
+      }
+      if ("ess_bulk" %in% names(conv_source_summ) && any(is.finite(conv_source_summ$ess_bulk))) {
+        ess_bulk_range <- safe_range(conv_source_summ$ess_bulk, digits = 0)
+        bullets <- c(bullets, "*" = "Mean ESS bulk (range): {ess_bulk_range}")
+      }
+      if ("ess_tail" %in% names(conv_source_summ) && any(is.finite(conv_source_summ$ess_tail))) {
+        ess_tail_range <- safe_range(conv_source_summ$ess_tail, digits = 0)
+        bullets <- c(bullets, "*" = "Mean ESS tail (range): {ess_tail_range}")
+      }
+      cli::cli_bullets(bullets)
+      # Warn if convergence issues detected
+      if (any(conv_source_summ$conv_rate < 1.0, na.rm = TRUE)) {
+        cli::cli_alert_warning("Some conditions have non-converged simulations")
+      }
+      if ("rhat" %in% names(conv_source_summ) &&
+          any(conv_source_summ$rhat > 1.05, na.rm = TRUE)) {
+        cli::cli_alert_warning("Some conditions have mean Rhat > 1.05")
+      }
+      cli::cli_alert_info("Detailed convergence: {.code report(x, 'convergence')}")
+    }
+
     # Find optimal condition
     optimal <- find_optimal_condition(
       results_summ = results_df,
@@ -1645,8 +1708,18 @@ S7::method(summary, rctbp_power_analysis) <- function(object, ...) {
             all.x = TRUE
           )
         }
+        # Include convergence rate if available
+        if (has_convergence_summ && "conv_rate" %in% names(interim_overall)) {
+          conv_cols <- intersect(c("id_cond", "conv_rate"), names(interim_overall))
+          cond_table <- merge(
+            cond_table,
+            interim_overall[, conv_cols, drop = FALSE],
+            by = "id_cond",
+            all.x = TRUE
+          )
+        }
         # Reorder columns
-        col_order <- c("id_cond", "n_total", "pwr_eff", "pwr_fut", "prop_stp_early", "n_mn", "trial_dur_mn", "dropout_pct")
+        col_order <- c("id_cond", "n_total", "pwr_eff", "pwr_fut", "prop_stp_early", "n_mn", "trial_dur_mn", "dropout_pct", "conv_rate")
         col_order <- intersect(col_order, names(cond_table))
         cond_table <- cond_table[, col_order, drop = FALSE]
         # Sort by power
@@ -1658,7 +1731,7 @@ S7::method(summary, rctbp_power_analysis) <- function(object, ...) {
       }
     } else {
       # Single-look results
-      cols <- c("id_cond", "n_total", "pwr_eff", "pwr_fut")
+      cols <- c("id_cond", "n_total", "pwr_eff", "pwr_fut", "conv_rate")
       cols_available <- intersect(cols, names(results_df))
       cond_table <- results_df[, cols_available, drop = FALSE]
       if ("pwr_eff" %in% names(cond_table)) {

@@ -1112,6 +1112,108 @@ report_stopping_by_look <- function(x, format = c("cli", "markdown"),
 }
 
 
+#' Report on Convergence Diagnostics per Condition
+#'
+#' Displays MCMC convergence diagnostics for each simulation condition,
+#' including Rhat, effective sample sizes, and convergence rates.
+#'
+#' @param x An rctbp_power_analysis object with results
+#' @param format Output format: "cli" for styled console output (default)
+#'   or "markdown" for markdown-formatted output suitable for Quarto/RMarkdown.
+#' @param heading_level Integer specifying the starting heading level for
+#'   markdown output (default 2). Use this to integrate reports into documents
+#'   where you need headings to start at a different level (e.g., 3 for `###`).
+#'
+#' @return Invisibly returns the input object. Prints report as side effect.
+#'
+#' @details
+#' The report includes a table with:
+#' \itemize{
+#'   \item Condition identifiers and sample sizes
+#'   \item Convergence rate: `conv_rate` (proportion of converged simulations)
+#'   \item R-hat: `rhat`, `se_rhat`
+#'   \item Effective sample sizes: `ess_bulk`, `se_ess_bulk`, `ess_tail`, `se_ess_tail`
+#' }
+#'
+#' For sequential designs, convergence metrics are from the final analysis look.
+#' BayesFlow results produce NaN for MCMC diagnostics and are silently skipped.
+#'
+#' @seealso [report()], [report_power()], [report_stopping()]
+#'
+#' @export
+#'
+#' @examples
+#' \dontrun{
+#' # Convergence diagnostics report
+#' report_convergence(result)
+#'
+#' # Markdown format for Quarto integration
+#' report_convergence(result, format = "markdown")
+#' }
+report_convergence <- function(x, format = c("cli", "markdown"),
+                                heading_level = 2L) {
+  format <- match.arg(format)
+  heading_level <- as.integer(heading_level)
+
+  if (!inherits(x, "rctbp_power_analysis") &&
+      !inherits(x, "rctbayespower::rctbp_power_analysis")) {
+    cli::cli_abort("{.arg x} must be an rctbp_power_analysis object")
+  }
+
+  has_results <- nrow(x@results_conditions) > 0
+  if (!has_results) {
+    cli::cli_abort(c(
+      "Analysis has not been run",
+      "i" = "Use {.code run(x)} first"
+    ))
+  }
+
+  # Get convergence metrics
+  if (x@has_interim) {
+    # For sequential: use final look from results_interim
+    results_interim <- x@results_interim
+    final_look <- max(results_interim$id_look)
+    conv_df <- results_interim[results_interim$id_look == final_look, , drop = FALSE]
+  } else {
+    conv_df <- x@results_conditions
+  }
+
+  # Check convergence data exists and is finite
+  if (!"conv_rate" %in% names(conv_df) || !any(is.finite(conv_df$conv_rate))) {
+    cli::cli_abort(c(
+      "No convergence diagnostics available",
+      "i" = "This may be a BayesFlow analysis (no MCMC diagnostics)"
+    ))
+  }
+
+  # Select relevant columns
+  cols <- c("id_cond", "n_total", "par_name", "rhat", "se_rhat",
+            "ess_bulk", "se_ess_bulk", "ess_tail", "se_ess_tail",
+            "conv_rate", "se_conv_rate")
+  cols_available <- intersect(cols, names(conv_df))
+  conv_table <- conv_df[, cols_available, drop = FALSE]
+
+  # Sort by conv_rate ascending (worst first)
+  if ("conv_rate" %in% names(conv_table)) {
+    conv_table <- conv_table[order(conv_table$conv_rate), ]
+  }
+
+  # Build report
+  report <- list(
+    title = "Convergence Diagnostics by Condition",
+    sections = list(
+      list(
+        name = "Convergence Results",
+        grid = conv_table
+      )
+    )
+  )
+
+  render_report(report, format = format, heading_level = heading_level)
+  invisible(x)
+}
+
+
 # Legacy aliases for backward compatibility
 #' @rdname report_stopping
 #' @export
@@ -1134,6 +1236,7 @@ report_conditions <- report_power
 #'     \item{"power"}{Power metrics per condition}
 #'     \item{"stopping"}{Early stopping summary per condition (sequential only)}
 #'     \item{"stopping_by_look"}{Early stopping per look × condition (sequential only)}
+#'     \item{"convergence"}{MCMC convergence diagnostics per condition}
 #'   }
 #'   Multiple topics can be specified to generate concatenated reports.
 #' @param format Output format: "cli" for styled console output (default)
@@ -1161,6 +1264,9 @@ report_conditions <- report_power
 #' # Per-look stopping breakdown (sequential only)
 #' report(result, topic = "stopping_by_look")
 #'
+#' # Convergence diagnostics
+#' report(result, topic = "convergence")
+#'
 #' # Multiple topics - generates concatenated reports
 #' report(result, topic = c("power", "stopping", "stopping_by_look"))
 #'
@@ -1173,7 +1279,7 @@ report_conditions <- report_power
 report <- function(x, topic = "power",
                    format = c("cli", "markdown"), heading_level = 2L, ...) {
   # Validate topics
-  valid_topics <- c("power", "stopping", "stopping_by_look")
+  valid_topics <- c("power", "stopping", "stopping_by_look", "convergence")
   invalid <- setdiff(topic, valid_topics)
   if (length(invalid) > 0) {
     cli::cli_abort(c(
@@ -1195,7 +1301,9 @@ report <- function(x, topic = "power",
       "power" = report_power(x, format = format, heading_level = heading_level),
       "stopping" = report_stopping(x, format = format, heading_level = heading_level),
       "stopping_by_look" = report_stopping_by_look(x, format = format,
-                                                    heading_level = heading_level)
+                                                    heading_level = heading_level),
+      "convergence" = report_convergence(x, format = format,
+                                          heading_level = heading_level)
     )
   }
 

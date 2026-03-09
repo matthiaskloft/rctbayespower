@@ -429,8 +429,13 @@ summarize_sims_with_interim <- function(results_df_raw, n_sims) {
     ))
     tail_agg <- data.frame(
       rhat = mean(get_col(grp, "rhat"), na.rm = TRUE),
+      se_rhat = calculate_mcse_mean(get_col(grp, "rhat"), n_sims),
       ess_bulk = mean(get_col(grp, "ess_bulk"), na.rm = TRUE),
+      se_ess_bulk = calculate_mcse_mean(get_col(grp, "ess_bulk"), n_sims),
+      ess_tail = mean(get_col(grp, "ess_tail"), na.rm = TRUE),
+      se_ess_tail = calculate_mcse_mean(get_col(grp, "ess_tail"), n_sims),
       conv_rate = mean(get_col(grp, "converged"), na.rm = TRUE),
+      se_conv_rate = calculate_mcse_power(get_col(grp, "converged"), n_sims),
       stringsAsFactors = FALSE
     )
     combined <- cbind(base_agg, quantile_agg, tail_agg)
@@ -525,20 +530,32 @@ summarize_sims_with_interim <- function(results_df_raw, n_sims) {
   # Merge planned n with simulation outcomes
   sim_outcomes <- merge(sim_outcomes, planned_n_df, by = "id_cond", all.x = TRUE)
 
-  # Compute effective_n and stopped_early
+  # Shared dedup: one row per (id_cond, id_iter, id_look)
+  # Unconditional — needed for effective_n (dropout-aware) and by dropout/accrual
+  # lookups below
+  dedup_key <- paste(df$id_cond, df$id_iter, df$id_look, sep = "|||")
+  df_dedup <- df[!duplicated(dedup_key), , drop = FALSE]
+  final_look_id <- max(df_dedup$id_look)
+  final_rows <- df_dedup[df_dedup$id_look == final_look_id, , drop = FALSE]
+
+  # Per-sim n_analyzed at final scheduled look
+  n_final_lookup <- data.frame(
+    id_cond = final_rows$id_cond,
+    id_iter = final_rows$id_iter,
+    n_analyzed_final = final_rows$n_analyzed,
+    stringsAsFactors = FALSE
+  )
+  sim_outcomes <- merge(sim_outcomes, n_final_lookup,
+                        by = c("id_cond", "id_iter"), all.x = TRUE)
+
+  # effective_n: stop_n for stopped sims, actual final-look n_analyzed for others
+  # (stop_n already reflects dropout at the stopping point; n_analyzed_final
+  #  captures dropout-reduced count at the final look for non-stopped sims)
   sim_outcomes$effective_n <- ifelse(is.na(sim_outcomes$stop_n),
-                                      sim_outcomes$n_planned,
+                                      sim_outcomes$n_analyzed_final,
                                       sim_outcomes$stop_n)
   sim_outcomes$stopped_early <- !is.na(sim_outcomes$stop_n)
-
-  # Shared dedup: one row per (id_cond, id_iter, id_look) — used by both
-  # dropout and accrual lookups below
-  if (has_dropout_data || has_accrual_data) {
-    dedup_key <- paste(df$id_cond, df$id_iter, df$id_look, sep = "|||")
-    df_dedup <- df[!duplicated(dedup_key), , drop = FALSE]
-    final_look_id <- max(df_dedup$id_look)
-    final_rows <- df_dedup[df_dedup$id_look == final_look_id, , drop = FALSE]
-  }
+  sim_outcomes$n_analyzed_final <- NULL  # cleanup
 
   # Compute total dropout per simulation (at final look, overridden for stopped)
   if (has_dropout_data) {
@@ -656,6 +673,15 @@ summarize_sims_with_interim <- function(results_df_raw, n_sims) {
   # Merge and reorder columns logically
   overall_df <- merge(overall_df, final_power_df, by = "id_cond", all.x = TRUE)
 
+  # Add convergence metrics from final look to overall
+  conv_cols <- c("id_cond", "rhat", "ess_bulk", "ess_tail", "conv_rate")
+  conv_cols <- intersect(conv_cols, names(by_look_df))
+  if (length(conv_cols) > 1) {
+    final_conv_df <- by_look_df[by_look_df[["id_look"]] == final_look_id,
+                                 conv_cols, drop = FALSE]
+    overall_df <- merge(overall_df, final_conv_df, by = "id_cond", all.x = TRUE)
+  }
+
   # Select and order columns (only those that exist)
   col_order <- c("id_cond", "n_planned", "n_mn", "n_mdn", "n_mode", "se_n_mn",
                  "prop_at_mode", "pwr_eff", "pwr_fut", "se_pwr_eff", "se_pwr_fut",
@@ -665,6 +691,9 @@ summarize_sims_with_interim <- function(results_df_raw, n_sims) {
   }
   if ("n_dropped_mn" %in% names(overall_df)) {
     col_order <- c(col_order, "n_dropped_mn", "n_dropped_mdn", "dropout_pct")
+  }
+  if ("conv_rate" %in% names(overall_df)) {
+    col_order <- c(col_order, "rhat", "ess_bulk", "ess_tail", "conv_rate")
   }
   col_order <- intersect(col_order, names(overall_df))
   overall <- overall_df[, col_order, drop = FALSE]

@@ -20,6 +20,7 @@ report(
 \item{"power"}{Power metrics per condition}
 \item{"stopping"}{Early stopping summary per condition (sequential only)}
 \item{"stopping_by_look"}{Early stopping per look × condition (sequential only)}
+\item{"convergence"}{MCMC convergence diagnostics per condition}
 }
 Multiple topics can be specified to generate concatenated reports.}
 
@@ -50,6 +51,9 @@ report(result, topic = "stopping")
 
 # Per-look stopping breakdown (sequential only)
 report(result, topic = "stopping_by_look")
+
+# Convergence diagnostics
+report(result, topic = "convergence")
 
 # Multiple topics - generates concatenated reports
 report(result, topic = c("power", "stopping", "stopping_by_look"))
