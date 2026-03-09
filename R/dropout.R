@@ -69,7 +69,10 @@
 #' # Hazard rate parameterization
 #' build_conditions(
 #'   design = my_design,
-#'   constant = list(dropout = dropout(0.03, type = "hazard"))
+#'   constant = list(
+#'     dropout = dropout(0.03, type = "hazard"),
+#'     followup_time = 12, accrual_rate = 5
+#'   )
 #' )
 #' }
 #'
