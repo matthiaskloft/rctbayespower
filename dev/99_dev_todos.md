@@ -83,6 +83,6 @@
 
 2. ~~**`get_code()` reproducibility**~~ (done) — `get_code()` generic with methods for all 3 pipeline classes. Stores `match.call()` in `.call` property, walks the chain to reconstruct full `build_design()` → `build_conditions()` → `power_analysis()` call. 32 tests in `test-get_code.R`. See `24_api_improvement_plan.md` §3.1.
 
-3. **BayesFlow model training** — Actually train the 2-arm ANCOVA `.pkl` model using the training script sketch in `11_bayesflow_integration_roadmap.md`. Upload to GitHub releases. This makes the BF backend usable for real analyses.
+3. ~~**BayesFlow model training**~~ (outsourced) — Moved to dedicated repo/package. See `11_bayesflow_integration_roadmap.md`.
 
-4. **Sample accrual MVP** (Phase 1) — Enrollment time generation, calendar-time subsetting, trial duration metrics. See `25_sample_accrual_plan.md`.
+4. ~~**Sample accrual MVP**~~ (done) — Phase 1 + Phase 2 merged. Enrollment times, calendar-time subsetting, trial duration metrics, reporting & accrual plot. See `25_sample_accrual_plan.md`.

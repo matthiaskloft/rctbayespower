@@ -17,7 +17,11 @@
       "WebFetch(domain:cran.r-project.org)",
       "WebFetch(domain:roxygen2.r-lib.org)",
       "WebFetch(domain:style.tidyverse.org)",
-      "WebFetch(domain:paulbuerkner.com)"
+      "WebFetch(domain:paulbuerkner.com)",
+      "Bash(gh run:*)",
+      "Bash(gh api:*)",
+      "WebFetch(domain:codecov.io)",
+      "WebFetch(domain:app.codecov.io)"
     ],
     "deny": []
   }
