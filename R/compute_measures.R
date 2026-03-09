@@ -697,12 +697,14 @@ summarize_sims_with_interim <- function(results_df_raw, n_sims) {
   conv_cols <- intersect(conv_cols, names(final_look_rows))
   if (length(conv_cols) > 0) {
     conv_groups <- split(final_look_rows, final_look_rows$id_cond, drop = TRUE)
+    safe_max <- function(x) { v <- x[is.finite(x)]; if (length(v) > 0) max(v) else NA_real_ }
+    safe_min <- function(x) { v <- x[is.finite(x)]; if (length(v) > 0) min(v) else NA_real_ }
     final_conv_df <- do.call(rbind, lapply(conv_groups, function(g) {
       row <- data.frame(id_cond = g$id_cond[1], stringsAsFactors = FALSE)
-      if ("rhat" %in% conv_cols) row$rhat <- max(g$rhat, na.rm = TRUE)
-      if ("ess_bulk" %in% conv_cols) row$ess_bulk <- min(g$ess_bulk, na.rm = TRUE)
-      if ("ess_tail" %in% conv_cols) row$ess_tail <- min(g$ess_tail, na.rm = TRUE)
-      if ("conv_rate" %in% conv_cols) row$conv_rate <- min(g$conv_rate, na.rm = TRUE)
+      if ("rhat" %in% conv_cols) row$rhat <- safe_max(g$rhat)
+      if ("ess_bulk" %in% conv_cols) row$ess_bulk <- safe_min(g$ess_bulk)
+      if ("ess_tail" %in% conv_cols) row$ess_tail <- safe_min(g$ess_tail)
+      if ("conv_rate" %in% conv_cols) row$conv_rate <- safe_min(g$conv_rate)
       row
     }))
     rownames(final_conv_df) <- NULL
