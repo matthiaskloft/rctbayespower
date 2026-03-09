@@ -20,6 +20,7 @@ report(
 \item{"power"}{Power metrics per condition}
 \item{"stopping"}{Early stopping summary per condition (sequential only)}
 \item{"stopping_by_look"}{Early stopping per look × condition (sequential only)}
+\item{"convergence"}{MCMC convergence diagnostics per condition}
 }
 Multiple topics can be specified to generate concatenated reports.}
 
@@ -51,6 +52,9 @@ report(result, topic = "stopping")
 # Per-look stopping breakdown (sequential only)
 report(result, topic = "stopping_by_look")
 
+# Convergence diagnostics
+report(result, topic = "convergence")
+
 # Multiple topics - generates concatenated reports
 report(result, topic = c("power", "stopping", "stopping_by_look"))
 
@@ -63,5 +67,5 @@ report(result, topic = "stopping", format = "markdown", heading_level = 3)
 }
 \seealso{
 \code{\link[=report_power]{report_power()}}, \code{\link[=report_stopping]{report_stopping()}}, \code{\link[=report_stopping_by_look]{report_stopping_by_look()}},
-\code{\link[=summary.rctbp_power_analysis]{summary.rctbp_power_analysis()}}
+\code{\link[=report_convergence]{report_convergence()}}, \code{\link[=summary.rctbp_power_analysis]{summary.rctbp_power_analysis()}}
 }

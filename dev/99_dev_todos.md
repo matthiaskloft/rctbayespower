@@ -22,11 +22,11 @@
 # Power Analysis
 * ~~save full quantile profile for target parameter posterior to enable post-hoc exploration of alternative thresholds~~ (done: 9 quantile columns post\_q025-post\_q975 in results\_raw and aggregated in results\_conditions)
 
-* reports: report for convergence
+* ~~reports: report for convergence~~ (done: `report_convergence()` function, convergence sections in `print()`/`summary()`, `report(x, "convergence")` dispatch)
 
 # Across Package
 
-* use cli "package" for outputs
+* ~~use cli "package" for outputs~~ (done: all active code uses cli for errors/warnings/output; remaining cat() calls are legitimate markdown rendering and internal diagnostics)
 
 
 
@@ -72,7 +72,7 @@
 ## Dropout: Known Limitations / Follow-up Work
 
 * **BayesFlow batch processing with variable completer counts**: `prepare_data_list_as_batch_bf()` assumes all simulations at a given look have the same row count (pre-allocates fixed-width matrices at line 1263). With stochastic dropout, different simulations can have different completer counts at the same look, causing matrix dimension mismatches. Fix requires splitting batches by data size or padding. See CodeRabbit review on PR #11.
-* **`effective_n` for non-stopped target\_not\_met sims**: In `compute_measures.R`, `effective_n` for non-stopped sims equals `n_planned` (condition-level max of `n_analyzed`). When `target_not_met` at the final look reduces actual analyzed count, `effective_n` overstates the denominator for `dropout_pct`. Rare edge case (requires very high dropout at the final look). Fix: carry per-sim `n_analyzed_final` into `sim_outcomes`.
+* ~~**`effective_n` for non-stopped target\_not\_met sims**~~: Fixed — now uses per-sim `n_analyzed_final` from final look instead of `n_planned`, with defensive fallback.
 * **Threshold resolution before dropout-aware subsetting** (brms backend): `resolve_threshold()` for `thr_dec_eff/fut` uses the scheduled `current_n` information fraction before `subset_analysis_data()` reduces the actual analyzed count. With dropout, this overstates the information fraction. Fix: move threshold resolution after subsetting, using actual completer count.
 
 
