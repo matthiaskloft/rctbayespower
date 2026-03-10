@@ -581,7 +581,8 @@ boundary_pocock_threshold <- function(threshold = 0.975) {
 #' to a numeric value at a given information fraction.
 #'
 #' @param threshold Either a numeric value or a boundary function
-#' @param info_frac Information fraction (current_n / n_total), between 0 and 1
+#' @param info_frac Information fraction between 0 and 1. For sample-size designs:
+#'   `current_n / n_total`. For event-driven designs: `events_observed / events_planned`.
 #'
 #' @return Numeric threshold value
 #' @keywords internal
@@ -611,8 +612,11 @@ resolve_boundary_vector <- function(boundary, look_info, n_total) {
   if (is.null(boundary)) {
     return(rep(NA_real_, n_looks))
   } else if (is.function(boundary)) {
+    # Pass the full vector of info_fracs at once — boundary functions like
+    # boundary_obf(alpha=) use gsDesign which needs the complete schedule
+    # (including the final look at info_frac=1) to compute valid thresholds.
     info_fracs <- look_info$n_analyzed / n_total
-    sapply(info_fracs, boundary)
+    boundary(info_fracs)
   } else if (length(boundary) == 1) {
     rep(boundary, n_looks)
   } else if (length(boundary) == n_looks) {

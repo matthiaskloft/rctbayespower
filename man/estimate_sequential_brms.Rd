@@ -17,7 +17,8 @@ estimate_sequential_brms(
   interim_function,
   id_iter,
   id_cond,
-  followup_time = 0
+  followup_time = 0,
+  analysis_timing = "sample_size"
 )
 }
 \arguments{

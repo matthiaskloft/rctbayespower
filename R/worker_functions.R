@@ -99,9 +99,10 @@ worker_process_single <- function(id_cond, id_iter, condition_args, design) {
       return(create_error_result(id_iter, id_cond, id_analysis = 0L, "Data simulation failed"))
     }
 
-    # Attach enrollment times when accrual modeling is active
+    # Attach enrollment times when accrual modeling is active.
+    # Skip if sim_fn already generated enrollment_time (e.g. survival sim_fns).
     accrual_rate <- analysis_args$accrual_rate
-    if (!is.null(accrual_rate)) {
+    if (!is.null(accrual_rate) && !"enrollment_time" %in% names(full_data)) {
       full_data$enrollment_time <- generate_enrollment_times(
         n_total = nrow(full_data),
         accrual_rate = accrual_rate,
@@ -178,7 +179,8 @@ worker_process_single <- function(id_cond, id_iter, condition_args, design) {
           interim_function = interim_function,
           id_iter = id_iter,
           id_cond = id_cond,
-          followup_time = analysis_args$followup_time %||% 0
+          followup_time = analysis_args$followup_time %||% 0,
+          analysis_timing = analysis_args$analysis_timing %||% "sample_size"
         )
       } else if (backend == "bf") {
         # For single simulation with BayesFlow sequential, pass as list
@@ -196,7 +198,8 @@ worker_process_single <- function(id_cond, id_iter, condition_args, design) {
           id_iter = id_iter,
           id_cond = id_cond,
           sim_fn = sim_fn,
-          followup_time = analysis_args$followup_time %||% 0
+          followup_time = analysis_args$followup_time %||% 0,
+          analysis_timing = analysis_args$analysis_timing %||% "sample_size"
         )
       } else {
         cli::cli_abort(c(

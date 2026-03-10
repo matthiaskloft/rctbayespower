@@ -162,7 +162,16 @@ calendar_to_available_n <- function(calendar_times, enrollment_times,
 #'   column removed.
 #' @keywords internal
 subset_analysis_data <- function(full_data, current_n, followup_time = 0,
-                                  completion_times = NULL) {
+                                  completion_times = NULL,
+                                  analysis_timing = "sample_size") {
+  # Event-driven subsetting: find the calendar time when current_n events
+
+  # have accumulated, then return all patients enrolled by that time.
+  if (identical(analysis_timing, "events")) {
+    return(subset_by_events(full_data, target_events = current_n,
+                             followup_time = followup_time))
+  }
+
   if ("enrollment_time" %in% names(full_data)) {
     has_dropout <- "dropout_time" %in% names(full_data)
 
@@ -229,6 +238,74 @@ subset_analysis_data <- function(full_data, current_n, followup_time = 0,
 }
 
 
+#' Subset Data by Event Count (Event-Driven Designs)
+#'
+#' For survival/event-driven designs, finds the calendar time at which
+#' `target_events` events have occurred and returns all patients enrolled
+#' by that time.
+#'
+#' @param full_data Data frame with `enrollment_time`, `time` (event/censor time),
+#'   and `censored` (0 = event, 1 = censored) columns.
+#' @param target_events Number of events required for this analysis look.
+#' @param followup_time Minimum follow-up time (currently unused for event-driven;
+#'   events determine the analysis time).
+#'
+#' @return Subset of `full_data` with accrual attributes attached.
+#' @keywords internal
+subset_by_events <- function(full_data, target_events, followup_time = 0) {
+  if (!all(c("enrollment_time", "time", "censored") %in% names(full_data))) {
+    cli::cli_abort(c(
+      "Event-driven subsetting requires columns: {.val enrollment_time}, {.val time}, {.val censored}",
+      "i" = "Ensure your sim_fn returns survival data with these columns"
+    ))
+  }
+
+  # Calendar time of each event = enrollment_time + event_time (for events only)
+  event_mask <- full_data$censored == 0  # 0 = event in brms convention
+  event_calendar_times <- sort(
+    full_data$enrollment_time[event_mask] + full_data$time[event_mask]
+  )
+
+  n_total_events <- length(event_calendar_times)
+  target_not_met <- target_events > n_total_events
+
+  if (n_total_events == 0L) {
+    analysis_data <- full_data[integer(0), , drop = FALSE]
+    analysis_data$enrollment_time <- NULL
+    attr(analysis_data, "calendar_time") <- NA_real_
+    attr(analysis_data, "n_enrolled") <- as.integer(nrow(full_data))
+    attr(analysis_data, "n_events") <- 0L
+    attr(analysis_data, "target_not_met") <- TRUE
+    return(analysis_data)
+  }
+
+  effective_events <- if (target_not_met) n_total_events else target_events
+  calendar_time <- event_calendar_times[effective_events]
+
+  # All patients enrolled by this calendar time
+  enrolled_mask <- full_data$enrollment_time <= calendar_time
+  analysis_data <- full_data[enrolled_mask, , drop = FALSE]
+
+  # Update censoring: patients whose event hasn't occurred by calendar_time
+  # are censored at (calendar_time - enrollment_time).
+  # Small tolerance avoids floating-point rounding at event boundaries.
+  follow_time <- calendar_time - analysis_data$enrollment_time
+  still_censored <- analysis_data$time > follow_time + 1e-10
+  analysis_data$time[still_censored] <- follow_time[still_censored]
+  analysis_data$censored[still_censored] <- 1L
+
+  n_enrolled <- as.integer(sum(enrolled_mask))
+  n_events <- as.integer(sum(analysis_data$censored == 0))
+
+  analysis_data$enrollment_time <- NULL
+  attr(analysis_data, "calendar_time") <- calendar_time
+  attr(analysis_data, "n_enrolled") <- n_enrolled
+  attr(analysis_data, "n_events") <- n_events
+  if (target_not_met) attr(analysis_data, "target_not_met") <- TRUE
+  analysis_data
+}
+
+
 #' Validate Accrual Parameters
 #'
 #' Validates accrual-related parameters. Called during condition building.
@@ -281,7 +358,7 @@ validate_accrual_params <- function(accrual_rate = NULL,
   }
 
   if (!is.null(analysis_timing)) {
-    valid_timings <- c("sample_size", "calendar")
+    valid_timings <- c("sample_size", "calendar", "events")
     if (!is.character(analysis_timing) || length(analysis_timing) != 1L ||
         is.na(analysis_timing) || !analysis_timing %in% valid_timings) {
       cli::cli_abort(c(

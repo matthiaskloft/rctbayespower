@@ -396,6 +396,10 @@ summarize_sims_with_interim <- function(results_df_raw, n_sims) {
   has_dropout_data <- "n_dropped" %in% names(df) &&
     any(!is.na(df$n_dropped))
 
+  # Check once whether event count data exists (event-driven designs)
+  has_event_data <- "n_events" %in% names(df) &&
+    any(!is.na(df$n_events))
+
   by_look_key <- do.call(paste, c(df[by_look_by_cols], sep = "|||"))
   by_look_groups <- split(df, by_look_key, drop = TRUE)
 
@@ -454,6 +458,14 @@ summarize_sims_with_interim <- function(results_df_raw, n_sims) {
         stringsAsFactors = FALSE
       )
       combined <- cbind(combined, dropout_agg)
+    }
+    if (has_event_data) {
+      event_agg <- data.frame(
+        n_events_mn = mean(get_col(grp, "n_events"), na.rm = TRUE),
+        n_events_mdn = stats::median(get_col(grp, "n_events"), na.rm = TRUE),
+        stringsAsFactors = FALSE
+      )
+      combined <- cbind(combined, event_agg)
     }
     combined
   }
@@ -593,6 +605,33 @@ summarize_sims_with_interim <- function(results_df_raw, n_sims) {
                           by = c("id_cond", "id_iter"), all.x = TRUE)
   }
 
+  # Compute total events per simulation (at final look, overridden for stopped)
+  if (has_event_data) {
+    events_lookup <- data.frame(
+      id_cond = final_rows$id_cond,
+      id_iter = final_rows$id_iter,
+      n_events_final = final_rows$n_events,
+      stringsAsFactors = FALSE
+    )
+
+    # Override with stop-point n_events for early-stopped sims
+    if (nrow(stopping_info) > 0 && "n_events" %in% names(first_stops)) {
+      stop_ev <- data.frame(
+        id_cond = first_stops$id_cond, id_iter = first_stops$id_iter,
+        stop_n_events = first_stops$n_events,
+        stringsAsFactors = FALSE
+      )
+      events_lookup <- merge(events_lookup, stop_ev,
+                              by = c("id_cond", "id_iter"), all.x = TRUE)
+      has_stop <- !is.na(events_lookup$stop_n_events)
+      events_lookup$n_events_final[has_stop] <- events_lookup$stop_n_events[has_stop]
+      events_lookup$stop_n_events <- NULL
+    }
+
+    sim_outcomes <- merge(sim_outcomes, events_lookup,
+                          by = c("id_cond", "id_iter"), all.x = TRUE)
+  }
+
   # Compute effective calendar time per simulation (accrual-aware)
   if (has_accrual_data) {
     cal_lookup <- data.frame(
@@ -660,6 +699,15 @@ summarize_sims_with_interim <- function(results_df_raw, n_sims) {
       )
       result <- cbind(result, dropout)
     }
+    if (has_event_data) {
+      event_vals <- grp$n_events_final
+      events <- data.frame(
+        n_events_mn = mean(event_vals, na.rm = TRUE),
+        n_events_mdn = calc_robust_median(event_vals),
+        stringsAsFactors = FALSE
+      )
+      result <- cbind(result, events)
+    }
     result
   })
 
@@ -720,6 +768,9 @@ summarize_sims_with_interim <- function(results_df_raw, n_sims) {
   }
   if ("n_dropped_mn" %in% names(overall_df)) {
     col_order <- c(col_order, "n_dropped_mn", "n_dropped_mdn", "dropout_pct")
+  }
+  if ("n_events_mn" %in% names(overall_df)) {
+    col_order <- c(col_order, "n_events_mn", "n_events_mdn")
   }
   if ("conv_rate" %in% names(overall_df)) {
     col_order <- c(col_order, setdiff(c("rhat", "ess_bulk", "ess_tail", "conv_rate"),

@@ -203,7 +203,11 @@ test_that("validate_accrual_params rejects invalid followup_time", {
 })
 
 test_that("validate_accrual_params rejects invalid analysis_timing", {
-  expect_error(validate_accrual_params(analysis_timing = "events"), "must be one of")
+  expect_error(validate_accrual_params(analysis_timing = "invalid_value"), "must be one of")
+})
+
+test_that("validate_accrual_params accepts events analysis_timing", {
+  expect_no_error(validate_accrual_params(analysis_timing = "events"))
 })
 
 test_that("validate_accrual_params rejects non-increasing calendar_analysis_at", {

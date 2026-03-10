@@ -1,3 +1,10 @@
+# Parameters that may appear in both sim_args and analysis_args.
+# For survival models, accrual_rate affects both data generation (enrollment
+# timing / censoring) and analysis (calendar-time subsetting). followup_time
+# similarly affects both censoring and analysis windowing.
+DUAL_ROUTE_PARAMS <- c("accrual_rate", "followup_time")
+
+
 #' Show Available Target Parameters
 #'
 #' Displays the parameter names available for use as `target_params` in [build_design()].
@@ -148,6 +155,12 @@ show_condition_args <- function(design = NULL, print = TRUE) {
       param_items <- params_sim
       names(param_items) <- rep("*", length(param_items))
       cli::cli_bullets(param_items)
+      # p_alloc is always available for sim_fns (handled specially in build_conditions)
+      if (!"p_alloc" %in% params_sim) {
+        cli::cli_bullets(c(
+          "*" = "p_alloc {.emph (allocation probability vector; must sum to 1, length = number of arms, first entry = control; e.g. c(0.5, 0.5))}"
+        ))
+      }
     } else {
       cli::cli_text("  {.emph (none required)}")
     }
@@ -185,7 +198,7 @@ show_condition_args <- function(design = NULL, print = TRUE) {
       "*" = "accrual_rate {.emph (patients per time unit; required for calendar timing)}",
       "*" = "accrual_pattern {.emph (\"uniform\", \"poisson\", \"ramp\", or custom function)}",
       "*" = "followup_time {.emph (required follow-up duration after enrollment)}",
-      "*" = "analysis_timing {.emph (\"sample_size\" [default] or \"calendar\")}",
+      "*" = "analysis_timing {.emph (\"sample_size\" [default], \"calendar\", or \"events\")}",
       "*" = "calendar_analysis_at {.emph (calendar times for analyses; requires analysis_timing = \"calendar\")}",
       "*" = "dropout {.emph (dropout(rate, type) \u2014 expected patient dropout; requires accrual_rate and followup_time > 0)}"
     ))

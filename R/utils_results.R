@@ -50,6 +50,8 @@ create_error_result <- function(id_iter, id_cond, id_analysis, error_msg) {
     n_analyzed = NA_integer_,
     calendar_time = NA_real_,
     n_enrolled = NA_integer_,
+    n_dropped = NA_integer_,
+    n_events = NA_integer_,
     enrollment_duration = NA_real_,
     stopped = NA,
     stop_reason = NA_character_,

@@ -533,7 +533,11 @@ build_conditions <- function(design,
 
     # Validate p_alloc length and sum
     if (!is.null(sim_args$p_alloc)) {
+      # Unwrap list wrapper: p_alloc vectors are wrapped in list() during grid
+      # expansion to prevent tidyr::expand_grid from treating each element
+      # as a separate level (e.g., c(0.5, 0.5) would become two grid rows).
       alloc_val <- if (is.list(sim_args$p_alloc)) sim_args$p_alloc[[1]] else sim_args$p_alloc
+      sim_args$p_alloc <- alloc_val
       if (length(alloc_val) != design@n_arms) {
         cli::cli_abort(c(
           "{.arg p_alloc} length must equal {.arg n_arms} ({.val {design@n_arms}})",
@@ -543,8 +547,10 @@ build_conditions <- function(design,
       }
       if (abs(sum(alloc_val) - 1) > 1e-10) {
         cli::cli_abort(c(
-          "{.arg p_alloc} must sum to 1.",
-          "x" = "Got {.val {alloc_val}} (sum = {round(sum(alloc_val), 6)})"
+          "{.arg p_alloc} must sum to 1",
+          "x" = "Got {.val {alloc_val}} (sum = {round(sum(alloc_val), 6)})",
+          "i" = "Expected format: numeric vector of length = number of arms (first entry = control)",
+          "i" = "Example: {.code p_alloc = c(0.5, 0.5)} for equal allocation in 2-arm trial"
         ))
       }
     }
@@ -567,6 +573,23 @@ build_conditions <- function(design,
           "Missing analysis parameter: {.val {param}}",
           "i" = "Add {.val {param}} to {.arg crossed} or {.arg constant}"
         ))
+      }
+    }
+
+    # Dual routing: params in DUAL_ROUTE_PARAMS that are in sim_args
+    # also need to be available in analysis_args (e.g., accrual_rate for
+    # survival sim_fns that generate enrollment internally but also need
+    # it for calendar-time subsetting in the analysis phase).
+    for (param in DUAL_ROUTE_PARAMS) {
+      if (param %in% names(sim_args)) {
+        # Overwrite analysis_args when the current value is NULL or still the
+        # default — analysis_defaults pre-populates these keys, so a simple
+        # `!param %in% names(analysis_args)` check would never fire.
+        current_val <- analysis_args[[param]]
+        default_val <- analysis_defaults[[param]]
+        if (is.null(current_val) || identical(current_val, default_val)) {
+          analysis_args[[param]] <- sim_args[[param]]
+        }
       }
     }
 

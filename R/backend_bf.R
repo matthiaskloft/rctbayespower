@@ -1230,6 +1230,18 @@ prepare_data_list_as_batch_bf <- function(data_list, backend_args, field_map = N
     cli::cli_abort("data_list cannot be empty")
   }
 
+  # All sims in a batch must have the same row count (matrices are pre-allocated
+
+  # to uniform width). Use split-by-size batching in the caller to ensure this.
+  row_counts <- vapply(data_list, nrow, integer(1))
+  if (length(unique(row_counts)) > 1) {
+    cli::cli_abort(c(
+      "All data frames in batch must have the same number of rows",
+      "x" = "Got row counts: {paste(unique(row_counts), collapse = ', ')}",
+      "i" = "Use split-by-size batching to group sims with equal completer counts"
+    ))
+  }
+
   first <- data_list[[1]]
 
   # Resolve field_map from sim_fn@output_schema if available (preferred method)
@@ -1840,6 +1852,8 @@ estimate_single_bf <- function(data, model, backend_args, target_params,
 #'   If provided, uses sim_fn@@output_schema for field mapping.
 #' @param followup_time Numeric. Required follow-up per patient for
 #'   accrual-aware subsetting. Default 0 (immediate outcome).
+#' @param analysis_timing Character. How `analysis_at` values are interpreted:
+#'   `"sample_size"` (default), `"calendar"`, or `"events"`.
 #'
 #' @return Data frame with (batch_size x n_analyses) rows
 #' @keywords internal
@@ -1848,7 +1862,8 @@ estimate_sequential_bf <- function(full_data_list, model, backend_args, target_p
                                     thr_dec_eff, thr_dec_fut, analysis_at,
                                     interim_function, id_iter, id_cond,
                                     sim_fn = NULL,
-                                    followup_time = 0) {
+                                    followup_time = 0,
+                                    analysis_timing = "sample_size") {
 
   batch_size <- length(full_data_list)
   n_total <- nrow(full_data_list[[1]])
@@ -1878,6 +1893,13 @@ estimate_sequential_bf <- function(full_data_list, model, backend_args, target_p
   for (id_analysis in seq_along(analysis_at)) {
     current_n <- analysis_at[id_analysis]
     is_final <- id_analysis == n_analyses
+
+    # BF backend uses *scheduled* info_frac (current_n / n_total) rather than
+    # actual completers. Rationale: all sims in a batch share one threshold;
+    # per-sim completer counts vary stochastically; using a representative
+    # (mean/median) would be arbitrary. The scheduled info_frac is deterministic
+    # and matches the analysis plan. The brms backend uses actual completers
+    # since it processes one sim at a time.
     info_frac <- current_n / n_total
 
     # Resolve probability thresholds for this analysis
@@ -1894,7 +1916,8 @@ estimate_sequential_bf <- function(full_data_list, model, backend_args, target_p
     # Subset data to current analysis point for active simulations
     ct_list <- completion_times_list[active_idx]
     analysis_data_list <- mapply(function(fd, ct) {
-      subset_analysis_data(fd, current_n, followup_time, ct)
+      subset_analysis_data(fd, current_n, followup_time, ct,
+                           analysis_timing = analysis_timing)
     }, full_data_list[active_idx], ct_list %||% vector("list", length(active_idx)),
     SIMPLIFY = FALSE)
 
@@ -1906,23 +1929,55 @@ estimate_sequential_bf <- function(full_data_list, model, backend_args, target_p
         function(d) attr(d, "n_enrolled") %||% NA_integer_, integer(1))
       accrual_n_dropped <- vapply(analysis_data_list,
         function(d) attr(d, "n_dropped") %||% NA_integer_, integer(1))
+      accrual_n_events <- vapply(analysis_data_list,
+        function(d) attr(d, "n_events") %||% NA_integer_, integer(1))
     }
 
-    # Prepare batch data
-    data_batch <- prepare_data_list_as_batch_bf(analysis_data_list, backend_args, sim_fn = sim_fn)
+    # Split-by-size batching: group simulations by completer count so each
+    # sub-batch has uniform row counts (required by prepare_data_list_as_batch_bf).
+    # Without dropout, all sims have the same count -> single batch, zero overhead.
+    n_obs_per_sim <- vapply(analysis_data_list, nrow, integer(1))
+    size_groups <- split(seq_along(analysis_data_list), n_obs_per_sim)
 
-    # Single BayesFlow forward pass for all active simulations
+    # Pre-allocate draws matrix to reassemble results in original order
+    draws_matrix <- NULL
     bf_error_msg <- NULL
-    draws_matrix <- tryCatch({
-      estimate_batch_bf(data_batch, model, backend_args, target_params)
-    }, error = function(e) {
-      # Capture the actual error message for debugging
-      bf_error_msg <<- conditionMessage(e)
-      return(NULL)
-    })
+    estimation_failed <- FALSE
 
-    if (is.null(draws_matrix)) {
-      # Create error results for all active simulations with actual error message
+    for (group_indices in size_groups) {
+      group_data <- analysis_data_list[group_indices]
+
+      # Skip groups where all sims have zero completers
+      if (nrow(group_data[[1]]) == 0) next
+
+      group_batch <- prepare_data_list_as_batch_bf(
+        group_data, backend_args, sim_fn = sim_fn
+      )
+
+      group_draws <- tryCatch({
+        estimate_batch_bf(group_batch, model, backend_args, target_params)
+      }, error = function(e) {
+        bf_error_msg <<- conditionMessage(e)
+        return(NULL)
+      })
+
+      if (is.null(group_draws)) {
+        estimation_failed <- TRUE
+        break
+      }
+
+      # Accumulate draws, tracking which rows map to which original indices
+      if (is.null(draws_matrix)) {
+        # Initialize with correct number of columns (draws per sim)
+        n_draws <- ncol(group_draws)
+        draws_matrix <- matrix(NA_real_,
+                               nrow = length(analysis_data_list),
+                               ncol = n_draws)
+      }
+      draws_matrix[group_indices, ] <- group_draws
+    }
+
+    if (estimation_failed || is.null(draws_matrix)) {
       error_msg <- paste("BayesFlow estimation failed:", bf_error_msg %||% "unknown error")
       error_results <- do.call(rbind, lapply(active_idx, function(i) {
         create_error_result(id_iter[i], id_cond[i], id_analysis, error_msg)
@@ -1931,7 +1986,30 @@ estimate_sequential_bf <- function(full_data_list, model, backend_args, target_p
       next
     }
 
-    # Fast batch summarization
+    # Handle sims with zero completers (NA rows from skipped groups)
+    na_rows <- which(is.na(draws_matrix[, 1]))
+    if (length(na_rows) > 0) {
+      zero_error_results <- do.call(rbind, lapply(na_rows, function(i) {
+        create_error_result(id_iter[active_idx[i]], id_cond[active_idx[i]],
+                            id_analysis, "insufficient_data")
+      }))
+      # Remove NA rows before summarization
+      valid_rows <- setdiff(seq_len(nrow(draws_matrix)), na_rows)
+      if (length(valid_rows) == 0) {
+        all_results[[id_analysis]] <- zero_error_results
+        next
+      }
+      draws_matrix <- draws_matrix[valid_rows, , drop = FALSE]
+      # Adjust active_idx to match the valid subset
+      active_idx_valid <- active_idx[valid_rows]
+      analysis_data_list_valid <- analysis_data_list[valid_rows]
+    } else {
+      zero_error_results <- NULL
+      active_idx_valid <- active_idx
+      analysis_data_list_valid <- analysis_data_list
+    }
+
+    # Fast batch summarization (uses valid-only subsets after NA row removal)
     batch_results <- summarize_post_bf(
       draws_mat = draws_matrix,
       target_param = target_params[1],
@@ -1939,32 +2017,40 @@ estimate_sequential_bf <- function(full_data_list, model, backend_args, target_p
       thr_fx_fut = thr_fx_fut[1],
       thr_dec_eff = current_thr_dec_eff,
       thr_dec_fut = current_thr_dec_fut,
-      id_iter = id_iter[active_idx],
-      id_cond = id_cond[active_idx],
+      id_iter = id_iter[active_idx_valid],
+      id_cond = id_cond[active_idx_valid],
       id_look = id_analysis,
       n_analyzed = current_n,
       skip_convergence = backend_args$skip_convergence %||% TRUE
     )
 
     # Override n_analyzed with actual row counts (may differ from current_n with dropout)
-    actual_n_analyzed <- vapply(analysis_data_list, nrow, integer(1))
+    actual_n_analyzed <- vapply(analysis_data_list_valid, nrow, integer(1))
     batch_results$n_analyzed <- actual_n_analyzed
 
     # Add accrual metadata columns (always present for consistent schema)
     if (!is.null(completion_times_list)) {
-      batch_results$calendar_time <- accrual_cal_times
-      batch_results$n_enrolled <- accrual_n_enrolled
-      batch_results$n_dropped <- accrual_n_dropped
-      batch_results$enrollment_duration <- enrollment_duration_vec[active_idx]
+      # Use valid-row indices to select matching accrual attributes
+      if (length(na_rows) > 0) {
+        valid_accrual_idx <- valid_rows
+      } else {
+        valid_accrual_idx <- seq_along(analysis_data_list_valid)
+      }
+      batch_results$calendar_time <- accrual_cal_times[valid_accrual_idx]
+      batch_results$n_enrolled <- accrual_n_enrolled[valid_accrual_idx]
+      batch_results$n_dropped <- accrual_n_dropped[valid_accrual_idx]
+      batch_results$n_events <- accrual_n_events[valid_accrual_idx]
+      batch_results$enrollment_duration <- enrollment_duration_vec[active_idx_valid]
     } else {
       batch_results$calendar_time <- NA_real_
       batch_results$n_enrolled <- NA_integer_
       batch_results$n_dropped <- NA_integer_
+      batch_results$n_events <- NA_integer_
       batch_results$enrollment_duration <- NA_real_
     }
 
     # Clean up large objects to free RAM after each interim analysis
-    rm(draws_matrix, data_batch, analysis_data_list)
+    rm(draws_matrix, analysis_data_list, analysis_data_list_valid)
 
     # Update stopping state (if not final)
     if (!is_final) {
@@ -1973,20 +2059,25 @@ estimate_sequential_bf <- function(full_data_list, model, backend_args, target_p
       new_stops_fut <- which(batch_results$dec_fut == 1 & batch_results$dec_eff == 0)
 
       if (length(new_stops_eff) > 0) {
-        stopped[active_idx[new_stops_eff]] <- TRUE
-        stop_reason[active_idx[new_stops_eff]] <- "stop_efficacy"
+        stopped[active_idx_valid[new_stops_eff]] <- TRUE
+        stop_reason[active_idx_valid[new_stops_eff]] <- "stop_efficacy"
       }
       if (length(new_stops_fut) > 0) {
-        stopped[active_idx[new_stops_fut]] <- TRUE
-        stop_reason[active_idx[new_stops_fut]] <- "stop_futility"
+        stopped[active_idx_valid[new_stops_fut]] <- TRUE
+        stop_reason[active_idx_valid[new_stops_fut]] <- "stop_futility"
       }
 
       # Update batch_results with stopping information
-      batch_results$stopped <- stopped[active_idx]
-      batch_results$stop_reason <- stop_reason[active_idx]
+      batch_results$stopped <- stopped[active_idx_valid]
+      batch_results$stop_reason <- stop_reason[active_idx_valid]
     }
 
-    all_results[[id_analysis]] <- batch_results
+    # Combine valid results with zero-completer error results
+    if (!is.null(zero_error_results)) {
+      all_results[[id_analysis]] <- dplyr::bind_rows(batch_results, zero_error_results)
+    } else {
+      all_results[[id_analysis]] <- batch_results
+    }
   }
 
   dplyr::bind_rows(all_results)
