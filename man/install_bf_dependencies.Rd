@@ -9,7 +9,7 @@ install_bf_dependencies(envname = "r-rctbayespower", cuda_version = "auto")
 \arguments{
 \item{envname}{Name of the virtual environment}
 
-\item{cuda_version}{CUDA version ("12.6", "12.4", "12.1", "11.8", or "cpu")}
+\item{cuda_version}{CUDA version ("auto", "12.8", "12.6", "11.8", or "cpu")}
 }
 \value{
 Invisibly returns TRUE on success
@@ -19,7 +19,7 @@ Installs PyTorch (with GPU support if available), BayesFlow, Keras, and NumPy.
 }
 \examples{
 \dontrun{
-# Install with CUDA 12.4 support
-install_bf_dependencies(cuda_version = "12.4")
+# Install with CUDA 12.6 support
+install_bf_dependencies(cuda_version = "12.6")
 }
 }

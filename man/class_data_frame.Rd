@@ -9,9 +9,6 @@ An S7 class object for validating standard data frames.
 \usage{
 class_data_frame(.data)
 }
-\value{
-An S7 class validator that passes only if the object is a \code{data.frame}.
-}
 \description{
 Defines an S7 class \code{class_data_frame} that accepts only S3 \code{data.frame} objects.
 This is useful for validating properties in S7 classes that should hold standard

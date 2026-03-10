@@ -20,6 +20,8 @@
 #'   For `type = "hazard"`: constant hazard rate (must be positive).
 #' @param type Character. `"proportion"` (default) or `"hazard"`. Recycled
 #'   to match `length(rate)`.
+#' @param x An `rctbp_dropout` object (for print/format methods).
+#' @param ... Additional arguments (unused).
 #'
 #' @return For scalar `rate`: a single `rctbp_dropout` object (a function
 #'   `f(followup_time) -> hazard_rate` with class `c("rctbp_dropout", "function")`).
@@ -140,6 +142,7 @@ dropout <- function(rate, type = "proportion") {
 }
 
 
+#' @rdname dropout
 #' @export
 print.rctbp_dropout <- function(x, ...) {
   cli::cat_line(format(x))
@@ -147,6 +150,7 @@ print.rctbp_dropout <- function(x, ...) {
 }
 
 
+#' @rdname dropout
 #' @export
 format.rctbp_dropout <- function(x, ...) {
   params <- attr(x, "dropout_params")

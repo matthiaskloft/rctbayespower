@@ -30,8 +30,7 @@ optimize_power_n(
 
 \item{n_range}{Numeric vector \code{c(lower, upper)} for sample size search bounds.}
 
-\item{effect_size}{Fixed treatment effect size (e
-.g., standardized mean difference).
+\item{effect_size}{Fixed treatment effect size (e.g., standardized mean difference).
 This is the \code{b_arm_treat} parameter for ANCOVA models.}
 
 \item{constant}{Named list of other fixed parameters. Should include all

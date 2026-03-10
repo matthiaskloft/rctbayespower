@@ -415,7 +415,7 @@ setup_bf_python <- function(envname = "r-rctbayespower",
 #'
 #' Runs nvidia-smi to detect the maximum supported CUDA version.
 #'
-#' @return Character string with CUDA version (e.g., "12.4") or "cpu" if no GPU
+#' @return Character string with CUDA version (e.g., "12.6") or "cpu" if no GPU
 #' @export
 #'
 #' @examples
@@ -490,15 +490,15 @@ detect_cuda_version <- function() {
 #' Installs PyTorch (with GPU support if available), BayesFlow, Keras, and NumPy.
 #'
 #' @param envname Name of the virtual environment
-#' @param cuda_version CUDA version ("12.6", "12.4", "12.1", "11.8", or "cpu")
+#' @param cuda_version CUDA version ("auto", "12.8", "12.6", "11.8", or "cpu")
 #'
 #' @return Invisibly returns TRUE on success
 #' @export
 #'
 #' @examples
 #' \dontrun{
-#' # Install with CUDA 12.4 support
-#' install_bf_dependencies(cuda_version = "12.4")
+#' # Install with CUDA 12.6 support
+#' install_bf_dependencies(cuda_version = "12.6")
 #' }
 install_bf_dependencies <- function(envname = "r-rctbayespower",
                                     cuda_version = "auto") {

@@ -13,7 +13,7 @@ conditions and design parameters for the power analysis. Created by
 
 \item{...}{Additional arguments passed to the rctbp_power_analysis constructor:
 \describe{
-\item{n_sims}{Number of simulations to run per condition (default 100)}
+\item{n_sims}{Number of simulations to run per condition}
 \item{n_cores}{Number of CPU cores for parallel execution (default 1)}
 \item{verbosity}{Output detail level: 0 (quiet), 1 (normal), 2 (verbose)}
 \item{brms_args}{List of brms arguments (chains, iter, warmup, cores)}
@@ -52,8 +52,7 @@ to design and model information through S7 properties:
 
 \strong{Key Properties:}
 \itemize{
-\item \code{design}: Access to the experimental design configuration
-\item \code{model}: Access to the underlying Bayesian model specification
+\item \code{design}: Access to the experimental design configuration (via conditions)
 \item \code{conditions}: The condition grid for analysis
 }
 

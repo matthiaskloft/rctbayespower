@@ -41,12 +41,12 @@
 #' @return A data frame with summarized results grouped by condition and parameter,
 #'   containing mean estimates and Monte Carlo standard errors (MCSE) for all metrics:
 #'   \itemize{
-#'     \item Probability estimates: `pr_eff_mean`, `pr_fut_mean` with `*_mcse`
-#'     \item Power estimates: `pwr_eff_mean`, `pwr_fut_mean` with `*_mcse`
-#'     \item Parameter estimates: `post_med_mean`, `post_mn_mean`, `post_mad_mean`, `post_sd_mean`
-#'     \item Convergence metrics: `rhat_mean`, `ess_bulk_mean`, `ess_tail_mean`, `conv_rate_mean`
+#'     \item Probability estimates: `pr_eff`, `pr_fut` with `se_` prefix (e.g., `se_pr_eff`)
+#'     \item Power estimates: `pwr_eff`, `pwr_fut` with `se_` prefix (e.g., `se_pwr_eff`)
+#'     \item Parameter estimates: `post_med`, `post_mn`, `post_mad`, `post_sd`
+#'     \item Convergence metrics: `rhat`, `ess_bulk`, `ess_tail`, `conv_rate`
 #'   }
-#'   Each metric includes corresponding `*_mcse` columns with Monte Carlo standard errors.
+#'   Each metric includes corresponding `se_*` columns with Monte Carlo standard errors.
 #'
 #' @details
 #' The function groups results by condition ID, parameter, and thresholds, then computes:

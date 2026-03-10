@@ -441,7 +441,7 @@ build_model_ancova <- function(prior_intercept = NULL,
 #'   \item sigma = 1
 #' }
 #'
-#' @return An S7 object of class "rctbp_model_ancova" ready for use with
+#' @return An S7 object of class "rctbp_model" ready for use with
 #'   [build_design()] and power analysis functions.
 #'
 #' @export
@@ -503,7 +503,7 @@ build_model_ancova_cont_2arms <- function(...) {
 #'   \item sigma = 1
 #' }
 #'
-#' @return An S7 object of class "rctbp_model_ancova" ready for use with
+#' @return An S7 object of class "rctbp_model" ready for use with
 #'   [build_design()] and power analysis functions.
 #'
 #' @export

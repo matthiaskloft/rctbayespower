@@ -157,13 +157,15 @@ rctbp_conditions <- S7::new_class("rctbp_conditions",
 #' @param linked Deprecated. Use [link()] inside `crossed` instead.
 #'
 #' @return An S7 object of class "rctbp_conditions" containing:
-#'   \item{grid}{A data.frame with all parameter combinations}
-#'   \item{params_by_cond}{A list of argument lists for each condition,
-#'     separated into simulation and analysis arguments}
-#'   \item{design}{The original rctbp_design object}
-#'   \item{crossed}{The original crossed specification (may contain link() groups)}
-#'   \item{constant}{Constant parameters across all conditions}
-#'   \item{target_pwr}{Target power level for optimal condition identification}
+#'   \describe{
+#'     \item{grid}{A data.frame with all parameter combinations}
+#'     \item{params_by_cond}{A list of argument lists for each condition,
+#'       separated into simulation and analysis arguments}
+#'     \item{design}{The original rctbp_design object}
+#'     \item{crossed}{The original crossed specification (may contain link() groups)}
+#'     \item{constant}{Constant parameters across all conditions}
+#'     \item{target_pwr}{Target power level for optimal condition identification}
+#'   }
 #'
 #' @details
 #' \strong{Parameter Categories:}
@@ -815,11 +817,9 @@ build_conditions <- function(design,
 #'
 #' @examples
 #' \dontrun{
-#' conditions <- build_conditions(design, condition_values, static_values)
+#' conditions <- build_conditions(design, crossed = list(n_total = c(50, 100)))
 #' print(conditions) # or just: conditions
 #' }
-#'
-#' @export
 S7::method(print, rctbp_conditions) <- function(x, ...) {
   report <- build_report.rctbp_conditions(x)
   render_report(report)

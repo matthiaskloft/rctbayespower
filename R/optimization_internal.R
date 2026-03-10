@@ -729,6 +729,10 @@ apply_simplex_transforms <- function(xs, search_specs) {
 #'   - `should_stop`: Logical, whether to stop
 #'   - `pred_mean`: Current predicted mean at best point
 #'   - `pred_se`: Current predictive SE at best point
+#'   - `actual_power`: Actual power at best predicted point
+#'   - `precision_ok`: Logical, whether SE is below threshold
+#'   - `stability_ok`: Logical, whether predictions have stabilized
+#'   - `stable_count`: Integer, consecutive stable iterations
 #'   - `reason`: Character, reason for stopping (if any)
 #'
 #' @keywords internal

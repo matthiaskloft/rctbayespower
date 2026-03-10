@@ -13,7 +13,7 @@ render_report(report, format = NULL, heading_level = 2L)
 the global output mode setting from \code{\link[=get_output_mode]{get_output_mode()}}.}
 
 \item{heading_level}{Integer specifying the starting heading level for
-markdown output (default 2). Ignored for CLI format.}
+markdown output. Ignored for CLI format.}
 }
 \value{
 NULL (outputs to console)

@@ -356,6 +356,8 @@ estimate_single_brms <- function(data, model, backend_args, target_params,
 #' @param id_cond Condition identifier
 #' @param followup_time Numeric. Required follow-up per patient for
 #'   accrual-aware subsetting. Default 0 (immediate outcome).
+#' @param analysis_timing Character. How `analysis_at` values are interpreted:
+#'   `"sample_size"` (default), `"calendar"`, or `"events"`.
 #'
 #' @return Data frame with n_analyses rows (one per interim + final)
 #' @importFrom dplyr if_else

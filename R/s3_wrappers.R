@@ -14,36 +14,43 @@ plot.rctbp_power_analysis <- function(x, ...) {
   S7::method(plot, rctbp_power_analysis)(x, ...)
 }
 
+#' @rdname print.rctbp_power_analysis
 #' @export
 print.rctbp_power_analysis <- function(x, ...) {
   S7::method(print, rctbp_power_analysis)(x, ...)
 }
 
+#' @rdname summary.rctbp_power_analysis
 #' @export
 summary.rctbp_power_analysis <- function(object, ...) {
   S7::method(summary, rctbp_power_analysis)(object, ...)
 }
 
+#' @rdname print.rctbp_conditions
 #' @export
 print.rctbp_conditions <- function(x, ...) {
   S7::method(print, rctbp_conditions)(x, ...)
 }
 
+#' @rdname print.rctbp_design
 #' @export
 print.rctbp_design <- function(x, ...) {
   S7::method(print, rctbp_design)(x, ...)
 }
 
+#' @rdname print.rctbp_model
 #' @export
 print.rctbp_model <- function(x, ...) {
   S7::method(print, rctbp_model)(x, ...)
 }
 
+#' @rdname print.rctbp_sim_fn
 #' @export
 print.rctbp_sim_fn <- function(x, ...) {
   S7::method(print, rctbp_sim_fn)(x, ...)
 }
 
+#' @rdname run.rctbp_power_analysis
 #' @export
 run.rctbp_power_analysis <- function(x, ...) {
   S7::method(run, rctbp_power_analysis)(x, ...)
@@ -53,18 +60,21 @@ run.rctbp_power_analysis <- function(x, ...) {
 # GET_CODE GENERIC
 # =============================================================================
 
+#' @rdname get_code
 #' @method get_code rctbp_design
 #' @export
 get_code.rctbp_design <- function(x, ...) {
   S7::method(get_code, rctbp_design)(x, ...)
 }
 
+#' @rdname get_code
 #' @method get_code rctbp_conditions
 #' @export
 get_code.rctbp_conditions <- function(x, ...) {
   S7::method(get_code, rctbp_conditions)(x, ...)
 }
 
+#' @rdname get_code
 #' @method get_code rctbp_power_analysis
 #' @export
 get_code.rctbp_power_analysis <- function(x, ...) {
@@ -75,11 +85,13 @@ get_code.rctbp_power_analysis <- function(x, ...) {
 # PARETO OPTIMIZATION CLASSES
 # =============================================================================
 
+#' @rdname print.rctbp_pareto_result
 #' @export
 print.rctbp_pareto_result <- function(x, ...) {
   S7::method(print, rctbp_pareto_result)(x, ...)
 }
 
+#' @rdname summary.rctbp_pareto_result
 #' @export
 summary.rctbp_pareto_result <- function(object, ...) {
   S7::method(summary, rctbp_pareto_result)(object, ...)

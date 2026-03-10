@@ -9,7 +9,7 @@ create_python_sim_fn(model_type, ...)
 \arguments{
 \item{model_type}{Character: "ancova_cont_2arms" or "ancova_cont_3arms"}
 
-\item{...}{Default parameter values passed to the simulator}
+\item{...}{Reserved for future use (currently unused)}
 }
 \value{
 Function compatible with rctbp_model@sim_fn

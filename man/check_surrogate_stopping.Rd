@@ -41,6 +41,10 @@ List with:
 \item \code{should_stop}: Logical, whether to stop
 \item \code{pred_mean}: Current predicted mean at best point
 \item \code{pred_se}: Current predictive SE at best point
+\item \code{actual_power}: Actual power at best predicted point
+\item \code{precision_ok}: Logical, whether SE is below threshold
+\item \code{stability_ok}: Logical, whether predictions have stabilized
+\item \code{stable_count}: Integer, consecutive stable iterations
 \item \code{reason}: Character, reason for stopping (if any)
 }
 }

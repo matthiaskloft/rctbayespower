@@ -38,6 +38,17 @@ Most-requested missing endpoint type. Blocks adaptive trial completeness and mul
 - [ ] Tests for binary outcome pipeline
 - [ ] BayesFlow training for binary model (after BF retraining blocker resolved)
 
+### Duplicate `apply_simplex_transforms()` Definition
+
+`apply_simplex_transforms()` is defined in both `R/optimization_internal.R:641` and `R/pareto_optimize.R:839` with **different implementations and return types**:
+- `optimization_internal.R`: returns `list(crossed, ilr_values, simplex_values)`
+- `pareto_optimize.R`: returns flat `params` list
+
+Since R loads files alphabetically, `pareto_optimize.R` wins at runtime. Callers in `optimization_internal.R` (lines 1742, 2820) expect `$crossed` etc. — these will break silently.
+
+- [ ] Decide which implementation is canonical
+- [ ] Remove the duplicate, update all callers to match
+
 ### Test Coverage Gaps [06]
 
 ~960 tests exist, but several modules have **zero coverage**:
