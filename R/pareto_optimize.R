@@ -805,8 +805,7 @@ parse_simplex_specs <- function(search, design) {
 
     if (inherits(spec, "rctbp_search_p_alloc")) {
       # Allocation probability search
-      n_arms <- length(design@sim_fn_args$p_alloc)
-      if (is.null(n_arms) || n_arms == 0) n_arms <- 2
+      n_arms <- design@n_arms
 
       specs[[param_name]] <- list(
         type = "p_alloc",

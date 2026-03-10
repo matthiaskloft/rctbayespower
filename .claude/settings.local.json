@@ -21,7 +21,9 @@
       "Bash(gh run:*)",
       "Bash(gh api:*)",
       "WebFetch(domain:codecov.io)",
-      "WebFetch(domain:app.codecov.io)"
+      "WebFetch(domain:app.codecov.io)",
+      "Bash(grep:*)",
+      "Bash(Rscript:*)"
     ],
     "deny": []
   }

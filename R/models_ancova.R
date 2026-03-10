@@ -239,7 +239,7 @@ build_model_ancova <- function(prior_intercept = NULL,
       # must be a numeric vector of probabilities summing to 1
       if (is.null(p_alloc) ||
           !is.numeric(p_alloc) || length(p_alloc) != n_arms ||
-          sum(p_alloc) != 1) {
+          abs(sum(p_alloc) - 1) > 1e-10) {
         cli::cli_abort(c(
           "{.arg p_alloc} must be a numeric vector of probabilities summing to 1",
           "x" = "You supplied {.val {p_alloc}} with length {.val {length(p_alloc)}} and sum {.val {sum(p_alloc)}}",

@@ -531,13 +531,20 @@ build_conditions <- function(design,
       }
     }
 
-    # Validate p_alloc sums to 1
+    # Validate p_alloc length and sum
     if (!is.null(sim_args$p_alloc)) {
       # Unwrap list wrapper: p_alloc vectors are wrapped in list() during grid
       # expansion to prevent tidyr::expand_grid from treating each element
       # as a separate level (e.g., c(0.5, 0.5) would become two grid rows).
       alloc_val <- if (is.list(sim_args$p_alloc)) sim_args$p_alloc[[1]] else sim_args$p_alloc
       sim_args$p_alloc <- alloc_val
+      if (length(alloc_val) != design@n_arms) {
+        cli::cli_abort(c(
+          "{.arg p_alloc} length must equal {.arg n_arms} ({.val {design@n_arms}})",
+          "x" = "Got length {.val {length(alloc_val)}}",
+          "i" = "Provide {.val {design@n_arms}} probabilities, one per arm"
+        ))
+      }
       if (abs(sum(alloc_val) - 1) > 1e-10) {
         cli::cli_abort(c(
           "{.arg p_alloc} must sum to 1",
