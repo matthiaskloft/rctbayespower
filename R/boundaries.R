@@ -643,6 +643,12 @@ resolve_boundary_vector <- function(boundary, look_info, n_total) {
 #' @return Numeric vector of length `length(info_fracs)`.
 #' @noRd
 resolve_boundary_vector_from_fracs <- function(boundary, info_fracs) {
+  if (!is.numeric(info_fracs)) {
+    cli::cli_abort(c(
+      "'info_fracs' must be a numeric vector",
+      "x" = "Got {.cls {class(info_fracs)}}"
+    ))
+  }
   if (any(!is.finite(info_fracs))) {
     cli::cli_abort(c(
       "Non-finite values in information fractions",
