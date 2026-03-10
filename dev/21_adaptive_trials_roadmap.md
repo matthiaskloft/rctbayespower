@@ -15,11 +15,16 @@ The `rctbayespower` package currently supports:
 - ✅ Bayesian optimization for design search
 
 The package currently LACKS:
-- ❌ Sample accrual / calendar time (see [`25_sample_accrual_plan.md`](25_sample_accrual_plan.md))
-- ❌ Binary, survival, count outcomes
+- ❌ Binary, count outcomes
 - ❌ Adaptive parameter modification (RAR, SSR) - infrastructure exists
 - ❌ Dose finding
 - ❌ Platform/basket/umbrella designs
+
+Recently completed:
+- ✅ **Sample accrual / calendar time** (Phases 1-4 complete, see [`25_sample_accrual_plan.md`](25_sample_accrual_plan.md))
+- ✅ **Dropout / loss-to-follow-up**
+- ✅ **Survival event-driven subsetting** (`subset_by_events()`)
+- ✅ **Survival simulation function** (`R/models_survival.R`)
 
 ## Practical Use Cases We Should Target
 

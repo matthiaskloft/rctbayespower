@@ -1,7 +1,7 @@
 # Sample Accrual Integration Plan
 
 **Created:** 2026-03-02
-**Status:** Planning
+**Status:** Complete (all 4 phases implemented)
 **Relates to:** [`23_api_roadmap.md`](23_api_roadmap.md) (Phase 2), [`21_adaptive_trials_roadmap.md`](21_adaptive_trials_roadmap.md) (survival outcomes), [`24_api_improvement_plan.md`](24_api_improvement_plan.md)
 
 ---
@@ -68,7 +68,7 @@ Specified in `build_conditions()` via `crossed` or `constant`:
 
 ## 4. Phased Implementation
 
-### Phase 1 (MVP): Enrollment Times + Calendar-Time Subsetting
+### Phase 1 (MVP): Enrollment Times + Calendar-Time Subsetting ✅ IMPLEMENTED
 
 #### 4.1 New file: `R/accrual.R`
 
@@ -123,7 +123,7 @@ Core utility functions:
   - `enrollment_duration`: time to enroll all patients
   - Per-look: `n_enrolled` vs `n_analyzed` distinction
 
-### Phase 2: Reporting & Plotting
+### Phase 2: Reporting & Plotting ✅ IMPLEMENTED
 
 - Display trial duration in print output when accrual is active
 - New plot type `type = "accrual"`: enrollment curve with analysis timepoint markers
@@ -141,7 +141,7 @@ Core utility functions:
 - Requires `accrual_rate` and `followup_time > 0`
 - Graceful handling when dropout is high (target_not_met attribute)
 
-### Phase 4: Survival/Event-Driven Integration
+### Phase 4: Survival/Event-Driven Integration ✅ IMPLEMENTED
 
 - Connects with survival models (API roadmap Phase 3)
 - Survival sim_fns accept `accrual_rate` directly (enrollment time affects censoring)

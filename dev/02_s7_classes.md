@@ -1,6 +1,6 @@
 # S7 Class System
 
-**Last Updated:** 2025-11-29
+**Last Updated:** 2026-03-10
 
 ## Why S7?
 
@@ -89,8 +89,8 @@ conditions <- build_conditions(
   constant = list(
     p_alloc = list(c(0.5, 0.5)),
     intercept = 0, b_covariate = 0.3, sigma = 1,
-    p_sig_scs = 0.975, p_sig_ftl = 0.5,
-    thresh_scs = 0.2, thresh_ftl = 0
+    thr_dec_eff = 0.975, thr_dec_fut = 0.5,
+    thr_fx_eff = 0.2, thr_fx_fut = 0
   )
 )
 ```

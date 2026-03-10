@@ -2,7 +2,7 @@
 
 This file contains reference material moved from CLAUDE.md to keep that file concise per [Boris Cherny's best practices](https://howborisusesclaudecode.com/).
 
-## Current Status (2026-03-06)
+## Current Status (2026-03-10)
 
 **Core Package State**: Functional with dual-backend support. API refactoring completed (model merged into design).
 
@@ -26,6 +26,9 @@ This file contains reference material moved from CLAUDE.md to keep that file con
 | Mock mode for testing without Python | Complete |
 | Bayesian optimization for design search | Complete |
 | trial_type parameter | Complete |
+| Sample accrual (enrollment times, calendar subsetting) | Complete |
+| Dropout / loss-to-follow-up | Complete |
+| Survival event-driven subsetting | Complete |
 
 ### Backend System
 
@@ -46,8 +49,10 @@ This file contains reference material moved from CLAUDE.md to keep that file con
 |---------|--------|------|
 | Adaptive interim analysis (parameter modification) | Planning | `20_interim_analysis_plan.md` |
 | Train BayesFlow models | Next step | `11_bayesflow_integration_roadmap.md` |
-| Binary/survival outcomes | Not started | `21_adaptive_trials_roadmap.md` |
-| Test suite | ~350 tests (unit) | `06_testing.md` |
+| Binary outcomes | Not started | `21_adaptive_trials_roadmap.md` |
+| Survival outcomes | Partial (sim_fn exists) | `21_adaptive_trials_roadmap.md` |
+| Sample accrual (enrollment, calendar time, dropout) | Complete (Phases 1-4) | `25_sample_accrual_plan.md` |
+| Test suite | ~960 tests across 23+ files | `06_testing.md` |
 
 ---
 
@@ -63,6 +68,7 @@ This file contains reference material moved from CLAUDE.md to keep that file con
 | `R/class_power_analysis.R` | Power analysis + run() + print/summary methods |
 | `R/class_pareto_result.R` | Pareto optimization result class (`rctbp_pareto_result`) |
 | `R/models_ancova.R` | ANCOVA model builders + batch simulation |
+| `R/models_survival.R` | Survival model builders + simulation |
 
 ### Backend System
 
@@ -109,6 +115,7 @@ This file contains reference material moved from CLAUDE.md to keep that file con
 | `R/plot_power_curve.R` | Power curve visualization |
 | `R/plot_heatmap.R` | 2D heatmap visualization |
 | `R/plot_comparison.R` | Power vs probability comparison |
+| `R/plot_accrual.R` | Accrual / enrollment visualization |
 | `R/plot_helpers.R` | Shared utilities (pivot, colors, theme) |
 
 ### Reporting (`R/report_*.R`)
@@ -138,6 +145,7 @@ This file contains reference material moved from CLAUDE.md to keep that file con
 | `R/required_fn_args.R` | Helper functions for parameter discovery |
 | `R/S7_helpers.R` | S7 utility functions |
 | `R/s3_wrappers.R` | S3 method wrappers for S7 classes |
+| `R/interim_functions.R` | Interim analysis functions |
 
 ### Python Integration
 

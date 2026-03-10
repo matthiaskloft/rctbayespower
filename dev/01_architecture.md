@@ -1,6 +1,6 @@
 # Package Architecture
 
-**Last Updated:** 2025-11-29
+**Last Updated:** 2026-03-10
 
 ## Overview
 
@@ -63,15 +63,41 @@ Note: `rctbp_model` is deprecated. All model properties (sim_fn, inference_model
 | File | Purpose |
 |------|---------|
 | `R/models_ancova.R` | ANCOVA model builders + batch simulation |
+| `R/models_survival.R` | Survival model builders + simulation |
 | `R/compute_measures.R` | Metric computation and aggregation |
 | `R/design_prior.R` | Design prior handling |
 | `R/required_fn_args.R` | Parameter extraction |
+
+### Accrual, Dropout & Interim
+
+| File | Purpose |
+|------|---------|
+| `R/accrual.R` | Enrollment times, calendar subsetting, event-driven subsetting |
+| `R/dropout.R` | `dropout()` constructor, dropout time generation |
+| `R/interim_functions.R` | Interim analysis functions |
+| `R/boundaries.R` | Stopping boundary functions (OBF, Pocock, linear, power) |
+
+### Optimization
+
+| File | Purpose |
+|------|---------|
+| `R/pareto_optimize.R` | Core `pareto_optimize()` + knee point selection |
+| `R/pareto_wrappers.R` | Wrapper functions: `optimize_power_n()`, `optimize_power_effect()`, etc. |
+| `R/class_pareto_result.R` | Pareto optimization result class (`rctbp_pareto_result`) |
+| `R/optimization.R` | Simplex search helpers: `search_p_alloc()`, `search_looks()` |
+| `R/optimization_internal.R` | mlr3mbo/bbotk integration, surrogate setup |
 
 ### Output & Visualization Files
 
 | File | Purpose |
 |------|---------|
-| `R/plot_power_analysis.R` | Plotting methods |
+| `R/plot_power_analysis.R` | Main S7 plot method + dispatcher |
+| `R/plot_power_curve.R` | Power curve visualization |
+| `R/plot_heatmap.R` | 2D heatmap visualization |
+| `R/plot_comparison.R` | Power vs probability comparison |
+| `R/plot_accrual.R` | Accrual / enrollment visualization |
+| `R/plot_optimization.R` | Optimization result plots |
+| `R/plot_helpers.R` | Shared utilities (pivot, colors, theme) |
 | `R/output_system.R` | Output formatting system |
 | `R/report_builders.R` | Report building functions |
 | `R/report_renderers.R` | Report rendering functions |
