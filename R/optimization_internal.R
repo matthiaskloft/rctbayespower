@@ -618,6 +618,9 @@ get_param_transform <- function(param_name, bounds) {
 #' Transforms optimizer values (which may include ILR coordinates for simplex
 #' parameters) to the format expected by [build_conditions()].
 #'
+#' See also [apply_simplex_transforms_flat()] in `pareto_optimize.R` which
+#' returns a flat list (no nested structure).
+#'
 #' @param xs Named list of optimizer values from bbotk
 #' @param search_specs Named list of simplex specifications from objectives
 #'

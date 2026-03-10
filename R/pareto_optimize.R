@@ -565,7 +565,7 @@ create_pareto_objective_fn <- function(design,
     current_n_sims <- fidelity_schedule$n_sims[schedule_idx]
 
     # Apply simplex transforms
-    params <- apply_simplex_transforms(xs, search_specs)
+    params <- apply_simplex_transforms_flat(xs, search_specs)
 
     # Merge with constant parameters
     all_params <- c(params, constant)
@@ -829,14 +829,19 @@ parse_simplex_specs <- function(search, design) {
 }
 
 
-#' Apply Simplex Transforms to Parameters
+#' Apply Simplex Transforms to Parameters (Flat Return)
+#'
+#' Returns a flat named list with transformed parameters, suitable for merging
+#' with `c(params, constant)`. See also [apply_simplex_transforms()] in
+#' `optimization_internal.R` which returns a structured list with `$crossed`,
+#' `$ilr_values`, and `$simplex_values`.
 #'
 #' @param xs Named list of raw parameter values
 #' @param search_specs Parsed simplex specifications
 #'
-#' @return Named list with transformed parameters
+#' @return Named list with transformed parameters (flat, no nested structure)
 #' @keywords internal
-apply_simplex_transforms <- function(xs, search_specs) {
+apply_simplex_transforms_flat <- function(xs, search_specs) {
   params <- as.list(xs)
 
   for (param_name in names(search_specs)) {
