@@ -700,6 +700,7 @@ S7::method(run, rctbp_power_analysis) <- function(x, ...) {
         # Shared utilities
         "create_error_result",
         "resolve_threshold",
+        "resolve_boundary_vector_from_fracs",
         "compute_measures",
         # MCSE calculations
         "calculate_mcse_power",
@@ -859,6 +860,7 @@ S7::method(run, rctbp_power_analysis) <- function(x, ...) {
         # Shared utilities
         "create_error_result",
         "resolve_threshold",
+        "resolve_boundary_vector_from_fracs",
         "compute_measures",
         # MCSE calculations
         "calculate_mcse_power",

@@ -1842,8 +1842,8 @@ estimate_single_bf <- function(data, model, backend_args, target_params,
 #' @param target_params Character vector of parameter names
 #' @param thr_fx_eff Numeric vector of efficacy thresholds (ROPE)
 #' @param thr_fx_fut Numeric vector of futility thresholds (ROPE)
-#' @param thr_dec_eff Probability threshold for efficacy (numeric or pre-resolved vector)
-#' @param thr_dec_fut Probability threshold for futility (numeric or pre-resolved vector)
+#' @param thr_dec_eff Probability threshold for efficacy (numeric, boundary function, or NULL)
+#' @param thr_dec_fut Probability threshold for futility (numeric, boundary function, or NULL)
 #' @param analysis_at Vector of sample sizes for all analyses (including final)
 #' @param interim_function Function to make interim decisions (optional)
 #' @param id_iter Vector of iteration identifiers (one per sim in batch)
@@ -1890,21 +1890,20 @@ estimate_sequential_bf <- function(full_data_list, model, backend_args, target_p
   stop_reason <- rep(NA_character_, batch_size)
   all_results <- vector("list", n_analyses)
 
+  # Pre-resolve boundary thresholds using the full schedule of info_fracs.
+  # Boundary functions like OBF need the complete vector to compute the correct
+  # spending shape — calling them per-look with a scalar loses the shape.
+  scheduled_info_fracs <- analysis_at / n_total
+  thr_dec_eff_vec <- resolve_boundary_vector_from_fracs(thr_dec_eff, scheduled_info_fracs)
+  thr_dec_fut_vec <- resolve_boundary_vector_from_fracs(thr_dec_fut, scheduled_info_fracs)
+
   for (id_analysis in seq_along(analysis_at)) {
     current_n <- analysis_at[id_analysis]
     is_final <- id_analysis == n_analyses
 
-    # BF backend uses *scheduled* info_frac (current_n / n_total) rather than
-    # actual completers. Rationale: all sims in a batch share one threshold;
-    # per-sim completer counts vary stochastically; using a representative
-    # (mean/median) would be arbitrary. The scheduled info_frac is deterministic
-    # and matches the analysis plan. The brms backend uses actual completers
-    # since it processes one sim at a time.
-    info_frac <- current_n / n_total
-
-    # Resolve probability thresholds for this analysis
-    current_thr_dec_eff <- resolve_threshold(thr_dec_eff, info_frac)
-    current_thr_dec_fut <- resolve_threshold(thr_dec_fut, info_frac)
+    # Index pre-resolved boundary thresholds for this look
+    current_thr_dec_eff <- thr_dec_eff_vec[id_analysis]
+    current_thr_dec_fut <- thr_dec_fut_vec[id_analysis]
 
     # Identify active (non-stopped) simulations
     active_idx <- which(!stopped)

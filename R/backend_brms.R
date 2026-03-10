@@ -348,8 +348,8 @@ estimate_single_brms <- function(data, model, backend_args, target_params,
 #' @param target_params Character vector of parameter names
 #' @param thr_fx_eff Numeric vector of efficacy thresholds (ROPE)
 #' @param thr_fx_fut Numeric vector of futility thresholds (ROPE)
-#' @param thr_dec_eff Probability threshold for efficacy (numeric or pre-resolved vector)
-#' @param thr_dec_fut Probability threshold for futility (numeric or pre-resolved vector)
+#' @param thr_dec_eff Probability threshold for efficacy (numeric, boundary function, or NULL)
+#' @param thr_dec_fut Probability threshold for futility (numeric, boundary function, or NULL)
 #' @param analysis_at Vector of sample sizes for all analyses (including final at n_total)
 #' @param interim_function Function to make interim decisions
 #' @param id_iter Iteration identifier
@@ -388,6 +388,15 @@ estimate_sequential_brms <- function(full_data, model, backend_args, target_para
   stopped <- FALSE
   stop_reason <- NA_character_
 
+  # Pre-resolve boundary thresholds using the full schedule of info_fracs.
+  # Boundary functions like OBF need the complete vector to compute the correct
+  # spending shape — calling them per-look with a scalar loses the shape.
+  # Uses scheduled (not actual-completer) fracs: the spending shape is a property
+  # of the design, not a per-simulation realization — consistent with BF backend.
+  scheduled_info_fracs <- analysis_schedule / n_total
+  thr_dec_eff_vec <- resolve_boundary_vector_from_fracs(thr_dec_eff, scheduled_info_fracs)
+  thr_dec_fut_vec <- resolve_boundary_vector_from_fracs(thr_dec_fut, scheduled_info_fracs)
+
   # Loop through each analysis timepoint sequentially
   for (id_analysis in seq_along(analysis_schedule)) {
     current_n <- analysis_schedule[id_analysis]
@@ -402,8 +411,7 @@ estimate_sequential_brms <- function(full_data, model, backend_args, target_para
     accrual_n_dropped <- attr(analysis_data, "n_dropped")
     accrual_n_events <- attr(analysis_data, "n_events")
 
-    # Guard: skip when zero completers (e.g. severe dropout) — must be before
-    # threshold resolution to avoid info_frac = 0 producing NaN from boundary fns.
+    # Guard: skip when zero completers (e.g. severe dropout) — no data to estimate.
     if (nrow(analysis_data) == 0) {
       results_list[[id_analysis]] <- create_error_result(
         id_iter, id_cond, id_analysis,
@@ -412,15 +420,9 @@ estimate_sequential_brms <- function(full_data, model, backend_args, target_para
       next
     }
 
-    # Calculate information fraction AFTER subsetting so dropout is reflected.
-    # Uses actual completers: when dropout reduces the sample, boundary functions
-    # (e.g. boundary_obf()) receive the true information fraction, producing
-    # appropriately conservative thresholds.
-    info_frac <- nrow(analysis_data) / n_total
-
-    # Resolve probability thresholds (handle function or numeric)
-    current_thr_dec_eff <- resolve_threshold(thr_dec_eff, info_frac)
-    current_thr_dec_fut <- resolve_threshold(thr_dec_fut, info_frac)
+    # Index pre-resolved boundary thresholds for this look
+    current_thr_dec_eff <- thr_dec_eff_vec[id_analysis]
+    current_thr_dec_fut <- thr_dec_fut_vec[id_analysis]
 
     # Estimate posterior
     estimation_result <- tryCatch({
