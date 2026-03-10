@@ -50,7 +50,7 @@ test_that("prepare_data_list_as_batch_bf rejects mixed row counts", {
   )
 
   expect_error(
-    prepare_data_list_as_batch_bf(data_list, list()),
+    prepare_data_list_as_batch_bf(data_list, list(p_alloc = c(0.5, 0.5))),
     "same number of rows"
   )
 })
@@ -66,7 +66,7 @@ test_that("prepare_data_list_as_batch_bf accepts uniform row counts", {
   )
 
   # Should not error
-  result <- prepare_data_list_as_batch_bf(data_list, list())
+  result <- prepare_data_list_as_batch_bf(data_list, list(p_alloc = c(0.5, 0.5)))
   expect_true(is.list(result))
 })
 
