@@ -73,8 +73,20 @@
 
 * **BayesFlow batch processing with variable completer counts**: `prepare_data_list_as_batch_bf()` assumes all simulations at a given look have the same row count (pre-allocates fixed-width matrices at line 1263). With stochastic dropout, different simulations can have different completer counts at the same look, causing matrix dimension mismatches. Fix requires splitting batches by data size or padding. See CodeRabbit review on PR #11.
 * ~~**`effective_n` for non-stopped target\_not\_met sims**~~: Fixed — now uses per-sim `n_analyzed_final` from final look instead of `n_planned`, with defensive fallback.
-* **Threshold resolution before dropout-aware subsetting** (brms backend): `resolve_threshold()` for `thr_dec_eff/fut` uses the scheduled `current_n` information fraction before `subset_analysis_data()` reduces the actual analyzed count. With dropout, this overstates the information fraction. Fix: move threshold resolution after subsetting, using actual completer count.
+* **Threshold resolution before dropout-aware subsetting** (in progress) (brms backend): `resolve_threshold()` for `thr_dec_eff/fut` uses the scheduled `current_n` information fraction before `subset_analysis_data()` reduces the actual analyzed count. With dropout, this overstates the information fraction. Fix: move threshold resolution after subsetting, using actual completer count.
 
+
+
+# Sensitivity Analysis (deferred post-v1)
+
+`sensitivity_analysis()` — systematically vary decision thresholds to assess robustness without re-simulation. Reviewed and deferred: not essential for v1.
+
+**Key findings from review:**
+- Varying `thr_dec_eff`/`thr_dec_fut` is exact and trivial — builds on `resummarize_boundaries()`/`compare_boundaries()`
+- Varying `thr_fx_eff`/`thr_fx_fut` (ROPE) requires full posterior, only approximate from stored quantiles — not reliable enough for clinical use
+- Prior sensitivity requires re-simulation entirely — separate feature
+- Sequential designs need output showing both power AND expected sample size, not just power
+- Would need new `rctbp_sensitivity_analysis` S7 class with `plot()`/`summary()` methods
 
 
 # Next Development Tasks (prioritized)
@@ -86,3 +98,34 @@
 3. ~~**BayesFlow model training**~~ (outsourced) — Moved to dedicated repo/package. See `11_bayesflow_integration_roadmap.md`.
 
 4. ~~**Sample accrual MVP**~~ (done) — Phase 1 + Phase 2 merged. Enrollment times, calendar-time subsetting, trial duration metrics, reporting & accrual plot. See `25_sample_accrual_plan.md`.
+
+
+# Upcoming Features (collected from dev docs)
+
+## New Outcome Models (see [21_adaptive_trials_roadmap.md](21_adaptive_trials_roadmap.md), [23_api_roadmap.md](23_api_roadmap.md))
+
+* Binary outcomes — `build_model_binary_2arms()` (Priority 1)
+* Count outcomes — `build_model_count_2arms()`
+* Survival outcomes — `build_model_survival_2arms()` (ties into Phase 4 accrual)
+
+## Sequential / Adaptive Extensions (see [20_interim_analysis_plan.md](20_interim_analysis_plan.md), [23_api_roadmap.md](23_api_roadmap.md))
+
+* New interim strategies: `interim_rar()`, `interim_ssr()`, `interim_thompson()`
+* New boundaries: `boundary_hsd()`, `boundary_wang_tsiatis()`
+* Per-`n_total` `analysis_at` specification (named list keyed by `n_total`)
+* Interim-specific plot types (deferred)
+
+## API Convenience (see [24_api_improvement_plan.md](24_api_improvement_plan.md))
+
+* `quick_power()` / `quick_sample_size()` shortcut functions (§3.3)
+
+## Infrastructure
+
+* GPU support for BayesFlow backend (see [12_gpu_support_plan.md](12_gpu_support_plan.md)) — detection, backend selection, configuration
+* ~~Test coverage: `test-power_grid_analysis.R` placeholder~~ (done — 77 tests covering constructor, validators, design prior, find_optimal, print/summary, get_code, grid)
+
+## Long-term (see [21_adaptive_trials_roadmap.md](21_adaptive_trials_roadmap.md))
+
+* Response-adaptive randomization
+* Dose finding
+* Platform / basket / umbrella trial designs
