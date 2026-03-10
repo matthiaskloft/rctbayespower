@@ -9,7 +9,8 @@ resolve_threshold(threshold, info_frac)
 \arguments{
 \item{threshold}{Either a numeric value or a boundary function}
 
-\item{info_frac}{Information fraction (current_n / n_total), between 0 and 1}
+\item{info_frac}{Information fraction between 0 and 1. For sample-size designs:
+\code{current_n / n_total}. For event-driven designs: \code{events_observed / events_planned}.}
 }
 \value{
 Numeric threshold value

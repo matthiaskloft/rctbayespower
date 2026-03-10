@@ -18,7 +18,8 @@ estimate_sequential_bf(
   id_iter,
   id_cond,
   sim_fn = NULL,
-  followup_time = 0
+  followup_time = 0,
+  analysis_timing = "sample_size"
 )
 }
 \arguments{
@@ -51,6 +52,9 @@ If provided, uses sim_fn@output_schema for field mapping.}
 
 \item{followup_time}{Numeric. Required follow-up per patient for
 accrual-aware subsetting. Default 0 (immediate outcome).}
+
+\item{analysis_timing}{Character. How \code{analysis_at} values are interpreted:
+\code{"sample_size"} (default), \code{"calendar"}, or \code{"events"}.}
 }
 \value{
 Data frame with (batch_size x n_analyses) rows

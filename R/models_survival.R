@@ -161,7 +161,7 @@ build_model_survival_2arms <- function(prior_intercept = NULL,
   )
 
   build_design(
-    model = compiled_model,
+    inference_model = compiled_model,
     sim_fn = simulate_data_survival,
     target_params = "b_armtreat_1"
   )

@@ -8,7 +8,8 @@ subset_analysis_data(
   full_data,
   current_n,
   followup_time = 0,
-  completion_times = NULL
+  completion_times = NULL,
+  analysis_timing = "sample_size"
 )
 }
 \arguments{
