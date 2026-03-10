@@ -631,6 +631,52 @@ resolve_boundary_vector <- function(boundary, look_info, n_total) {
 }
 
 
+#' Resolve boundary to a vector using pre-computed info_fracs
+#'
+#' Variant of [resolve_boundary_vector()] that takes an info_fracs vector
+#' directly instead of a look_info data frame. Used by sequential backends
+#' that pre-compute thresholds before the analysis loop.
+#'
+#' @param boundary A boundary function, numeric scalar, numeric vector, or NULL.
+#' @param info_fracs Numeric vector of information fractions (e.g.,
+#'   `analysis_schedule / n_total`).
+#' @return Numeric vector of length `length(info_fracs)`.
+#' @noRd
+resolve_boundary_vector_from_fracs <- function(boundary, info_fracs) {
+  if (any(!is.finite(info_fracs))) {
+    cli::cli_abort(c(
+      "Non-finite values in information fractions",
+      "x" = "info_fracs contains NA, NaN, or Inf",
+      "i" = "Check that 'analysis_at' and 'n_total' are valid"
+    ))
+  }
+  n_looks <- length(info_fracs)
+  if (is.null(boundary)) {
+    rep(NA_real_, n_looks)
+  } else if (is.function(boundary)) {
+    result <- boundary(info_fracs)
+    if (length(result) != n_looks) {
+      cli::cli_abort(c(
+        "Boundary function returned wrong length",
+        "x" = "Expected {n_looks} value{?s}, got {length(result)}",
+        "i" = "Boundary functions must return one threshold per information fraction"
+      ))
+    }
+    result
+  } else if (length(boundary) == 1) {
+    rep(boundary, n_looks)
+  } else if (length(boundary) == n_looks) {
+    boundary
+  } else {
+    cli::cli_abort(c(
+      "Invalid boundary specification",
+      "x" = "Got length {length(boundary)}, expected 1 or {n_looks}",
+      "i" = "Provide: single value, vector of length {n_looks}, or boundary function"
+    ))
+  }
+}
+
+
 # =============================================================================
 # DISPLAY FUNCTION
 # =============================================================================
