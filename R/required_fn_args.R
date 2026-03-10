@@ -231,14 +231,22 @@ required_fn_args <- function(design = NULL, print = TRUE) {
 }
 
 
-#' Get Function Arguments Without Default Values
+#' Get Function Argument Defaults
 #'
-#' Extracts the names of function arguments that do not have default values.
-#' This is a utility function used for identifying required parameters.
+#' Extracts default values for all function arguments, categorizing them by
+#' whether they have explicit defaults, are missing (no default), or are NULL.
 #'
 #' @param fn A function object to analyze
 #'
-#' @return A character vector containing the names of arguments without default values
+#' @return A named list with:
+#'   \describe{
+#'     \item{evaluated_defaults}{Named list of evaluated default values for all
+#'       arguments that have defaults}
+#'     \item{missing_default}{Character vector of argument names without defaults
+#'       (only present if non-empty)}
+#'     \item{null_default}{Character vector of argument names with NULL defaults
+#'       (only present if non-empty)}
+#'   }
 #'
 #' @keywords internal
 #'

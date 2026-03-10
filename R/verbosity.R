@@ -53,7 +53,7 @@ get_verbosity <- function() {
 #' # Back to normal
 #' set_verbosity(1)
 #'
-set_verbosity <- function(verbosity = c(0, 1, 2)) {
+set_verbosity <- function(verbosity = 1) {
   if (!verbosity %in% c(0, 1, 2)) {
     cli::cli_abort(c(
       "{.arg verbosity} must be 0, 1, or 2",
@@ -84,7 +84,7 @@ set_verbosity <- function(verbosity = c(0, 1, 2)) {
 #' })
 #' }
 #'
-with_verbosity <- function(verbosity = c(0, 1, 2), code) {
+with_verbosity <- function(verbosity = 1, code) {
   if (!verbosity %in% c(0, 1, 2)) {
     cli::cli_abort(c(
       "{.arg verbosity} must be 0, 1, or 2",

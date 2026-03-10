@@ -9,6 +9,9 @@ clear_model_cache(backend = c("all", "brms", "bf"))
 \arguments{
 \item{backend}{Which cache to clear: "all", "brms", or "bf"}
 }
+\value{
+Invisibly returns the number of cache files removed.
+}
 \description{
 Removes cached model files to free disk space or force re-download.
 }

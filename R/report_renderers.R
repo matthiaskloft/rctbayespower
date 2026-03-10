@@ -409,7 +409,7 @@ render_cli <- function(report) {
 #' Renders a structured report in markdown format.
 #'
 #' @param report List with report data from build_report.*()
-#' @param heading_level Integer specifying the starting heading level (default 2)
+#' @param heading_level Integer specifying the starting heading level
 #' @return NULL (outputs to console)
 #' @keywords internal
 #'
@@ -624,7 +624,7 @@ render_markdown <- function(report, heading_level = 2L) {
 #' @param format Output format: "cli" or "markdown". If NULL (default), uses
 #'   the global output mode setting from [get_output_mode()].
 #' @param heading_level Integer specifying the starting heading level for
-#'   markdown output (default 2). Ignored for CLI format.
+#'   markdown output. Ignored for CLI format.
 #' @return NULL (outputs to console)
 #' @keywords internal
 #'

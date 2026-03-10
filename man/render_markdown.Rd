@@ -9,7 +9,7 @@ render_markdown(report, heading_level = 2L)
 \arguments{
 \item{report}{List with report data from build_report.*()}
 
-\item{heading_level}{Integer specifying the starting heading level (default 2)}
+\item{heading_level}{Integer specifying the starting heading level}
 }
 \value{
 NULL (outputs to console)

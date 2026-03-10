@@ -22,6 +22,9 @@ subset_analysis_data(
 \item{completion_times}{Optional pre-sorted vector of completion times
 (\code{enrollment_time + followup_time}). Pass this when calling inside a loop
 to avoid redundant sorting.}
+
+\item{analysis_timing}{Character. How \code{current_n} is interpreted:
+\code{"sample_size"} (default) or \code{"events"} (event-driven subsetting).}
 }
 \value{
 Data frame with approximately \code{current_n} rows and \code{enrollment_time}

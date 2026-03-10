@@ -16,8 +16,7 @@
 #' @param power_metric Power metric to maximize: `"pwr_eff"` (default),
 #'   `"pwr_fut"`, or other power columns from results.
 #' @param n_range Numeric vector `c(lower, upper)` for sample size search bounds.
-#' @param effect_size Fixed treatment effect size (e
-#' .g., standardized mean difference).
+#' @param effect_size Fixed treatment effect size (e.g., standardized mean difference).
 #'   This is the `b_arm_treat` parameter for ANCOVA models.
 #' @param constant Named list of other fixed parameters. Should include all
 #'   parameters required by the model except `n_total` and `b_arm_treat`.

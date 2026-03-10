@@ -201,7 +201,7 @@ format_duration <- function(minutes) {
 #'   [build_conditions()].
 #' @param ... Additional arguments passed to the rctbp_power_analysis constructor:
 #'   \describe{
-#'     \item{n_sims}{Number of simulations to run per condition (default 100)}
+#'     \item{n_sims}{Number of simulations to run per condition}
 #'     \item{n_cores}{Number of CPU cores for parallel execution (default 1)}
 #'     \item{verbosity}{Output detail level: 0 (quiet), 1 (normal), 2 (verbose)}
 #'     \item{brms_args}{List of brms arguments (chains, iter, warmup, cores)}
@@ -232,8 +232,7 @@ format_duration <- function(minutes) {
 #'
 #' \strong{Key Properties:}
 #' \itemize{
-#'   \item `design`: Access to the experimental design configuration
-#'   \item `model`: Access to the underlying Bayesian model specification
+#'   \item `design`: Access to the experimental design configuration (via conditions)
 #'   \item `conditions`: The condition grid for analysis
 #' }
 #'
@@ -320,8 +319,8 @@ power_analysis <- function(conditions, ..., run = TRUE) {
 #' @examples
 #' \dontrun{
 #' # Create and run power analysis
-#' power_config <- rctbp_power_analysis(conditions = conditions, n_sims = 100)
-#' power_config <- run(power_config)
+#' config <- power_analysis(conditions, n_sims = 100, run = FALSE)
+#' config <- run(config)
 #' }
 run <- S7::new_generic("run", "x")
 

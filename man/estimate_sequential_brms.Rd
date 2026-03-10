@@ -34,9 +34,9 @@ estimate_sequential_brms(
 
 \item{thr_fx_fut}{Numeric vector of futility thresholds (ROPE)}
 
-\item{thr_dec_eff}{Probability threshold for efficacy (numeric or pre-resolved vector)}
+\item{thr_dec_eff}{Probability threshold for efficacy (numeric, boundary function, or NULL)}
 
-\item{thr_dec_fut}{Probability threshold for futility (numeric or pre-resolved vector)}
+\item{thr_dec_fut}{Probability threshold for futility (numeric, boundary function, or NULL)}
 
 \item{analysis_at}{Vector of sample sizes for all analyses (including final at n_total)}
 
@@ -48,6 +48,9 @@ estimate_sequential_brms(
 
 \item{followup_time}{Numeric. Required follow-up per patient for
 accrual-aware subsetting. Default 0 (immediate outcome).}
+
+\item{analysis_timing}{Character. How \code{analysis_at} values are interpreted:
+\code{"sample_size"} (default), \code{"calendar"}, or \code{"events"}.}
 }
 \value{
 Data frame with n_analyses rows (one per interim + final)

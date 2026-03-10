@@ -818,9 +818,9 @@ parse_simplex_specs <- function(search, design) {
       # Interim look timing search
       specs[[param_name]] <- list(
         type = "looks",
-        n_looks = spec$n,
+        n_looks = spec$n_looks,
         min_spacing = spec$min_spacing,
-        n_dims = spec$n - 1
+        n_dims = spec$n_looks - 1
       )
     }
   }

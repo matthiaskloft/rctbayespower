@@ -30,7 +30,7 @@ of the input object. Currently supported:
 \examples{
 \dontrun{
 # Create and run power analysis
-power_config <- rctbp_power_analysis(conditions = conditions, n_sims = 100)
-power_config <- run(power_config)
+config <- power_analysis(conditions, n_sims = 100, run = FALSE)
+config <- run(config)
 }
 }

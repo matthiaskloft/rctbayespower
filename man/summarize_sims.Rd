@@ -34,12 +34,12 @@ summarize_sims(results_df_raw, n_sims)
 A data frame with summarized results grouped by condition and parameter,
 containing mean estimates and Monte Carlo standard errors (MCSE) for all metrics:
 \itemize{
-\item Probability estimates: \code{pr_eff_mean}, \code{pr_fut_mean} with \verb{*_mcse}
-\item Power estimates: \code{pwr_eff_mean}, \code{pwr_fut_mean} with \verb{*_mcse}
-\item Parameter estimates: \code{post_med_mean}, \code{post_mn_mean}, \code{post_mad_mean}, \code{post_sd_mean}
-\item Convergence metrics: \code{rhat_mean}, \code{ess_bulk_mean}, \code{ess_tail_mean}, \code{conv_rate_mean}
+\item Probability estimates: \code{pr_eff}, \code{pr_fut} with \code{se_} prefix (e.g., \code{se_pr_eff})
+\item Power estimates: \code{pwr_eff}, \code{pwr_fut} with \code{se_} prefix (e.g., \code{se_pwr_eff})
+\item Parameter estimates: \code{post_med}, \code{post_mn}, \code{post_mad}, \code{post_sd}
+\item Convergence metrics: \code{rhat}, \code{ess_bulk}, \code{ess_tail}, \code{conv_rate}
 }
-Each metric includes corresponding \verb{*_mcse} columns with Monte Carlo standard errors.
+Each metric includes corresponding \verb{se_*} columns with Monte Carlo standard errors.
 }
 \description{
 This function aggregates raw simulation results across multiple runs to compute

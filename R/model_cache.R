@@ -255,6 +255,7 @@ list_models <- function(backend = c("all", "brms", "bf")) {
 #'
 #' @param backend Which cache to clear: "all", "brms", or "bf"
 #'
+#' @return Invisibly returns the number of cache files removed.
 #' @export
 #'
 #' @examples

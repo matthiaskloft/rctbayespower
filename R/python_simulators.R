@@ -89,7 +89,7 @@ load_python_simulators <- function() {
 #' for efficient simulation with BayesFlow backend.
 #'
 #' @param model_type Character: "ancova_cont_2arms" or "ancova_cont_3arms"
-#' @param ... Default parameter values passed to the simulator
+#' @param ... Reserved for future use (currently unused)
 #'
 #' @return Function compatible with rctbp_model@sim_fn
 #'

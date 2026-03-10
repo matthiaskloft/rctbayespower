@@ -4,7 +4,7 @@
 \alias{set_verbosity}
 \title{Set Verbosity Level}
 \usage{
-set_verbosity(verbosity = c(0, 1, 2))
+set_verbosity(verbosity = 1)
 }
 \arguments{
 \item{verbosity}{Integer: verbosity level

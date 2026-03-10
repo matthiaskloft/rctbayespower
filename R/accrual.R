@@ -157,6 +157,8 @@ calendar_to_available_n <- function(calendar_times, enrollment_times,
 #' @param completion_times Optional pre-sorted vector of completion times
 #'   (`enrollment_time + followup_time`). Pass this when calling inside a loop
 #'   to avoid redundant sorting.
+#' @param analysis_timing Character. How `current_n` is interpreted:
+#'   `"sample_size"` (default) or `"events"` (event-driven subsetting).
 #'
 #' @return Data frame with approximately `current_n` rows and `enrollment_time`
 #'   column removed.

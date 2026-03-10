@@ -2,9 +2,15 @@
 % Please edit documentation in R/dropout.R
 \name{dropout}
 \alias{dropout}
+\alias{print.rctbp_dropout}
+\alias{format.rctbp_dropout}
 \title{Create Dropout Specification}
 \usage{
 dropout(rate, type = "proportion")
+
+\method{print}{rctbp_dropout}(x, ...)
+
+\method{format}{rctbp_dropout}(x, ...)
 }
 \arguments{
 \item{rate}{Numeric scalar or vector. For \code{type = "proportion"}: expected
@@ -13,6 +19,10 @@ For \code{type = "hazard"}: constant hazard rate (must be positive).}
 
 \item{type}{Character. \code{"proportion"} (default) or \code{"hazard"}. Recycled
 to match \code{length(rate)}.}
+
+\item{x}{An \code{rctbp_dropout} object (for print/format methods).}
+
+\item{...}{Additional arguments (unused).}
 }
 \value{
 For scalar \code{rate}: a single \code{rctbp_dropout} object (a function

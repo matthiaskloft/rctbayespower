@@ -7,7 +7,7 @@
 detect_cuda_version()
 }
 \value{
-Character string with CUDA version (e.g., "12.4") or "cpu" if no GPU
+Character string with CUDA version (e.g., "12.6") or "cpu" if no GPU
 }
 \description{
 Runs nvidia-smi to detect the maximum supported CUDA version.

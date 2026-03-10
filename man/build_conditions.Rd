@@ -37,6 +37,7 @@ least this power when displaying results.}
 }
 \value{
 An S7 object of class "rctbp_conditions" containing:
+\describe{
 \item{grid}{A data.frame with all parameter combinations}
 \item{params_by_cond}{A list of argument lists for each condition,
 separated into simulation and analysis arguments}
@@ -44,6 +45,7 @@ separated into simulation and analysis arguments}
 \item{crossed}{The original crossed specification (may contain link() groups)}
 \item{constant}{Constant parameters across all conditions}
 \item{target_pwr}{Target power level for optimal condition identification}
+}
 }
 \description{
 Creates a structured set of conditions and argument lists for power analysis

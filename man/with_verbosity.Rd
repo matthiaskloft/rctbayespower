@@ -4,7 +4,7 @@
 \alias{with_verbosity}
 \title{Temporarily Change Verbosity Level}
 \usage{
-with_verbosity(verbosity = c(0, 1, 2), code)
+with_verbosity(verbosity = 1, code)
 }
 \arguments{
 \item{verbosity}{Integer: verbosity level (0, 1, or 2)}

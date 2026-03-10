@@ -35,9 +35,9 @@ estimate_sequential_bf(
 
 \item{thr_fx_fut}{Numeric vector of futility thresholds (ROPE)}
 
-\item{thr_dec_eff}{Probability threshold for efficacy (numeric or pre-resolved vector)}
+\item{thr_dec_eff}{Probability threshold for efficacy (numeric, boundary function, or NULL)}
 
-\item{thr_dec_fut}{Probability threshold for futility (numeric or pre-resolved vector)}
+\item{thr_dec_fut}{Probability threshold for futility (numeric, boundary function, or NULL)}
 
 \item{analysis_at}{Vector of sample sizes for all analyses (including final)}
 

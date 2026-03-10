@@ -44,8 +44,6 @@ update_S7_with_dots <- function(object, ...) {
 #'
 #' @format An S7 class object for validating standard data frames.
 #'
-#' @return An S7 class validator that passes only if the object is a `data.frame`.
-#'
 #' @keywords internal
 class_data_frame <- S7::new_class(
   "class_data_frame",
