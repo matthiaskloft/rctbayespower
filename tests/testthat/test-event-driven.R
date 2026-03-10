@@ -112,10 +112,9 @@ test_that("subset_analysis_data dispatches to event-driven when analysis_timing 
     analysis_timing = "events"
   )
 
-  # n_events should be close to target (may differ slightly due to re-censoring
-  # of patients whose events hadn't occurred at the analysis calendar time)
-  expect_true(attr(result, "n_events") >= target - 1)
-  expect_true(attr(result, "n_events") <= target)
+  # n_events should equal target exactly (re-censoring preserves events at the
+  # cutoff boundary via the 1e-10 floating-point tolerance)
+  expect_equal(attr(result, "n_events"), target)
   expect_false("enrollment_time" %in% names(result))
 })
 

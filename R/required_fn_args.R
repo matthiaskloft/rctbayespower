@@ -158,7 +158,7 @@ show_condition_args <- function(design = NULL, print = TRUE) {
       # p_alloc is always available for sim_fns (handled specially in build_conditions)
       if (!"p_alloc" %in% params_sim) {
         cli::cli_bullets(c(
-          "*" = "p_alloc {.emph (allocation probability vector; must sum to 1, length = number of arms, first entry = control; default c(0.5, 0.5))}"
+          "*" = "p_alloc {.emph (allocation probability vector; must sum to 1, length = number of arms, first entry = control; e.g. c(0.5, 0.5))}"
         ))
       }
     } else {
