@@ -28,13 +28,9 @@ like allocation probabilities and interim look timings.
 The optimizer searches over treatment allocation probabilities. The transform
 produces the full allocation vector with control probability derived.
 
-Convention:
-\itemize{
-\item k entries: \verb{[p_ctrl, p_treat1, p_treat2, ...]} - all explicit
-\item k-1 entries: \verb{[p_treat1, ...]} - control implicit (1 - sum)
-}
-
-For optimization, output always has k entries (control + treatments).\tabular{lll}{
+Convention: always k entries \verb{[p_ctrl, p_treat1, p_treat2, ...]}.
+The search space is k-1 dimensional (ILR transform), but the output
+is always a full k-entry allocation vector.\tabular{lll}{
    n_arms \tab Search dims \tab Transform \cr
    2 \tab 1 scalar \tab \code{x -> list(c(1-x, x))} \cr
    3 \tab 2 scalars \tab \code{x -> list(c(1-sum(x), x[1], x[2]))} \cr

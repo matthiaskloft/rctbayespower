@@ -37,6 +37,13 @@ worker_process_single <- function(id_cond, id_iter, condition_args, design) {
     ))
   }
 
+  # Inject p_alloc from sim_args into backend_args for BayesFlow
+  # backend_args_bf only contains {batch_size, n_posterior_samples} by default;
+  # p_alloc is needed by BF prepare functions but lives in sim_args
+  if (backend == "bf") {
+    backend_args$p_alloc <- condition_args$sim_args$p_alloc
+  }
+
   # Extract analysis parameters from condition_args
   # NOTE: thr_dec_eff, thr_dec_fut now come from analysis_args (not design)
   analysis_args <- condition_args$analysis_args
@@ -267,6 +274,10 @@ worker_process_batch <- function(work_units, design) {
       "i" = "Ensure work units are grouped by condition before batching"
     ))
   }
+
+  # Inject p_alloc from sim_args into backend_args for BayesFlow
+  # (no backend guard needed — this function is BF-only, validated above)
+  backend_args$p_alloc <- work_units[[1]]$condition_args$sim_args$p_alloc
 
   # Extract analysis parameters from first work unit (homogenous batch)
   analysis_args <- work_units[[1]]$condition_args$analysis_args

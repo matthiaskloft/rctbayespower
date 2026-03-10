@@ -234,6 +234,51 @@ test_that("build_conditions rejects p_alloc not summing to 1", {
   )
 })
 
+test_that("build_conditions accepts correct p_alloc length", {
+  d <- mock_design()  # 2-arm design
+  cond <- build_conditions(
+    design = d,
+    crossed = list(n_total = 100),
+    constant = list(
+      p_alloc = list(c(0.5, 0.5)),
+      b_arm_treat = 0.3, intercept = 0, b_covariate = 0.3, sigma = 1,
+      thr_dec_eff = 0.975, thr_dec_fut = 0.5,
+      thr_fx_eff = 0.2, thr_fx_fut = 0
+    )
+  )
+  expect_s3_class(cond, "rctbayespower::rctbp_conditions")
+})
+
+test_that("build_conditions rejects p_alloc with wrong length", {
+  d <- mock_design()  # 2-arm design
+  # 3-element p_alloc for a 2-arm design
+  expect_cli_abort(
+    build_conditions(
+      design = d,
+      crossed = list(n_total = 100),
+      constant = list(
+        p_alloc = list(c(1 / 3, 1 / 3, 1 / 3)),
+        b_arm_treat = 0.3, intercept = 0, b_covariate = 0.3, sigma = 1,
+        thr_dec_eff = 0.975, thr_dec_fut = 0.5,
+        thr_fx_eff = 0.2, thr_fx_fut = 0
+      )
+    )
+  )
+  # 1-element p_alloc for a 2-arm design
+  expect_cli_abort(
+    build_conditions(
+      design = d,
+      crossed = list(n_total = 100),
+      constant = list(
+        p_alloc = list(1),
+        b_arm_treat = 0.3, intercept = 0, b_covariate = 0.3, sigma = 1,
+        thr_dec_eff = 0.975, thr_dec_fut = 0.5,
+        thr_fx_eff = 0.2, thr_fx_fut = 0
+      )
+    )
+  )
+})
+
 # =============================================================================
 # build_conditions() - TRIAL TYPE VALIDATION
 # =============================================================================
