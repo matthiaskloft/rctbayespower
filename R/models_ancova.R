@@ -1310,3 +1310,599 @@ simulate_data_ancova_bin_2arms_batch <- function(n_sims, n_total, p_alloc = 0.5,
     p_alloc = p_alloc
   )
 }
+
+
+# =============================================================================
+# PROPORTIONAL ANCOVA: Logit-Normal Model
+# =============================================================================
+
+#' Create General Proportional ANCOVA Model with Flexible Specifications
+#'
+#' Creates a model object for proportional ANCOVA with logit-normal outcomes.
+#' Outcomes are proportions in (0,1) whose logit-transform is normally distributed.
+#' All effect parameters are on the log-odds scale.
+#'
+#' @param prior_intercept Prior for the intercept parameter. If NULL (default),
+#'   uses normal(0, 2.5). Must be a brmsprior object created with [brms::set_prior()].
+#' @param prior_sigma Prior for the residual standard deviation on the logit scale.
+#'   If NULL (default), uses normal(0, 0.5) with lower bound 0 (half-normal).
+#'   Must be a brmsprior object created with [brms::set_prior()].
+#' @param prior_covariate Prior for the covariate effect. If NULL (default),
+#'   uses student_t(3, 0, 0.5). Must be a brmsprior object created with [brms::set_prior()].
+#' @param prior_treatment Prior for the treatment effect. If NULL (default),
+#'   uses student_t(3, 0, 0.5). Must be a brmsprior object created with [brms::set_prior()].
+#' @param n_arms Number of arms in the trial (must be >= 2). Required parameter.
+#' @param contrasts Contrast method for treatment arms. Either a character string
+#'   (e.g., "contr.treatment", "contr.sum") or a contrast matrix. Required parameter.
+#' @param p_alloc Numeric vector of allocation probabilities summing to 1.
+#'   Length must equal n_arms. Required parameter.
+#' @param intercept Intercept value on the log-odds scale for data generation. Required parameter.
+#' @param b_arm_treat Treatment effect coefficients on the log-odds scale for data generation.
+#'   Vector length must equal n_arms - 1. Required parameter.
+#' @param b_covariate Covariate effect coefficient on the log-odds scale for data generation.
+#'   Required parameter.
+#' @param sigma Residual standard deviation on the logit scale for data generation
+#'   (must be > 0). Required parameter.
+#'
+#' @details
+#' This function creates a proportional ANCOVA model using a logit-normal distribution.
+#' The data generation process is:
+#'
+#' \strong{Model:} `logit(Y) = intercept + X * b_arm_treat + cov * b_covariate + epsilon`,
+#' where `epsilon ~ Normal(0, sigma^2)`.
+#'
+#' \strong{Model Formula:} outcome ~ 1 + covariate + arm
+#'
+#' \strong{Data Structure:} The generated data includes:
+#' \itemize{
+#'   \item covariate: Standardized normal covariate
+#'   \item arm: Factor with levels "ctrl" and treatment arms ("treat_1", "treat_2", etc.)
+#'   \item outcome: Logit-transformed outcome (on the real line, unbounded)
+#' }
+#'
+#' \strong{Parameters:} All parameters are on the log-odds scale. The model uses
+#' a gaussian family since the outcome is already on the logit scale.
+#'
+#' \strong{Priors:} Default priors are tighter than the continuous model to ensure
+#' the implied prior on proportions (0,1) remains unimodal. The sigma prior
+#' uses a half-normal(0, 0.5) which puts 99.6\% of mass below the bimodality
+#' threshold of sigma ~ 1.45.
+#'
+#' @return An S7 object of class "rctbp_model" ready for use with
+#'   [build_design()] and power analysis functions.
+#'
+#' @export
+#' @importFrom brms set_prior brm
+#' @importFrom stats gaussian contrasts<- model.matrix rnorm
+#' @seealso [build_design()], [build_model_ancova_prop_2arms()],
+#'   [build_model_ancova_cont()]
+#'
+#' @examples
+#' \dontrun{
+#' # Create 2-arm proportional ANCOVA model
+#' # 30% baseline proportion, treatment effect of 0.5 log-odds
+#' model_prop <- build_model_ancova_prop(
+#'   n_arms = 2,
+#'   contrasts = "contr.treatment",
+#'   p_alloc = c(0.5, 0.5),
+#'   intercept = qlogis(0.3),
+#'   b_arm_treat = 0.5,
+#'   b_covariate = 0.2,
+#'   sigma = 0.5
+#' )
+#' }
+build_model_ancova_prop <- function(prior_intercept = NULL,
+                                    prior_sigma = NULL,
+                                    prior_covariate = NULL,
+                                    prior_treatment = NULL,
+                                    n_arms = NULL,
+                                    contrasts = NULL,
+                                    p_alloc = NULL,
+                                    intercept = NULL,
+                                    b_arm_treat = NULL,
+                                    b_covariate = NULL,
+                                    sigma = NULL) {
+  # Validation of ANCOVA-specific parameters ----------------------------------
+
+  # Validate n_arms early (required before mock data step)
+  if (is.null(n_arms) || !is.numeric(n_arms) || length(n_arms) != 1 ||
+      n_arms < 2 || n_arms != round(n_arms)) {
+    cli::cli_abort(c(
+      "{.arg n_arms} must be a positive integer >= 2",
+      "x" = "You supplied {.val {n_arms}}",
+      "i" = "Use an integer value of 2 or more"
+    ))
+  }
+
+  # Validate p_alloc
+  if (!is.null(p_alloc) && !is.null(n_arms)) {
+    if (length(p_alloc) != n_arms) {
+      cli::cli_abort(c(
+        "{.arg p_alloc} must have length equal to {.arg n_arms}",
+        "x" = "You supplied {.arg p_alloc} with length {.val {length(p_alloc)}} but {.arg n_arms} = {.val {n_arms}}",
+        "i" = "Provide a probability vector with {.val {n_arms}} elements"
+      ))
+    }
+    if (abs(sum(p_alloc) - 1) > 1e-6) {
+      cli::cli_abort(c(
+        "{.arg p_alloc} must sum to 1",
+        "x" = "You supplied {.arg p_alloc} that sums to {.val {sum(p_alloc)}}",
+        "i" = "Ensure all probabilities sum to 1.0"
+      ))
+    }
+  }
+
+  # Validate b_arm_treat
+  if (!is.null(b_arm_treat) && !is.null(n_arms)) {
+    if (length(b_arm_treat) != (n_arms - 1)) {
+      cli::cli_abort(c(
+        "{.arg b_arm_treat} must have length equal to {.code n_arms - 1}",
+        "x" = "You supplied {.arg b_arm_treat} with length {.val {length(b_arm_treat)}} but need {.val {n_arms - 1}} coefficients",
+        "i" = "Provide {.val {n_arms - 1}} treatment effect coefficients for {.val {n_arms}} arms"
+      ))
+    }
+  }
+
+  # Validate sigma
+  if (!is.null(sigma) && sigma <= 0) {
+    cli::cli_abort(c(
+      "{.arg sigma} must be positive",
+      "x" = "You supplied {.arg sigma} = {.val {sigma}}",
+      "i" = "Use a value > 0"
+    ))
+  }
+
+  # Create the data simulation function
+  simulate_data_ancova_prop <- local({
+    default_n_arms <- n_arms
+    default_contrasts <- contrasts
+    default_p_alloc <- p_alloc
+    default_intercept <- intercept
+    default_b_arm_treat <- b_arm_treat
+    default_b_covariate <- b_covariate
+    default_sigma <- sigma
+
+    function(n_total,
+             n_arms = default_n_arms,
+             contrasts = default_contrasts,
+             p_alloc = default_p_alloc,
+             intercept = default_intercept,
+             b_arm_treat = default_b_arm_treat,
+             b_covariate = default_b_covariate,
+             sigma = default_sigma) {
+      # validation of inputs ---------------------------------------------------
+
+      if (is.null(n_total) ||
+          !is.numeric(n_total) || length(n_total) != 1 ||
+          n_total <= 0 || n_total != round(n_total)) {
+        cli::cli_abort(c(
+          "{.arg n_total} must be a positive integer value",
+          "x" = "You supplied {.val {n_total}}",
+          "i" = "Use a positive whole number"
+        ))
+      }
+      if (is.null(n_arms) ||
+          !is.numeric(n_arms) || length(n_arms) != 1 ||
+          n_arms < 2 || n_arms != round(n_arms)) {
+        cli::cli_abort(c(
+          "{.arg n_arms} must be a positive integer >= 2",
+          "x" = "You supplied {.val {n_arms}}",
+          "i" = "Use an integer value of 2 or more"
+        ))
+      }
+      if (!is.null(contrasts) &&
+          !is.character(contrasts) && !is.matrix(contrasts)) {
+        cli::cli_abort(c(
+          "{.arg contrasts} must be a character string or matrix",
+          "x" = "You supplied {.type {contrasts}}",
+          "i" = "Use a contrast method name (e.g., {.val contr.treatment}) or a contrast matrix"
+        ))
+      }
+      # Build contrast matrix
+      if (is.character(contrasts)) {
+        valid_contrasts <- c(
+          "contr.treatment", "contr.sum", "contr.poly",
+          "contr.helmert", "contr.SAS"
+        )
+        if (!(contrasts %in% valid_contrasts)) {
+          cli::cli_abort(c(
+            "{.arg contrasts} must be a valid contrast method",
+            "x" = "You supplied {.val {contrasts}}",
+            "i" = "Use one of: {.val {valid_contrasts}}"
+          ))
+        }
+        tryCatch({
+          contrasts_fn <- get(contrasts)
+          contrast_matrix <- contrasts_fn(n_arms)
+        }, error = function(e) {
+          cli::cli_abort(c(
+            "Failed to create contrast matrix from {.arg contrasts}",
+            "x" = "Error: {e$message}",
+            "i" = "Use a valid contrast method (e.g., {.val contr.treatment})"
+          ))
+        })
+      } else {
+        contrast_matrix <- contrasts
+      }
+      if (is.null(p_alloc) ||
+          !is.numeric(p_alloc) || length(p_alloc) != n_arms ||
+          abs(sum(p_alloc) - 1) > 1e-10) {
+        cli::cli_abort(c(
+          "{.arg p_alloc} must be a numeric vector of probabilities summing to 1",
+          "x" = "You supplied {.val {p_alloc}} with length {.val {length(p_alloc)}} and sum {.val {sum(p_alloc)}}",
+          "i" = "Provide {.val {n_arms}} probabilities that sum to 1.0"
+        ))
+      }
+      if (is.null(intercept) || !is.numeric(intercept)) {
+        cli::cli_abort(c(
+          "{.arg intercept} must be a numeric value",
+          "x" = "You supplied {.type {intercept}}",
+          "i" = "Provide a numeric intercept value (log-odds scale)"
+        ))
+      }
+      if (is.null(b_arm_treat) || !is.numeric(b_arm_treat)) {
+        cli::cli_abort(c(
+          "{.arg b_arm_treat} must be a numeric value",
+          "x" = "You supplied {.type {b_arm_treat}}",
+          "i" = "Provide numeric treatment effect coefficient(s) (log-odds scale)"
+        ))
+      }
+      if (is.null(b_covariate) || !is.numeric(b_covariate)) {
+        cli::cli_abort(c(
+          "{.arg b_covariate} must be a numeric value",
+          "x" = "You supplied {.type {b_covariate}}",
+          "i" = "Provide a numeric covariate coefficient (log-odds scale)"
+        ))
+      }
+      if (is.null(sigma) || !is.numeric(sigma) || sigma <= 0) {
+        cli::cli_abort(c(
+          "{.arg sigma} must be a positive numeric value",
+          "x" = "You supplied {.val {sigma}}",
+          "i" = "Provide a value > 0"
+        ))
+      }
+
+      # Simulate data ----------------------------------------------------------
+
+      df <- data.frame(
+        covariate = stats::rnorm(n_total),
+        arm = factor(
+          sample(
+            x = seq_len(n_arms) - 1,
+            size = n_total,
+            prob = p_alloc,
+            replace = TRUE
+          ),
+          levels = seq_len(n_arms) - 1,
+          labels = c("ctrl", paste0("treat_", seq_len(n_arms - 1)))
+        )
+      )
+      stats::contrasts(df$arm) <- contrast_matrix
+
+      # Outcome on logit scale (logit-normal model)
+      eta <- as.vector(
+        intercept +
+          stats::model.matrix(~ arm, data = df)[, -1, drop = FALSE] %*% b_arm_treat +
+          df$covariate * b_covariate
+      )
+      df$outcome <- eta + stats::rnorm(n_total, 0, sigma)
+      return(df)
+    }
+  })
+
+  # Simulate mock data to compile the model
+  mock_data_ancova_prop <- simulate_data_ancova_prop(
+    n_total = 20,
+    n_arms = n_arms,
+    contrasts = contrasts,
+    p_alloc = rep(1, n_arms) / n_arms,
+    intercept = 0,
+    b_arm_treat = rep(0, n_arms - 1),
+    b_covariate = 0,
+    sigma = 1
+  )
+
+  # Priors -------------------------------------------------------------------
+
+  if (is.null(prior_intercept)) {
+    prior_intercept <- brms::set_prior("normal(0, 2.5)", class = "Intercept")
+  } else if (!inherits(prior_intercept, "brmsprior")) {
+    cli::cli_abort(c(
+      "{.arg prior_intercept} must be a valid brmsprior object",
+      "x" = "You supplied {.cls {class(prior_intercept)}}",
+      "i" = "Create priors using {.fn brms::set_prior}"
+    ))
+  }
+  if (is.null(prior_sigma)) {
+    prior_sigma <- brms::set_prior("normal(0, 0.5)", class = "sigma", lb = 0)
+  } else if (!inherits(prior_sigma, "brmsprior")) {
+    cli::cli_abort(c(
+      "{.arg prior_sigma} must be a valid brmsprior object",
+      "x" = "You supplied {.cls {class(prior_sigma)}}",
+      "i" = "Create priors using {.fn brms::set_prior}"
+    ))
+  }
+  if (is.null(prior_covariate)) {
+    prior_covariate <- brms::set_prior("student_t(3, 0, 0.5)", class = "b", coef = "covariate")
+  } else if (!inherits(prior_covariate, "brmsprior")) {
+    cli::cli_abort(c(
+      "{.arg prior_covariate} must be a valid brmsprior object",
+      "x" = "You supplied {.cls {class(prior_covariate)}}",
+      "i" = "Create priors using {.fn brms::set_prior}"
+    ))
+  }
+  if (is.null(prior_treatment)) {
+    prior_treatment <- brms::set_prior("student_t(3, 0, 0.5)", class = "b")
+  } else if (!inherits(prior_treatment, "brmsprior")) {
+    cli::cli_abort(c(
+      "{.arg prior_treatment} must be a valid brmsprior object",
+      "x" = "You supplied {.cls {class(prior_treatment)}}",
+      "i" = "Create priors using {.fn brms::set_prior}"
+    ))
+  }
+
+  priors <- c(prior_covariate, prior_treatment, prior_intercept, prior_sigma)
+
+  # Compile the brms model ---------------------------------------------------
+
+  brms_model_ancova_prop <-
+    suppressMessages(suppressWarnings(
+      brms::brm(
+        formula = outcome ~ 1 + covariate + arm,
+        data = mock_data_ancova_prop,
+        family = stats::gaussian(),
+        prior = priors,
+        chains = 1,
+        iter = 500,
+        refresh = 0,
+        silent = 2
+      )
+    ))
+
+  # Build model object -------------------------------------------------------
+
+  ancova_prop_model <- rctbp_model(
+    sim_fn = simulate_data_ancova_prop,
+    inference_model = brms_model_ancova_prop,
+    model_name = "Proportional ANCOVA",
+    n_endpoints = 1L,
+    endpoint_types = "proportion",
+    n_arms = as.integer(n_arms),
+    n_repeated_measures = 0L
+  )
+
+  if (n_arms == 2L) ancova_prop_model@predefined_model <- "ancova_prop_2arms"
+
+  return(ancova_prop_model)
+}
+
+
+#' Create 2-Arm ANCOVA Model for Proportional Outcomes
+#'
+#' Creates a 2-arm ANCOVA model with sensible defaults for proportional outcomes
+#' (values in (0,1)). Uses a logit-normal distribution where the logit-transformed
+#' outcome is normally distributed. This is a convenience wrapper around
+#' [build_model_ancova_prop()].
+#'
+#' @param ... Additional arguments passed to [build_model_ancova_prop()]. Can override
+#'   any of the default parameters.
+#'
+#' @details
+#' Default parameters:
+#' \itemize{
+#'   \item n_arms = 2
+#'   \item contrasts = "contr.treatment"
+#'   \item p_alloc = c(0.5, 0.5) (equal allocation)
+#'   \item intercept = 0 (50\% baseline proportion on logit scale)
+#'   \item sigma = 1
+#'   \item b_arm_treat = NULL (must be specified)
+#'   \item b_covariate = NULL (must be specified)
+#' }
+#'
+#' @return An S7 object of class "rctbp_model" ready for use with
+#'   [build_design()] and power analysis functions.
+#'
+#' @export
+#' @seealso [build_model_ancova_prop()], [build_model_ancova_cont_2arms()]
+#'
+#' @examples
+#' \dontrun{
+#' # Create 2-arm proportional ANCOVA model
+#' model_prop <- build_model_ancova_prop_2arms(
+#'   b_arm_treat = 0.5,
+#'   b_covariate = 0.2
+#' )
+#' }
+build_model_ancova_prop_2arms <- function(...) {
+  dots <- list(...)
+  default_args <- list(
+    prior_intercept = NULL,
+    prior_sigma = NULL,
+    prior_covariate = NULL,
+    prior_treatment = NULL,
+    n_arms = 2,
+    contrasts = "contr.treatment",
+    p_alloc = c(0.5, 0.5),
+    intercept = 0,
+    b_arm_treat = NULL,
+    b_covariate = NULL,
+    sigma = 1
+  )
+  final_args <- modifyList(default_args, dots)
+  model <- do.call(build_model_ancova_prop, final_args)
+  model@predefined_model <- "ancova_prop_2arms"
+  invisible(model)
+}
+
+
+# =============================================================================
+# PROPORTIONAL ANCOVA: SIM FN + BATCH SIM
+# =============================================================================
+
+#' Create Proportional ANCOVA Simulation Function
+#'
+#' Internal helper to create simulation function for proportional ANCOVA models.
+#' Returns an `rctbp_sim_fn` object with test arguments and output schema.
+#'
+#' @param n_arms Number of arms
+#' @return rctbp_sim_fn object (callable with schema)
+#' @keywords internal
+create_ancova_prop_sim_fn <- function(n_arms) {
+  default_n_arms <- n_arms
+  default_contrasts <- "contr.treatment"
+  default_p_alloc <- rep(1, n_arms) / n_arms
+  default_intercept <- NULL
+  default_b_arm_treat <- NULL
+  default_b_covariate <- NULL
+  default_sigma <- NULL
+
+  fn <- function(n_total, n_arms = default_n_arms, contrasts = default_contrasts,
+                 p_alloc = default_p_alloc, intercept = default_intercept,
+                 b_arm_treat = default_b_arm_treat, b_covariate = default_b_covariate,
+                 sigma = default_sigma) {
+    # Create contrast matrix
+    if (is.character(contrasts)) {
+      contrasts_fn <- get(contrasts)
+      contrast_matrix <- contrasts_fn(n_arms)
+    } else {
+      contrast_matrix <- contrasts
+    }
+
+    # Simulate data
+    df <- data.frame(
+      covariate = stats::rnorm(n_total),
+      arm = factor(
+        sample(seq_len(n_arms) - 1, n_total, prob = p_alloc, replace = TRUE),
+        levels = seq_len(n_arms) - 1,
+        labels = c("ctrl", paste0("treat_", seq_len(n_arms - 1)))
+      )
+    )
+    stats::contrasts(df$arm) <- contrast_matrix
+
+    # Outcome on logit scale (logit-normal model)
+    eta <- as.vector(
+      intercept +
+        stats::model.matrix(~ arm, data = df)[, -1, drop = FALSE] %*% b_arm_treat +
+        df$covariate * b_covariate
+    )
+    df$outcome <- eta + stats::rnorm(n_total, 0, sigma)
+    df
+  }
+
+  build_sim_fn(
+    fn = fn,
+    test_args = list(
+      n_total = 20L,
+      n_arms = n_arms,
+      contrasts = "contr.treatment",
+      p_alloc = rep(1, n_arms) / n_arms,
+      intercept = 0,
+      b_arm_treat = rep(0, n_arms - 1),
+      b_covariate = 0,
+      sigma = 1
+    )
+  )
+}
+
+
+#' Simulate Proportional ANCOVA Data - Batched Format (2-arm)
+#'
+#' Generates multiple proportional ANCOVA simulations at once for NPE/BayesFlow
+#' efficiency. Returns matrices instead of data.frames for direct use with
+#' neural networks. Outcomes are on the logit scale.
+#'
+#' @param n_sims Number of simulations to generate (batch size)
+#' @param n_total Sample size per simulation
+#' @param p_alloc Allocation probability for treatment (default 0.5)
+#' @param intercept Intercept value on the log-odds scale (default 0)
+#' @param b_arm_treat Treatment effect coefficient on the log-odds scale
+#' @param b_covariate Covariate effect coefficient (default 0)
+#' @param sigma Residual standard deviation on the logit scale (default 1)
+#'
+#' @return List with batch-formatted arrays:
+#'   \itemize{
+#'     \item outcome: matrix (n_sims x n_total), values on logit scale
+#'     \item covariate: matrix (n_sims x n_total)
+#'     \item group: matrix (n_sims x n_total), binary treatment indicator
+#'     \item N: integer, sample size per simulation
+#'     \item p_alloc: numeric, allocation probability
+#'   }
+#'
+#' @details
+#' Vectorized batch generation for proportional outcomes. Uses logit-normal model:
+#' `outcome = intercept + covariate * b_covariate + group * b_arm_treat + rnorm(0, sigma)`.
+#' Outcome is on the logit scale (unbounded real line).
+#'
+#' @keywords internal
+simulate_data_ancova_prop_2arms_batch <- function(n_sims, n_total, p_alloc = 0.5,
+                                                   intercept = 0, b_arm_treat = 0,
+                                                   b_covariate = 0, sigma = 1) {
+  if (!is.numeric(n_sims) || length(n_sims) != 1) {
+    cli::cli_abort(c(
+      "{.arg n_sims} must be a single numeric value",
+      "x" = "You supplied {.type {n_sims}}"
+    ))
+  }
+  if (!is.numeric(n_total) || length(n_total) != 1) {
+    cli::cli_abort(c(
+      "{.arg n_total} must be a single numeric value",
+      "x" = "You supplied {.type {n_total}}"
+    ))
+  }
+  if (!is.numeric(p_alloc) || length(p_alloc) != 1 || p_alloc < 0 || p_alloc > 1) {
+    cli::cli_abort(c(
+      "{.arg p_alloc} must be a single probability between 0 and 1",
+      "x" = "You supplied {.val {p_alloc}}"
+    ))
+  }
+  if (!is.numeric(sigma) || length(sigma) != 1 || sigma <= 0) {
+    cli::cli_abort(c(
+      "{.arg sigma} must be a positive numeric value",
+      "x" = "You supplied {.val {sigma}}"
+    ))
+  }
+
+  n_sims <- as.integer(n_sims)
+  n_total <- as.integer(n_total)
+
+  if (n_sims <= 0) {
+    cli::cli_abort(c(
+      "{.arg n_sims} must be a positive integer",
+      "x" = "You supplied {.val {n_sims}}"
+    ))
+  }
+  if (n_total <= 0) {
+    cli::cli_abort(c(
+      "{.arg n_total} must be a positive integer",
+      "x" = "You supplied {.val {n_total}}"
+    ))
+  }
+
+  total_elements <- n_sims * n_total
+
+  covariate_mat <- matrix(
+    stats::rnorm(total_elements),
+    nrow = n_sims,
+    ncol = n_total
+  )
+
+  group_mat <- matrix(
+    stats::rbinom(total_elements, 1, p_alloc),
+    nrow = n_sims,
+    ncol = n_total
+  )
+
+  # Outcome on logit scale (logit-normal model)
+  outcome_mat <- intercept +
+    covariate_mat * b_covariate +
+    group_mat * b_arm_treat +
+    matrix(stats::rnorm(total_elements, 0, sigma), nrow = n_sims, ncol = n_total)
+
+  list(
+    outcome = outcome_mat,
+    covariate = covariate_mat,
+    group = group_mat,
+    N = n_total,
+    p_alloc = p_alloc
+  )
+}

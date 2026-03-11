@@ -150,7 +150,7 @@ rctbp_design <- S7::new_class(
       return("'n_endpoints' must be a positive numeric value.")
     }
     if (length(self@endpoint_types) != self@n_endpoints ||
-        any(!self@endpoint_types %in% c("continuous", "binary", "count"))) {
+        any(!self@endpoint_types %in% c("continuous", "binary", "count", "proportion"))) {
       return(
         "'endpoint_types' must be a character vector of length 'n_endpoints' with valid types."
       )
@@ -481,6 +481,13 @@ load_predefined_model_components <- function(model_name, backend) {
       endpoint_types = "binary",
       n_arms = 2L,
       n_repeated_measures = 0L
+    ),
+    ancova_prop_2arms = list(
+      description = "2-arm proportional ANCOVA",
+      n_endpoints = 1L,
+      endpoint_types = "proportion",
+      n_arms = 2L,
+      n_repeated_measures = 0L
     )
   )
 
@@ -597,7 +604,8 @@ get_model_builder <- function(model_name) {
   builders <- list(
     ancova_cont_2arms = build_model_ancova_cont_2arms,
     ancova_cont_3arms = build_model_ancova_cont_3arms,
-    ancova_bin_2arms = build_model_ancova_bin_2arms
+    ancova_bin_2arms = build_model_ancova_bin_2arms,
+    ancova_prop_2arms = build_model_ancova_prop_2arms
   )
   builders[[model_name]]
 }
@@ -616,6 +624,8 @@ create_sim_fn_for_model <- function(model_name) {
     create_ancova_sim_fn(n_arms = 3)
   } else if (model_name == "ancova_bin_2arms") {
     create_ancova_bin_sim_fn(n_arms = 2)
+  } else if (model_name == "ancova_prop_2arms") {
+    create_ancova_prop_sim_fn(n_arms = 2)
   } else {
     cli::cli_abort("No simulation function for model: {.val {model_name}}")
   }
@@ -731,7 +741,7 @@ S7::method(print, rctbp_design) <- function(x, ...) {
 #' # Filter to ANCOVA models
 #' show_predefined_models("ancova")
 show_predefined_models <- function(filter_string = NULL) {
-  models <- c("ancova_cont_2arms", "ancova_cont_3arms", "ancova_bin_2arms")
+  models <- c("ancova_cont_2arms", "ancova_cont_3arms", "ancova_bin_2arms", "ancova_prop_2arms")
 
   if (!is.null(filter_string)) {
     models <- models[grepl(filter_string, models)]
