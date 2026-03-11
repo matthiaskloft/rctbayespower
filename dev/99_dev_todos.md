@@ -123,6 +123,7 @@ End-to-end validation articles published to pkgdown site (not installed with pac
 - [ ] Article: `ancova_cont_2arms` (continuous 2-arm)
 - [ ] Article: `ancova_cont_3arms` (continuous 3-arm)
 - [ ] Article: `ancova_bin_2arms` (binary 2-arm)
+- [ ] Article: `ancova_prop_2arms` (proportion 2-arm, Beta regression)
 - [ ] Article: `survival_2arms` (survival 2-arm)
 - [ ] Include posterior quality checks (coverage, calibration) using external packages
 - [ ] Set up pkgdown articles directory
@@ -250,7 +251,7 @@ Review and rework the predefined model registry, loading, and naming system. The
 - [ ] Audit model registry structure (currently hardcoded list in `load_predefined_model_components()`)
 - [ ] Review `get_model_builder()` / `create_sim_fn_for_model()` dispatch pattern
 - [ ] Consider whether registry should be a standalone file (e.g., `R/model_registry.R`)
-- [ ] Ensure all 4 v1 registry models (cont_2arms, cont_3arms, bin_2arms, survival_2arms) follow same pattern
+- [ ] Ensure all 5 v1 registry models (cont_2arms, cont_3arms, bin_2arms, prop_2arms, survival_2arms) follow same pattern
 - [ ] Review `show_predefined_models()` output for accuracy and usefulness
 - [ ] Document how to add new predefined models (for contributors)
 

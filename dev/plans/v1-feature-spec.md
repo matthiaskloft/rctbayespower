@@ -21,7 +21,7 @@
 
 ## Summary
 
-**What is v1?** The first public release of `rctbayespower` — a Bayesian power analysis package for RCTs with ROPE-based decision making, group sequential boundaries, and brms/Stan estimation. v1 targets **psychological intervention trials** using ANCOVA designs with continuous, binary, or survival outcomes.
+**What is v1?** The first public release of `rctbayespower` — a Bayesian power analysis package for RCTs with ROPE-based decision making, group sequential boundaries, and brms/Stan estimation. v1 targets **psychological intervention trials** using ANCOVA designs with continuous, binary, proportion, or survival outcomes.
 
 **Guiding principle:** Ship what works well. Defer what's experimental, blocked, or untested.
 
@@ -108,7 +108,7 @@ See `dev/plans/optimization-redesign.md`.
 |---------|--------|
 | **Adaptive designs** (RAR, SSR, Thompson) | Infrastructure exists but no working interim modification functions. |
 | **New `trial_type` values** | Existing `trial_type` property stays as-is. No new values in v1. |
-| **Beta proportion model** (ancova_prop_2arms) | Not yet implemented. |
+| ~~**Beta proportion model**~~ | Implemented — promoted to v1 registry model. |
 | **Count/Poisson models** | Not yet implemented. |
 | **Probit binary model** | Not yet implemented. |
 | **Pipe-friendly aliases** (`add_conditions`, `run_power`) | Shiny GUI will cover low-barrier entry. |
@@ -135,6 +135,7 @@ See `dev/plans/optimization-redesign.md`.
 | `ancova_cont_2arms` | Continuous | 2 | `build_model_ancova_cont_2arms()` | Ready |
 | `ancova_cont_3arms` | Continuous | 3 | `build_model_ancova_cont_3arms()` | Ready |
 | `ancova_bin_2arms` | Binary (logit) | 2 | `build_model_ancova_bin_2arms()` | Ready |
+| `ancova_prop_2arms` | Proportion (Beta) | 2 | `build_model_ancova_prop_2arms()` | Ready (just merged) |
 | `survival_2arms` | Time-to-event | 2 | `build_model_survival_2arms()` | Needs registry entry + tests |
 
 **Custom models:** Users can always build arbitrary models via `build_sim_fn()` + `build_design(sim_fn = ..., inference_model = ...)`.
@@ -391,6 +392,7 @@ Pkgdown articles, not installed with package. One per predefined model:
 - `ancova_cont_2arms` — continuous 2-arm (fixed + group sequential + accrual)
 - `ancova_cont_3arms` — continuous 3-arm
 - `ancova_bin_2arms` — binary 2-arm
+- `ancova_prop_2arms` — proportion 2-arm (Beta regression)
 - `survival_2arms` — survival 2-arm
 - Include posterior quality checks (coverage, calibration) using external packages
 - Set up pkgdown articles directory and `_pkgdown.yml` configuration
@@ -421,12 +423,12 @@ v1 is ready to ship when:
 
 - [ ] All Phase 1-4, 6-8 items complete (Phase 5 optional)
 - [ ] R CMD check passes with 0 errors, 0 warnings, 0 notes
-- [ ] All 4 predefined models work end-to-end (fixed + group sequential)
+- [ ] All 5 predefined models work end-to-end (fixed + group sequential)
 - [ ] All existing tests pass after each phase (no regressions)
 - [ ] Test suite passes on R 4.1+ across macOS, Windows, Linux
 - [ ] get_code() round-trips for all predefined model workflows
 - [ ] No known silent failures in core pipeline
 - [ ] Exported API surface documented (all @export functions have roxygen)
 - [ ] No deprecated wrappers remain in NAMESPACE (clean API surface for first release)
-- [ ] Validation articles published for all 4 predefined models
+- [ ] Validation articles published for all 5 predefined models
 - [ ] BayesFlow model interface spec documented
