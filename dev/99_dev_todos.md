@@ -28,14 +28,15 @@ The pre-trained model (`dev/bf_models/ancova_cont_2arms.keras`) **cannot load** 
 
 # HIGH — v1 Release Blockers
 
-### Binary Outcome Models [21, 23, 40]
+### ~~Binary Outcome Models~~ (DONE)
 
-Most-requested missing endpoint type. Blocks adaptive trial completeness and multiple use cases (oncology ORR, remission rates).
+Implemented as `build_model_ancova_bin()` with `ancova_bin_2arms` predefined model. Log-odds parameterization — `compute_measures()` works unchanged (parameter-agnostic ROPE decisions). Probability-scale output columns deferred.
 
-- [ ] `build_model_binary_2arms()` — logistic regression sim_fn + brms formula
-- [ ] Binary data generation function
-- [ ] Adapt `compute_measures()` for proportions / odds ratios
-- [ ] Tests for binary outcome pipeline
+- [x] `build_model_ancova_bin()` — logistic regression sim_fn + brms formula
+- [x] Binary data generation function (`create_ancova_bin_sim_fn()`, batch fn)
+- [x] Registry: `ancova_bin_2arms` predefined model
+- [x] Tests for binary outcome pipeline
+- [ ] Adapt `compute_measures()` for proportions / odds ratios — DEFERRED (log-odds sufficient for v1)
 - [ ] BayesFlow training for binary model (after BF retraining blocker resolved)
 
 ### Duplicate `apply_simplex_transforms()` Definition
@@ -110,7 +111,7 @@ Replace scattered boolean flags with declarative `trial_type` in `build_design()
 
 - [ ] Count outcomes — `build_model_count_2arms()` (Poisson, negative binomial)
 - [ ] Survival outcomes — `build_model_survival_2arms()` (Cox PH, ties into completed Phase 4 accrual)
-- [ ] Binary ANCOVA — `build_model_binary_ancova_2arms()`
+- [x] Binary ANCOVA — `build_model_ancova_bin()` + `ancova_bin_2arms`
 - [ ] Endpoint-specific convenience constructors: `design_continuous()`, `design_binary()`, etc.
 
 ### Sequential / Adaptive Extensions [20, 21, 23]

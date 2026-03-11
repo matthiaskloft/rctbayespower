@@ -49,7 +49,7 @@
 #' @return An S7 object of class "rctbp_design" for use with [build_conditions()].
 #'
 #' @export
-#' @seealso [build_model_ancova()], [build_design()]
+#' @seealso [build_model_ancova_cont()], [build_design()]
 #'
 #' @examples
 #' \dontrun{

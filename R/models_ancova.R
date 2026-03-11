@@ -1,8 +1,8 @@
-#' Create General ANCOVA Model with Flexible Specifications
+#' Create General Continuous ANCOVA Model with Flexible Specifications
 #'
-#' Creates a build_model object for ANCOVA (Analysis of Covariance) with flexible
+#' Creates a model object for continuous ANCOVA (Analysis of Covariance) with flexible
 #' specifications for number of arms, contrasts, allocation ratios, and parameters.
-#' This is the general function that underlies all ANCOVA model variants in the package.
+#' This is the general function that underlies all continuous ANCOVA model variants in the package.
 #'
 #' @param prior_intercept Prior for the intercept parameter. If NULL (default),
 #'   uses normal(0, 10). Must be a brmsprior object created with [brms::set_prior()].
@@ -59,8 +59,8 @@
 #'
 #' @examples
 #' \dontrun{
-#' # Create 2-arm ANCOVA model
-#' model_2arm <- build_model_ancova(
+#' # Create 2-arm continuous ANCOVA model
+#' model_2arm <- build_model_ancova_cont(
 #'   n_arms = 2,
 #'   contrasts = "contr.treatment",
 #'   p_alloc = c(0.5, 0.5),
@@ -70,18 +70,18 @@
 #'   sigma = 1
 #' )
 #' }
-build_model_ancova <- function(prior_intercept = NULL,
-                               prior_sigma = NULL,
-                               prior_covariate = NULL,
-                               prior_treatment = NULL,
-                               link_sigma = "identity",
-                               n_arms = NULL,
-                               contrasts = NULL,
-                               p_alloc = NULL,
-                               intercept = NULL,
-                               b_arm_treat = NULL,
-                               b_covariate,
-                               sigma = NULL) {
+build_model_ancova_cont <- function(prior_intercept = NULL,
+                                    prior_sigma = NULL,
+                                    prior_covariate = NULL,
+                                    prior_treatment = NULL,
+                                    link_sigma = "identity",
+                                    n_arms = NULL,
+                                    contrasts = NULL,
+                                    p_alloc = NULL,
+                                    intercept = NULL,
+                                    b_arm_treat = NULL,
+                                    b_covariate = NULL,
+                                    sigma = NULL) {
   # Enhanced validation using model properties ---------------------------------
 
   # Validate that parameter names from simulation function include required parameters
@@ -407,7 +407,7 @@ build_model_ancova <- function(prior_intercept = NULL,
   ancova_model <- rctbp_model(
     sim_fn = simulate_data_ancova,
     inference_model = brms_model_ancova,
-    model_name = "ANCOVA",
+    model_name = "Continuous ANCOVA",
     n_endpoints = 1L,
     endpoint_types = "continuous",
     n_arms = as.integer(n_arms),
@@ -419,14 +419,314 @@ build_model_ancova <- function(prior_intercept = NULL,
 }
 
 
+# =============================================================================
+# BINARY ANCOVA MODEL
+# =============================================================================
+
+#' Create General Binary ANCOVA Model with Flexible Specifications
+#'
+#' Creates a model object for binary ANCOVA with flexible specifications for
+#' number of arms, contrasts, allocation ratios, and parameters. Parameters are
+#' on the log-odds scale (logit link).
+#'
+#' @param prior_intercept Prior for the intercept parameter. If NULL (default),
+#'   uses normal(0, 5). Must be a brmsprior object created with [brms::set_prior()].
+#' @param prior_covariate Prior for the covariate effect. If NULL (default),
+#'   uses student_t(3, 0, 1). Must be a brmsprior object created with [brms::set_prior()].
+#' @param prior_treatment Prior for the treatment effect. If NULL (default),
+#'   uses student_t(3, 0, 1). Must be a brmsprior object created with [brms::set_prior()].
+#' @param n_arms Number of arms in the trial (must be >= 2). Required parameter.
+#' @param contrasts Contrast method for treatment arms. Either a character string
+#'   (e.g., "contr.treatment", "contr.sum") or a contrast matrix. Required parameter.
+#' @param p_alloc Numeric vector of allocation probabilities summing to 1.
+#'   Length must equal n_arms. Required parameter.
+#' @param intercept Intercept value on the log-odds scale for data generation.
+#'   Use `qlogis(p)` to convert a probability to log-odds (e.g., `qlogis(0.3)`
+#'   for a 30% baseline rate). Required parameter.
+#' @param b_arm_treat Treatment effect coefficients on the log-odds scale.
+#'   Vector length must equal n_arms - 1. Use `log(OR)` where OR is the odds
+#'   ratio (e.g., `log(2)` for OR = 2). Required parameter.
+#' @param b_covariate Covariate effect coefficient on the log-odds scale.
+#'   Required parameter.
+#'
+#' @details
+#' This function creates a complete binary ANCOVA model with the following structure:
+#'
+#' \strong{Model Formula:} outcome ~ 1 + covariate + arm
+#'
+#' \strong{Data Structure:} The generated data includes:
+#' \itemize{
+#'   \item covariate: Standardized normal covariate
+#'   \item arm: Factor with levels "ctrl" and treatment arms ("treat_1", "treat_2", etc.)
+#'   \item outcome: Binary outcome (0/1) generated via logistic model
+#' }
+#'
+#' \strong{Parameters:} All parameters are on the log-odds scale. The model uses
+#' a bernoulli family with logit link: `logit(p) = intercept + X * b_arm_treat + cov * b_covariate`.
+#'
+#' \strong{Model Compilation:} The function compiles the brms model during creation,
+#' which may take some time but enables efficient power analysis later.
+#'
+#' @return An S7 object of class "rctbp_model" (legacy) ready for use with
+#'   [build_design()] and power analysis functions.
+#'
+#' @export
+#' @importFrom stats rbinom plogis
+#' @seealso [build_design()], [build_model_ancova_cont()]
+#'
+#' @examples
+#' \dontrun{
+#' # Create 2-arm binary ANCOVA model
+#' # 30% control rate, odds ratio = 2 for treatment
+#' model_bin <- build_model_ancova_bin(
+#'   n_arms = 2,
+#'   contrasts = "contr.treatment",
+#'   p_alloc = c(0.5, 0.5),
+#'   intercept = qlogis(0.3),
+#'   b_arm_treat = log(2),
+#'   b_covariate = 0.3
+#' )
+#' }
+build_model_ancova_bin <- function(prior_intercept = NULL,
+                                   prior_covariate = NULL,
+                                   prior_treatment = NULL,
+                                   n_arms = NULL,
+                                   contrasts = NULL,
+                                   p_alloc = NULL,
+                                   intercept = NULL,
+                                   b_arm_treat = NULL,
+                                   b_covariate = NULL) {
+  # Validation of ANCOVA-specific parameters ----------------------------------
+
+  # Validate p_alloc
+  if (!is.null(p_alloc) && !is.null(n_arms)) {
+    if (length(p_alloc) != n_arms) {
+      cli::cli_abort(c(
+        "{.arg p_alloc} must have length equal to {.arg n_arms}",
+        "x" = "You supplied {.arg p_alloc} with length {.val {length(p_alloc)}} but {.arg n_arms} = {.val {n_arms}}",
+        "i" = "Provide a probability vector with {.val {n_arms}} elements"
+      ))
+    }
+    if (abs(sum(p_alloc) - 1) > 1e-6) {
+      cli::cli_abort(c(
+        "{.arg p_alloc} must sum to 1",
+        "x" = "You supplied {.arg p_alloc} that sums to {.val {sum(p_alloc)}}",
+        "i" = "Ensure all probabilities sum to 1.0"
+      ))
+    }
+  }
+
+  # Validate b_arm_treat
+  if (!is.null(b_arm_treat) && !is.null(n_arms)) {
+    if (length(b_arm_treat) != (n_arms - 1)) {
+      cli::cli_abort(c(
+        "{.arg b_arm_treat} must have length equal to {.code n_arms - 1}",
+        "x" = "You supplied {.arg b_arm_treat} with length {.val {length(b_arm_treat)}} but need {.val {n_arms - 1}} coefficients",
+        "i" = "Provide {.val {n_arms - 1}} treatment effect coefficients for {.val {n_arms}} arms"
+      ))
+    }
+  }
+
+  # Create the data simulation function
+  simulate_data_ancova_bin <- local({
+    default_n_arms <- n_arms
+    default_contrasts <- contrasts
+    default_p_alloc <- p_alloc
+    default_intercept <- intercept
+    default_b_arm_treat <- b_arm_treat
+    default_b_covariate <- b_covariate
+
+    function(n_total,
+             n_arms = default_n_arms,
+             contrasts = default_contrasts,
+             p_alloc = default_p_alloc,
+             intercept = default_intercept,
+             b_arm_treat = default_b_arm_treat,
+             b_covariate = default_b_covariate) {
+      # validation of inputs ---------------------------------------------------
+
+      if (is.null(n_total) ||
+          !is.numeric(n_total) || length(n_total) != 1 ||
+          n_total <= 0 || n_total != round(n_total)) {
+        cli::cli_abort(c(
+          "{.arg n_total} must be a positive integer value",
+          "x" = "You supplied {.val {n_total}}",
+          "i" = "Use a positive whole number"
+        ))
+      }
+      if (is.null(n_arms) ||
+          !is.numeric(n_arms) || length(n_arms) != 1 ||
+          n_arms < 2 || n_arms != round(n_arms)) {
+        cli::cli_abort(c(
+          "{.arg n_arms} must be a positive integer >= 2",
+          "x" = "You supplied {.val {n_arms}}",
+          "i" = "Use an integer value of 2 or more"
+        ))
+      }
+      if (!is.null(contrasts) &&
+          !is.character(contrasts) && !is.matrix(contrasts)) {
+        cli::cli_abort(c(
+          "{.arg contrasts} must be a character string or matrix",
+          "x" = "You supplied {.type {contrasts}}",
+          "i" = "Use a contrast method name (e.g., {.val contr.treatment}) or a contrast matrix"
+        ))
+      }
+      # Build contrast matrix
+      if (is.character(contrasts)) {
+        contrasts_fn <- get(contrasts)
+        contrast_matrix <- contrasts_fn(n_arms)
+      } else {
+        contrast_matrix <- contrasts
+      }
+      if (is.null(p_alloc) ||
+          !is.numeric(p_alloc) || length(p_alloc) != n_arms ||
+          abs(sum(p_alloc) - 1) > 1e-10) {
+        cli::cli_abort(c(
+          "{.arg p_alloc} must be a numeric vector of probabilities summing to 1",
+          "x" = "You supplied {.val {p_alloc}} with length {.val {length(p_alloc)}} and sum {.val {sum(p_alloc)}}",
+          "i" = "Provide {.val {n_arms}} probabilities that sum to 1.0"
+        ))
+      }
+      if (is.null(intercept) || !is.numeric(intercept)) {
+        cli::cli_abort(c(
+          "{.arg intercept} must be a numeric value",
+          "x" = "You supplied {.type {intercept}}",
+          "i" = "Provide a numeric intercept value (log-odds scale)"
+        ))
+      }
+      if (is.null(b_arm_treat) || !is.numeric(b_arm_treat)) {
+        cli::cli_abort(c(
+          "{.arg b_arm_treat} must be a numeric value",
+          "x" = "You supplied {.type {b_arm_treat}}",
+          "i" = "Provide numeric treatment effect coefficient(s) (log-odds scale)"
+        ))
+      }
+      if (is.null(b_covariate) || !is.numeric(b_covariate)) {
+        cli::cli_abort(c(
+          "{.arg b_covariate} must be a numeric value",
+          "x" = "You supplied {.type {b_covariate}}",
+          "i" = "Provide a numeric covariate coefficient (log-odds scale)"
+        ))
+      }
+
+      # Simulate data ----------------------------------------------------------
+
+      df <- data.frame(
+        covariate = stats::rnorm(n_total),
+        arm = factor(
+          sample(
+            x = seq_len(n_arms) - 1,
+            size = n_total,
+            prob = p_alloc,
+            replace = TRUE
+          ),
+          levels = seq_len(n_arms) - 1,
+          labels = c("ctrl", paste0("treat_", seq_len(n_arms - 1)))
+        )
+      )
+      stats::contrasts(df$arm) <- contrast_matrix
+
+      # Binary outcome via logistic model
+      eta <- as.vector(
+        intercept +
+          stats::model.matrix(~ arm, data = df)[, -1, drop = FALSE] %*% b_arm_treat +
+          df$covariate * b_covariate
+      )
+      df$outcome <- stats::rbinom(n_total, size = 1, prob = stats::plogis(eta))
+      return(df)
+    }
+  })
+
+  # Simulate mock data to compile the model
+  mock_data_ancova_bin <- simulate_data_ancova_bin(
+    n_total = 20,
+    n_arms = n_arms,
+    contrasts = contrasts,
+    p_alloc = rep(1, n_arms) / n_arms,
+    intercept = 0,
+    b_arm_treat = rep(0, n_arms - 1),
+    b_covariate = 0
+  )
+
+  # Priors -------------------------------------------------------------------
+
+  if (is.null(prior_intercept)) {
+    prior_intercept <- brms::set_prior("normal(0, 5)", class = "Intercept")
+  } else if (!inherits(prior_intercept, "brmsprior")) {
+    cli::cli_abort(c(
+      "{.arg prior_intercept} must be a valid brmsprior object",
+      "x" = "You supplied {.cls {class(prior_intercept)}}",
+      "i" = "Create priors using {.fn brms::set_prior}"
+    ))
+  }
+  if (is.null(prior_covariate)) {
+    prior_covariate <- brms::set_prior("student_t(3, 0, 1)", class = "b", coef = "covariate")
+  } else if (!inherits(prior_covariate, "brmsprior")) {
+    cli::cli_abort(c(
+      "{.arg prior_covariate} must be a valid brmsprior object",
+      "x" = "You supplied {.cls {class(prior_covariate)}}",
+      "i" = "Create priors using {.fn brms::set_prior}"
+    ))
+  }
+  if (is.null(prior_treatment)) {
+    for (i in seq_len(n_arms - 1)) {
+      prior_treatment <- brms::set_prior("student_t(3, 0, 1)",
+                                         class = "b",
+                                         coef = paste0("armtreat_", i))
+    }
+    prior_treatment <- brms::set_prior("student_t(3, 0, 1)", class = "b")
+  } else if (!inherits(prior_treatment, "brmsprior")) {
+    cli::cli_abort(c(
+      "{.arg prior_treatment} must be a valid brmsprior object",
+      "x" = "You supplied {.cls {class(prior_treatment)}}",
+      "i" = "Create priors using {.fn brms::set_prior}"
+    ))
+  }
+
+  priors <- c(prior_covariate, prior_treatment, prior_intercept)
+
+  # Compile the brms model ---------------------------------------------------
+
+  brms_model_ancova_bin <-
+    suppressMessages(suppressWarnings(
+      brms::brm(
+        formula = outcome ~ 1 + covariate + arm,
+        data = mock_data_ancova_bin,
+        family = brms::bernoulli(link = "logit"),
+        prior = priors,
+        chains = 1,
+        iter = 500,
+        refresh = 0,
+        silent = 2
+      )
+    ))
+
+  # Build model object -------------------------------------------------------
+
+  ancova_bin_model <- rctbp_model(
+    sim_fn = simulate_data_ancova_bin,
+    inference_model = brms_model_ancova_bin,
+    model_name = "Binary ANCOVA",
+    n_endpoints = 1L,
+    endpoint_types = "binary",
+    n_arms = as.integer(n_arms),
+    n_repeated_measures = 0L
+  )
+
+  if (n_arms == 2L) ancova_bin_model@predefined_model <- "ancova_bin_2arms"
+
+  return(ancova_bin_model)
+}
+
+
 # Specific default models
 
 #' Create 2-Arm ANCOVA Model for Continuous Outcomes
 #'
 #' Creates a 2-arm ANCOVA model with sensible defaults for continuous outcomes.
-#' This is a convenience wrapper around [build_model_ancova()].
+#' This is a convenience wrapper around [build_model_ancova_cont()].
 #'
-#' @param ... Additional arguments passed to [build_model_ancova()]. Can override
+#' @param ... Additional arguments passed to [build_model_ancova_cont()]. Can override
 #'   any of the default parameters.
 #'
 #' @details
@@ -445,7 +745,7 @@ build_model_ancova <- function(prior_intercept = NULL,
 #'   [build_design()] and power analysis functions.
 #'
 #' @export
-#' @seealso [build_model_ancova()], [build_model_ancova_cont_3arms()]
+#' @seealso [build_model_ancova_cont()], [build_model_ancova_cont_3arms()]
 #'
 #' @examples
 #' \dontrun{
@@ -474,8 +774,8 @@ build_model_ancova_cont_2arms <- function(...) {
   )
   # modify default arguments with user-specified arguments
   final_args <- modifyList(default_args, dots)
-  # call the build_model_ancova function with the final arguments
-  model <- do.call(build_model_ancova, final_args)
+  # call the build_model_ancova_cont function with the final arguments
+  model <- do.call(build_model_ancova_cont, final_args)
 
   # add predefined model name
   model@predefined_model <- "ancova_cont_2arms"
@@ -486,9 +786,9 @@ build_model_ancova_cont_2arms <- function(...) {
 #' Create 3-Arm ANCOVA Model for Continuous Outcomes
 #'
 #' Creates a 3-arm ANCOVA model with sensible defaults for continuous outcomes.
-#' This is a convenience wrapper around [build_model_ancova()].
+#' This is a convenience wrapper around [build_model_ancova_cont()].
 #'
-#' @param ... Additional arguments passed to [build_model_ancova()]. Can override
+#' @param ... Additional arguments passed to [build_model_ancova_cont()]. Can override
 #'   any of the default parameters.
 #'
 #' @details
@@ -507,7 +807,7 @@ build_model_ancova_cont_2arms <- function(...) {
 #'   [build_design()] and power analysis functions.
 #'
 #' @export
-#' @seealso [build_model_ancova()], [build_model_ancova_cont_2arms()]
+#' @seealso [build_model_ancova_cont()], [build_model_ancova_cont_2arms()]
 #'
 #' @examples
 #' \dontrun{
@@ -536,8 +836,8 @@ build_model_ancova_cont_3arms <- function(...) {
   )
   # modify default arguments with user-specified arguments
   final_args <- modifyList(default_args, dots)
-  # call the build_model_ancova function with the final arguments
-  model <- do.call(build_model_ancova, final_args)
+  # call the build_model_ancova_cont function with the final arguments
+  model <- do.call(build_model_ancova_cont, final_args)
   # add predefined model name
 
   model@predefined_model <- "ancova_cont_3arms"
@@ -761,6 +1061,154 @@ simulate_data_ancova_cont_3arms_batch <- function(n_sims, n_total,
     covariate_mat * b_covariate +
     treat_effect +
     matrix(stats::rnorm(total_elements, 0, sigma), nrow = n_sims, ncol = n_total)
+
+  list(
+    outcome = outcome_mat,
+    covariate = covariate_mat,
+    group = group_mat,
+    N = n_total,
+    p_alloc = p_alloc
+  )
+}
+
+
+# =============================================================================
+# BINARY ANCOVA: SIM FN + BATCH SIM
+# =============================================================================
+
+#' Create Binary ANCOVA Simulation Function
+#'
+#' Internal helper to create simulation function for binary ANCOVA models.
+#' Returns an `rctbp_sim_fn` object with test arguments and output schema.
+#'
+#' @param n_arms Number of arms
+#' @return rctbp_sim_fn object (callable with schema)
+#' @keywords internal
+create_ancova_bin_sim_fn <- function(n_arms) {
+  default_n_arms <- n_arms
+  default_contrasts <- "contr.treatment"
+  default_p_alloc <- rep(1, n_arms) / n_arms
+  default_intercept <- 0
+  default_b_arm_treat <- rep(0, n_arms - 1)
+  default_b_covariate <- 0
+
+  fn <- function(n_total, n_arms = default_n_arms, contrasts = default_contrasts,
+                 p_alloc = default_p_alloc, intercept = default_intercept,
+                 b_arm_treat = default_b_arm_treat, b_covariate = default_b_covariate) {
+    # Create contrast matrix
+    if (is.character(contrasts)) {
+      contrasts_fn <- get(contrasts)
+      contrast_matrix <- contrasts_fn(n_arms)
+    } else {
+      contrast_matrix <- contrasts
+    }
+
+    # Simulate data
+    df <- data.frame(
+      covariate = stats::rnorm(n_total),
+      arm = factor(
+        sample(seq_len(n_arms) - 1, n_total, prob = p_alloc, replace = TRUE),
+        levels = seq_len(n_arms) - 1,
+        labels = c("ctrl", paste0("treat_", seq_len(n_arms - 1)))
+      )
+    )
+    stats::contrasts(df$arm) <- contrast_matrix
+
+    # Binary outcome via logistic model
+    eta <- as.vector(
+      intercept +
+        stats::model.matrix(~ arm, data = df)[, -1, drop = FALSE] %*% b_arm_treat +
+        df$covariate * b_covariate
+    )
+    df$outcome <- stats::rbinom(n_total, size = 1, prob = stats::plogis(eta))
+    df
+  }
+
+  build_sim_fn(
+    fn = fn,
+    test_args = list(
+      n_total = 20L,
+      n_arms = n_arms,
+      p_alloc = rep(1, n_arms) / n_arms,
+      intercept = 0,
+      b_arm_treat = rep(0, n_arms - 1),
+      b_covariate = 0
+    )
+  )
+}
+
+
+#' Simulate Binary ANCOVA Data - Batched Format (2-arm)
+#'
+#' Generates multiple binary simulations at once for NPE/BayesFlow efficiency.
+#' Returns matrices instead of data.frames for direct use with neural networks.
+#'
+#' @param n_sims Number of simulations to generate (batch size)
+#' @param n_total Sample size per simulation
+#' @param p_alloc Allocation probability for treatment (default 0.5)
+#' @param intercept Intercept value on the log-odds scale (default 0)
+#' @param b_arm_treat Treatment effect coefficient on the log-odds scale
+#' @param b_covariate Covariate effect coefficient (default 0)
+#'
+#' @return List with batch-formatted arrays:
+#'   \itemize{
+#'     \item outcome: matrix (n_sims x n_total), values in 0 or 1
+#'     \item covariate: matrix (n_sims x n_total)
+#'     \item group: matrix (n_sims x n_total), binary treatment indicator
+#'     \item N: integer, sample size per simulation
+#'     \item p_alloc: numeric, allocation probability
+#'   }
+#'
+#' @details
+#' Vectorized batch generation for binary outcomes. Uses logistic model:
+#' `logit(p) = intercept + covariate * b_covariate + group * b_arm_treat`,
+#' then draws from `rbinom(n, 1, plogis(eta))`.
+#'
+#' @keywords internal
+simulate_data_ancova_bin_2arms_batch <- function(n_sims, n_total, p_alloc = 0.5,
+                                                  intercept = 0, b_arm_treat = 0,
+                                                  b_covariate = 0) {
+  n_sims <- as.integer(n_sims)
+  n_total <- as.integer(n_total)
+
+  if (n_sims <= 0) {
+    cli::cli_abort(c(
+      "{.arg n_sims} must be a positive integer",
+      "x" = "You supplied {.val {n_sims}}"
+    ))
+  }
+  if (n_total <= 0) {
+    cli::cli_abort(c(
+      "{.arg n_total} must be a positive integer",
+      "x" = "You supplied {.val {n_total}}"
+    ))
+  }
+
+  total_elements <- n_sims * n_total
+
+  covariate_mat <- matrix(
+    stats::rnorm(total_elements),
+    nrow = n_sims,
+    ncol = n_total
+  )
+
+  group_mat <- matrix(
+    stats::rbinom(total_elements, 1, p_alloc),
+    nrow = n_sims,
+    ncol = n_total
+  )
+
+  # Linear predictor on log-odds scale
+  eta_mat <- intercept +
+    covariate_mat * b_covariate +
+    group_mat * b_arm_treat
+
+  # Binary outcome via logistic model
+  outcome_mat <- matrix(
+    stats::rbinom(total_elements, 1, stats::plogis(eta_mat)),
+    nrow = n_sims,
+    ncol = n_total
+  )
 
   list(
     outcome = outcome_mat,

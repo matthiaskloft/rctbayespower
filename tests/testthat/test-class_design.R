@@ -218,10 +218,14 @@ test_that("show_predefined_models returns all models", {
 
 test_that("show_predefined_models filters correctly", {
   models <- show_predefined_models("2arms")
-  expect_equal(models, "ancova_cont_2arms")
+  expect_true("ancova_cont_2arms" %in% models)
+  expect_true("ancova_bin_2arms" %in% models)
 
   models <- show_predefined_models("3arms")
   expect_equal(models, "ancova_cont_3arms")
+
+  models <- show_predefined_models("bin")
+  expect_equal(models, "ancova_bin_2arms")
 
   models <- show_predefined_models("nonexistent")
   expect_length(models, 0)

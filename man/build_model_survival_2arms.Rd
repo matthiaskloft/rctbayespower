@@ -74,5 +74,5 @@ model <- build_model_survival_2arms(
 }
 }
 \seealso{
-\code{\link[=build_model_ancova]{build_model_ancova()}}, \code{\link[=build_design]{build_design()}}
+\code{\link[=build_model_ancova_cont]{build_model_ancova_cont()}}, \code{\link[=build_design]{build_design()}}
 }
