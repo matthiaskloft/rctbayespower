@@ -597,7 +597,7 @@ get_model_builder <- function(model_name) {
   builders <- list(
     ancova_cont_2arms = build_model_ancova_cont_2arms,
     ancova_cont_3arms = build_model_ancova_cont_3arms,
-    ancova_bin_2arms = build_model_ancova_bin
+    ancova_bin_2arms = build_model_ancova_bin_2arms
   )
   builders[[model_name]]
 }

@@ -9,7 +9,21 @@
 test_that("binary sim fn rejects invalid inputs", {
   sim_fn <- create_ancova_bin_sim_fn(n_arms = 2)
 
-  expect_error(sim_fn(n_total = -1))
+  expect_error(sim_fn(n_total = -1, intercept = 0, b_arm_treat = 0, b_covariate = 0))
+})
+
+test_that("build_model_ancova_bin rejects NULL n_arms", {
+  expect_error(
+    build_model_ancova_bin(n_arms = NULL),
+    "n_arms"
+  )
+})
+
+test_that("build_model_ancova_bin rejects invalid n_arms", {
+  expect_error(
+    build_model_ancova_bin(n_arms = 1),
+    "n_arms"
+  )
 })
 
 test_that("binary sim fn rejects NULL b_arm_treat", {
@@ -23,6 +37,18 @@ test_that("binary sim fn has no sigma parameter", {
   sim_fn <- create_ancova_bin_sim_fn(n_arms = 2)
   fn_formals <- names(formals(sim_fn))
   expect_false("sigma" %in% fn_formals)
+})
+
+test_that("binary sim fn in build_model rejects invalid contrast string", {
+  skip_on_ci()
+  expect_error(
+    build_model_ancova_bin(
+      n_arms = 2, contrasts = "contr.fake",
+      p_alloc = c(0.5, 0.5), intercept = 0,
+      b_arm_treat = 0, b_covariate = 0
+    ),
+    "contrasts"
+  )
 })
 
 # =============================================================================
@@ -182,6 +208,19 @@ test_that("create_ancova_bin_sim_fn lists correct params (no sigma)", {
   expect_false("sigma" %in% params)
 })
 
+test_that("create_ancova_bin_sim_fn treats effect params as required", {
+  sim_fn <- create_ancova_bin_sim_fn(n_arms = 2)
+  # get_args_without_defaults returns params with NULL defaults as required
+  required_params <- get_args_without_defaults(sim_fn)
+  expect_true("intercept" %in% required_params)
+  expect_true("b_arm_treat" %in% required_params)
+  expect_true("b_covariate" %in% required_params)
+})
+
+test_that("build_model_ancova_bin_2arms is exported and callable", {
+  expect_true(is.function(build_model_ancova_bin_2arms))
+})
+
 # =============================================================================
 # BATCH SIM FN
 # =============================================================================
@@ -215,6 +254,18 @@ test_that("batch sim fn rejects invalid inputs", {
   expect_error(
     simulate_data_ancova_bin_2arms_batch(n_sims = 10, n_total = -1),
     "n_total"
+  )
+  expect_error(
+    simulate_data_ancova_bin_2arms_batch(n_sims = "a", n_total = 50),
+    "n_sims"
+  )
+  expect_error(
+    simulate_data_ancova_bin_2arms_batch(n_sims = 10, n_total = "b"),
+    "n_total"
+  )
+  expect_error(
+    simulate_data_ancova_bin_2arms_batch(n_sims = 10, n_total = 50, p_alloc = 1.5),
+    "p_alloc"
   )
 })
 

@@ -361,11 +361,6 @@ build_model_ancova_cont <- function(prior_intercept = NULL,
     ))
   }
   if (is.null(prior_treatment)) {
-    for (i in seq_len(n_arms - 1)) {
-      prior_treatment <- brms::set_prior("student_t(3, 0, 1)",
-                                         class = "b",
-                                         coef = paste0("armtreat_", i))
-    }
     prior_treatment <- brms::set_prior("student_t(3, 0, 1)", class = "b")
   } else if (!inherits(prior_treatment, "brmsprior")) {
     cli::cli_abort(c(
@@ -498,6 +493,16 @@ build_model_ancova_bin <- function(prior_intercept = NULL,
                                    b_covariate = NULL) {
   # Validation of ANCOVA-specific parameters ----------------------------------
 
+  # Validate n_arms early (required before mock data step)
+  if (is.null(n_arms) || !is.numeric(n_arms) || length(n_arms) != 1 ||
+      n_arms < 2 || n_arms != round(n_arms)) {
+    cli::cli_abort(c(
+      "{.arg n_arms} must be a positive integer >= 2",
+      "x" = "You supplied {.val {n_arms}}",
+      "i" = "Use an integer value of 2 or more"
+    ))
+  }
+
   # Validate p_alloc
   if (!is.null(p_alloc) && !is.null(n_arms)) {
     if (length(p_alloc) != n_arms) {
@@ -573,8 +578,27 @@ build_model_ancova_bin <- function(prior_intercept = NULL,
       }
       # Build contrast matrix
       if (is.character(contrasts)) {
-        contrasts_fn <- get(contrasts)
-        contrast_matrix <- contrasts_fn(n_arms)
+        valid_contrasts <- c(
+          "contr.treatment", "contr.sum", "contr.poly",
+          "contr.helmert", "contr.SAS"
+        )
+        if (!(contrasts %in% valid_contrasts)) {
+          cli::cli_abort(c(
+            "{.arg contrasts} must be a valid contrast method",
+            "x" = "You supplied {.val {contrasts}}",
+            "i" = "Use one of: {.val {valid_contrasts}}"
+          ))
+        }
+        tryCatch({
+          contrasts_fn <- get(contrasts)
+          contrast_matrix <- contrasts_fn(n_arms)
+        }, error = function(e) {
+          cli::cli_abort(c(
+            "Failed to create contrast matrix from {.arg contrasts}",
+            "x" = "Error: {e$message}",
+            "i" = "Use a valid contrast method (e.g., {.val contr.treatment})"
+          ))
+        })
       } else {
         contrast_matrix <- contrasts
       }
@@ -669,11 +693,6 @@ build_model_ancova_bin <- function(prior_intercept = NULL,
     ))
   }
   if (is.null(prior_treatment)) {
-    for (i in seq_len(n_arms - 1)) {
-      prior_treatment <- brms::set_prior("student_t(3, 0, 1)",
-                                         class = "b",
-                                         coef = paste0("armtreat_", i))
-    }
     prior_treatment <- brms::set_prior("student_t(3, 0, 1)", class = "b")
   } else if (!inherits(prior_treatment, "brmsprior")) {
     cli::cli_abort(c(
@@ -843,6 +862,60 @@ build_model_ancova_cont_3arms <- function(...) {
   model@predefined_model <- "ancova_cont_3arms"
 
   # return the model object
+  invisible(model)
+}
+
+
+#' Create 2-Arm ANCOVA Model for Binary Outcomes
+#'
+#' Creates a 2-arm ANCOVA model with sensible defaults for binary outcomes.
+#' This is a convenience wrapper around [build_model_ancova_bin()].
+#'
+#' @param ... Additional arguments passed to [build_model_ancova_bin()]. Can override
+#'   any of the default parameters.
+#'
+#' @details
+#' Default parameters:
+#' \itemize{
+#'   \item n_arms = 2
+#'   \item contrasts = "contr.treatment"
+#'   \item p_alloc = c(0.5, 0.5) (equal allocation)
+#'   \item intercept = NULL (must be specified)
+#'   \item b_arm_treat = NULL (must be specified)
+#'   \item b_covariate = NULL (must be specified)
+#' }
+#'
+#' @return An S7 object of class "rctbp_model" ready for use with
+#'   [build_design()] and power analysis functions.
+#'
+#' @export
+#' @seealso [build_model_ancova_bin()], [build_model_ancova_cont_2arms()]
+#'
+#' @examples
+#' \dontrun{
+#' # Create 2-arm binary ANCOVA model
+#' model_bin <- build_model_ancova_bin_2arms(
+#'   intercept = qlogis(0.3),
+#'   b_arm_treat = log(2),
+#'   b_covariate = 0.3
+#' )
+#' }
+build_model_ancova_bin_2arms <- function(...) {
+  dots <- list(...)
+  default_args <- list(
+    prior_intercept = NULL,
+    prior_covariate = NULL,
+    prior_treatment = NULL,
+    n_arms = 2,
+    contrasts = "contr.treatment",
+    p_alloc = c(0.5, 0.5),
+    intercept = NULL,
+    b_arm_treat = NULL,
+    b_covariate = NULL
+  )
+  final_args <- modifyList(default_args, dots)
+  model <- do.call(build_model_ancova_bin, final_args)
+  model@predefined_model <- "ancova_bin_2arms"
   invisible(model)
 }
 
@@ -1088,9 +1161,9 @@ create_ancova_bin_sim_fn <- function(n_arms) {
   default_n_arms <- n_arms
   default_contrasts <- "contr.treatment"
   default_p_alloc <- rep(1, n_arms) / n_arms
-  default_intercept <- 0
-  default_b_arm_treat <- rep(0, n_arms - 1)
-  default_b_covariate <- 0
+  default_intercept <- NULL
+  default_b_arm_treat <- NULL
+  default_b_covariate <- NULL
 
   fn <- function(n_total, n_arms = default_n_arms, contrasts = default_contrasts,
                  p_alloc = default_p_alloc, intercept = default_intercept,
@@ -1168,6 +1241,25 @@ create_ancova_bin_sim_fn <- function(n_arms) {
 simulate_data_ancova_bin_2arms_batch <- function(n_sims, n_total, p_alloc = 0.5,
                                                   intercept = 0, b_arm_treat = 0,
                                                   b_covariate = 0) {
+  if (!is.numeric(n_sims) || length(n_sims) != 1) {
+    cli::cli_abort(c(
+      "{.arg n_sims} must be a single numeric value",
+      "x" = "You supplied {.type {n_sims}}"
+    ))
+  }
+  if (!is.numeric(n_total) || length(n_total) != 1) {
+    cli::cli_abort(c(
+      "{.arg n_total} must be a single numeric value",
+      "x" = "You supplied {.type {n_total}}"
+    ))
+  }
+  if (!is.numeric(p_alloc) || length(p_alloc) != 1 || p_alloc < 0 || p_alloc > 1) {
+    cli::cli_abort(c(
+      "{.arg p_alloc} must be a single probability between 0 and 1",
+      "x" = "You supplied {.val {p_alloc}}"
+    ))
+  }
+
   n_sims <- as.integer(n_sims)
   n_total <- as.integer(n_total)
 
