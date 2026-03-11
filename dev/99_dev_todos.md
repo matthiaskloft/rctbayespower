@@ -94,6 +94,14 @@ Implement the validation strategy from the plan above. Write and run validation 
 - [ ] Implement validation suite per the plan
 - [ ] Document validation results
 
+### Automation Recommendations — Implementation
+
+Implement automation additions from `dev/plans/automation_recommendations.md`.
+
+- [ ] Phase 1: Install context7 MCP server
+- [ ] Phase 2: Create `/rctbp-validation` skill (orchestrator) + `integration-tester` agent (worker)
+- [ ] Phase 3: Related test hook (optional)
+
 ---
 
 # MEDIUM — Post-v1 Features
@@ -129,10 +137,11 @@ Replace scattered boolean flags with declarative `trial_type` in `build_design()
 
 ### New Outcome Models [21, 23, 24 Phase D]
 
-- [ ] Logit-normal proportion ANCOVA — `ancova_prop_2arms`. Continuous proportions in [0,1] modeled via logit-transform + standard ANCOVA (`family = gaussian()` on logit scale). Sim_fn generates Beta-distributed proportions, applies logit transform. Minimal new infrastructure — reuses existing ANCOVA machinery. Effect params on log-odds scale (same as binary model).
+- [ ] Beta proportion ANCOVA — `ancova_prop_2arms`. Continuous proportions in [0,1] modeled with Beta regression (`family = Beta()` in brms). Sim_fn generates Beta-distributed proportions. Effects on logit scale. Native support for bounded outcomes without logit-transform workaround.
 - [ ] Count outcomes — `build_model_count_2arms()` (Poisson, negative binomial)
 - [ ] Survival outcomes — registry refactor planned (`survival_exp_2arms`), see `dev/plans/survival_registry_refactor.md`
-- [x] Binary ANCOVA — `build_model_ancova_bin()` + `ancova_bin_2arms`
+- [ ] Probit binary ANCOVA — `ancova_bin_probit_2arms`. Binary outcomes with probit link (`family = bernoulli(link = "probit")`). Effects on probit scale. Alternative to logit for latent-normal interpretation.
+- [x] Binary ANCOVA (logit) — `build_model_ancova_bin()` + `ancova_bin_2arms`
 - [ ] Endpoint-specific convenience constructors: `design_continuous()`, `design_binary()`, etc.
 
 ### Sequential / Adaptive Extensions [20, 21, 23]

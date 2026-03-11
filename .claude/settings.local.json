@@ -32,7 +32,9 @@
       "Bash(wc -l \"C:\\\\Users\\\\Matze\\\\Documents\\\\GitHub\\\\rctbayespower\\\\tests\\\\testthat\"/*.R | sort -n)",
       "Bash(wc -l /c/Users/Matze/Documents/GitHub/rctbayespower/R/plot_*.R /c/Users/Matze/Documents/GitHub/rctbayespower/R/model_cache.R /c/Users/Matze/Documents/GitHub/rctbayespower/R/setup_python.R)",
       "Bash(find \"C:\\\\Users\\\\Matze\\\\Documents\\\\GitHub\\\\rctbayespower\\\\tests\\\\testthat\" -name \"*.R\" -type f -exec wc -l {} + | sort -n)",
-      "Bash(find \"C:\\\\Users\\\\Matze\\\\Documents\\\\GitHub\\\\rctbayespower\\\\.claude\" -type f -name \"*.md\" -o -name \"*.json\" -o -name \"*.yml\" -o -name \"*.yaml\" 2>/dev/null | head -30)"
+      "Bash(find \"C:\\\\Users\\\\Matze\\\\Documents\\\\GitHub\\\\rctbayespower\\\\.claude\" -type f -name \"*.md\" -o -name \"*.json\" -o -name \"*.yml\" -o -name \"*.yaml\" 2>/dev/null | head -30)",
+      "Skill(code-review:code-review)",
+      "Bash(gh repo:*)"
     ],
     "deny": []
   },
