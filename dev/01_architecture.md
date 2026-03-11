@@ -1,6 +1,6 @@
 # Package Architecture
 
-**Last Updated:** 2026-03-10
+**Last Updated:** 2026-03-11
 
 ## Overview
 
@@ -47,6 +47,8 @@ Note: `rctbp_model` is deprecated. All model properties (sim_fn, inference_model
 | `R/class_conditions.R` | Conditions class definition |
 | `R/class_power_analysis.R` | Power analysis + run() method |
 | `R/class_model.R` | **DEPRECATED** - Legacy model class for backward compatibility |
+| `R/class_sim_fn.R` | Simulation function class (`rctbp_sim_fn`) with schema |
+| `R/class_pareto_result.R` | Pareto optimization result class (`rctbp_pareto_result`) |
 
 ### Backend Files
 
@@ -67,6 +69,8 @@ Note: `rctbp_model` is deprecated. All model properties (sim_fn, inference_model
 | `R/compute_measures.R` | Metric computation and aggregation |
 | `R/design_prior.R` | Design prior handling |
 | `R/required_fn_args.R` | Parameter extraction |
+| `R/analytical_power.R` | Analytical power calculation (vectorized ANCOVA) |
+| `R/get_code.R` | Code reconstruction utility (`get_code()` methods) |
 
 ### Accrual, Dropout & Interim
 
@@ -86,6 +90,7 @@ Note: `rctbp_model` is deprecated. All model properties (sim_fn, inference_model
 | `R/class_pareto_result.R` | Pareto optimization result class (`rctbp_pareto_result`) |
 | `R/optimization.R` | Simplex search helpers: `search_p_alloc()`, `search_looks()` |
 | `R/optimization_internal.R` | mlr3mbo/bbotk integration, surrogate setup |
+| `R/acq_function_eic.R` | Custom EIC acquisition function for Bayesian optimization (R6) |
 
 ### Output & Visualization Files
 
@@ -111,6 +116,20 @@ Note: `rctbp_model` is deprecated. All model properties (sim_fn, inference_model
 | `R/s3_wrappers.R` | S3 method wrappers for compatibility |
 | `R/S7_helpers.R` | S7 utility functions |
 
+### Python Integration
+
+| File | Purpose |
+|------|---------|
+| `R/setup_python.R` | Environment setup helpers (GPU detection, install) |
+| `R/python_simulators.R` | Python simulator loading (reticulate) |
+
+### Package Infrastructure
+
+| File | Purpose |
+|------|---------|
+| `R/zzz.R` | .onLoad hook (S7 method registration, R6 class creation) |
+| `R/rctbayespower-package.R` | Package documentation + globalVariables |
+
 ### Archived/Legacy Files
 
 Legacy code is archived in `R/legacy/` for reference. These files are NOT loaded by the package.
@@ -124,8 +143,7 @@ The `rctbp_design` class (with merged model properties) supports **both backends
 ```r
 rctbp_design
 ├── sim_fn              # Data simulation function
-├── inference_model     # brmsfit template (for brms backend)
-├── bf_model            # Keras/BayesFlow model (for bf backend)
+├── inference_model     # brmsfit (brms) or BayesFlow model (bf)
 ├── backend             # "brms" or "bf"
 ├── target_params       # Parameters to analyze
 ├── par_names_inference # Parameter names in inference model
@@ -138,15 +156,15 @@ rctbp_design
 
 ### Backend Files
 
-**`R/backend_brms.R`** (~200 lines):
+**`R/backend_brms.R`** (~570 lines):
 - `estimate_single_brms()`: Single posterior estimation
 - `estimate_sequential_brms()`: Sequential interim analysis
-- `extract_posterior_rvars_brms()`: Convert brmsfit to rvars
+- `extract_posterior_draws_brms()`: Convert brmsfit to draws_array
 - `summarize_post_brms()`: Compute decision metrics
 
-**`R/backend_bf.R`** (~700 lines):
+**`R/backend_bf.R`** (~2100 lines):
 - `check_bf_available()`: Verify Python/BayesFlow available
-- `init_bf_python()`: Initialize Python modules (cached)
+- `setup_bf_python()`: Initialize Python modules (cached)
 - `load_bf_model_python()`: Load .keras or .pkl models
 - `detect_bf_model_type()`: Identify workflow/approximator/keras
 - `sample_bf_model()`: Dispatch to appropriate sampling method
@@ -213,7 +231,7 @@ simulate_data_ancova(
 - **Critical for performance**: Compilation takes 30-60 seconds
 
 **BayesFlow Models**:
-- Stored in `rctbp_design@bf_model`
+- Stored in `rctbp_design@inference_model` (when backend = "bf")
 - Loaded via Python/reticulate
 - Supports: BasicWorkflow, Approximator, raw Keras models
 - **Much faster**: Single forward pass for batch of simulations
@@ -254,7 +272,6 @@ design_components <- list(
   sim_fn = design@sim_fn,
   backend = design@backend,
   inference_model = design@inference_model,
-  bf_model = design@bf_model,
   target_params = design@target_params
 )
 ```

@@ -30,6 +30,7 @@ This file contains reference material moved from CLAUDE.md to keep that file con
 | Dropout / loss-to-follow-up | Complete |
 | Survival event-driven subsetting | Complete |
 | Binary ANCOVA model (`ancova_bin_2arms`) | Complete |
+| Proportional ANCOVA model (`ancova_prop_2arms`) | Complete |
 | Duplicate `apply_simplex_transforms` fix | Complete |
 
 ### Backend System
@@ -52,6 +53,7 @@ This file contains reference material moved from CLAUDE.md to keep that file con
 | Adaptive interim analysis (parameter modification) | Planning | `20_interim_analysis_plan.md` |
 | Train BayesFlow models | In progress (outsourced to `rctbp-bf-training`) | `13_bf_model_retraining.md` |
 | Binary outcomes (ANCOVA logistic) | Complete (PR #20/#21) | `21_adaptive_trials_roadmap.md` |
+| Proportional outcomes (Beta ANCOVA) | Complete (PR #24) | `21_adaptive_trials_roadmap.md` |
 | Survival outcomes | Partial (sim_fn exists) | `21_adaptive_trials_roadmap.md` |
 | Sample accrual (enrollment, calendar time, dropout) | Complete (Phases 1-4) | `25_sample_accrual_plan.md` |
 | Duplicate apply_simplex_transforms | Fixed (PR #19) | — |
@@ -70,6 +72,7 @@ This file contains reference material moved from CLAUDE.md to keep that file con
 | `R/class_conditions.R` | Conditions class definition |
 | `R/class_power_analysis.R` | Power analysis + run() + print/summary methods |
 | `R/class_pareto_result.R` | Pareto optimization result class (`rctbp_pareto_result`) |
+| `R/class_sim_fn.R` | Simulation function class (`rctbp_sim_fn`) with schema |
 | `R/models_ancova.R` | ANCOVA model builders + batch simulation |
 | `R/models_survival.R` | Survival model builders + simulation |
 
@@ -149,6 +152,15 @@ This file contains reference material moved from CLAUDE.md to keep that file con
 | `R/S7_helpers.R` | S7 utility functions |
 | `R/s3_wrappers.R` | S3 method wrappers for S7 classes |
 | `R/interim_functions.R` | Interim analysis functions |
+| `R/analytical_power.R` | Analytical power calculation (vectorized ANCOVA) |
+| `R/design_prior.R` | Design prior handling |
+| `R/get_code.R` | Code reconstruction utility (`get_code()` methods) |
+
+### Optimization (additional)
+
+| File | Purpose |
+|------|---------|
+| `R/acq_function_eic.R` | Custom EIC acquisition function for Bayesian optimization (R6) |
 
 ### Python Integration
 

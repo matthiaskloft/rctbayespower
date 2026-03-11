@@ -200,7 +200,7 @@ Replace scattered boolean flags with declarative `trial_type` in `build_design()
 
 ### New Outcome Models [21, 23, 24 Phase D]
 
-- [ ] Beta proportion ANCOVA — `ancova_prop_2arms`. Continuous proportions in [0,1] modeled with Beta regression (`family = Beta()` in brms). Sim_fn generates Beta-distributed proportions. Effects on logit scale. Native support for bounded outcomes without logit-transform workaround.
+- [x] Beta proportion ANCOVA — `ancova_prop_2arms` (done: PR #24, predefined model in registry)
 - [ ] Count outcomes — `build_model_count_2arms()` (Poisson, negative binomial)
 - [ ] Survival outcomes — registry refactor planned (`survival_exp_2arms`), see `dev/plans/survival_registry_refactor.md`
 - [ ] Probit binary ANCOVA — `ancova_bin_probit_2arms`. Binary outcomes with probit link (`family = bernoulli(link = "probit")`). Effects on probit scale. Alternative to logit for latent-normal interpretation.
@@ -405,6 +405,7 @@ Interactive Shiny app for the package — covers low-barrier entry for non-progr
 
 ### v1 Blockers (resolved)
 - ~~Binary outcome models~~ (done: PR #20/#21, `ancova_bin_2arms` predefined model)
+- ~~Proportional outcome models~~ (done: PR #24, `ancova_prop_2arms` predefined model)
 - ~~Duplicate `apply_simplex_transforms()`~~ (done: PR #19, canonical in `optimization_internal.R`)
 - ~~OBF boundary vector pre-resolution~~ (done: PR #17)
 
