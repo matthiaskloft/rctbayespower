@@ -1,24 +1,24 @@
 # Development TODOs
 
-> Last reviewed: 2026-03-10
+> Last reviewed: 2026-03-11
 > Organized by priority tier. Cross-references to dev docs in brackets.
 
 ---
 
 # CRITICAL — Blocks BayesFlow Backend
 
-### BayesFlow Model Retraining [13]
+### BayesFlow Model Retraining [13] — IN PROGRESS (outsourced to dedicated repo)
 
-The pre-trained model (`dev/bf_models/ancova_cont_2arms.keras`) **cannot load** with any released BayesFlow 2.0.x — `CouplingFlow` fails on 1D inference (`Dense(units=0)`). The BF backend silently falls back to brms.
+The pre-trained model (`dev/bf_models/ancova_cont_2arms.keras`) **cannot load** with any released BayesFlow 2.0.x — `CouplingFlow` fails on 1D inference (`Dense(units=0)`). The BF backend silently falls back to brms. Training outsourced to `rctbp-bf-training` repo.
 
-- [ ] Create training script using `FlowMatching` (handles 1D natively) — `dev/zz_scripts/train_ancova_cont_2arms_bf.py`
+- [ ] Create training script using `FlowMatching` (handles 1D natively)
 - [ ] Train on ~100k samples, validate posterior coverage
-- [ ] Save to `dev/bf_models/ancova_cont_2arms.keras` (overwrite broken model)
-- [ ] Upload to GitHub release tag `bf-models-v0.0.0.9000`
+- [ ] Save trained model and upload to GitHub release tag `bf-models-v0.0.0.9000`
 - [ ] Smoke test R↔Python round-trip
 - [ ] Remove `arm → group` workaround in `R/class_sim_fn.R:37-39` (retrain model to match sim_fn output directly)
+- [ ] Document BayesFlow training parameter names per registry model in a dev doc (e.g., which sim_fn params map to BF inference targets, summary stats, etc. for each predefined model)
 
-### BayesFlow Python Environment [11]
+### BayesFlow Python Environment [11] — blocked on retraining
 
 - [ ] Set up reproducible Python environment with BayesFlow 2.0
 - [ ] Test R↔Python round-trip with trained model
@@ -39,22 +39,15 @@ Implemented as `build_model_ancova_bin()` with `ancova_bin_2arms` predefined mod
 - [ ] Adapt `compute_measures()` for proportions / odds ratios — DEFERRED (log-odds sufficient for v1)
 - [ ] BayesFlow training for binary model (after BF retraining blocker resolved)
 
-### Duplicate `apply_simplex_transforms()` Definition
+### ~~Duplicate `apply_simplex_transforms()` Definition~~ (DONE)
 
-`apply_simplex_transforms()` is defined in both `R/optimization_internal.R:641` and `R/pareto_optimize.R:839` with **different implementations and return types**:
-- `optimization_internal.R`: returns `list(crossed, ilr_values, simplex_values)`
-- `pareto_optimize.R`: returns flat `params` list
-
-Since R loads files alphabetically, `pareto_optimize.R` wins at runtime. Callers in `optimization_internal.R` (lines 1742, 2820) expect `$crossed` etc. — these will break silently.
-
-- [ ] Decide which implementation is canonical
-- [ ] Remove the duplicate, update all callers to match
+Fixed in PR #19 — duplicate removed from `pareto_optimize.R`, canonical implementation in `optimization_internal.R` retained.
 
 ### Test Coverage Gaps [06]
 
 ~960 tests exist, but several modules have **zero coverage**:
 
-- [ ] `R/pareto_optimize.R` and optimization wrappers — not tested
+- [ ] ~~`R/pareto_optimize.R` and optimization wrappers~~ — deferred pending optimization redesign
 - [ ] `R/plot_*.R` (plotting functions) — not tested
 - [ ] `R/model_cache.R` — not tested
 - [ ] `R/setup_python.R` — not tested
@@ -66,13 +59,40 @@ Fixed: `resolve_boundary_vector_from_fracs()` pre-resolves thresholds before the
 - [x] Pre-resolve all thresholds as a vector at start of sequential loop (not per-look)
 - [x] Applies to all boundary functions (OBF threshold/alpha, Pocock alpha, HSD)
 
-### CRAN Preparation [40]
+### Optimization Module Redesign
 
-- [ ] R CMD check: 0 ERRORs, 0 WARNINGs, 0 NOTEs
-- [ ] Vignettes for core workflows
-- [ ] Package-level documentation (`?rctbayespower`)
-- [ ] LICENSE and CRAN-required metadata
-- [ ] Determine which pre-defined models to include in v1
+Complete refactor/redesign of the optimization module (`R/pareto_optimize.R`, `R/optimization_internal.R`, and related wrappers). Current implementation needs architectural rework. Tests for this module deferred until redesign is complete.
+
+- [ ] Design new optimization API and architecture
+- [ ] Implement refactored optimization module
+- [ ] Write tests after redesign is stable
+
+### v1 Feature Spec — Planning
+
+Define the scope of v1: which features, models, and API surface are included. Clarifies what "all v1 features are implemented" means and unblocks CRAN prep and validation planning.
+
+- [ ] Enumerate v1 features (models, backends, design types, analysis types)
+- [ ] Decide what is in-scope vs deferred to post-v1
+- [ ] Document as `dev/plans/v1_feature_spec.md`
+
+### Validation Strategy — Planning
+
+Plan a comprehensive validation strategy covering all features and all models. Ensure correctness of the full pipeline (design → conditions → power analysis → results) across:
+
+- [ ] All predefined models (`ancova_cont_2arms`, `ancova_bin_2arms`, future models)
+- [ ] Both backends (brms, BayesFlow)
+- [ ] Fixed and group-sequential designs
+- [ ] Accrual, dropout, and event-driven subsetting
+- [ ] All boundary functions (OBF, Pocock, custom)
+- [ ] Decision criteria (ROPE-based effectiveness, futility)
+- [ ] Edge cases (single condition, single look, all-stop, all-continue)
+
+### Validation Strategy — Implementation
+
+Implement the validation strategy from the plan above. Write and run validation tests/checks for each feature × model combination.
+
+- [ ] Implement validation suite per the plan
+- [ ] Document validation results
 
 ---
 
@@ -109,8 +129,9 @@ Replace scattered boolean flags with declarative `trial_type` in `build_design()
 
 ### New Outcome Models [21, 23, 24 Phase D]
 
+- [ ] Logit-normal proportion ANCOVA — `ancova_prop_2arms`. Continuous proportions in [0,1] modeled via logit-transform + standard ANCOVA (`family = gaussian()` on logit scale). Sim_fn generates Beta-distributed proportions, applies logit transform. Minimal new infrastructure — reuses existing ANCOVA machinery. Effect params on log-odds scale (same as binary model).
 - [ ] Count outcomes — `build_model_count_2arms()` (Poisson, negative binomial)
-- [ ] Survival outcomes — `build_model_survival_2arms()` (Cox PH, ties into completed Phase 4 accrual)
+- [ ] Survival outcomes — registry refactor planned (`survival_exp_2arms`), see `dev/plans/survival_registry_refactor.md`
 - [x] Binary ANCOVA — `build_model_ancova_bin()` + `ancova_bin_2arms`
 - [ ] Endpoint-specific convenience constructors: `design_continuous()`, `design_binary()`, etc.
 
@@ -135,6 +156,16 @@ Priors are baked into pre-compiled Stan model at design time. Varying them requi
 - [ ] Posterior Predictive Checks — model misspecification detection
 - [ ] Coverage Analysis — empirical coverage of credible intervals
 - [ ] Calibration Plots — posterior mean vs true parameter
+
+### CRAN Preparation [40]
+
+Deferred until all v1 features are implemented.
+
+- [ ] R CMD check: 0 ERRORs, 0 WARNINGs, 0 NOTEs
+- [ ] Vignettes for core workflows (optional for CRAN — may emerge from validation strategy as executable end-to-end examples)
+- [ ] Package-level documentation (`?rctbayespower`)
+- [ ] LICENSE and CRAN-required metadata
+- [ ] Determine which pre-defined models to include in v1
 
 ---
 
@@ -235,5 +266,10 @@ BayesFlow backend defaults to CPU-only PyTorch. Five planned sprints:
 
 ### Infrastructure
 - ~~Test coverage: `test-power_grid_analysis.R`~~ (done: 77 tests)
+
+### v1 Blockers (resolved)
+- ~~Binary outcome models~~ (done: PR #20/#21, `ancova_bin_2arms` predefined model)
+- ~~Duplicate `apply_simplex_transforms()`~~ (done: PR #19, canonical in `optimization_internal.R`)
+- ~~OBF boundary vector pre-resolution~~ (done: PR #17)
 
 </details>

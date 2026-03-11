@@ -23,8 +23,21 @@
       "WebFetch(domain:codecov.io)",
       "WebFetch(domain:app.codecov.io)",
       "Bash(grep:*)",
-      "Bash(Rscript:*)"
+      "Bash(Rscript:*)",
+      "Bash(Rscript -e \"devtools::document\\(\\)\" 2>&1 | tail -20)",
+      "Bash(Rscript -e \"devtools::test\\(filter='models_ancova_bin'\\)\" 2>&1 | tail -40)",
+      "Bash(Rscript -e \"devtools::test\\(filter='models_ancova_bin'\\)\" 2>&1 | tail -30)",
+      "Bash(Rscript -e \"devtools::check\\(error_on='error'\\)\" 2>&1 | tail -40)",
+      "Bash(gh pr:*)",
+      "Bash(wc -l \"C:\\\\Users\\\\Matze\\\\Documents\\\\GitHub\\\\rctbayespower\\\\tests\\\\testthat\"/*.R | sort -n)",
+      "Bash(wc -l /c/Users/Matze/Documents/GitHub/rctbayespower/R/plot_*.R /c/Users/Matze/Documents/GitHub/rctbayespower/R/model_cache.R /c/Users/Matze/Documents/GitHub/rctbayespower/R/setup_python.R)",
+      "Bash(find \"C:\\\\Users\\\\Matze\\\\Documents\\\\GitHub\\\\rctbayespower\\\\tests\\\\testthat\" -name \"*.R\" -type f -exec wc -l {} + | sort -n)",
+      "Bash(find \"C:\\\\Users\\\\Matze\\\\Documents\\\\GitHub\\\\rctbayespower\\\\.claude\" -type f -name \"*.md\" -o -name \"*.json\" -o -name \"*.yml\" -o -name \"*.yaml\" 2>/dev/null | head -30)"
     ],
     "deny": []
+  },
+  "sandbox": {
+    "enabled": true,
+    "autoAllowBashIfSandboxed": true
   }
 }

@@ -2,7 +2,7 @@
 
 This file contains reference material moved from CLAUDE.md to keep that file concise per [Boris Cherny's best practices](https://howborisusesclaudecode.com/).
 
-## Current Status (2026-03-10)
+## Current Status (2026-03-11)
 
 **Core Package State**: Functional with dual-backend support. API refactoring completed (model merged into design).
 
@@ -29,6 +29,8 @@ This file contains reference material moved from CLAUDE.md to keep that file con
 | Sample accrual (enrollment times, calendar subsetting) | Complete |
 | Dropout / loss-to-follow-up | Complete |
 | Survival event-driven subsetting | Complete |
+| Binary ANCOVA model (`ancova_bin_2arms`) | Complete |
+| Duplicate `apply_simplex_transforms` fix | Complete |
 
 ### Backend System
 
@@ -48,11 +50,12 @@ This file contains reference material moved from CLAUDE.md to keep that file con
 | Feature | Status | Plan |
 |---------|--------|------|
 | Adaptive interim analysis (parameter modification) | Planning | `20_interim_analysis_plan.md` |
-| Train BayesFlow models | Next step | `11_bayesflow_integration_roadmap.md` |
-| Binary outcomes | Not started | `21_adaptive_trials_roadmap.md` |
+| Train BayesFlow models | In progress (outsourced to `rctbp-bf-training`) | `13_bf_model_retraining.md` |
+| Binary outcomes (ANCOVA logistic) | Complete (PR #20/#21) | `21_adaptive_trials_roadmap.md` |
 | Survival outcomes | Partial (sim_fn exists) | `21_adaptive_trials_roadmap.md` |
 | Sample accrual (enrollment, calendar time, dropout) | Complete (Phases 1-4) | `25_sample_accrual_plan.md` |
-| Test suite | ~960 tests across 23+ files | `06_testing.md` |
+| Duplicate apply_simplex_transforms | Fixed (PR #19) | — |
+| Test suite | ~960 tests across 26+ files | `06_testing.md` |
 
 ---
 

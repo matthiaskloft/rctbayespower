@@ -4,23 +4,9 @@
 
 `rctbayespower` is an R package for Bayesian power analysis of randomized controlled trials. Supports dual backends: brms/Stan (MCMC) and BayesFlow (neural posterior estimation). Uses S7 classes and ROPE-based decision making.
 
-## Development Workflow
+## General
 
-1. Understand and plan changes. Propose a method for verifying the validity of the planned changes. Ask if changes should be made on a work tree and create the work tree if the user requests this.
-2. Implement changes
-3. Check if new tests are necessary. Write tests if necessary. 
-    - Prefer running single tests, and not the whole test suite, for performance
-4. Update roxygen documentation to match code
-5. Update the pkgdown site and README if necessary
-6. Update /dev docs corresponding to the changes made.
-7. Run verification of the package and the changes made
-  - After significant changes: run `/verify-package`
-  - Before commits: run `/check` and `/test`
-  - Verification loop: implement → test → fix → repeat
-8. Code Simplifacation and Review with independent agents, use available skills. Fix found issues and iterate until no issues are found.
-9. If problems occured in the session: note down learnings and anti-patterns to avoid in the CLAUDE.md
-10. Commit and push.
-11. If changes re on a worktree: PR and delete the local worktree
+- Stay on the main branch for development. Use worktrees for feature implementation.
 
 ## Commands
 
@@ -29,6 +15,7 @@
 devtools::document()        # Regenerate man/*.Rd from roxygen
 devtools::check()           # Full R CMD check
 devtools::test()            # Run tests
+testthat::test_file("tests/testthat/test-foo.R")  # Run specific test file
 devtools::load_all()        # Load package for testing
 
 # Specific checks
@@ -67,6 +54,7 @@ Essential rules not in skill:
 
 - All R source files in `/R` root (no subfolders)
 - Development docs in `dev/`
+- Feature implementation plans in `dev/plans/`
 - Skills in `.claude/skills/`
 - Subagents in `.claude/agents/`
 
@@ -103,6 +91,7 @@ Essential rules not in skill:
 | [`dev/23_api_roadmap.md`](dev/23_api_roadmap.md) | API evolution roadmap |
 | [`dev/24_api_improvement_plan.md`](dev/24_api_improvement_plan.md) | API improvement plan |
 | [`dev/25_sample_accrual_plan.md`](dev/25_sample_accrual_plan.md) | Sample accrual / calendar time |
+| [`dev/25_api_audit_findings.md`](dev/25_api_audit_findings.md) | API audit findings |
 
 ### Optimization Plans (30-31)
 
@@ -116,7 +105,6 @@ Essential rules not in skill:
 | File | Topic |
 |------|-------|
 | [`dev/40_competitor_analysis.md`](dev/40_competitor_analysis.md) | Competitor landscape overview |
-| [`dev/41_mediana_comparison.md`](dev/41_mediana_comparison.md) | Mediana API comparison |
 
 ### Tooling (90-99)
 
@@ -139,6 +127,14 @@ Essential rules not in skill:
 | `/code-simplifier` | After implementing a feature, to clean up |
 | `/skill-creator` | Creating new Claude Code skills |
 
+## Marketplace Plugins (matthiaskloft)
+
+| Plugin | Skills | Purpose |
+|--------|--------|---------|
+| `workflow-automation` | `/plan`, `/implement`, `/ship`, `/implement-ship`, `/implement-ship-all`, `/monitor-pr` | Plan/implement/ship cycle with worktrees and CI |
+| `bayesflow-skills` | `/bayesflow-simulator`, `/bayesflow-adapter`, `/bayesflow-testing`, `/bayesflow-validation`, `/bayesflow-memory`, `/bayesflow-packaging`, `/keras-ops` | BayesFlow 2.x extension development |
+| `code-sentinel` | `/code-review:code-review` | Multi-agent code review for R and Python |
+
 ## Slash Commands
 
 | Command | Purpose |
@@ -159,3 +155,4 @@ Auto-delegated agents for specialized tasks. See [`dev/92_custom_subagents.md`](
 | `roxygen-sync` | "fix roxygen", "sync docs" | Fix documentation mismatches (can edit) |
 | `backend-verifier` | "verify backends" | Check brms/BayesFlow consistency |
 | `naming-auditor` | "audit naming" | Check naming conventions |
+| `plan-reviewer` | "review plan" | Critical review of implementation plans |
