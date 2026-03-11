@@ -8,8 +8,8 @@
 | Phase | Status | Date | Notes |
 |-------|--------|------|-------|
 | Plan | DONE | 2026-03-11 | Approved 2026-03-11 |
-| Phase 1: Core model implementation | TODO | | sim_fn, brms builder, registry, tests |
-| Ship | TODO | | |
+| Phase 1: Core model implementation | MERGED | 2026-03-11 | PR #24 — sim_fn, brms builder, registry, tests |
+| Ship | MERGED | 2026-03-11 | Squash-merged via PR #24 |
 
 ## Summary
 
