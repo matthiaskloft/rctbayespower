@@ -115,7 +115,7 @@ download_model <- function(model_name, dest_path, model_type = c("brms", "bf")) 
 #' }
 load_brms_model <- function(model_name, force_download = FALSE, quiet = FALSE) {
 
-  available_models <- c("ancova_cont_2arms", "ancova_cont_3arms")
+  available_models <- c("ancova_cont_2arms", "ancova_cont_3arms", "ancova_bin_2arms")
   if (!model_name %in% available_models) {
     cli::cli_abort(c(
       "Unknown brms model: {.val {model_name}}",
@@ -217,29 +217,30 @@ load_bf_model <- function(model_name, force_download = FALSE, quiet = FALSE) {
 #' }
 list_models <- function(backend = c("all", "brms", "bf")) {
   backend <- match.arg(backend)
-  models <- c("ancova_cont_2arms", "ancova_cont_3arms")
+  brms_models <- c("ancova_cont_2arms", "ancova_cont_3arms", "ancova_bin_2arms")
+  bf_models <- c("ancova_cont_2arms", "ancova_cont_3arms")
 
   result <- data.frame(model = character(), backend = character(),
                        cached = logical(), stringsAsFactors = FALSE)
 
   if (backend %in% c("all", "brms")) {
     brms_cache <- get_model_cache_dir("brms")
-    brms_cached <- sapply(models, function(m) {
+    brms_cached <- sapply(brms_models, function(m) {
       file.exists(file.path(brms_cache, paste0(m, ".rds")))
     })
     result <- rbind(result, data.frame(
-      model = models, backend = "brms", cached = brms_cached,
+      model = brms_models, backend = "brms", cached = brms_cached,
       stringsAsFactors = FALSE
     ))
   }
 
   if (backend %in% c("all", "bf")) {
     bf_cache <- get_model_cache_dir("bf")
-    bf_cached <- sapply(models, function(m) {
+    bf_cached <- sapply(bf_models, function(m) {
       file.exists(file.path(bf_cache, paste0(m, ".keras")))
     })
     result <- rbind(result, data.frame(
-      model = models, backend = "bf", cached = bf_cached,
+      model = bf_models, backend = "bf", cached = bf_cached,
       stringsAsFactors = FALSE
     ))
   }

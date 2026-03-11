@@ -292,7 +292,7 @@ build_predefined_from_brmsfit_legacy <- function(model_name, brmsfit) {
     model <- rctbp_model(
       sim_fn = sim_fn,
       inference_model = brmsfit,
-      model_name = "ANCOVA",
+      model_name = "Continuous ANCOVA",
       n_endpoints = 1L,
       endpoint_types = "continuous",
       n_arms = 2L,
@@ -307,7 +307,7 @@ build_predefined_from_brmsfit_legacy <- function(model_name, brmsfit) {
     model <- rctbp_model(
       sim_fn = sim_fn,
       inference_model = brmsfit,
-      model_name = "ANCOVA",
+      model_name = "Continuous ANCOVA",
       n_endpoints = 1L,
       endpoint_types = "continuous",
       n_arms = 3L,

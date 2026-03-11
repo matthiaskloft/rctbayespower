@@ -7,7 +7,7 @@
 build_model_ancova_cont_3arms(...)
 }
 \arguments{
-\item{...}{Additional arguments passed to \code{\link[=build_model_ancova]{build_model_ancova()}}. Can override
+\item{...}{Additional arguments passed to \code{\link[=build_model_ancova_cont]{build_model_ancova_cont()}}. Can override
 any of the default parameters.}
 }
 \value{
@@ -16,7 +16,7 @@ An S7 object of class "rctbp_model" ready for use with
 }
 \description{
 Creates a 3-arm ANCOVA model with sensible defaults for continuous outcomes.
-This is a convenience wrapper around \code{\link[=build_model_ancova]{build_model_ancova()}}.
+This is a convenience wrapper around \code{\link[=build_model_ancova_cont]{build_model_ancova_cont()}}.
 }
 \details{
 Default parameters:
@@ -40,5 +40,5 @@ model_3arm <- build_model_ancova_cont_3arms(
 }
 }
 \seealso{
-\code{\link[=build_model_ancova]{build_model_ancova()}}, \code{\link[=build_model_ancova_cont_2arms]{build_model_ancova_cont_2arms()}}
+\code{\link[=build_model_ancova_cont]{build_model_ancova_cont()}}, \code{\link[=build_model_ancova_cont_2arms]{build_model_ancova_cont_2arms()}}
 }

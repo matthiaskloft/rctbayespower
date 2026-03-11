@@ -474,6 +474,13 @@ load_predefined_model_components <- function(model_name, backend) {
       endpoint_types = "continuous",
       n_arms = 3L,
       n_repeated_measures = 0L
+    ),
+    ancova_bin_2arms = list(
+      description = "2-arm binary ANCOVA",
+      n_endpoints = 1L,
+      endpoint_types = "binary",
+      n_arms = 2L,
+      n_repeated_measures = 0L
     )
   )
 
@@ -589,7 +596,8 @@ load_predefined_model_components <- function(model_name, backend) {
 get_model_builder <- function(model_name) {
   builders <- list(
     ancova_cont_2arms = build_model_ancova_cont_2arms,
-    ancova_cont_3arms = build_model_ancova_cont_3arms
+    ancova_cont_3arms = build_model_ancova_cont_3arms,
+    ancova_bin_2arms = build_model_ancova_bin
   )
   builders[[model_name]]
 }
@@ -606,6 +614,8 @@ create_sim_fn_for_model <- function(model_name) {
     create_ancova_sim_fn(n_arms = 2)
   } else if (model_name == "ancova_cont_3arms") {
     create_ancova_sim_fn(n_arms = 3)
+  } else if (model_name == "ancova_bin_2arms") {
+    create_ancova_bin_sim_fn(n_arms = 2)
   } else {
     cli::cli_abort("No simulation function for model: {.val {model_name}}")
   }
@@ -721,7 +731,7 @@ S7::method(print, rctbp_design) <- function(x, ...) {
 #' # Filter to ANCOVA models
 #' show_predefined_models("ancova")
 show_predefined_models <- function(filter_string = NULL) {
-  models <- c("ancova_cont_2arms", "ancova_cont_3arms")
+  models <- c("ancova_cont_2arms", "ancova_cont_3arms", "ancova_bin_2arms")
 
   if (!is.null(filter_string)) {
     models <- models[grepl(filter_string, models)]
