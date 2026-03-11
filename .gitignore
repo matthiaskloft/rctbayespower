@@ -41,6 +41,22 @@ MANIFEST
 ehthumbs.db
 Thumbs.db
 
+# WSL2 character device ghosts (Windows filesystem artifacts)
+/HEAD
+/objects
+/refs
+/hooks
+/config
+/.gitmodules
+/.bash_profile
+/.bashrc
+/.gitconfig
+/.profile
+/.ripgreprc
+/.zprofile
+/.zshrc
+/.mcp.json
+
 # Stan files
 *.rds
 *.stan_cache/
@@ -55,8 +71,8 @@ Meta/
 tmpclaude-*
 
 # IDE files
-.vscode/
-.idea/
+.vscode
+.idea
 /doc/
 /Meta/
 docs
