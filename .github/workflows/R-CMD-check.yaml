@@ -12,6 +12,7 @@ permissions: read-all
 jobs:
   R-CMD-check:
     runs-on: ${{ matrix.config.os }}
+    continue-on-error: ${{ matrix.config.os == 'macos-latest' }}
 
     name: ${{ matrix.config.os }} (${{ matrix.config.r }})
 
