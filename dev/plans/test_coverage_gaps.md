@@ -187,6 +187,24 @@ local_mocked_bindings(
 
 ---
 
+## Status
+
+| Step | Status |
+|------|--------|
+| Plan | DONE |
+| Pre-req: Fix bugs | IMPLEMENTED |
+| Phase 0: mock_power_analysis | IMPLEMENTED |
+| Phase 1: Plot helpers | IMPLEMENTED |
+| Phase 2: Dispatcher + power curve | IMPLEMENTED |
+| Phase 3: Heatmap | IMPLEMENTED |
+| Phase 4: Comparison | IMPLEMENTED |
+| Phase 5: Accrual | IMPLEMENTED |
+| Phase 6: model_cache | IMPLEMENTED |
+| Phase 7: setup_python | IMPLEMENTED |
+| Ship | TODO |
+
+---
+
 ## Review History
 
 | Round | Issues | Status |
