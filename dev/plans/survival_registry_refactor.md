@@ -1,6 +1,6 @@
 # Plan: Register Survival Model in Predefined Model Registry
 
-> Status: APPROVED (round 4)
+> Status: IMPLEMENTED (2026-03-13)
 > Created: 2026-03-11
 > Scope: Refactor `build_model_survival_2arms()` to follow the ANCOVA registry pattern
 

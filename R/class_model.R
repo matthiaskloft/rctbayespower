@@ -116,7 +116,7 @@ rctbp_model <- S7::new_class(
       return("'n_endpoints' must be a positive numeric value.")
     }
     if (length(self@endpoint_types) != self@n_endpoints ||
-        any(!self@endpoint_types %in% c("continuous", "binary", "count", "proportion"))) {
+        any(!self@endpoint_types %in% c("continuous", "binary", "count", "proportion", "survival"))) {
       return(
         "'endpoint_types' must be a character vector of length 'n_endpoints' with valid types."
       )

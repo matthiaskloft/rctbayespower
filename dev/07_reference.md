@@ -74,7 +74,7 @@ This file contains reference material moved from CLAUDE.md to keep that file con
 | `R/class_pareto_result.R` | Pareto optimization result class (`rctbp_pareto_result`) |
 | `R/class_sim_fn.R` | Simulation function class (`rctbp_sim_fn`) with schema |
 | `R/models_ancova.R` | ANCOVA model builders + batch simulation |
-| `R/models_survival.R` | Survival model builders + simulation |
+| `R/models_survival.R` | Exponential survival model (registry pattern): builder, 2-arm wrapper, sim_fn factory |
 
 ### Backend System
 

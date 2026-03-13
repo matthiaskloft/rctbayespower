@@ -115,7 +115,7 @@ download_model <- function(model_name, dest_path, model_type = c("brms", "bf")) 
 #' }
 load_brms_model <- function(model_name, force_download = FALSE, quiet = FALSE) {
 
-  available_models <- c("ancova_cont_2arms", "ancova_cont_3arms", "ancova_bin_2arms")
+  available_models <- c("ancova_cont_2arms", "ancova_cont_3arms", "ancova_bin_2arms", "survival_exp_2arms")
   if (!model_name %in% available_models) {
     cli::cli_abort(c(
       "Unknown brms model: {.val {model_name}}",
@@ -217,7 +217,7 @@ load_bf_model <- function(model_name, force_download = FALSE, quiet = FALSE) {
 #' }
 list_models <- function(backend = c("all", "brms", "bf")) {
   backend <- match.arg(backend)
-  brms_models <- c("ancova_cont_2arms", "ancova_cont_3arms", "ancova_bin_2arms")
+  brms_models <- c("ancova_cont_2arms", "ancova_cont_3arms", "ancova_bin_2arms", "survival_exp_2arms")
   bf_models <- c("ancova_cont_2arms", "ancova_cont_3arms")
 
   result <- data.frame(model = character(), backend = character(),

@@ -77,12 +77,16 @@ Documented as `dev/plans/v1-feature-spec.md`. Scope finalized in conversation 20
 
 ### Survival Model → Predefined Registry
 
-Promote `survival_2arms` to a predefined registry model. Builder `build_model_survival_2arms()` exists but has no registry entry. Needs registry entry, sim_fn integration, and end-to-end tests (fixed + group sequential).
+~~Promote `survival_2arms` to a predefined registry model.~~ **DONE** — Refactored as `survival_exp_2arms` following ANCOVA registry pattern. See `dev/plans/survival_registry_refactor.md`.
 
-- [ ] Add `survival_2arms` to model registry in `load_predefined_model_components()`
-- [ ] Add `create_sim_fn_for_model()` case for survival
-- [ ] Ensure `show_predefined_models()` includes survival
-- [ ] End-to-end tests: fixed + group sequential with survival model
+- [x] Add `survival_exp_2arms` to model registry in `load_predefined_model_components()`
+- [x] Add `create_sim_fn_for_model()` case for survival
+- [x] Ensure `show_predefined_models()` includes survival
+- [x] Create `build_model_survival_exp()` + `build_model_survival_exp_2arms()` + `create_survival_exp_sim_fn()`
+- [x] Add `"survival"` to endpoint_types validators
+- [x] Update `model_cache.R` vectors
+- [x] Rewrite tests in `test-models-survival.R`
+- [ ] End-to-end tests: fixed + group sequential with survival model (requires brms compilation)
 - [ ] Verify `get_code()` round-trip for survival workflows
 
 ### `as.data.frame()` Methods for Core Classes
@@ -202,7 +206,7 @@ Replace scattered boolean flags with declarative `trial_type` in `build_design()
 
 - [x] Beta proportion ANCOVA — `ancova_prop_2arms` (done: PR #24, predefined model in registry)
 - [ ] Count outcomes — `build_model_count_2arms()` (Poisson, negative binomial)
-- [ ] Survival outcomes — registry refactor planned (`survival_exp_2arms`), see `dev/plans/survival_registry_refactor.md`
+- [x] Survival outcomes — registry refactor done (`survival_exp_2arms`), see `dev/plans/survival_registry_refactor.md`
 - [ ] Probit binary ANCOVA — `ancova_bin_probit_2arms`. Binary outcomes with probit link (`family = bernoulli(link = "probit")`). Effects on probit scale. Alternative to logit for latent-normal interpretation.
 - [x] Binary ANCOVA (logit) — `build_model_ancova_bin()` + `ancova_bin_2arms`
 - [ ] Endpoint-specific convenience constructors: `design_continuous()`, `design_binary()`, etc.
@@ -251,7 +255,7 @@ Review and rework the predefined model registry, loading, and naming system. The
 - [ ] Audit model registry structure (currently hardcoded list in `load_predefined_model_components()`)
 - [ ] Review `get_model_builder()` / `create_sim_fn_for_model()` dispatch pattern
 - [ ] Consider whether registry should be a standalone file (e.g., `R/model_registry.R`)
-- [ ] Ensure all 5 v1 registry models (cont_2arms, cont_3arms, bin_2arms, prop_2arms, survival_2arms) follow same pattern
+- [ ] Ensure all 5 v1 registry models (cont_2arms, cont_3arms, bin_2arms, prop_2arms, survival_exp_2arms) follow same pattern
 - [ ] Review `show_predefined_models()` output for accuracy and usefulness
 - [ ] Document how to add new predefined models (for contributors)
 
