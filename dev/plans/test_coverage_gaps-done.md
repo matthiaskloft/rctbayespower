@@ -192,16 +192,16 @@ local_mocked_bindings(
 | Step | Status |
 |------|--------|
 | Plan | DONE |
-| Pre-req: Fix bugs | IMPLEMENTED |
-| Phase 0: mock_power_analysis | IMPLEMENTED |
-| Phase 1: Plot helpers | IMPLEMENTED |
-| Phase 2: Dispatcher + power curve | IMPLEMENTED |
-| Phase 3: Heatmap | IMPLEMENTED |
-| Phase 4: Comparison | IMPLEMENTED |
-| Phase 5: Accrual | IMPLEMENTED |
-| Phase 6: model_cache | IMPLEMENTED |
-| Phase 7: setup_python | IMPLEMENTED |
-| Ship | TODO |
+| Pre-req: Fix bugs | MERGED |
+| Phase 0: mock_power_analysis | MERGED |
+| Phase 1: Plot helpers | MERGED |
+| Phase 2: Dispatcher + power curve | MERGED |
+| Phase 3: Heatmap | MERGED |
+| Phase 4: Comparison | MERGED |
+| Phase 5: Accrual | MERGED |
+| Phase 6: model_cache | MERGED |
+| Phase 7: setup_python | MERGED |
+| Ship | MERGED |
 
 ---
 

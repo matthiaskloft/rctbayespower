@@ -56,6 +56,7 @@
 #' }
 #'
 #' @name AcqFunctionEIC
+#' @importFrom R6 R6Class
 #' @export
 AcqFunctionEIC <- NULL
 

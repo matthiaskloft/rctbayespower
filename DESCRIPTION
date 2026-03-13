@@ -28,7 +28,8 @@ Imports:
     S7,
     pwr,
     cli (>= 3.6.0),
-    data.table
+    data.table,
+    R6
 Suggests:
     testthat (>= 3.0.0),
     withr,
