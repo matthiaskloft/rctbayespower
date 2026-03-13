@@ -75,15 +75,15 @@ Documented as `dev/plans/v1-feature-spec.md`. Scope finalized in conversation 20
 - [x] Decide what is in-scope vs deferred to post-v1
 - [x] Document as `dev/plans/v1-feature-spec.md`
 
-### Survival Model → Predefined Registry
+### ~~Survival Model → Predefined Registry~~ (DONE)
 
-Promote `survival_2arms` to a predefined registry model. Builder `build_model_survival_2arms()` exists but has no registry entry. Needs registry entry, sim_fn integration, and end-to-end tests (fixed + group sequential).
+Refactored `build_model_survival_2arms()` into registry pattern: `build_model_survival_exp()` (generic builder), `build_model_survival_exp_2arms()` (2-arm wrapper), `create_survival_exp_sim_fn()` (sim_fn factory). Registered as `survival_exp_2arms` predefined model.
 
-- [ ] Add `survival_2arms` to model registry in `load_predefined_model_components()`
-- [ ] Add `create_sim_fn_for_model()` case for survival
-- [ ] Ensure `show_predefined_models()` includes survival
-- [ ] End-to-end tests: fixed + group sequential with survival model
-- [ ] Verify `get_code()` round-trip for survival workflows
+- [x] Add `survival_exp_2arms` to model registry in `load_predefined_model_components()`
+- [x] Add `create_sim_fn_for_model()` case for survival
+- [x] `show_predefined_models()` includes `survival_exp_2arms`
+- [x] Comprehensive tests (sim_fn, builder, registry)
+- [ ] Verify `get_code()` round-trip for survival workflows — DEFERRED
 
 ### `as.data.frame()` Methods for Core Classes
 

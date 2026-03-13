@@ -81,7 +81,7 @@ a gaussian family since the outcome is already on the logit scale.
 
 \strong{Priors:} Default priors are tighter than the continuous model to ensure
 the implied prior on proportions (0,1) remains unimodal. The sigma prior
-uses a half-normal(0, 0.5) which puts 99.6\% of mass below the bimodality
+uses a half-normal(0, 0.5) which puts 99.6\\% of mass below the bimodality
 threshold of sigma ~ 1.45.
 }
 \examples{

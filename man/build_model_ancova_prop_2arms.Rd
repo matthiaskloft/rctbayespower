@@ -26,7 +26,7 @@ Default parameters:
 \item n_arms = 2
 \item contrasts = "contr.treatment"
 \item p_alloc = c(0.5, 0.5) (equal allocation)
-\item intercept = 0 (50\% baseline proportion on logit scale)
+\item intercept = 0 (50\\% baseline proportion on logit scale)
 \item sigma = 1
 \item b_arm_treat = NULL (must be specified)
 \item b_covariate = NULL (must be specified)

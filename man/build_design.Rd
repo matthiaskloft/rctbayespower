@@ -47,7 +47,7 @@ Note: Python environment should be set before using BayesFlow via
 
 \item{n_endpoints}{Number of endpoints (positive integer). Required if \code{predefined_model} is NULL.}
 
-\item{endpoint_types}{Character vector of endpoint types ("continuous", "binary", "count").
+\item{endpoint_types}{Character vector of endpoint types ("continuous", "binary", "count", "survival").
 Required if \code{predefined_model} is NULL.}
 
 \item{n_arms}{Number of arms including control (positive integer). Required if \code{predefined_model} is NULL.}
