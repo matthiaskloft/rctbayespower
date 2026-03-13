@@ -124,8 +124,8 @@ create_power_curve_plot <- function(plot_data,
     "outcome"  # default fallback
   )
 
-  # Check if color variable exists in data
-  if (!color_var %in% names(plot_data_long)) {
+  # Check if color variable exists in data (NULL or missing column)
+  if (is.null(color_var) || !color_var %in% names(plot_data_long)) {
     cli::cli_warn(c(
       "Cannot group by {.val {group_by}} - column not found in data",
       "i" = "Falling back to grouping by decision"
@@ -138,7 +138,7 @@ create_power_curve_plot <- function(plot_data,
   if (color_var == "outcome") {
     plot_data_long$color_group <- factor(
       plot_data_long$outcome,
-      levels = c("Success", "Futility")
+      levels = c("Efficacy", "Futility")
     )
     color_label <- "Decision"
   } else if (color_var == "measure") {
@@ -165,7 +165,7 @@ create_power_curve_plot <- function(plot_data,
   # Helper to create facet label column for a given facet variable
  create_facet_label <- function(data, fvar, effect_col_name) {
     if (fvar == "outcome") {
-      factor(data$outcome, levels = c("Success", "Futility"))
+      factor(data$outcome, levels = c("Efficacy", "Futility"))
     } else if (fvar == "measure") {
       factor(data$measure, levels = c("Power", "Probability"))
     } else if (fvar == "n_total") {
@@ -274,7 +274,7 @@ create_power_curve_plot <- function(plot_data,
     rctbp_theme()
 
   # Add color scale based on group_by
-  if (group_by == "outcome") {
+  if (group_by == "decision") {
     p <- p + ggplot2::scale_color_manual(values = rctbp_colors())
     if (show_mcse && "se" %in% names(plot_data_long)) {
       p <- p + ggplot2::scale_fill_manual(values = rctbp_colors())
