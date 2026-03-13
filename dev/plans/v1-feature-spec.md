@@ -61,7 +61,7 @@
 
 | Feature | Effort | Notes |
 |---------|--------|-------|
-| **`survival_2arms` predefined model** | Medium | Promote builder to registry entry, add tests |
+| ~~**`survival_exp_2arms` predefined model**~~ | ~~Medium~~ | DONE — refactored to registry pattern |
 | **`as.data.frame()` methods** for core classes | Low | Thin S3 wrappers |
 | **`boundary_wang_tsiatis()`** | Low | Follows existing boundary pattern |
 | **Fix `model_name` param/property ambiguity** | Low-Medium | Rename before first public release |

@@ -54,7 +54,7 @@ This file contains reference material moved from CLAUDE.md to keep that file con
 | Train BayesFlow models | In progress (outsourced to `rctbp-bf-training`) | `13_bf_model_retraining.md` |
 | Binary outcomes (ANCOVA logistic) | Complete (PR #20/#21) | `21_adaptive_trials_roadmap.md` |
 | Proportional outcomes (Beta ANCOVA) | Complete (PR #24) | `21_adaptive_trials_roadmap.md` |
-| Survival outcomes | Partial (sim_fn exists) | `21_adaptive_trials_roadmap.md` |
+| Survival outcomes | Complete (registry model) | `survival_registry_refactor.md` |
 | Sample accrual (enrollment, calendar time, dropout) | Complete (Phases 1-4) | `25_sample_accrual_plan.md` |
 | Duplicate apply_simplex_transforms | Fixed (PR #19) | — |
 | Test suite | ~960 tests across 26+ files | `06_testing.md` |

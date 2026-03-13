@@ -150,7 +150,7 @@ rctbp_design <- S7::new_class(
       return("'n_endpoints' must be a positive numeric value.")
     }
     if (length(self@endpoint_types) != self@n_endpoints ||
-        any(!self@endpoint_types %in% c("continuous", "binary", "count", "proportion"))) {
+        any(!self@endpoint_types %in% c("continuous", "binary", "count", "proportion", "survival"))) {
       return(
         "'endpoint_types' must be a character vector of length 'n_endpoints' with valid types."
       )
@@ -253,7 +253,7 @@ get_bf_parameter_names <- function(model) {
 #'   Note: Python environment should be set before using BayesFlow via
 #'   [check_bf_status()] or [setup_bf_python()], not at runtime.
 #' @param n_endpoints Number of endpoints (positive integer). Required if `predefined_model` is NULL.
-#' @param endpoint_types Character vector of endpoint types ("continuous", "binary", "count").
+#' @param endpoint_types Character vector of endpoint types ("continuous", "binary", "count", "survival").
 #'   Required if `predefined_model` is NULL.
 #' @param n_arms Number of arms including control (positive integer). Required if `predefined_model` is NULL.
 #' @param n_repeated_measures Number of repeated measures (NULL or 0 for single timepoint)
@@ -488,6 +488,13 @@ load_predefined_model_components <- function(model_name, backend) {
       endpoint_types = "proportion",
       n_arms = 2L,
       n_repeated_measures = 0L
+    ),
+    survival_exp_2arms = list(
+      description = "2-arm exponential survival",
+      n_endpoints = 1L,
+      endpoint_types = "survival",
+      n_arms = 2L,
+      n_repeated_measures = 0L
     )
   )
 
@@ -605,7 +612,8 @@ get_model_builder <- function(model_name) {
     ancova_cont_2arms = build_model_ancova_cont_2arms,
     ancova_cont_3arms = build_model_ancova_cont_3arms,
     ancova_bin_2arms = build_model_ancova_bin_2arms,
-    ancova_prop_2arms = build_model_ancova_prop_2arms
+    ancova_prop_2arms = build_model_ancova_prop_2arms,
+    survival_exp_2arms = build_model_survival_exp_2arms
   )
   builders[[model_name]]
 }
@@ -626,6 +634,8 @@ create_sim_fn_for_model <- function(model_name) {
     create_ancova_bin_sim_fn(n_arms = 2)
   } else if (model_name == "ancova_prop_2arms") {
     create_ancova_prop_sim_fn(n_arms = 2)
+  } else if (model_name == "survival_exp_2arms") {
+    create_survival_exp_sim_fn(n_arms = 2)
   } else {
     cli::cli_abort("No simulation function for model: {.val {model_name}}")
   }
@@ -741,7 +751,7 @@ S7::method(print, rctbp_design) <- function(x, ...) {
 #' # Filter to ANCOVA models
 #' show_predefined_models("ancova")
 show_predefined_models <- function(filter_string = NULL) {
-  models <- c("ancova_cont_2arms", "ancova_cont_3arms", "ancova_bin_2arms", "ancova_prop_2arms")
+  models <- c("ancova_cont_2arms", "ancova_cont_3arms", "ancova_bin_2arms", "ancova_prop_2arms", "survival_exp_2arms")
 
   if (!is.null(filter_string)) {
     models <- models[grepl(filter_string, models)]
