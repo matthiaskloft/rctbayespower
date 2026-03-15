@@ -136,7 +136,7 @@ See `dev/plans/optimization-redesign.md`.
 | `ancova_cont_3arms` | Continuous | 3 | `build_model_ancova_cont_3arms()` | Ready |
 | `ancova_bin_2arms` | Binary (logit) | 2 | `build_model_ancova_bin_2arms()` | Ready |
 | `ancova_prop_2arms` | Proportion (Beta) | 2 | `build_model_ancova_prop_2arms()` | Ready (just merged) |
-| `survival_2arms` | Time-to-event | 2 | `build_model_survival_2arms()` | Needs registry entry + tests |
+| `survival_exp_2arms` | Time-to-event | 2 | `build_model_survival_exp_2arms()` | Ready (registry pattern) |
 
 **Custom models:** Users can always build arbitrary models via `build_sim_fn()` + `build_design(sim_fn = ..., inference_model = ...)`.
 
@@ -358,7 +358,7 @@ From `dev/plans/test_coverage_gaps.md`:
 ### Phase 4: New v1 Features (depends on Phases 1-2)
 
 New features added during v1 scoping:
-- **`survival_2arms` registry entry**: Add to model registry, create sim_fn case, end-to-end tests
+- ~~**`survival_exp_2arms` registry entry**~~: DONE — refactored to registry pattern
 - **`as.data.frame()` methods**: Thin S3 wrappers for power_analysis, conditions, design, pareto_result
 - **`boundary_wang_tsiatis()`**: Generalized boundary family (delta parameter), follows existing pattern
 - **Fix `model_name` ambiguity**: Rename param or property, update all references (API audit #7)
@@ -393,7 +393,7 @@ Pkgdown articles, not installed with package. One per predefined model:
 - `ancova_cont_3arms` — continuous 3-arm
 - `ancova_bin_2arms` — binary 2-arm
 - `ancova_prop_2arms` — proportion 2-arm (Beta regression)
-- `survival_2arms` — survival 2-arm
+- `survival_exp_2arms` — survival 2-arm
 - Include posterior quality checks (coverage, calibration) using external packages
 - Set up pkgdown articles directory and `_pkgdown.yml` configuration
 

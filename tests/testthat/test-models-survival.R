@@ -84,6 +84,66 @@ test_that("survival sim_fn rejects negative followup_time", {
   )
 })
 
+test_that("survival sim_fn rejects invalid n_total", {
+  sim_fn <- create_survival_exp_sim_fn(n_arms = 2)
+  expect_error(
+    sim_fn(n_total = 0, baseline_hazard = 0.1, hazard_ratio = 0.7,
+           accrual_rate = 10, followup_time = 12),
+    "n_total"
+  )
+  expect_error(
+    sim_fn(n_total = -5, baseline_hazard = 0.1, hazard_ratio = 0.7,
+           accrual_rate = 10, followup_time = 12),
+    "n_total"
+  )
+})
+
+test_that("survival sim_fn rejects invalid p_alloc", {
+  sim_fn <- create_survival_exp_sim_fn(n_arms = 2)
+  expect_error(
+    sim_fn(n_total = 20, p_alloc = c(0.5, 0.3), baseline_hazard = 0.1,
+           hazard_ratio = 0.7, accrual_rate = 10, followup_time = 12),
+    "p_alloc"
+  )
+  expect_error(
+    sim_fn(n_total = 20, p_alloc = c(1), baseline_hazard = 0.1,
+           hazard_ratio = 0.7, accrual_rate = 10, followup_time = 12),
+    "p_alloc"
+  )
+})
+
+test_that("create_survival_exp_sim_fn rejects n_arms != 2", {
+  expect_error(
+    create_survival_exp_sim_fn(n_arms = 3),
+    "n_arms"
+  )
+})
+
+# =============================================================================
+# BUILDER VALIDATION
+# =============================================================================
+
+test_that("build_model_survival_exp rejects n_arms != 2", {
+  expect_error(
+    build_model_survival_exp(n_arms = 3),
+    "n_arms"
+  )
+})
+
+test_that("build_model_survival_exp rejects wrong p_alloc length", {
+  expect_error(
+    build_model_survival_exp(p_alloc = c(0.33, 0.33, 0.34)),
+    "p_alloc"
+  )
+})
+
+test_that("build_model_survival_exp rejects p_alloc not summing to 1", {
+  expect_error(
+    build_model_survival_exp(p_alloc = c(0.5, 0.3)),
+    "p_alloc"
+  )
+})
+
 # =============================================================================
 # SIM FN OUTPUT
 # =============================================================================
@@ -247,7 +307,10 @@ test_that("build_model_survival_exp returns valid rctbp_model", {
   skip_on_cran()
   skip_on_ci()
   skip_if_not_installed("brms")
-  skip("Stan compilation — run manually")
+  skip_if(
+    !nzchar(Sys.getenv("RCTBP_TEST_STAN")),
+    "Stan compilation — set RCTBP_TEST_STAN=1 to run"
+  )
 
   model <- build_model_survival_exp(n_arms = 2, p_alloc = c(0.5, 0.5))
   expect_s3_class(model, "rctbayespower::rctbp_model")
@@ -260,7 +323,10 @@ test_that("build_model_survival_exp_2arms sets predefined_model", {
   skip_on_cran()
   skip_on_ci()
   skip_if_not_installed("brms")
-  skip("Stan compilation — run manually")
+  skip_if(
+    !nzchar(Sys.getenv("RCTBP_TEST_STAN")),
+    "Stan compilation — set RCTBP_TEST_STAN=1 to run"
+  )
 
   model <- build_model_survival_exp_2arms()
   expect_equal(model@predefined_model, "survival_exp_2arms")
@@ -270,7 +336,10 @@ test_that("registry round-trip: build_design with survival_exp_2arms", {
   skip_on_cran()
   skip_on_ci()
   skip_if_not_installed("brms")
-  skip("Stan compilation — run manually")
+  skip_if(
+    !nzchar(Sys.getenv("RCTBP_TEST_STAN")),
+    "Stan compilation — set RCTBP_TEST_STAN=1 to run"
+  )
 
   design <- build_design(
     predefined_model = "survival_exp_2arms",
@@ -286,7 +355,10 @@ test_that("show_target_params returns b_armtreat_1 for survival", {
   skip_on_cran()
   skip_on_ci()
   skip_if_not_installed("brms")
-  skip("Stan compilation — run manually")
+  skip_if(
+    !nzchar(Sys.getenv("RCTBP_TEST_STAN")),
+    "Stan compilation — set RCTBP_TEST_STAN=1 to run"
+  )
 
   params <- show_target_params("survival_exp_2arms")
   expect_true("b_armtreat_1" %in% params)
@@ -297,7 +369,10 @@ test_that("show_condition_args shows survival-specific params", {
   skip_on_cran()
   skip_on_ci()
   skip_if_not_installed("brms")
-  skip("Stan compilation — run manually")
+  skip_if(
+    !nzchar(Sys.getenv("RCTBP_TEST_STAN")),
+    "Stan compilation — set RCTBP_TEST_STAN=1 to run"
+  )
 
   design <- build_design(
     predefined_model = "survival_exp_2arms",
@@ -315,7 +390,10 @@ test_that("build_conditions with dual-route params works", {
   skip_on_cran()
   skip_on_ci()
   skip_if_not_installed("brms")
-  skip("Stan compilation — run manually")
+  skip_if(
+    !nzchar(Sys.getenv("RCTBP_TEST_STAN")),
+    "Stan compilation — set RCTBP_TEST_STAN=1 to run"
+  )
 
   design <- build_design(
     predefined_model = "survival_exp_2arms",
@@ -341,7 +419,10 @@ test_that("end-to-end: design + conditions + sim_fn produces valid data", {
   skip_on_cran()
   skip_on_ci()
   skip_if_not_installed("brms")
-  skip("Stan compilation — run manually")
+  skip_if(
+    !nzchar(Sys.getenv("RCTBP_TEST_STAN")),
+    "Stan compilation — set RCTBP_TEST_STAN=1 to run"
+  )
 
   design <- build_design(
     predefined_model = "survival_exp_2arms",
