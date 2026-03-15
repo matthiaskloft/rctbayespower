@@ -20,8 +20,8 @@
 #'   If NULL, uses `normal(0, 5)`.
 #' @param prior_treatment Prior for the treatment effect (log hazard ratio).
 #'   If NULL, uses `normal(0, 2)`.
-#' @param n_arms Number of arms in the trial (must be >= 2).
-#' @param p_alloc Allocation probability vector (length `n_arms`, sums to 1).
+#' @param n_arms Number of arms in the trial (currently must be 2).
+#' @param p_alloc Allocation probability vector (length 2, sums to 1).
 #'
 #' @details
 #' The model uses a Weibull family in brms. With shape = 1, the Weibull
@@ -48,6 +48,22 @@ build_model_survival_exp <- function(prior_intercept = NULL,
                                      prior_treatment = NULL,
                                      n_arms = 2,
                                      p_alloc = c(0.5, 0.5)) {
+  # Validate n_arms — only 2-arm designs supported currently
+
+  if (n_arms != 2) {
+    cli::cli_abort(
+      "{.arg n_arms} must be 2. Multi-arm survival models are not yet supported."
+    )
+  }
+  if (length(p_alloc) != 2) {
+    cli::cli_abort(
+      "{.arg p_alloc} must have length 2 (one per arm), not {length(p_alloc)}."
+    )
+  }
+  if (abs(sum(p_alloc) - 1) > 1e-8) {
+    cli::cli_abort("{.arg p_alloc} must sum to 1.")
+  }
+
   # Default priors
   if (is.null(prior_intercept)) {
     prior_intercept <- brms::set_prior("normal(0, 5)", class = "Intercept")
@@ -154,6 +170,12 @@ build_model_survival_exp_2arms <- function(...) {
 #' @return rctbp_sim_fn object (callable with schema)
 #' @keywords internal
 create_survival_exp_sim_fn <- function(n_arms) {
+  if (n_arms != 2) {
+    cli::cli_abort(
+      "{.arg n_arms} must be 2. Multi-arm survival sim_fn is not yet supported."
+    )
+  }
+
   default_p_alloc <- rep(1, n_arms) / n_arms
 
   fn <- function(n_total,
@@ -163,6 +185,12 @@ create_survival_exp_sim_fn <- function(n_arms) {
                  accrual_rate = NULL,
                  followup_time = NULL) {
     # Validate inputs
+    if (!is.numeric(n_total) || length(n_total) != 1 || n_total < 1) {
+      cli::cli_abort("{.arg n_total} must be a positive integer")
+    }
+    if (!is.numeric(p_alloc) || length(p_alloc) != 2 || abs(sum(p_alloc) - 1) > 1e-8) {
+      cli::cli_abort("{.arg p_alloc} must be a numeric vector of length 2 that sums to 1")
+    }
     if (is.null(baseline_hazard) || baseline_hazard <= 0) {
       cli::cli_abort("{.arg baseline_hazard} must be a positive number")
     }
