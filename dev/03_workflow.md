@@ -151,10 +151,12 @@ power_config <- run(power_config)
 
 | Function | Purpose |
 |----------|---------|
-| `boundary_obf()` | O'Brien-Fleming-style (conservative early) |
-| `boundary_pocock()` | Constant threshold (same at all looks) |
+| `boundary_obf()` | O'Brien-Fleming (conservative early, relaxing late) |
+| `boundary_pocock()` | Pocock (similar threshold at all looks) |
+| `boundary_hsd()` | Hwang-Shih-DeCani (flexible one-parameter family) |
 | `boundary_linear()` | Linear interpolation between start/end |
 | `boundary_power()` | Power family (rho controls curve shape) |
+| `boundary_constant()` | Fixed threshold at all looks |
 | `compare_boundaries()` | Compare different boundary configurations |
 | `resummarize_boundaries()` | Re-analyze with new boundaries |
 

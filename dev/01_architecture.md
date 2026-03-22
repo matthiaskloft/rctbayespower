@@ -79,7 +79,24 @@ Note: `rctbp_model` is deprecated. All model properties (sim_fn, inference_model
 | `R/accrual.R` | Enrollment times, calendar subsetting, event-driven subsetting |
 | `R/dropout.R` | `dropout()` constructor, dropout time generation |
 | `R/interim_functions.R` | Interim analysis functions |
-| `R/boundaries.R` | Stopping boundary functions (OBF, Pocock, linear, power) |
+| `R/boundaries.R` | Stopping boundary functions (OBF, Pocock, HSD, linear, power, constant) |
+
+#### Boundary Functions — Theory & References
+
+All boundary functions are factory functions returning closures with class `c("boundary_function", "function")`.
+
+| Function | Mode | Formula / Source | Reference |
+|----------|------|-----------------|-----------|
+| `boundary_obf()` | alpha | Lan-DeMets OBF spending: `α*(t) = 2-2Φ(z_{α/2}/√t)` | O'Brien & Fleming (1979); Lan & DeMets (1983) |
+| `boundary_obf()` | threshold | Normalized spending-shape scaled to end at threshold | Package-specific |
+| `boundary_pocock()` | alpha | Lan-DeMets Pocock spending: `α*(t) = α·ln(1+(e-1)t)` | Pocock (1977); Lan & DeMets (1983) |
+| `boundary_pocock()` | threshold | Constant threshold at all looks | Pocock (1977) |
+| `boundary_hsd()` | alpha | HSD spending: `α*(t) = α(1-e^{-γt})/(1-e^{-γ})` | Hwang, Shih & DeCani (1990) |
+| `boundary_power()` | threshold | Probability-scale shape: `1-(1-base)·t^{ρ/2}` | Package-specific (no alpha control) |
+| `boundary_linear()` | threshold | `start + (end-start)·t` | Trivial |
+| `boundary_constant()` | threshold | Constant value | Trivial |
+
+All formulas verified against original articles and the [gsDesign technical manual](https://keaven.github.io/gsd-tech-manual/spendfn.html). See `dev/references.md` for full citations and verification details.
 
 ### Optimization
 

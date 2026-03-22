@@ -38,6 +38,9 @@
 #' (close to 1.0), relaxing to exactly `threshold` at the final analysis.
 #'
 #' @references
+#' O'Brien, P. C. and Fleming, T. R. (1979). A multiple testing procedure for
+#' clinical trials. Biometrics 35: 549-556.
+#'
 #' Lan, K. K. G. and DeMets, D. L. (1983). Discrete sequential boundaries for
 #' clinical trials. Biometrika 70: 659-663.
 #'
@@ -515,6 +518,13 @@ boundary_linear <- function(start = 0.999, end = 0.975) {
 #'   \item Higher rho: More conservative early, faster relaxation later
 #'   \item Lower rho: Less conservative early, slower relaxation
 #' }
+#'
+#' This is a simple probability-scale shape function for Bayesian decision
+#' rules. It does not provide frequentist Type I error control. For a
+#' principled one-parameter family with alpha-spending support, see
+#' the Wang-Tsiatis boundary (planned: `boundary_wang_tsiatis()`), which
+#' operates on the z-scale and subsumes O'Brien-Fleming and Pocock as
+#' special cases.
 #'
 #' @export
 #' @seealso [boundary_obf()], [boundary_pocock()], [boundary_linear()]

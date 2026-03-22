@@ -7,7 +7,12 @@
 ## General
 
 - Stay on the main branch for development. Use worktrees for feature implementation.
-
+- EVERYTHING that is implemented must be theoretically backed by either a research article (accessed via full text) or package documentation.
+- If an article is not accessible, ask the user to find and download it. Do NOT proceed with unverified assumptions.
+- Do NOT blindly use in-memory knowledge from LLM training — verify against actual sources first.
+- Document the references backing a given implementation in docstrings and dev docs (e.g., API/architecture documentation).
+- Verify references via the OpenAlex API and save them formatted in APA 7 in a `dev/references.md` file.
+- save fetched articles into `dev/references/` with filename format `author_year_title.pdf` for future reference and verification.
 ## Commands
 
 ```bash

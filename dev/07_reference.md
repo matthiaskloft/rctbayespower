@@ -101,7 +101,7 @@ This file contains reference material moved from CLAUDE.md to keep that file con
 
 | File | Purpose |
 |------|---------|
-| `R/boundaries.R` | Stopping boundary functions (OBF, Pocock, linear, power) |
+| `R/boundaries.R` | Stopping boundary functions (OBF, Pocock, HSD, linear, power, constant) |
 
 ### Optimization
 
@@ -269,9 +269,13 @@ conditions <- build_conditions(
   )
 )
 
-# Available boundary functions:
-# boundary_obf(), boundary_pocock(), boundary_hsd(),
-# boundary_linear(), boundary_power(), boundary_constant()
+# Available boundary functions (see show_boundaries()):
+# boundary_obf()      — O'Brien-Fleming shape (OBF)
+# boundary_pocock()   — Pocock (constant threshold)
+# boundary_hsd()      — Hwang-Shih-DeCani (flexible gamma)
+# boundary_linear()   — Linear interpolation
+# boundary_power()    — Power family shape
+# boundary_constant() — Fixed threshold
 ```
 
 ### Trial Types

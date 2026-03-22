@@ -64,6 +64,7 @@ Thumbs.db
 # Documentation
 doc/
 Meta/
+dev/references/
 
 # Temporary files
 *.tmp
