@@ -825,3 +825,21 @@ S7::method(print, rctbp_conditions) <- function(x, ...) {
   render_report(report)
   invisible(x)
 }
+
+# =============================================================================
+# S7 METHOD: as.data.frame() for rctbp_conditions
+# =============================================================================
+
+#' Convert rctbp_conditions to a Data Frame
+#'
+#' Returns the condition grid as a data frame.
+#'
+#' @param x An rctbp_conditions object.
+#' @param ... Additional arguments (unused).
+#'
+#' @return A data frame containing the condition grid.
+#' @name as.data.frame.rctbp_conditions
+#' @export
+S7::method(as.data.frame, rctbp_conditions) <- function(x, ...) {
+  x@grid
+}
