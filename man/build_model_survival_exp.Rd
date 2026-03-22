@@ -18,9 +18,9 @@ If NULL, uses \code{normal(0, 5)}.}
 \item{prior_treatment}{Prior for the treatment effect (log hazard ratio).
 If NULL, uses \code{normal(0, 2)}.}
 
-\item{n_arms}{Number of arms in the trial (must be >= 2).}
+\item{n_arms}{Number of arms in the trial (currently must be 2).}
 
-\item{p_alloc}{Allocation probability vector (length \code{n_arms}, sums to 1).}
+\item{p_alloc}{Allocation probability vector (length 2, sums to 1).}
 }
 \value{
 An S7 object of class \code{rctbp_model}

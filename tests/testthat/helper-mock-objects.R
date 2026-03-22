@@ -367,6 +367,43 @@ mock_power_analysis <- function(variant = c("1d", "2d", "accrual", "accrual_no_c
   }
 }
 
+#' Create a mock rctbp_pareto_result object
+#'
+#' Constructs a minimal valid pareto result for testing.
+#'
+mock_pareto_result <- function() {
+  design <- mock_design()
+
+  pareto_front <- data.frame(
+    n_total = c(100, 150, 200),
+    pwr_eff = c(0.6, 0.75, 0.85)
+  )
+
+  archive <- data.frame(
+    n_total = c(50, 100, 150, 200, 250),
+    pwr_eff = c(0.3, 0.6, 0.75, 0.85, 0.88)
+  )
+
+  selected_design <- data.frame(
+    n_total = 150,
+    pwr_eff = 0.75
+  )
+
+  rctbp_pareto_result(
+    design = design,
+    pareto_front = pareto_front,
+    archive = archive,
+    selected_design = selected_design,
+    convergence = data.frame(),
+    optimization_type = "power_n",
+    objectives = list(pwr_eff = "maximize", n_total = "minimize"),
+    search = list(n_total = c(50, 300)),
+    n_sims = 100,
+    n_evals = 5,
+    elapsed_time = 1.5
+  )
+}
+
 mock_raw_results <- function(n_sims = 10, n_conditions = 2) {
   rows <- list()
   for (cond in seq_len(n_conditions)) {

@@ -26,10 +26,23 @@ summary.rctbp_power_analysis <- function(object, ...) {
   S7::method(summary, rctbp_power_analysis)(object, ...)
 }
 
+#' @rdname as.data.frame.rctbp_power_analysis
+#' @export
+as.data.frame.rctbp_power_analysis <- function(x, ...,
+    what = c("conditions", "raw", "interim")) {
+  S7::method(as.data.frame, rctbp_power_analysis)(x, ..., what = what)
+}
+
 #' @rdname print.rctbp_conditions
 #' @export
 print.rctbp_conditions <- function(x, ...) {
   S7::method(print, rctbp_conditions)(x, ...)
+}
+
+#' @rdname as.data.frame.rctbp_conditions
+#' @export
+as.data.frame.rctbp_conditions <- function(x, ...) {
+  S7::method(as.data.frame, rctbp_conditions)(x, ...)
 }
 
 #' @rdname print.rctbp_design
@@ -95,4 +108,11 @@ print.rctbp_pareto_result <- function(x, ...) {
 #' @export
 summary.rctbp_pareto_result <- function(object, ...) {
   S7::method(summary, rctbp_pareto_result)(object, ...)
+}
+
+#' @rdname as.data.frame.rctbp_pareto_result
+#' @export
+as.data.frame.rctbp_pareto_result <- function(x, ...,
+    what = c("pareto", "archive", "selected", "convergence")) {
+  S7::method(as.data.frame, rctbp_pareto_result)(x, ..., what = what)
 }

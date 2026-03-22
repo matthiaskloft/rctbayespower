@@ -1814,3 +1814,38 @@ S7::method(summary, rctbp_power_analysis) <- function(object, ...) {
 
   invisible(object)
 }
+
+# =============================================================================
+# S7 METHOD: as.data.frame() for rctbp_power_analysis
+# =============================================================================
+
+#' Convert rctbp_power_analysis to a Data Frame
+#'
+#' Extracts result data from a power analysis object as a data frame.
+#'
+#' @param x An rctbp_power_analysis object.
+#' @param ... Additional arguments (unused).
+#' @param what Which results to return: `"conditions"` (default) for aggregated
+#'   power results per condition, `"raw"` for per-simulation data, or
+#'   `"interim"` for per-look interim results (sequential designs only).
+#'
+#' @return A data frame.
+#' @name as.data.frame.rctbp_power_analysis
+#' @export
+S7::method(as.data.frame, rctbp_power_analysis) <- function(x, ...,
+    what = c("conditions", "raw", "interim")) {
+  what <- match.arg(what)
+  switch(what,
+    conditions = x@results_conditions,
+    raw = x@results_raw,
+    interim = {
+      if (!x@has_interim) {
+        cli::cli_abort(c(
+          "Interim results are not available.",
+          "i" = "This analysis used a fixed design with no interim looks."
+        ))
+      }
+      x@results_interim
+    }
+  )
+}

@@ -174,3 +174,31 @@ S7::method(summary, rctbp_pareto_result) <- function(object, ...) {
   print(object@pareto_front)
   invisible(object@pareto_front)
 }
+
+# =============================================================================
+# S7 METHOD: as.data.frame() for rctbp_pareto_result
+# =============================================================================
+
+#' Convert rctbp_pareto_result to a Data Frame
+#'
+#' Extracts result data from a Pareto optimization result as a data frame.
+#'
+#' @param x An rctbp_pareto_result object.
+#' @param ... Additional arguments (unused).
+#' @param what Which results to return: `"pareto"` (default) for Pareto-optimal
+#'   solutions, `"archive"` for all evaluations, `"selected"` for the selected
+#'   knee-point solution, or `"convergence"` for the convergence trace.
+#'
+#' @return A data frame.
+#' @name as.data.frame.rctbp_pareto_result
+#' @export
+S7::method(as.data.frame, rctbp_pareto_result) <- function(x, ...,
+    what = c("pareto", "archive", "selected", "convergence")) {
+  what <- match.arg(what)
+  switch(what,
+    pareto = x@pareto_front,
+    archive = x@archive,
+    selected = x@selected_design,
+    convergence = x@convergence
+  )
+}
