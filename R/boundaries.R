@@ -728,8 +728,11 @@ boundary_wang_tsiatis <- function(delta = 0.25, alpha = NULL, threshold = NULL) 
           sum(prob$upper$prob) - alpha
         }
         z_single <- stats::qnorm(1 - alpha)
+        eps <- .Machine$double.eps^0.25
+        lower <- max(z_single * 0.1, eps)
+        upper <- max(z_single * 3, lower + eps)
         root <- stats::uniroot(objective,
-                               interval = c(z_single * 0.1, z_single * 3),
+                               interval = c(lower, upper),
                                tol = .Machine$double.eps^0.5)
         z_bounds <- root$root * info_frac^(delta - 0.5)
       }
