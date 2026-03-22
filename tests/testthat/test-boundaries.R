@@ -271,8 +271,8 @@ test_that("boundary_wang_tsiatis delta=0 produces OBF-like shape", {
   expect_true(thresholds[1] > thresholds[4])
   # Final look equals threshold
   expect_equal(thresholds[4], 0.95, tolerance = 1e-10)
-  # All thresholds >= final threshold
-  expect_true(all(thresholds >= 0.95))
+  # All thresholds >= final threshold (within floating-point tolerance)
+  expect_true(all(thresholds >= 0.95 - 1e-10))
 })
 
 test_that("boundary_wang_tsiatis delta=0.25 is between OBF and constant", {
