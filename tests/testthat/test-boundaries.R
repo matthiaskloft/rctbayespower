@@ -302,6 +302,28 @@ test_that("boundary_wang_tsiatis threshold mode works with single look", {
   expect_equal(f(1.0), 0.95, tolerance = 1e-10)
 })
 
+test_that("boundary_wang_tsiatis delta=0 threshold differs from boundary_obf threshold", {
+  # WT threshold mode uses pnorm(qnorm(threshold) * t^(delta-0.5))
+
+  # OBF threshold mode uses spending-function normalization
+  # Same qualitative shape but different formulas — not numerically identical
+  wt <- boundary_wang_tsiatis(delta = 0, threshold = 0.95)
+  obf <- boundary_obf(threshold = 0.95)
+
+  info_frac <- c(0.25, 0.5, 0.75, 1.0)
+  wt_vals <- wt(info_frac)
+  obf_vals <- obf(info_frac)
+
+  # Both end at 0.95
+  expect_equal(wt_vals[4], 0.95, tolerance = 1e-10)
+  expect_equal(obf_vals[4], 0.95, tolerance = 1e-10)
+  # Both are decreasing (conservative early)
+  expect_true(wt_vals[1] > wt_vals[4])
+  expect_true(obf_vals[1] > obf_vals[4])
+  # But they are NOT identical at intermediate points
+  expect_false(isTRUE(all.equal(wt_vals[1:3], obf_vals[1:3])))
+})
+
 # =============================================================================
 # boundary_wang_tsiatis() - Alpha mode
 # =============================================================================
@@ -342,6 +364,22 @@ test_that("boundary_wang_tsiatis delta=0.25 alpha produces valid boundaries", {
   expect_true(all(thresholds > 0.5 & thresholds < 1))
   # Should be decreasing (conservative early, relaxing late)
   expect_true(thresholds[1] > thresholds[4])
+})
+
+test_that("boundary_wang_tsiatis alpha mode controls Type I error", {
+  skip_if_not_installed("gsDesign")
+  f <- boundary_wang_tsiatis(delta = 0.25, alpha = 0.025)
+  info_frac <- c(0.25, 0.5, 0.75, 1.0)
+  thresholds <- f(info_frac)
+
+  # Convert back to z-scale and verify rejection probability ~ alpha
+  z_bounds <- stats::qnorm(thresholds)
+  prob <- gsDesign::gsProbability(
+    k = 4, theta = 0, n.I = info_frac,
+    a = rep(-20, 4), b = z_bounds
+  )
+  total_rejection <- sum(prob$upper$prob)
+  expect_equal(total_rejection, 0.025, tolerance = 1e-4)
 })
 
 test_that("boundary_wang_tsiatis alpha mode single look", {

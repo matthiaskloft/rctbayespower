@@ -617,6 +617,10 @@ boundary_power <- function(base = 0.975, rho = 2) {
 #' z-scale parameterization from the literature with both frequentist and
 #' Bayesian modes.
 #'
+#' Unlike [boundary_obf()] and [boundary_pocock()], the frequentist mode has
+#' no fallback when `gsDesign` is not installed — the general Wang-Tsiatis
+#' calibration requires multivariate normal integration.
+#'
 #' Note: `threshold` accepts values in (0, 1) exclusive, which differs from
 #' [boundary_obf()] (which requires threshold > 0.5). Values near 0 or 1
 #' produce degenerate boundaries.
@@ -696,24 +700,42 @@ boundary_wang_tsiatis <- function(delta = 0.25, alpha = NULL, threshold = NULL) 
         ))
       }
 
-      # Single-look early return: no group sequential structure needed
+      # Single-look: no group sequential structure needed
       if (n_looks == 1) {
-        return(stats::pnorm(stats::qnorm(1 - alpha)))
+        return(1 - alpha)
       }
 
       # Special cases for exact results via Lan-DeMets spending functions
       if (delta == 0) {
-        design <- gsDesign::gsDesign(
-          k = n_looks, timing = info_frac,
-          alpha = alpha, test.type = 1,
-          sfu = gsDesign::sfLDOF
+        design <- tryCatch(
+          gsDesign::gsDesign(
+            k = n_looks, timing = info_frac,
+            alpha = alpha, test.type = 1,
+            sfu = gsDesign::sfLDOF
+          ),
+          error = function(e) {
+            cli::cli_abort(c(
+              "Failed to compute Wang-Tsiatis boundary (delta=0, OBF mode)",
+              "i" = "alpha = {.val {alpha}}, info_frac = {.val {info_frac}}",
+              "x" = conditionMessage(e)
+            ), parent = e)
+          }
         )
         z_bounds <- design$upper$bound
       } else if (delta == 0.5) {
-        design <- gsDesign::gsDesign(
-          k = n_looks, timing = info_frac,
-          alpha = alpha, test.type = 1,
-          sfu = gsDesign::sfLDPocock
+        design <- tryCatch(
+          gsDesign::gsDesign(
+            k = n_looks, timing = info_frac,
+            alpha = alpha, test.type = 1,
+            sfu = gsDesign::sfLDPocock
+          ),
+          error = function(e) {
+            cli::cli_abort(c(
+              "Failed to compute Wang-Tsiatis boundary (delta=0.5, Pocock mode)",
+              "i" = "alpha = {.val {alpha}}, info_frac = {.val {info_frac}}",
+              "x" = conditionMessage(e)
+            ), parent = e)
+          }
         )
         z_bounds <- design$upper$bound
       } else {
@@ -731,9 +753,19 @@ boundary_wang_tsiatis <- function(delta = 0.25, alpha = NULL, threshold = NULL) 
         eps <- .Machine$double.eps^0.25
         lower <- max(z_single * 0.1, eps)
         upper <- max(z_single * 3, lower + eps)
-        root <- stats::uniroot(objective,
-                               interval = c(lower, upper),
-                               tol = .Machine$double.eps^0.5)
+        root <- tryCatch(
+          stats::uniroot(objective,
+                         interval = c(lower, upper),
+                         tol = .Machine$double.eps^0.5),
+          error = function(e) {
+            cli::cli_abort(c(
+              "Failed to calibrate Wang-Tsiatis boundary constant",
+              "i" = "delta = {.val {delta}}, alpha = {.val {alpha}}",
+              "i" = "info_frac = {.val {info_frac}}",
+              "x" = conditionMessage(e)
+            ), parent = e)
+          }
+        )
         z_bounds <- root$root * info_frac^(delta - 0.5)
       }
       stats::pnorm(z_bounds)
