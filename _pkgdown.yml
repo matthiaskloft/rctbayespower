@@ -99,6 +99,7 @@ reference:
   - boundary_power
   - boundary_constant
   - boundary_hsd
+  - boundary_wang_tsiatis
   - show_boundaries
   - compare_boundaries
   - resummarize_boundaries
