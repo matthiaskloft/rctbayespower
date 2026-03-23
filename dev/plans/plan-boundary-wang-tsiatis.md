@@ -9,7 +9,7 @@
 |-------|--------|------|-------|
 | Spec | DONE | 2026-03-22 | All blockers resolved |
 | Plan | DONE | 2026-03-22 | Single phase |
-| Phase 1: Function, tests, docs | TODO | | |
+| Phase 1: Function, tests, docs | IMPLEMENTED | 2026-03-22 | |
 | Ship | TODO | | |
 
 ## Spec

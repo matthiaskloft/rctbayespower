@@ -26,6 +26,13 @@ format_boundary <- function(threshold) {
         "pocock" = paste0("Pocock (", boundary_params$threshold, ")"),
         "linear" = paste0("Linear (", boundary_params$start, " \u2192 ", boundary_params$end, ")"),
         "power" = paste0("Power (base=", boundary_params$base, ", rho=", boundary_params$rho, ")"),
+        "wang_tsiatis" = {
+          if (!is.null(boundary_params$alpha)) {
+            paste0("Wang-Tsiatis (delta=", boundary_params$delta, ", alpha=", boundary_params$alpha, ")")
+          } else {
+            paste0("Wang-Tsiatis (delta=", boundary_params$delta, ", threshold=", boundary_params$threshold, ")")
+          }
+        },
         # Fallback for unknown types
         paste0("Function (", boundary_type, ")")
       )

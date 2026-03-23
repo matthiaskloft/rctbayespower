@@ -522,12 +522,13 @@ boundary_linear <- function(start = 0.999, end = 0.975) {
 #' This is a simple probability-scale shape function for Bayesian decision
 #' rules. It does not provide frequentist Type I error control. For a
 #' principled one-parameter family with alpha-spending support, see
-#' the Wang-Tsiatis boundary (planned: `boundary_wang_tsiatis()`), which
+#' the Wang-Tsiatis boundary [boundary_wang_tsiatis()], which
 #' operates on the z-scale and subsumes O'Brien-Fleming and Pocock as
 #' special cases.
 #'
 #' @export
-#' @seealso [boundary_obf()], [boundary_pocock()], [boundary_linear()]
+#' @seealso [boundary_wang_tsiatis()], [boundary_obf()], [boundary_pocock()],
+#'   [boundary_linear()]
 #'
 #' @examples
 #' # Compare different rho values at info_frac = 0.5
@@ -559,6 +560,240 @@ boundary_power <- function(base = 0.975, rho = 2) {
   # Add metadata for display
   attr(f, "boundary_type") <- "power"
   attr(f, "boundary_params") <- list(base = base, rho = rho)
+  class(f) <- c("boundary_function", "function")
+  f
+}
+
+
+#' Wang-Tsiatis Boundary
+#'
+#' Creates a boundary function from the Wang-Tsiatis one-parameter family,
+#' which smoothly interpolates between O'Brien-Fleming (`delta = 0`) and
+#' Pocock (`delta = 0.5`) boundaries. Specify either `alpha` for frequentist
+#' Type I error control, or `threshold` for Bayesian decision rules.
+#'
+#' @param delta Shape parameter controlling boundary aggressiveness.
+#'   Must be between 0 and 0.5.
+#'   \itemize{
+#'     \item `delta = 0`: O'Brien-Fleming-like (very conservative early)
+#'     \item `delta = 0.25`: Midpoint between OBF and Pocock
+#'     \item `delta = 0.5`: Pocock-like (constant across looks)
+#'   }
+#' @param alpha One-sided significance level for frequentist error control.
+#'   Must be between 0 and 0.5. Requires the `gsDesign` package at call time.
+#'   Mutually exclusive with `threshold`.
+#' @param threshold Probability threshold for Bayesian decision rules.
+#'   Must be between 0 and 1 (exclusive). Mutually exclusive with `alpha`.
+#'
+#' @return A function that takes a vector of information fractions and returns
+#'   a vector of probability thresholds (one per look).
+#'
+#' @details
+#' The Wang-Tsiatis boundary family defines z-scale boundaries as:
+#' \deqn{z_k = C \cdot t_k^{\Delta - 0.5}}
+#' where \eqn{t_k} is the information fraction at look \eqn{k}, \eqn{\Delta}
+#' is the shape parameter (`delta`), and \eqn{C} is a constant calibrated to
+#' control the overall Type I error.
+#'
+#' \strong{Frequentist mode} (`alpha`): Requires the `gsDesign` package.
+#' At `delta = 0`, uses the Lan-DeMets O'Brien-Fleming spending function
+#' (`sfLDOF`) for exact results. At `delta = 0.5`, uses the Lan-DeMets Pocock
+#' spending function (`sfLDPocock`). For intermediate values, calibrates the
+#' constant \eqn{C} via numerical root-finding using `gsDesign::gsProbability()`
+#' for multivariate normal integration.
+#'
+#' \strong{Bayesian mode} (`threshold`): Uses the closed-form probability-scale
+#' formula:
+#' \deqn{\text{threshold}_k = \Phi(\Phi^{-1}(\text{threshold}) \cdot t_k^{\Delta - 0.5})}
+#' No external packages required. At `delta = 0.5`, this reduces to a constant
+#' threshold (identical to [boundary_pocock(threshold = ...)]). At `delta = 0`,
+#' produces an OBF-like shape that is qualitatively similar to
+#' [boundary_obf(threshold = ...)] but not numerically identical (different
+#' parameterizations).
+#'
+#' \strong{Comparison with `boundary_power()`}: `boundary_power()` is a simple
+#' probability-scale shape function (`1 - (1-base) * t^(rho/2)`) without
+#' frequentist alpha control. `boundary_wang_tsiatis()` is the principled
+#' z-scale parameterization from the literature with both frequentist and
+#' Bayesian modes.
+#'
+#' Unlike [boundary_obf()] and [boundary_pocock()], the frequentist mode has
+#' no fallback when `gsDesign` is not installed — the general Wang-Tsiatis
+#' calibration requires multivariate normal integration.
+#'
+#' Note: `threshold` accepts values in (0, 1) exclusive, which differs from
+#' [boundary_obf()] (which requires threshold > 0.5). Values near 0 or 1
+#' produce degenerate boundaries.
+#'
+#' @references
+#' Wang, S. K. and Tsiatis, A. A. (1987). Approximately optimal one-parameter
+#' boundaries for group sequential trials. Biometrics 43: 193-199.
+#'
+#' Lan, K. K. G. and DeMets, D. L. (1983). Discrete sequential boundaries for
+#' clinical trials. Biometrika 70: 659-663.
+#'
+#' Jennison, C. and Turnbull, B. W. (2000). Group Sequential Methods with
+#' Applications to Clinical Trials. Chapman & Hall/CRC.
+#'
+#' @export
+#' @seealso [boundary_obf()], [boundary_pocock()], [boundary_power()]
+#'
+#' @examples
+#' # Bayesian: Wang-Tsiatis shape ending at 0.95 threshold
+#' wt <- boundary_wang_tsiatis(delta = 0.25, threshold = 0.95)
+#' wt(c(0.5, 1.0))
+#'
+#' # Pocock-like (delta = 0.5): constant threshold
+#' wt_pocock <- boundary_wang_tsiatis(delta = 0.5, threshold = 0.95)
+#' wt_pocock(c(0.25, 0.5, 0.75, 1.0))  # All 0.95
+#'
+#' \dontrun{
+#' # Frequentist: control Type I error at 2.5% (requires gsDesign)
+#' wt_freq <- boundary_wang_tsiatis(delta = 0.25, alpha = 0.025)
+#' wt_freq(c(0.5, 1.0))
+#' }
+boundary_wang_tsiatis <- function(delta = 0.25, alpha = NULL, threshold = NULL) {
+  # Validate delta
+  force(delta)
+  if (!is.numeric(delta) || length(delta) != 1 ||
+      is.na(delta) || delta < 0 || delta > 0.5) {
+    cli::cli_abort(c(
+      "{.arg delta} must be a single numeric value between 0 and 0.5",
+      "x" = "You supplied {.val {delta}}"
+    ))
+  }
+
+  # Validate: exactly one of alpha or threshold must be provided
+  if (is.null(alpha) && is.null(threshold)) {
+    cli::cli_abort(c(
+      "Must specify either {.arg alpha} or {.arg threshold}",
+      "i" = "Use {.arg alpha} for frequentist error control (e.g., 0.025)",
+      "i" = "Use {.arg threshold} for Bayesian decision rules (e.g., 0.95)"
+    ))
+  }
+  if (!is.null(alpha) && !is.null(threshold)) {
+    cli::cli_abort(c(
+      "Cannot specify both {.arg alpha} and {.arg threshold}",
+      "i" = "Use {.arg alpha} for frequentist error control",
+      "i" = "Use {.arg threshold} for Bayesian decision rules"
+    ))
+  }
+
+  # Frequentist mode: alpha-spending
+  if (!is.null(alpha)) {
+    force(alpha)
+    if (!is.numeric(alpha) || length(alpha) != 1 ||
+        alpha <= 0 || alpha > 0.5) {
+      cli::cli_abort(c(
+        "{.arg alpha} must be a single numeric value between 0 and 0.5",
+        "x" = "You supplied {.val {alpha}}"
+      ))
+    }
+
+    f <- function(info_frac) {
+      n_looks <- length(info_frac)
+
+      if (!requireNamespace("gsDesign", quietly = TRUE)) {
+        cli::cli_abort(c(
+          "{.fn boundary_wang_tsiatis} with {.arg alpha} requires the {.pkg gsDesign} package",
+          "i" = "Install it with: {.code install.packages(\"gsDesign\")}"
+        ))
+      }
+
+      # Single-look: no group sequential structure needed
+      if (n_looks == 1) {
+        return(1 - alpha)
+      }
+
+      # Special cases for exact results via Lan-DeMets spending functions
+      if (delta == 0) {
+        design <- tryCatch(
+          gsDesign::gsDesign(
+            k = n_looks, timing = info_frac,
+            alpha = alpha, test.type = 1,
+            sfu = gsDesign::sfLDOF
+          ),
+          error = function(e) {
+            cli::cli_abort(c(
+              "Failed to compute Wang-Tsiatis boundary (delta=0, OBF mode)",
+              "i" = "alpha = {.val {alpha}}, info_frac = {.val {info_frac}}",
+              "x" = conditionMessage(e)
+            ), parent = e)
+          }
+        )
+        z_bounds <- design$upper$bound
+      } else if (delta == 0.5) {
+        design <- tryCatch(
+          gsDesign::gsDesign(
+            k = n_looks, timing = info_frac,
+            alpha = alpha, test.type = 1,
+            sfu = gsDesign::sfLDPocock
+          ),
+          error = function(e) {
+            cli::cli_abort(c(
+              "Failed to compute Wang-Tsiatis boundary (delta=0.5, Pocock mode)",
+              "i" = "alpha = {.val {alpha}}, info_frac = {.val {info_frac}}",
+              "x" = conditionMessage(e)
+            ), parent = e)
+          }
+        )
+        z_bounds <- design$upper$bound
+      } else {
+        # General case: calibrate constant C in z_k = C * t_k^(delta - 0.5)
+        # via root-finding on the rejection probability under H0
+        objective <- function(C) {
+          z_bounds <- C * info_frac^(delta - 0.5)
+          prob <- gsDesign::gsProbability(
+            k = n_looks, theta = 0, n.I = info_frac,
+            a = rep(-20, n_looks), b = z_bounds
+          )
+          sum(prob$upper$prob) - alpha
+        }
+        z_single <- stats::qnorm(1 - alpha)
+        eps <- .Machine$double.eps^0.25
+        lower <- max(z_single * 0.1, eps)
+        upper <- max(z_single * 3, lower + eps)
+        root <- tryCatch(
+          stats::uniroot(objective,
+                         interval = c(lower, upper),
+                         tol = .Machine$double.eps^0.5),
+          error = function(e) {
+            cli::cli_abort(c(
+              "Failed to calibrate Wang-Tsiatis boundary constant",
+              "i" = "delta = {.val {delta}}, alpha = {.val {alpha}}",
+              "i" = "info_frac = {.val {info_frac}}",
+              "x" = conditionMessage(e)
+            ), parent = e)
+          }
+        )
+        z_bounds <- root$root * info_frac^(delta - 0.5)
+      }
+      stats::pnorm(z_bounds)
+    }
+
+    attr(f, "boundary_type") <- "wang_tsiatis"
+    attr(f, "boundary_params") <- list(delta = delta, alpha = alpha)
+
+  # Bayesian mode: threshold-based
+  } else {
+    force(threshold)
+    if (!is.numeric(threshold) || length(threshold) != 1 ||
+        threshold <= 0 || threshold >= 1) {
+      cli::cli_abort(c(
+        "{.arg threshold} must be a single numeric value between 0 and 1 (exclusive)",
+        "x" = "You supplied {.val {threshold}}"
+      ))
+    }
+
+    f <- function(info_frac) {
+      z_final <- stats::qnorm(threshold)
+      stats::pnorm(z_final * info_frac^(delta - 0.5))
+    }
+
+    attr(f, "boundary_type") <- "wang_tsiatis"
+    attr(f, "boundary_params") <- list(delta = delta, threshold = threshold)
+  }
+
   class(f) <- c("boundary_function", "function")
   f
 }
@@ -742,6 +977,15 @@ show_boundaries <- function() {
   }
   cli::cli_text("")
 
+  cli::cli_text("{.strong Wang-Tsiatis} (tunable between OBF and Pocock):")
+  cli::cli_text("  boundary_wang_tsiatis(delta = 0.25, alpha = 0.025)")
+  cli::cli_text("  boundary_wang_tsiatis(delta = 0.25, threshold = 0.95)")
+  cli::cli_text("  {.emph delta=0: OBF-like, delta=0.5: Pocock-like}")
+  if (!has_gsdesign) {
+    cli::cli_text("  {.field Note: Install gsDesign for alpha mode}")
+  }
+  cli::cli_text("")
+
   cli::cli_text("{.strong Linear interpolation}:")
   cli::cli_text("  boundary_linear(start = 0.99, end = 0.95)")
   cli::cli_text("  {.emph Linear change from start to end threshold}")
@@ -772,6 +1016,7 @@ show_boundaries <- function() {
 
   invisible(c(
     "boundary_obf", "boundary_pocock", "boundary_hsd",
-    "boundary_linear", "boundary_power", "boundary_constant"
+    "boundary_wang_tsiatis", "boundary_linear", "boundary_power",
+    "boundary_constant"
   ))
 }

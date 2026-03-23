@@ -236,8 +236,190 @@ test_that("resolve_boundary_vector rejects wrong-length vector", {
 # =============================================================================
 
 test_that("show_boundaries returns boundary names invisibly", {
-  result <- capture.output(out <- show_boundaries())
+  output <- capture_cli(out <- show_boundaries())
   expect_type(out, "character")
   expect_true("boundary_obf" %in% out)
+  expect_true("boundary_wang_tsiatis" %in% out)
   expect_true("boundary_linear" %in% out)
+})
+
+# =============================================================================
+# boundary_wang_tsiatis() - Threshold mode
+# =============================================================================
+
+test_that("boundary_wang_tsiatis creates valid boundary function with threshold", {
+  f <- boundary_wang_tsiatis(delta = 0.25, threshold = 0.95)
+  expect_s3_class(f, "boundary_function")
+  expect_true(is.function(f))
+  expect_equal(attr(f, "boundary_type"), "wang_tsiatis")
+  expect_equal(attr(f, "boundary_params")$delta, 0.25)
+  expect_equal(attr(f, "boundary_params")$threshold, 0.95)
+})
+
+test_that("boundary_wang_tsiatis delta=0.5 produces constant threshold", {
+  f <- boundary_wang_tsiatis(delta = 0.5, threshold = 0.95)
+  thresholds <- f(c(0.25, 0.5, 0.75, 1.0))
+  expect_equal(thresholds, rep(0.95, 4))
+})
+
+test_that("boundary_wang_tsiatis delta=0 produces OBF-like shape", {
+  f <- boundary_wang_tsiatis(delta = 0, threshold = 0.95)
+  thresholds <- f(c(0.25, 0.50, 0.75, 1.0))
+
+  expect_length(thresholds, 4)
+  # Decreasing: very conservative early, relaxing late
+  expect_true(thresholds[1] > thresholds[4])
+  # Final look equals threshold
+  expect_equal(thresholds[4], 0.95, tolerance = 1e-10)
+  # All thresholds >= final threshold (within floating-point tolerance)
+  expect_true(all(thresholds >= 0.95 - 1e-10))
+})
+
+test_that("boundary_wang_tsiatis delta=0.25 is between OBF and constant", {
+  f_obf <- boundary_wang_tsiatis(delta = 0, threshold = 0.95)
+  f_mid <- boundary_wang_tsiatis(delta = 0.25, threshold = 0.95)
+  f_poc <- boundary_wang_tsiatis(delta = 0.5, threshold = 0.95)
+
+  t_obf <- f_obf(c(0.25, 0.5, 0.75))
+  t_mid <- f_mid(c(0.25, 0.5, 0.75))
+  t_poc <- f_poc(c(0.25, 0.5, 0.75))
+
+  # Midpoint should be between OBF and Pocock at early looks
+  expect_true(all(t_mid < t_obf))
+  expect_true(all(t_mid > t_poc))
+})
+
+test_that("boundary_wang_tsiatis final look equals threshold for all delta", {
+  for (d in c(0, 0.1, 0.25, 0.4, 0.5)) {
+    f <- boundary_wang_tsiatis(delta = d, threshold = 0.95)
+    expect_equal(f(1.0), 0.95, tolerance = 1e-10,
+                 info = paste("delta =", d))
+  }
+})
+
+test_that("boundary_wang_tsiatis threshold mode works with single look", {
+  f <- boundary_wang_tsiatis(delta = 0.25, threshold = 0.95)
+  expect_equal(f(1.0), 0.95, tolerance = 1e-10)
+})
+
+test_that("boundary_wang_tsiatis delta=0 threshold differs from boundary_obf threshold", {
+  # WT threshold mode uses pnorm(qnorm(threshold) * t^(delta-0.5))
+
+  # OBF threshold mode uses spending-function normalization
+  # Same qualitative shape but different formulas — not numerically identical
+  wt <- boundary_wang_tsiatis(delta = 0, threshold = 0.95)
+  obf <- boundary_obf(threshold = 0.95)
+
+  info_frac <- c(0.25, 0.5, 0.75, 1.0)
+  wt_vals <- wt(info_frac)
+  obf_vals <- obf(info_frac)
+
+  # Both end at 0.95
+  expect_equal(wt_vals[4], 0.95, tolerance = 1e-10)
+  expect_equal(obf_vals[4], 0.95, tolerance = 1e-10)
+  # Both are decreasing (conservative early)
+  expect_true(wt_vals[1] > wt_vals[4])
+  expect_true(obf_vals[1] > obf_vals[4])
+  # But they are NOT identical at intermediate points
+  expect_false(isTRUE(all.equal(wt_vals[1:3], obf_vals[1:3])))
+})
+
+# =============================================================================
+# boundary_wang_tsiatis() - Alpha mode
+# =============================================================================
+
+test_that("boundary_wang_tsiatis creates valid function with alpha", {
+  skip_if_not_installed("gsDesign")
+  f <- boundary_wang_tsiatis(delta = 0.25, alpha = 0.025)
+  expect_s3_class(f, "boundary_function")
+  expect_equal(attr(f, "boundary_type"), "wang_tsiatis")
+  expect_equal(attr(f, "boundary_params")$delta, 0.25)
+  expect_equal(attr(f, "boundary_params")$alpha, 0.025)
+})
+
+test_that("boundary_wang_tsiatis delta=0 alpha matches boundary_obf alpha", {
+  skip_if_not_installed("gsDesign")
+  wt <- boundary_wang_tsiatis(delta = 0, alpha = 0.025)
+  obf <- boundary_obf(alpha = 0.025)
+
+  info_frac <- c(0.5, 1.0)
+  expect_equal(wt(info_frac), obf(info_frac), tolerance = 1e-6)
+})
+
+test_that("boundary_wang_tsiatis delta=0.5 alpha matches boundary_pocock alpha", {
+  skip_if_not_installed("gsDesign")
+  wt <- boundary_wang_tsiatis(delta = 0.5, alpha = 0.025)
+  poc <- boundary_pocock(alpha = 0.025)
+
+  info_frac <- c(0.5, 1.0)
+  expect_equal(wt(info_frac), poc(info_frac), tolerance = 1e-6)
+})
+
+test_that("boundary_wang_tsiatis delta=0.25 alpha produces valid boundaries", {
+  skip_if_not_installed("gsDesign")
+  f <- boundary_wang_tsiatis(delta = 0.25, alpha = 0.025)
+  thresholds <- f(c(0.25, 0.5, 0.75, 1.0))
+
+  expect_length(thresholds, 4)
+  expect_true(all(thresholds > 0.5 & thresholds < 1))
+  # Should be decreasing (conservative early, relaxing late)
+  expect_true(thresholds[1] > thresholds[4])
+})
+
+test_that("boundary_wang_tsiatis alpha mode controls Type I error", {
+  skip_if_not_installed("gsDesign")
+  f <- boundary_wang_tsiatis(delta = 0.25, alpha = 0.025)
+  info_frac <- c(0.25, 0.5, 0.75, 1.0)
+  thresholds <- f(info_frac)
+
+  # Convert back to z-scale and verify rejection probability ~ alpha
+  z_bounds <- stats::qnorm(thresholds)
+  prob <- gsDesign::gsProbability(
+    k = 4, theta = 0, n.I = info_frac,
+    a = rep(-20, 4), b = z_bounds
+  )
+  total_rejection <- sum(prob$upper$prob)
+  expect_equal(total_rejection, 0.025, tolerance = 1e-4)
+})
+
+test_that("boundary_wang_tsiatis alpha mode single look", {
+  skip_if_not_installed("gsDesign")
+  f <- boundary_wang_tsiatis(delta = 0.25, alpha = 0.025)
+  expect_equal(f(1.0), 0.975, tolerance = 1e-10)
+})
+
+test_that("boundary_wang_tsiatis alpha factory succeeds without gsDesign", {
+  f <- boundary_wang_tsiatis(delta = 0.25, alpha = 0.025)
+  expect_s3_class(f, "boundary_function")
+})
+
+# =============================================================================
+# boundary_wang_tsiatis() - Validation
+# =============================================================================
+
+test_that("boundary_wang_tsiatis validates delta range", {
+  expect_cli_abort(boundary_wang_tsiatis(delta = -0.1, threshold = 0.95))
+  expect_cli_abort(boundary_wang_tsiatis(delta = 0.6, threshold = 0.95))
+  expect_cli_abort(boundary_wang_tsiatis(delta = "a", threshold = 0.95))
+  expect_cli_abort(boundary_wang_tsiatis(delta = c(0.1, 0.2), threshold = 0.95))
+})
+
+test_that("boundary_wang_tsiatis rejects both alpha and threshold", {
+  expect_cli_abort(
+    boundary_wang_tsiatis(delta = 0.25, alpha = 0.025, threshold = 0.95)
+  )
+})
+
+test_that("boundary_wang_tsiatis rejects neither alpha nor threshold", {
+  expect_cli_abort(boundary_wang_tsiatis(delta = 0.25))
+})
+
+test_that("boundary_wang_tsiatis validates alpha range", {
+  expect_cli_abort(boundary_wang_tsiatis(delta = 0.25, alpha = 0))
+  expect_cli_abort(boundary_wang_tsiatis(delta = 0.25, alpha = 0.6))
+})
+
+test_that("boundary_wang_tsiatis validates threshold range", {
+  expect_cli_abort(boundary_wang_tsiatis(delta = 0.25, threshold = 0))
+  expect_cli_abort(boundary_wang_tsiatis(delta = 0.25, threshold = 1))
 })
