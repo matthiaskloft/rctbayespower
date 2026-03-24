@@ -43,14 +43,14 @@ Implemented as `build_model_ancova_bin()` with `ancova_bin_2arms` predefined mod
 
 Fixed in PR #19 — duplicate removed from `pareto_optimize.R`, canonical implementation in `optimization_internal.R` retained.
 
-### Test Coverage Gaps [06]
+### ~~Test Coverage Gaps [06]~~ (DONE)
 
-~960 tests exist, but several modules have **zero coverage**:
+~960 tests exist. Remaining coverage gaps filled:
 
 - [ ] ~~`R/pareto_optimize.R` and optimization wrappers~~ — deferred pending optimization redesign
-- [ ] `R/plot_*.R` (plotting functions) — not tested
-- [ ] `R/model_cache.R` — not tested
-- [ ] `R/setup_python.R` — not tested
+- [x] `R/plot_*.R` — 89 tests (helpers, dispatcher, power curve, heatmap, comparison, accrual, pareto plots, parameter validation, MCSE ribbons, faceting, interactive)
+- [x] `R/model_cache.R` — 42 tests (cache dir, list/clear/size for all backends, brms/bf loading, force download, quiet mode, download errors)
+- [x] `R/setup_python.R` — 36 tests (CUDA version mapping all branches, Python version validation, find_python_version, verify_bf_installation, supported constants)
 
 ### ~~Bayesian OBF Boundary Vector Fix~~ (DONE)
 
