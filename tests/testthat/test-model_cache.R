@@ -94,8 +94,8 @@ test_that("load_brms_model uses cache hit without downloading", {
   # Track download calls
   download_calls <- list()
   local_mocked_bindings(
-    download_model = function(model_name, dest_path, model_type) {
-      download_calls[[length(download_calls) + 1L]] <<- list(model_name, dest_path, model_type)
+    download_model = function(predefined_model, dest_path, model_type) {
+      download_calls[[length(download_calls) + 1L]] <<- list(predefined_model, dest_path, model_type)
     },
     .package = "rctbayespower"
   )

@@ -453,12 +453,12 @@ build_design <- function(predefined_model = NULL,
 #'
 #' Internal helper to load all components of a predefined model.
 #'
-#' @param model_name Name of the predefined model
+#' @param predefined_model Name of the predefined model
 #' @param backend Requested backend ("brms" or "bf")
 #'
 #' @return List with sim_fn, inference_model, backend, and metadata
 #' @keywords internal
-load_predefined_model_components <- function(model_name, backend) {
+load_predefined_model_components <- function(predefined_model, backend) {
   # Registry of predefined models
   model_registry <- list(
     ancova_cont_2arms = list(
@@ -498,29 +498,29 @@ load_predefined_model_components <- function(model_name, backend) {
     )
   )
 
-  if (!model_name %in% names(model_registry)) {
+  if (!predefined_model %in% names(model_registry)) {
     cli::cli_abort(c(
-      "Unknown predefined model: {.val {model_name}}",
+      "Unknown predefined model: {.val {predefined_model}}",
       "i" = "Available models: {.val {names(model_registry)}}"
     ), call = FALSE)
   }
 
-  registry_entry <- model_registry[[model_name]]
+  registry_entry <- model_registry[[predefined_model]]
 
   # Load brmsfit from cache or compile
   cache_dir <- get_model_cache_dir("brms")
-  cache_file <- file.path(cache_dir, paste0(model_name, ".rds"))
+  cache_file <- file.path(cache_dir, paste0(predefined_model, ".rds"))
 
   if (file.exists(cache_file)) {
     if (should_show(1)) {
-      cli::cli_alert_info("Loading cached brms model: {.val {model_name}}")
+      cli::cli_alert_info("Loading cached brms model: {.val {predefined_model}}")
     }
     brmsfit <- readRDS(cache_file)
   } else {
     if (should_show(1)) {
-      cli::cli_alert_info("Compiling brms model: {.val {model_name}} (first use, will be cached)")
+      cli::cli_alert_info("Compiling brms model: {.val {predefined_model}} (first use, will be cached)")
     }
-    builder_fn <- get_model_builder(model_name)
+    builder_fn <- get_model_builder(predefined_model)
     temp_model <- builder_fn()
     brmsfit <- temp_model@inference_model
     saveRDS(brmsfit, cache_file)
@@ -530,7 +530,7 @@ load_predefined_model_components <- function(model_name, backend) {
   }
 
   # Create simulation function
-  sim_fn <- create_sim_fn_for_model(model_name)
+  sim_fn <- create_sim_fn_for_model(predefined_model)
 
   # Handle backend preference
   actual_backend <- "brms"
@@ -542,13 +542,13 @@ load_predefined_model_components <- function(model_name, backend) {
 
     if (check_bf_available(silent = TRUE)) {
       tryCatch({
-        bf_model <- load_bf_model(model_name)
+        bf_model <- load_bf_model(predefined_model)
         actual_backend <- "bf"
         actual_inference_model <- bf_model
 
         # Switch to Python sim_fn if available
         if (check_python_sims_available(silent = TRUE)) {
-          sim_fn <- create_python_sim_fn(model_name)
+          sim_fn <- create_python_sim_fn(predefined_model)
         }
 
         bf_success <- TRUE
@@ -604,10 +604,10 @@ load_predefined_model_components <- function(model_name, backend) {
 #'
 #' Internal helper to get the builder function for a predefined model.
 #'
-#' @param model_name Name of the predefined model
+#' @param predefined_model Name of the predefined model
 #' @return Builder function
 #' @keywords internal
-get_model_builder <- function(model_name) {
+get_model_builder <- function(predefined_model) {
   builders <- list(
     ancova_cont_2arms = build_model_ancova_cont_2arms,
     ancova_cont_3arms = build_model_ancova_cont_3arms,
@@ -615,29 +615,29 @@ get_model_builder <- function(model_name) {
     ancova_prop_2arms = build_model_ancova_prop_2arms,
     survival_exp_2arms = build_model_survival_exp_2arms
   )
-  builders[[model_name]]
+  builders[[predefined_model]]
 }
 
 #' Create Simulation Function for Model
 #'
 #' Internal helper to create the simulation function for a predefined model.
 #'
-#' @param model_name Name of the predefined model
+#' @param predefined_model Name of the predefined model
 #' @return Simulation function
 #' @keywords internal
-create_sim_fn_for_model <- function(model_name) {
-  if (model_name == "ancova_cont_2arms") {
+create_sim_fn_for_model <- function(predefined_model) {
+  if (predefined_model == "ancova_cont_2arms") {
     create_ancova_sim_fn(n_arms = 2)
-  } else if (model_name == "ancova_cont_3arms") {
+  } else if (predefined_model == "ancova_cont_3arms") {
     create_ancova_sim_fn(n_arms = 3)
-  } else if (model_name == "ancova_bin_2arms") {
+  } else if (predefined_model == "ancova_bin_2arms") {
     create_ancova_bin_sim_fn(n_arms = 2)
-  } else if (model_name == "ancova_prop_2arms") {
+  } else if (predefined_model == "ancova_prop_2arms") {
     create_ancova_prop_sim_fn(n_arms = 2)
-  } else if (model_name == "survival_exp_2arms") {
+  } else if (predefined_model == "survival_exp_2arms") {
     create_survival_exp_sim_fn(n_arms = 2)
   } else {
-    cli::cli_abort("No simulation function for model: {.val {model_name}}")
+    cli::cli_abort("No simulation function for model: {.val {predefined_model}}")
   }
 }
 

@@ -85,24 +85,24 @@ Refactored `build_model_survival_2arms()` into registry pattern: `build_model_su
 - [x] Comprehensive tests (sim_fn, builder, registry)
 - [ ] Verify `get_code()` round-trip for survival workflows — DEFERRED
 
-### `as.data.frame()` Methods for Core Classes
+### ~~`as.data.frame()` Methods for Core Classes~~ (DONE)
 
-Thin S3 wrappers returning the relevant data frame from each core class. Low effort, high usability impact.
+Implemented in PR #28. Thin S3 wrappers returning the relevant data frame from each core class.
 
-- [ ] `as.data.frame.rctbp_power_analysis()` → `results_summ`
-- [ ] `as.data.frame.rctbp_conditions()` → conditions grid
-- [ ] `as.data.frame.rctbp_design()` → design summary
-- [ ] `as.data.frame.rctbp_pareto_result()` → pareto front
-- [ ] Tests for each method
+- [x] `as.data.frame.rctbp_power_analysis()` → `results_summ`
+- [x] `as.data.frame.rctbp_conditions()` → conditions grid
+- [x] `as.data.frame.rctbp_design()` → design summary
+- [x] `as.data.frame.rctbp_pareto_result()` → pareto front
+- [x] Tests for each method
 
-### `boundary_wang_tsiatis()`
+### ~~`boundary_wang_tsiatis()`~~ (DONE)
 
-Generalized Wang-Tsiatis boundary family. Subsumes OBF (`delta = 0.5`) and Pocock (`delta = 0`) as special cases. Follows existing boundary function pattern.
+Implemented in PR #29. Generalized Wang-Tsiatis boundary family. Subsumes OBF (`delta = 0.5`) and Pocock (`delta = 0`) as special cases.
 
-- [ ] Implement `boundary_wang_tsiatis(delta)` in `R/boundaries.R`
-- [ ] Add to `show_boundaries()` output
-- [ ] Tests
-- [ ] Roxygen documentation
+- [x] Implement `boundary_wang_tsiatis(delta)` in `R/boundaries.R`
+- [x] Add to `show_boundaries()` output
+- [x] Tests
+- [x] Roxygen documentation
 
 ### BayesFlow Model Interface Spec
 
@@ -128,14 +128,14 @@ End-to-end validation articles published to pkgdown site (not installed with pac
 - [ ] Include posterior quality checks (coverage, calibration) using external packages
 - [ ] Set up pkgdown articles directory
 
-### Fix `model_name` Param/Property Ambiguity
+### ~~Fix `model_name` Param/Property Ambiguity~~ (DONE)
 
-`build_design(model_name = ...)` parameter and `design@model_name` property return different things. First public release is the right time to fix this. Part of the predefined model system review.
+Public API already used `predefined_model` param and `display_name` property. Remaining internal functions renamed from `model_name` to `predefined_model` for consistency: `load_predefined_model_components()`, `get_model_builder()`, `create_sim_fn_for_model()`, `download_model()`, `load_brms_model()`, `load_bf_model()`, `get_predefined_model()`, `build_predefined_from_brmsfit_legacy()`.
 
-- [ ] Decide: rename param to `predefined_model` or rename property `@model_name` to `@display_name`
-- [ ] Update all references
-- [ ] Update roxygen docs
-- [ ] Tests
+- [x] Decide: rename param to `predefined_model` or rename property `@model_name` to `@display_name`
+- [x] Update all references
+- [x] Update roxygen docs
+- [x] Tests
 
 ### Package-Level Documentation
 
