@@ -136,6 +136,7 @@ test_that(".bf_supported_cuda contains expected values", {
 # =============================================================================
 
 test_that("find_python_version returns NULL when no pyenv and no reticulate config", {
+  skip_if_not_installed("reticulate")
   local_mocked_bindings(
     py_discover_config = function(...) list(python = NULL),
     .package = "reticulate"
@@ -150,6 +151,7 @@ test_that("find_python_version returns NULL when no pyenv and no reticulate conf
 })
 
 test_that("find_python_version finds matching version in pyenv directory", {
+  skip_if_not_installed("reticulate")
   tmp_pyenv <- withr::local_tempdir()
 
   if (.Platform$OS.type == "windows") {
@@ -177,6 +179,7 @@ test_that("find_python_version finds matching version in pyenv directory", {
 # =============================================================================
 
 test_that("verify_bf_installation reports missing Python", {
+  skip_if_not_installed("reticulate")
   local_mocked_bindings(
     py_available = function(...) FALSE,
     .package = "reticulate"
@@ -189,6 +192,7 @@ test_that("verify_bf_installation reports missing Python", {
 })
 
 test_that("verify_bf_installation reports available packages", {
+  skip_if_not_installed("reticulate")
   local_mocked_bindings(
     py_available = function(...) TRUE,
     py_config = function() list(version = "3.12.1"),
