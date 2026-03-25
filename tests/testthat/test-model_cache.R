@@ -170,7 +170,8 @@ test_that("download_model aborts on download failure", {
   )
 
   expect_cli_abort(
-    rctbayespower:::download_model("ancova_cont_2arms", "/tmp/test.rds", "brms")
+    rctbayespower:::download_model("ancova_cont_2arms", "/tmp/test.rds", "brms"),
+    regexp = "Failed to download"
   )
 })
 

@@ -244,25 +244,29 @@ test_that("accrual works for accrual mock", {
 test_that("plot rejects invalid metric", {
   mock_1d <- mock_power_analysis("1d")
   expect_cli_abort(plot(mock_1d, type = "power_curve", metric = "invalid",
-                        interactive = FALSE))
+                        interactive = FALSE),
+                   regexp = "metric.*must be")
 })
 
 test_that("plot rejects invalid decision", {
   mock_1d <- mock_power_analysis("1d")
   expect_cli_abort(plot(mock_1d, type = "power_curve", decision = "invalid",
-                        interactive = FALSE))
+                        interactive = FALSE),
+                   regexp = "decision.*must be")
 })
 
 test_that("plot rejects invalid group_by", {
   mock_1d <- mock_power_analysis("1d")
   expect_cli_abort(plot(mock_1d, type = "power_curve", group_by = "invalid",
-                        interactive = FALSE))
+                        interactive = FALSE),
+                   regexp = "group_by.*must be")
 })
 
 test_that("plot rejects invalid facet_by", {
   mock_1d <- mock_power_analysis("1d")
   expect_cli_abort(plot(mock_1d, type = "power_curve", facet_by = "invalid",
-                        interactive = FALSE))
+                        interactive = FALSE),
+                   regexp = "facet_by.*must be")
 })
 
 test_that("plot rejects facet_by with more than 2 elements", {
@@ -270,7 +274,8 @@ test_that("plot rejects facet_by with more than 2 elements", {
   expect_cli_abort(
     plot(mock_1d, type = "power_curve",
          facet_by = c("decision", "metric", "sample_size"),
-         interactive = FALSE)
+         interactive = FALSE),
+    regexp = "facet_by.*1 or 2"
   )
 })
 
@@ -508,13 +513,19 @@ test_that("pareto front plot without selected design works", {
 test_that("pareto front returns NULL for empty pareto_front", {
   result <- mock_pareto_result()
   result@pareto_front <- data.frame()
-  p <- suppressWarnings(rctbayespower:::plot_pareto_front(result))
+  expect_cli_warn(
+    p <- rctbayespower:::plot_pareto_front(result),
+    regexp = "No Pareto-optimal"
+  )
   expect_null(p)
 })
 
 test_that("pareto convergence returns NULL for empty convergence", {
   result <- mock_pareto_result()
-  p <- suppressWarnings(rctbayespower:::plot_pareto_convergence(result))
+  expect_cli_warn(
+    p <- rctbayespower:::plot_pareto_convergence(result),
+    regexp = "No convergence"
+  )
   expect_null(p)
 })
 
@@ -557,7 +568,10 @@ test_that("pareto search plot works with 2 params", {
 test_that("pareto search returns NULL for empty search params", {
   result <- mock_pareto_result()
   result@search <- list()
-  p <- suppressWarnings(rctbayespower:::plot_pareto_search(result))
+  expect_cli_warn(
+    p <- rctbayespower:::plot_pareto_search(result),
+    regexp = "No search parameters"
+  )
   expect_null(p)
 })
 
@@ -576,7 +590,7 @@ test_that("plot pareto type = 'all' returns list of plots", {
 test_that("plot pareto rejects empty archive", {
   result <- mock_pareto_result()
   result@archive <- data.frame()
-  expect_cli_abort(plot(result))
+  expect_cli_abort(plot(result), regexp = "No results to plot")
 })
 
 # =============================================================================
