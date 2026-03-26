@@ -59,12 +59,12 @@ get_model_cache_dir <- function(subdir = NULL) {
 #'
 #' Downloads a model file from the package's GitHub releases.
 #'
-#' @param model_name Name of the model (e.g., "ancova_cont_2arms")
+#' @param predefined_model Name of the model (e.g., "ancova_cont_2arms")
 #' @param dest_path Full path where the model should be saved
 #' @param model_type Type of model: "brms" or "bf"
 #'
 #' @keywords internal
-download_model <- function(model_name, dest_path, model_type = c("brms", "bf")) {
+download_model <- function(predefined_model, dest_path, model_type = c("brms", "bf")) {
   model_type <- match.arg(model_type)
 
   # URL pattern: GitHub releases asset
@@ -72,7 +72,7 @@ download_model <- function(model_name, dest_path, model_type = c("brms", "bf")) 
   version_tag <- paste0(model_type, "-models-v0.0.0.9000")
 
   ext <- if (model_type == "brms") ".rds" else ".keras"
-  url <- paste0(base_url, "/", version_tag, "/", model_name, ext)
+  url <- paste0(base_url, "/", version_tag, "/", predefined_model, ext)
 
   tryCatch({
     utils::download.file(url, dest_path, mode = "wb", quiet = TRUE)
@@ -98,7 +98,7 @@ download_model <- function(model_name, dest_path, model_type = c("brms", "bf")) 
 #' Downloads compiled brms model on first use and caches locally.
 #' The brms model is a template that can be updated with new data.
 #'
-#' @param model_name Name of predefined model (e.g., "ancova_cont_2arms")
+#' @param predefined_model Name of predefined model (e.g., "ancova_cont_2arms")
 #' @param force_download Re-download even if cached (default FALSE)
 #' @param quiet Suppress download messages (default FALSE)
 #'
@@ -113,27 +113,27 @@ download_model <- function(model_name, dest_path, model_type = c("brms", "bf")) 
 #' # Force re-download
 #' model <- load_brms_model("ancova_cont_2arms", force_download = TRUE)
 #' }
-load_brms_model <- function(model_name, force_download = FALSE, quiet = FALSE) {
+load_brms_model <- function(predefined_model, force_download = FALSE, quiet = FALSE) {
 
   available_models <- c("ancova_cont_2arms", "ancova_cont_3arms", "ancova_bin_2arms", "survival_exp_2arms")
-  if (!model_name %in% available_models) {
+  if (!predefined_model %in% available_models) {
     cli::cli_abort(c(
-      "Unknown brms model: {.val {model_name}}",
+      "Unknown brms model: {.val {predefined_model}}",
       "i" = "Available models: {.val {available_models}}"
     ))
   }
 
   cache_dir <- get_model_cache_dir("brms")
-  model_file <- file.path(cache_dir, paste0(model_name, ".rds"))
+  model_file <- file.path(cache_dir, paste0(predefined_model, ".rds"))
 
   if (!file.exists(model_file) || force_download) {
     if (!quiet) {
-      cli::cli_alert_info("Downloading brms model: {.val {model_name}}")
+      cli::cli_alert_info("Downloading brms model: {.val {predefined_model}}")
     }
-    download_model(model_name, model_file, "brms")
+    download_model(predefined_model, model_file, "brms")
   } else {
     if (!quiet) {
-      cli::cli_alert_info("Loading cached brms model: {.val {model_name}}")
+      cli::cli_alert_info("Loading cached brms model: {.val {predefined_model}}")
     }
   }
 
@@ -150,7 +150,7 @@ load_brms_model <- function(model_name, force_download = FALSE, quiet = FALSE) {
 #' Downloads BayesFlow/Keras model on first use and caches locally.
 #' Model is loaded via Python/reticulate for full BayesFlow compatibility.
 #'
-#' @param model_name Name of predefined model (e.g., "ancova_cont_2arms")
+#' @param predefined_model Name of predefined model (e.g., "ancova_cont_2arms")
 #' @param force_download Re-download even if cached (default FALSE)
 #' @param quiet Suppress download messages (default FALSE)
 #'
@@ -165,27 +165,27 @@ load_brms_model <- function(model_name, force_download = FALSE, quiet = FALSE) {
 #' # Force re-download
 #' bf_model <- load_bf_model("ancova_cont_2arms", force_download = TRUE)
 #' }
-load_bf_model <- function(model_name, force_download = FALSE, quiet = FALSE) {
+load_bf_model <- function(predefined_model, force_download = FALSE, quiet = FALSE) {
 
   available_models <- c("ancova_cont_2arms", "ancova_cont_3arms")
-  if (!model_name %in% available_models) {
+  if (!predefined_model %in% available_models) {
     cli::cli_abort(c(
-      "Unknown BayesFlow model: {.val {model_name}}",
+      "Unknown BayesFlow model: {.val {predefined_model}}",
       "i" = "Available models: {.val {available_models}}"
     ))
   }
 
   cache_dir <- get_model_cache_dir("bf")
-  model_file <- file.path(cache_dir, paste0(model_name, ".keras"))
+  model_file <- file.path(cache_dir, paste0(predefined_model, ".keras"))
 
   if (!file.exists(model_file) || force_download) {
     if (!quiet) {
-      cli::cli_alert_info("Downloading BayesFlow model: {.val {model_name}}")
+      cli::cli_alert_info("Downloading BayesFlow model: {.val {predefined_model}}")
     }
-    download_model(model_name, model_file, "bf")
+    download_model(predefined_model, model_file, "bf")
   } else {
     if (!quiet) {
-      cli::cli_alert_info("Loading cached BayesFlow model: {.val {model_name}}")
+      cli::cli_alert_info("Loading cached BayesFlow model: {.val {predefined_model}}")
     }
   }
 

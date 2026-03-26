@@ -4,10 +4,10 @@
 \alias{download_model}
 \title{Download Model from GitHub Releases}
 \usage{
-download_model(model_name, dest_path, model_type = c("brms", "bf"))
+download_model(predefined_model, dest_path, model_type = c("brms", "bf"))
 }
 \arguments{
-\item{model_name}{Name of the model (e.g., "ancova_cont_2arms")}
+\item{predefined_model}{Name of the model (e.g., "ancova_cont_2arms")}
 
 \item{dest_path}{Full path where the model should be saved}
 

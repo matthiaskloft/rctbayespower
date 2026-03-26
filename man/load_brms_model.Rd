@@ -4,10 +4,10 @@
 \alias{load_brms_model}
 \title{Load Pre-compiled brms Model}
 \usage{
-load_brms_model(model_name, force_download = FALSE, quiet = FALSE)
+load_brms_model(predefined_model, force_download = FALSE, quiet = FALSE)
 }
 \arguments{
-\item{model_name}{Name of predefined model (e.g., "ancova_cont_2arms")}
+\item{predefined_model}{Name of predefined model (e.g., "ancova_cont_2arms")}
 
 \item{force_download}{Re-download even if cached (default FALSE)}
 

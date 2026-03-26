@@ -50,6 +50,9 @@ obf_bayes <- boundary_obf(threshold = 0.95)
 obf_bayes(c(0.5, 1.0))
 }
 \references{
+O'Brien, P. C. and Fleming, T. R. (1979). A multiple testing procedure for
+clinical trials. Biometrics 35: 549-556.
+
 Lan, K. K. G. and DeMets, D. L. (1983). Discrete sequential boundaries for
 clinical trials. Biometrika 70: 659-663.
 }

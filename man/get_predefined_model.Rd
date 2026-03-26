@@ -4,10 +4,10 @@
 \alias{get_predefined_model}
 \title{Get a Predefined Model (Legacy)}
 \usage{
-get_predefined_model(model_name, backend = "brms")
+get_predefined_model(predefined_model, backend = "brms")
 }
 \arguments{
-\item{model_name}{Name of the predefined model}
+\item{predefined_model}{Name of the predefined model}
 
 \item{backend}{Backend to use}
 }

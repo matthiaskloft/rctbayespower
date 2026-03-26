@@ -172,12 +172,12 @@ get_bf_parameter_names_legacy <- function(model) {
 #'
 #' Internal function to build legacy rctbp_model objects for backward compatibility.
 #'
-#' @param model_name Name of the predefined model
+#' @param predefined_model Name of the predefined model
 #' @param backend Backend to use
 #'
 #' @return Legacy rctbp_model object
 #' @keywords internal
-get_predefined_model <- function(model_name, backend = "brms") {
+get_predefined_model <- function(predefined_model, backend = "brms") {
   # Registry of predefined models and their builder functions
   model_registry <- list(
     ancova_cont_2arms = list(
@@ -190,28 +190,28 @@ get_predefined_model <- function(model_name, backend = "brms") {
     )
   )
 
-  if (!model_name %in% names(model_registry)) {
+  if (!predefined_model %in% names(model_registry)) {
     cli::cli_abort(c(
-      "Unknown predefined model: {.val {model_name}}",
+      "Unknown predefined model: {.val {predefined_model}}",
       "i" = "Available models: {.val {names(model_registry)}}"
     ), call = FALSE)
   }
 
   # Check for cached brmsfit
   cache_dir <- get_model_cache_dir("brms")
-  cache_file <- file.path(cache_dir, paste0(model_name, ".rds"))
+  cache_file <- file.path(cache_dir, paste0(predefined_model, ".rds"))
 
   if (file.exists(cache_file)) {
     if (should_show(1)) {
-      cli::cli_alert_info("Loading cached brms model: {.val {model_name}}")
+      cli::cli_alert_info("Loading cached brms model: {.val {predefined_model}}")
     }
     brmsfit <- readRDS(cache_file)
-    model <- build_predefined_from_brmsfit_legacy(model_name, brmsfit)
+    model <- build_predefined_from_brmsfit_legacy(predefined_model, brmsfit)
   } else {
     if (should_show(1)) {
-      cli::cli_alert_info("Compiling brms model: {.val {model_name}} (first use, will be cached)")
+      cli::cli_alert_info("Compiling brms model: {.val {predefined_model}} (first use, will be cached)")
     }
-    builder_fn <- model_registry[[model_name]]$builder
+    builder_fn <- model_registry[[predefined_model]]$builder
     model <- builder_fn()
     if (should_show(1)) {
       cli::cli_alert_success("Model compilation done")
@@ -230,12 +230,12 @@ get_predefined_model <- function(model_name, backend = "brms") {
 
     if (check_bf_available(silent = TRUE)) {
       tryCatch({
-        bf_model <- load_bf_model(model_name)
+        bf_model <- load_bf_model(predefined_model)
         model@backend <- "bf"
         model@inference_model <- bf_model
 
         if (check_python_sims_available(silent = TRUE)) {
-          model@sim_fn <- create_python_sim_fn(model_name)
+          model@sim_fn <- create_python_sim_fn(predefined_model)
         }
 
         bf_success <- TRUE
@@ -280,12 +280,12 @@ get_predefined_model <- function(model_name, backend = "brms") {
 
 #' Build Legacy Model from Cached brmsfit
 #'
-#' @param model_name Name of the predefined model
+#' @param predefined_model Name of the predefined model
 #' @param brmsfit Cached brmsfit object
 #' @return Legacy rctbp_model object
 #' @keywords internal
-build_predefined_from_brmsfit_legacy <- function(model_name, brmsfit) {
-  if (model_name == "ancova_cont_2arms") {
+build_predefined_from_brmsfit_legacy <- function(predefined_model, brmsfit) {
+  if (predefined_model == "ancova_cont_2arms") {
     n_arms <- 2
     sim_fn <- create_legacy_ancova_sim_fn(n_arms)
 
@@ -300,7 +300,7 @@ build_predefined_from_brmsfit_legacy <- function(model_name, brmsfit) {
     )
     model@predefined_model <- "ancova_cont_2arms"
 
-  } else if (model_name == "ancova_cont_3arms") {
+  } else if (predefined_model == "ancova_cont_3arms") {
     n_arms <- 3
     sim_fn <- create_legacy_ancova_sim_fn(n_arms)
 
@@ -316,7 +316,7 @@ build_predefined_from_brmsfit_legacy <- function(model_name, brmsfit) {
     model@predefined_model <- "ancova_cont_3arms"
 
   } else {
-    cli::cli_abort("Unknown model: {.val {model_name}}")
+    cli::cli_abort("Unknown model: {.val {predefined_model}}")
   }
 
   model

@@ -42,7 +42,7 @@
 #' \strong{Model Compilation:} The function compiles the brms model during creation,
 #' which may take some time but enables efficient power analysis later.
 #'
-#' \strong{Convenience Functions:} For common use cases, consider the wrapper functions that can be called via the 'model_name' argument in [build_design()]:
+#' \strong{Convenience Functions:} For common use cases, consider the wrapper functions that can be called via the 'predefined_model' argument in [build_design()]:
 #' \itemize{
 #'   \item [build_model_ancova_cont_2arms()] - 2-arm continuous ANCOVA
 #'   \item [build_model_ancova_cont_3arms()] - 3-arm continuous ANCOVA
