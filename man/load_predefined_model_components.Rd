@@ -4,10 +4,10 @@
 \alias{load_predefined_model_components}
 \title{Load Predefined Model Components}
 \usage{
-load_predefined_model_components(model_name, backend)
+load_predefined_model_components(predefined_model, backend)
 }
 \arguments{
-\item{model_name}{Name of the predefined model}
+\item{predefined_model}{Name of the predefined model}
 
 \item{backend}{Requested backend ("brms" or "bf")}
 }

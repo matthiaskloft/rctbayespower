@@ -4,10 +4,10 @@
 \alias{load_bf_model}
 \title{Load Pre-trained BayesFlow Model}
 \usage{
-load_bf_model(model_name, force_download = FALSE, quiet = FALSE)
+load_bf_model(predefined_model, force_download = FALSE, quiet = FALSE)
 }
 \arguments{
-\item{model_name}{Name of predefined model (e.g., "ancova_cont_2arms")}
+\item{predefined_model}{Name of predefined model (e.g., "ancova_cont_2arms")}
 
 \item{force_download}{Re-download even if cached (default FALSE)}
 

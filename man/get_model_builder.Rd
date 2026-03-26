@@ -4,10 +4,10 @@
 \alias{get_model_builder}
 \title{Get Model Builder Function}
 \usage{
-get_model_builder(model_name)
+get_model_builder(predefined_model)
 }
 \arguments{
-\item{model_name}{Name of the predefined model}
+\item{predefined_model}{Name of the predefined model}
 }
 \value{
 Builder function

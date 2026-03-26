@@ -31,6 +31,13 @@ The \code{rho} parameter controls how quickly the boundary relaxes:
 \item Higher rho: More conservative early, faster relaxation later
 \item Lower rho: Less conservative early, slower relaxation
 }
+
+This is a simple probability-scale shape function for Bayesian decision
+rules. It does not provide frequentist Type I error control. For a
+principled one-parameter family with alpha-spending support, see
+the Wang-Tsiatis boundary \code{\link[=boundary_wang_tsiatis]{boundary_wang_tsiatis()}}, which
+operates on the z-scale and subsumes O'Brien-Fleming and Pocock as
+special cases.
 }
 \examples{
 # Compare different rho values at info_frac = 0.5
@@ -40,5 +47,6 @@ boundary_power(0.975, rho = 1)(0.5)   # Linear
 boundary_power(0.975, rho = 0.5)(0.5) # Less conservative
 }
 \seealso{
-\code{\link[=boundary_obf]{boundary_obf()}}, \code{\link[=boundary_pocock]{boundary_pocock()}}, \code{\link[=boundary_linear]{boundary_linear()}}
+\code{\link[=boundary_wang_tsiatis]{boundary_wang_tsiatis()}}, \code{\link[=boundary_obf]{boundary_obf()}}, \code{\link[=boundary_pocock]{boundary_pocock()}},
+\code{\link[=boundary_linear]{boundary_linear()}}
 }
