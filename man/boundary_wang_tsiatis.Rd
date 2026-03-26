@@ -50,9 +50,9 @@ for multivariate normal integration.
 formula:
 \deqn{\text{threshold}_k = \Phi(\Phi^{-1}(\text{threshold}) \cdot t_k^{\Delta - 0.5})}
 No external packages required. At \code{delta = 0.5}, this reduces to a constant
-threshold (identical to \link{boundary_pocock(threshold = ...)}). At \code{delta = 0},
+threshold (identical to \code{boundary_pocock(threshold = ...)}). At \code{delta = 0},
 produces an OBF-like shape that is qualitatively similar to
-\link{boundary_obf(threshold = ...)} but not numerically identical (different
+\code{boundary_obf(threshold = ...)} but not numerically identical (different
 parameterizations).
 
 \strong{Comparison with \code{boundary_power()}}: \code{boundary_power()} is a simple
