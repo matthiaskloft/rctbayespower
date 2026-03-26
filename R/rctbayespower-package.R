@@ -1,12 +1,61 @@
-#' The 'rctbayespower' package.
-#'
-#' @description
-#' Bayesian power analysis for randomized controlled trials (RCTs) using brms and Stan.
-#'
-#' @name rctbayespower-package
-#' @aliases rctbayespower
 #' @keywords internal
 #'
+#' @description
+#' Conduct Bayesian power analyses for randomized controlled trials (RCTs)
+#' using simulation-based workflows. Supports continuous, binary, proportional,
+#' and survival outcomes with fixed or group-sequential designs. Uses
+#' ROPE-based decision criteria and dual backends: brms/Stan (MCMC) and
+#' BayesFlow (neural posterior estimation).
+#'
+#' @section Typical workflow:
+#' ```
+#' # 1. Pick a predefined model
+#' show_predefined_models()
+#' design <- build_design(predefined_model = "ancova_cont_2arms",
+#'                        target_params = "b_arm2")
+#'
+#' # 2. Define conditions to evaluate
+#' conditions <- build_conditions(
+#'   design,
+#'   crossed = list(n_total = c(50, 100, 200), b_arm_treat = c(0.3, 0.5)),
+#'   constant = list(thr_dec_eff = 0.975)
+#' )
+#'
+#' # 3. Run the power analysis
+#' result <- power_analysis(conditions, n_sims = 1000) |> run()
+#'
+#' # 4. Explore results
+#' summary(result)
+#' plot(result)
+#' as.data.frame(result)
+#' ```
+#'
+#' @section Key functions:
+#' **Discovery:**
+#' - [show_predefined_models()] -- list available models
+#' - [show_target_params()] -- parameters available for inference
+#' - [show_condition_args()] -- arguments for [build_conditions()]
+#' - [show_boundaries()] -- boundary functions for group-sequential designs
+#'
+#' **Design & analysis:**
+#' - [build_design()] -- create a trial design
+#' - [build_conditions()] -- define parameter grid
+#' - [power_analysis()] -- configure power analysis
+#' - [run()] -- execute the analysis
+#'
+#' **Results:**
+#' - [report()] -- formatted results report
+#' - [plot.rctbp_power_analysis()] -- visualize results
+#' - [optimize_power_n()] -- find sample size for target power
+#'
+#' **Group-sequential designs:**
+#' - [interim_success_futility()], [interim_futility_only()] -- stopping rules
+#' - [boundary_obf()], [boundary_pocock()], [boundary_hsd()],
+#'   [boundary_wang_tsiatis()] -- spending boundaries
+#'
+#' @seealso
+#' - Package website: <https://matthiaskloft.github.io/rctbayespower/>
+#' - GitHub: <https://github.com/matthiaskloft/rctbayespower>
 "_PACKAGE"
 
 # Enable data.table awareness for `:=` and other operators

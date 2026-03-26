@@ -2,19 +2,79 @@
 % Please edit documentation in R/rctbayespower-package.R
 \docType{package}
 \name{rctbayespower-package}
-\alias{rctbayespower-package}
 \alias{rctbayespower}
-\title{The 'rctbayespower' package.}
+\alias{rctbayespower-package}
+\title{rctbayespower: Bayesian Power Analysis for Randomized Controlled Trials}
 \description{
-Bayesian power analysis for randomized controlled trials (RCTs) using brms and Stan.
+Conduct Bayesian power analyses for randomized controlled trials (RCTs)
+using simulation-based workflows. Supports continuous, binary, proportional,
+and survival outcomes with fixed or group-sequential designs. Uses
+ROPE-based decision criteria and dual backends: brms/Stan (MCMC) and
+BayesFlow (neural posterior estimation).
 }
-\seealso{
-Useful links:
-\itemize{
-  \item \url{https://matthiaskloft.github.io/rctbayespower/}
-  \item \url{https://github.com/matthiaskloft/rctbayespower}
+\section{Typical workflow}{
+
+
+\if{html}{\out{<div class="sourceCode">}}\preformatted{# 1. Pick a predefined model
+show_predefined_models()
+design <- build_design(predefined_model = "ancova_cont_2arms",
+                       target_params = "b_arm2")
+
+# 2. Define conditions to evaluate
+conditions <- build_conditions(
+  design,
+  crossed = list(n_total = c(50, 100, 200), b_arm_treat = c(0.3, 0.5)),
+  constant = list(thr_dec_eff = 0.975)
+)
+
+# 3. Run the power analysis
+result <- power_analysis(conditions, n_sims = 1000) |> run()
+
+# 4. Explore results
+summary(result)
+plot(result)
+as.data.frame(result)
+}\if{html}{\out{</div>}}
 }
 
+\section{Key functions}{
+
+\strong{Discovery:}
+\itemize{
+\item \code{\link[=show_predefined_models]{show_predefined_models()}} -- list available models
+\item \code{\link[=show_target_params]{show_target_params()}} -- parameters available for inference
+\item \code{\link[=show_condition_args]{show_condition_args()}} -- arguments for \code{\link[=build_conditions]{build_conditions()}}
+\item \code{\link[=show_boundaries]{show_boundaries()}} -- boundary functions for group-sequential designs
+}
+
+\strong{Design & analysis:}
+\itemize{
+\item \code{\link[=build_design]{build_design()}} -- create a trial design
+\item \code{\link[=build_conditions]{build_conditions()}} -- define parameter grid
+\item \code{\link[=power_analysis]{power_analysis()}} -- configure power analysis
+\item \code{\link[=run]{run()}} -- execute the analysis
+}
+
+\strong{Results:}
+\itemize{
+\item \code{\link[=report]{report()}} -- formatted results report
+\item \code{\link[=plot.rctbp_power_analysis]{plot.rctbp_power_analysis()}} -- visualize results
+\item \code{\link[=optimize_power_n]{optimize_power_n()}} -- find sample size for target power
+}
+
+\strong{Group-sequential designs:}
+\itemize{
+\item \code{\link[=interim_success_futility]{interim_success_futility()}}, \code{\link[=interim_futility_only]{interim_futility_only()}} -- stopping rules
+\item \code{\link[=boundary_obf]{boundary_obf()}}, \code{\link[=boundary_pocock]{boundary_pocock()}}, \code{\link[=boundary_hsd]{boundary_hsd()}},
+\code{\link[=boundary_wang_tsiatis]{boundary_wang_tsiatis()}} -- spending boundaries
+}
+}
+
+\seealso{
+\itemize{
+\item Package website: \url{https://matthiaskloft.github.io/rctbayespower/}
+\item GitHub: \url{https://github.com/matthiaskloft/rctbayespower}
+}
 }
 \author{
 \strong{Maintainer}: Matthias Kloft \email{kloft.dev+rctbayespower@gmail.com} (\href{https://orcid.org/0000-0003-1845-6957}{ORCID}) [copyright holder]
