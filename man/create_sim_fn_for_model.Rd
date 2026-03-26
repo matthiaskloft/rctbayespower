@@ -4,10 +4,10 @@
 \alias{create_sim_fn_for_model}
 \title{Create Simulation Function for Model}
 \usage{
-create_sim_fn_for_model(model_name)
+create_sim_fn_for_model(predefined_model)
 }
 \arguments{
-\item{model_name}{Name of the predefined model}
+\item{predefined_model}{Name of the predefined model}
 }
 \value{
 Simulation function

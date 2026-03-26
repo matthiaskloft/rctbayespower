@@ -4,10 +4,10 @@
 \alias{build_predefined_from_brmsfit_legacy}
 \title{Build Legacy Model from Cached brmsfit}
 \usage{
-build_predefined_from_brmsfit_legacy(model_name, brmsfit)
+build_predefined_from_brmsfit_legacy(predefined_model, brmsfit)
 }
 \arguments{
-\item{model_name}{Name of the predefined model}
+\item{predefined_model}{Name of the predefined model}
 
 \item{brmsfit}{Cached brmsfit object}
 }

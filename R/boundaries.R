@@ -606,9 +606,9 @@ boundary_power <- function(base = 0.975, rho = 2) {
 #' formula:
 #' \deqn{\text{threshold}_k = \Phi(\Phi^{-1}(\text{threshold}) \cdot t_k^{\Delta - 0.5})}
 #' No external packages required. At `delta = 0.5`, this reduces to a constant
-#' threshold (identical to [boundary_pocock(threshold = ...)]). At `delta = 0`,
+#' threshold (identical to `boundary_pocock(threshold = ...)`). At `delta = 0`,
 #' produces an OBF-like shape that is qualitatively similar to
-#' [boundary_obf(threshold = ...)] but not numerically identical (different
+#' `boundary_obf(threshold = ...)` but not numerically identical (different
 #' parameterizations).
 #'
 #' \strong{Comparison with `boundary_power()`}: `boundary_power()` is a simple
