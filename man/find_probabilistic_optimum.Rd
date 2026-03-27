@@ -71,7 +71,7 @@ the GP's predictive distribution
 }
 \examples{
 \dontrun{
-result <- optimize_power_n(design, n_range = c(50, 500), effect_size = 0.3, ...)
+result <- optimize_sample_size(design, objective = "pareto", n_range = c(50, 500), ...)
 
 # Find minimum n with 95\% confidence of achieving target
 prob_opt <- find_probabilistic_optimum(result, alpha = 0.95)

@@ -52,7 +52,7 @@ The \code{trim} parameter controls how much to constrain the search domain:
 }
 \examples{
 \dontrun{
-result <- optimize_power_n(design, n_range = c(50, 500), effect_size = 0.3, ...)
+result <- optimize_sample_size(design, objective = "pareto", n_range = c(50, 500), ...)
 
 # Find surrogate optimum in IQR (default)
 surr_opt <- find_surrogate_optimum(result)

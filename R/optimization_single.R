@@ -371,9 +371,18 @@ run_bbotk_score_loop <- function(design, target_power, n_range, constant,
     codomain = codomain
   )
 
+  # Combine evals limit with stagnation-based early stopping (patience)
+  terminator <- bbotk::trm("combo",
+    list(
+      bbotk::trm("evals", n_evals = max_evals),
+      bbotk::trm("stagnation", iters = patience, threshold = 0)
+    ),
+    any = TRUE
+  )
+
   instance <- bbotk::OptimInstanceBatchSingleCrit$new(
     objective = objective,
-    terminator = bbotk::trm("evals", n_evals = max_evals)
+    terminator = terminator
   )
 
   # Suppress logging
@@ -415,6 +424,12 @@ run_bbotk_score_loop <- function(design, target_power, n_range, constant,
 
   # Run BO loop
   optimizer$optimize(instance)
+
+  if (verbose && nrow(our_archive) < max_evals) {
+    cli::cli_alert_info(
+      "Early stopping after {nrow(our_archive)} evaluations (patience = {patience})"
+    )
+  }
 
   # Extract result
   extract_single_result(

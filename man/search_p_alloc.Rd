@@ -49,5 +49,5 @@ result <- pareto_optimize(
 }
 }
 \seealso{
-\code{\link[=pareto_optimize]{pareto_optimize()}}, \code{\link[=optimize_power_n]{optimize_power_n()}}, \code{\link[=search_looks]{search_looks()}}
+\code{\link[=pareto_optimize]{pareto_optimize()}}, \code{\link[=optimize_sample_size]{optimize_sample_size()}}, \code{\link[=search_looks]{search_looks()}}
 }

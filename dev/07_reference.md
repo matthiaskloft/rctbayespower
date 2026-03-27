@@ -285,17 +285,27 @@ conditions <- build_conditions(
 | `group_sequential` | Multiple looks with stopping rules | `analysis_at` |
 | `adaptive` | Parameter modification between looks | `analysis_at`, specific params |
 
-### Pareto Optimization
+### Sample Size Optimization
 
 ```r
-# Power vs Sample Size
-result <- optimize_power_n(
-  design = design, power_metric = "pwr_eff",
-  n_range = c(50, 500), effect_size = 0.3,
+# Single-objective: find minimum n for target power
+result <- optimize_sample_size(
+  design = design, objective = "single",
+  n_range = c(50, 500), target_power = 0.80,
   constant = list(...), n_sims = 500, n_cores = 4
 )
 
 # Access results
+result@n_optimal         # Optimal sample size
+result@power_optimal     # Power at optimum
+result@feasible          # Whether target was achieved
+
+# Pareto: power vs sample size trade-off
+result <- optimize_sample_size(
+  design = design, objective = "pareto",
+  n_range = c(50, 500),
+  constant = list(...), n_sims = 500, n_cores = 4
+)
 result@pareto_front      # Pareto-optimal points
 result@selected_design   # Knee point (auto-selected)
 plot(result)

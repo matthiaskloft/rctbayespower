@@ -117,6 +117,6 @@ result@pareto_front
 }
 }
 \seealso{
-\code{\link[=optimize_power_n]{optimize_power_n()}}, \code{\link[=optimize_power_effect]{optimize_power_effect()}}, \code{\link[=optimize_effect_n]{optimize_effect_n()}},
+\code{\link[=optimize_sample_size]{optimize_sample_size()}},
 \link{plot.rctbp_pareto_result}
 }
