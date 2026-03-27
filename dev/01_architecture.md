@@ -102,12 +102,15 @@ All formulas verified against original articles and the [gsDesign technical manu
 
 | File | Purpose |
 |------|---------|
+| `R/optimize_sample_size.R` | Unified entry point: `optimize_sample_size(objective = "single"/"pareto")` |
+| `R/optimization_single.R` | Single-objective BO: feasibility score, GP/RF surrogates |
+| `R/class_sample_size_result.R` | Single-objective result class (`rctbp_sample_size_result`) |
 | `R/pareto_optimize.R` | Core `pareto_optimize()` + knee point selection |
-| `R/pareto_wrappers.R` | Wrapper functions: `optimize_power_n()`, `optimize_power_effect()`, etc. |
 | `R/class_pareto_result.R` | Pareto optimization result class (`rctbp_pareto_result`) |
-| `R/optimization.R` | Simplex search helpers: `search_p_alloc()`, `search_looks()` |
-| `R/optimization_internal.R` | mlr3mbo/bbotk integration, surrogate setup |
-| `R/acq_function_eic.R` | Custom EIC acquisition function for Bayesian optimization (R6) |
+| `R/optimization_search.R` | Simplex search helpers: `search_p_alloc()`, `search_looks()` |
+| `R/optimization_transforms.R` | ILR, simplex, logit transforms, feasibility score |
+| `R/optimization_mbo.R` | mlr3mbo/bbotk parameter space, initial design |
+| `R/optimization_postprocessing.R` | `find_surrogate_optimum()`, `find_probabilistic_optimum()` |
 
 ### Output & Visualization Files
 

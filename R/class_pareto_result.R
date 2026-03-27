@@ -40,7 +40,7 @@ rctbp_pareto_result <- S7::new_class(
     # Optimization metadata
     optimization_type = S7::new_property(
       class = S7::class_character,
-      default = "custom"  # "power_n", "power_effect", "effect_n", "custom"
+      default = "custom"  # "pareto" or "custom"
     ),
 
     # Objectives specification
@@ -62,7 +62,7 @@ rctbp_pareto_result <- S7::new_class(
 
     # mlr3mbo/bbotk objects for advanced access
     mbo_objects = S7::new_property(
-      class = S7::class_list | NULL,
+      class = S7::class_any,
       default = NULL
     )
   ),
@@ -76,7 +76,7 @@ rctbp_pareto_result <- S7::new_class(
     }
 
     # Validate optimization_type
-    valid_types <- c("power_n", "power_effect", "effect_n", "custom")
+    valid_types <- c("pareto", "custom")
     if (!self@optimization_type %in% valid_types) {
       return(paste0(
         "'optimization_type' must be one of: ",
@@ -105,9 +105,7 @@ S7::method(print, rctbp_pareto_result) <- function(x, ...) {
 
   # Optimization type
   type_labels <- c(
-    power_n = "Power vs Sample Size",
-    power_effect = "Power vs Effect Size",
-    effect_n = "Effect Size vs Sample Size",
+    pareto = "Pareto Optimization",
     custom = "Custom Pareto Optimization"
   )
   cli::cli_text("Type: {.val {type_labels[x@optimization_type]}}")

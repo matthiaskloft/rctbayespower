@@ -1,16 +1,36 @@
-# Pareto Optimization for rctbayespower
+# Optimization for rctbayespower
 
 ## Overview
 
-Pareto-based Bayesian optimization for automated optimal trial design discovery. Finds the Pareto front of designs trading off two objectives (e.g., power vs sample size) without exhaustive grid search.
+Bayesian optimization for automated optimal trial design discovery. Two modes:
+- **Single-objective**: Find minimum n achieving target power via `optimize_sample_size(objective = "single")`
+- **Pareto**: Find the Pareto front trading off two objectives via `optimize_sample_size(objective = "pareto")` or `pareto_optimize()`
 
 **Backend Support**: Both brms and BayesFlow. BayesFlow recommended (ms vs minutes per evaluation).
 
-**Status**: Core implementation complete with Pareto front extraction and knee point selection.
+**Status**: Redesigned in 2026-03-27. See `dev/plans/optimization-redesign.md` for full design.
 
 ## Architecture
 
 ### Class Structure
+
+**`rctbp_sample_size_result`** - Results from single-objective optimization:
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `design` | rctbp_design | Reference to trial design |
+| `n_optimal` | numeric | Recommended sample size (integer-valued) |
+| `power_optimal` | numeric | Estimated power at n_optimal |
+| `target_power` | numeric | User's target power |
+| `feasible` | logical | Whether target was met |
+| `convergence` | data.frame | Columns: eval, n_total, power, score, best_score |
+| `archive` | data.frame | All evaluated points |
+| `surrogate_fit` | any | Fitted surrogate model |
+| `surrogate_type` | character | "gp_power", "gp_score", or "rf" |
+| `score_config` | list | list(scale, shape) metadata |
+| `n_sims` | numeric | Simulations per evaluation |
+| `n_evals` | numeric | Total evaluations |
+| `elapsed_time` | numeric | Runtime in minutes |
 
 **`rctbp_pareto_result`** - Results from Pareto optimization:
 
@@ -21,13 +41,13 @@ Pareto-based Bayesian optimization for automated optimal trial design discovery.
 | `archive` | data.frame | All evaluations with parameters and objectives |
 | `selected_design` | data.frame | Knee point (auto-selected) |
 | `convergence` | data.frame | Optimization trace |
-| `optimization_type` | character | "power_n", "power_effect", "effect_n", or "custom" |
+| `optimization_type` | character | "pareto" or "custom" |
 | `objectives` | list | Objectives specification |
 | `search` | list | Search parameter bounds |
-| `n_sims` | numeric | Maximum n_sims used |
+| `n_sims` | numeric | Simulations per evaluation |
 | `n_evals` | numeric | Total evaluations |
 | `elapsed_time` | numeric | Runtime in minutes |
-| `mbo_objects` | list | mlr3mbo/bbotk objects for advanced access |
+| `mbo_objects` | any | mlr3mbo/bbotk objects for advanced access |
 
 ## Core Functions
 

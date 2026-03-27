@@ -24,7 +24,7 @@
 #' @export
 #' @examples
 #' \dontrun{
-#' result <- optimize_power_n(design, n_range = c(50, 500), effect_size = 0.3, ...)
+#' result <- pareto_optimize(design, objectives = list(pwr_eff = "max", n_total = "min"), ...)
 #' plot(result)  # Pareto front
 #' plot(result, type = "convergence")  # Convergence trace
 #' plot(result, type = "search")  # Search space exploration
@@ -139,9 +139,7 @@ plot_pareto_front <- function(result, highlight_selected = TRUE, ...) {
 
   # Title based on optimization type
   title <- switch(result@optimization_type,
-    "power_n" = "Power vs Sample Size Trade-off",
-    "power_effect" = "Power vs Effect Size Trade-off",
-    "effect_n" = "Effect Size vs Sample Size Trade-off",
+    "pareto" = "Pareto Front",
     "Pareto Front"
   )
 

@@ -59,13 +59,13 @@ Fixed: `resolve_boundary_vector_from_fracs()` pre-resolves thresholds before the
 - [x] Pre-resolve all thresholds as a vector at start of sequential loop (not per-look)
 - [x] Applies to all boundary functions (OBF threshold/alpha, Pocock alpha, HSD)
 
-### Optimization Module Redesign (experimental for v1)
+### ~~Optimization Module Redesign~~ (DONE)
 
-Complete refactor/redesign of the optimization module (`R/pareto_optimize.R`, `R/optimization_internal.R`, and related wrappers). Ships as experimental in v1 — not a release blocker. See `dev/plans/optimization-redesign.md`.
+Complete refactor/redesign of the optimization module. Ships as experimental in v1. See `dev/plans/optimization-redesign.md`.
 
 - [x] Design new optimization API and architecture
-- [ ] Implement refactored optimization module
-- [ ] Write tests after redesign is stable
+- [x] Implement refactored optimization module
+- [x] Write tests after redesign is stable
 
 ### ~~v1 Feature Spec — Planning~~ (DONE)
 
@@ -170,6 +170,18 @@ Implement automation additions from `dev/plans/automation_recommendations.md`.
 - [ ] Phase 1: Install context7 MCP server
 - [ ] Phase 2: Create `/rctbp-validation` skill (orchestrator) + `integration-tester` agent (worker)
 - [ ] Phase 3: Related test hook (optional)
+
+### Optimization Redesign Follow-ups (from PR #31 review)
+
+Post-redesign cleanup and polish tasks identified during plan review.
+
+- [ ] Consolidate `apply_simplex_transforms_flat()` into `optimization_transforms.R` (currently duplicated)
+- [ ] Implement `plot.rctbp_sample_size_result()` (convergence trace plot)
+- [ ] Create `test-optimization_postprocessing.R` for exported postprocessing functions
+- [ ] Add minimal integration dispatch test to `test-optimize_sample_size.R` (mock-based, verifying single/pareto dispatch)
+- [ ] Document seed handling limitation for `n_cores > 1` in bbotk path
+- [ ] Remove unused `@importFrom dplyr if_else` in `R/backend_brms.R:363`
+- [ ] Remove unused `scales::percent` from `@importFrom scales percent_format percent` in `R/plot_power_analysis.R:64`
 
 ---
 

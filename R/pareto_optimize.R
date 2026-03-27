@@ -25,11 +25,8 @@
 #'   - `metric`: Name of metric to constrain (e.g., `"pwr_eff"`)
 #'   - `threshold`: Minimum value required (e.g., `0.80` for 80% power)
 #'   Designs not meeting the constraint are excluded from the Pareto front.
-#' @param n_sims Number of simulations per evaluation. Can be a vector for
-#'   progressive fidelity (e.g., `c(500, 2000)`).
-#' @param evals_per_step Evaluations per fidelity level when `n_sims` is a vector.
-#'   Scalar for uniform steps, or vector matching `n_sims` length.
-#' @param max_evals Maximum evaluations (used when `n_sims` is scalar).
+#' @param n_sims Number of simulations per evaluation (scalar).
+#' @param max_evals Maximum number of evaluations.
 #' @param n_cores Number of parallel cores for power analysis.
 #' @param knee_method Method for selecting from Pareto front:
 #'   - `"utopia"` (default): Closest to ideal point in normalized space
@@ -50,8 +47,7 @@
 #'   - `archive`: All evaluated designs
 #'   - `convergence`: Optimization progress trace
 #'
-#' @seealso [optimize_power_n()], [optimize_power_effect()], [optimize_effect_n()],
-#'   [plot.rctbp_pareto_result]
+#' @seealso [plot.rctbp_pareto_result]
 #'
 #' @export
 #' @examples
@@ -83,7 +79,6 @@ pareto_optimize <- function(design,
                             constant = list(),
                             constraint = NULL,
                             n_sims = 1000,
-                            evals_per_step = 10,
                             max_evals = 50,
                             n_cores = 1,
                             knee_method = "utopia",
@@ -96,7 +91,8 @@ pareto_optimize <- function(design,
   # ===========================================================================
   # INPUT VALIDATION
   # ===========================================================================
-  if (!inherits(design, "rctbp_design")) {
+  if (!inherits(design, "rctbp_design") &&
+      !inherits(design, "rctbayespower::rctbp_design")) {
     cli::cli_abort(c(
       "{.arg design} must be an rctbp_design object",
       "x" = "Got: {.cls {class(design)}}"
@@ -150,17 +146,6 @@ pareto_optimize <- function(design,
   # Parse simplex search specs
   search_specs <- parse_simplex_specs(search, design)
 
-  # Build fidelity schedule
-  if (length(n_sims) == 1) {
-    fidelity_schedule <- build_fidelity_schedule(n_sims, max_evals, evals_per_step)
-    total_evals <- max_evals
-  } else {
-    fidelity_schedule <- build_fidelity_schedule(n_sims, max_evals, evals_per_step)
-    total_evals <- nrow(fidelity_schedule)
-  }
-
-  n_sims_max <- max(fidelity_schedule$n_sims)
-
   # ===========================================================================
   # DISPLAY CONFIGURATION
   # ===========================================================================
@@ -175,7 +160,7 @@ pareto_optimize <- function(design,
     cli::cli_dl(c(
       "Objectives" = obj_str,
       "Search parameters" = paste(names(search), collapse = ", "),
-      "Max evaluations" = total_evals,
+      "Max evaluations" = max_evals,
       "Backend" = design@backend
     ))
 
@@ -190,6 +175,7 @@ pareto_optimize <- function(design,
   # ===========================================================================
   # CREATE PARAMETER SPACE
   # ===========================================================================
+  rlang::check_installed("paradox", reason = "for optimization parameter spaces")
   domain <- create_parameter_space(search, search_specs)
 
   # ===========================================================================
@@ -207,7 +193,7 @@ pareto_optimize <- function(design,
     search_specs = search_specs,
     constant = constant,
     constraint = constraint,
-    fidelity_schedule = fidelity_schedule,
+    n_sims = n_sims,
     n_cores = n_cores,
     bf_args = bf_args,
     brms_args = brms_args,
@@ -226,7 +212,7 @@ pareto_optimize <- function(design,
 
   instance <- bbotk::OptimInstanceBatchMultiCrit$new(
     objective = objective,
-    terminator = bbotk::trm("evals", n_evals = total_evals)
+    terminator = bbotk::trm("evals", n_evals = max_evals)
   )
 
   # ===========================================================================
@@ -311,7 +297,7 @@ pareto_optimize <- function(design,
     optimization_type = "custom",
     objectives = objectives,
     search = search,
-    n_sims = n_sims_max,
+    n_sims = n_sims,
     n_evals = nrow(archive_df),
     elapsed_time = elapsed_time,
     mbo_objects = list(
@@ -530,7 +516,7 @@ create_pareto_codomain <- function(objectives) {
 #' @param search_specs Parsed simplex specs
 #' @param constant Fixed parameters
 #' @param constraint Optional constraint
-#' @param fidelity_schedule Fidelity schedule data frame
+#' @param n_sims Number of simulations per evaluation
 #' @param n_cores Number of cores
 #' @param bf_args BayesFlow arguments
 #' @param brms_args brms arguments
@@ -544,7 +530,7 @@ create_pareto_objective_fn <- function(design,
                                        search_specs,
                                        constant,
                                        constraint,
-                                       fidelity_schedule,
+                                       n_sims,
                                        n_cores,
                                        bf_args,
                                        brms_args,
@@ -553,17 +539,8 @@ create_pareto_objective_fn <- function(design,
   search_params <- names(search)
   obj_names <- names(objectives)
 
-  # Evaluation counter
-  eval_count <- 0
-
   # Objective function
   obj_fn <- function(xs) {
-    eval_count <<- eval_count + 1
-
-    # Look up n_sims from fidelity schedule
-    schedule_idx <- min(eval_count, nrow(fidelity_schedule))
-    current_n_sims <- fidelity_schedule$n_sims[schedule_idx]
-
     # Apply simplex transforms
     params <- apply_simplex_transforms_flat(xs, search_specs)
 
@@ -597,7 +574,7 @@ create_pareto_objective_fn <- function(design,
     pa_result <- tryCatch({
       power_analysis(
         conditions = conditions,
-        n_sims = current_n_sims,
+        n_sims = n_sims,
         n_cores = n_cores,
         bf_args = bf_args,
         brms_args = brms_args,
@@ -833,7 +810,7 @@ parse_simplex_specs <- function(search, design) {
 #'
 #' Returns a flat named list with transformed parameters, suitable for merging
 #' with `c(params, constant)`. See also [apply_simplex_transforms()] in
-#' `optimization_internal.R` which returns a structured list with `$crossed`,
+#' `optimization_transforms.R` which returns a structured list with `$crossed`,
 #' `$ilr_values`, and `$simplex_values`.
 #'
 #' @param xs Named list of raw parameter values

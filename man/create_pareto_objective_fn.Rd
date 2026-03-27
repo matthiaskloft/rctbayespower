@@ -11,7 +11,7 @@ create_pareto_objective_fn(
   search_specs,
   constant,
   constraint,
-  fidelity_schedule,
+  n_sims,
   n_cores,
   bf_args,
   brms_args,
@@ -31,7 +31,7 @@ create_pareto_objective_fn(
 
 \item{constraint}{Optional constraint}
 
-\item{fidelity_schedule}{Fidelity schedule data frame}
+\item{n_sims}{Number of simulations per evaluation}
 
 \item{n_cores}{Number of cores}
 
