@@ -31,7 +31,8 @@ find_surrogate_optimum <- function(result,
                                    n_candidates = 10000,
                                    ci_level = 0.95,
                                    trim = 0.25) {
-  if (!inherits(result, "rctbayespower::rctbp_pareto_result")) {
+  if (!inherits(result, "rctbp_pareto_result") &&
+      !inherits(result, "rctbayespower::rctbp_pareto_result")) {
     cli::cli_abort(c(
       "{.arg result} must be an rctbp_pareto_result object",
       "x" = "Got object of class {.cls {class(result)}}",
@@ -182,7 +183,8 @@ find_probabilistic_optimum <- function(result,
                                         target = NULL,
                                         n_candidates = 1000,
                                         use_log_n = TRUE) {
-  if (!inherits(result, "rctbayespower::rctbp_pareto_result")) {
+  if (!inherits(result, "rctbp_pareto_result") &&
+      !inherits(result, "rctbayespower::rctbp_pareto_result")) {
     cli::cli_abort(c(
       "{.arg result} must be an rctbp_pareto_result object",
       "x" = "Got object of class {.cls {class(result)}}",

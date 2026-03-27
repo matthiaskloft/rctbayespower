@@ -91,7 +91,8 @@ pareto_optimize <- function(design,
   # ===========================================================================
   # INPUT VALIDATION
   # ===========================================================================
-  if (!inherits(design, "rctbayespower::rctbp_design")) {
+  if (!inherits(design, "rctbp_design") &&
+      !inherits(design, "rctbayespower::rctbp_design")) {
     cli::cli_abort(c(
       "{.arg design} must be an rctbp_design object",
       "x" = "Got: {.cls {class(design)}}"

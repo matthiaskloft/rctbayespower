@@ -137,7 +137,8 @@ optimize_sample_size <- function(design,
   score_scale <- match.arg(score_scale)
   knee_method <- match.arg(knee_method)
 
-  if (!inherits(design, "rctbayespower::rctbp_design")) {
+  if (!inherits(design, "rctbp_design") &&
+      !inherits(design, "rctbayespower::rctbp_design")) {
     cli::cli_abort(c(
       "{.arg design} must be an rctbp_design object",
       "x" = "Got: {.cls {class(design)}}"

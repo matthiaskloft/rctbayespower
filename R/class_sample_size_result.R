@@ -75,6 +75,7 @@ rctbp_sample_size_result <- S7::new_class(
 
   validator = function(self) {
     if (!is.null(self@design) &&
+        !inherits(self@design, "rctbp_design") &&
         !inherits(self@design, "rctbayespower::rctbp_design")) {
       return("'design' must be a valid rctbp_design object or NULL.")
     }
