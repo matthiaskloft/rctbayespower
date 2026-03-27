@@ -5,7 +5,7 @@
 # Stores optimal n, feasibility status, convergence trace, and archive.
 
 #' @importFrom S7 new_class class_any class_data.frame class_numeric
-#'   class_character class_logical new_property
+#'   class_character class_logical class_list new_property
 #' @noRd
 rctbp_sample_size_result <- S7::new_class(
   "rctbp_sample_size_result",
