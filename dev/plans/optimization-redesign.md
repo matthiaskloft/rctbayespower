@@ -439,7 +439,7 @@ Pareto-specific args are ignored when `objective = "single"` and vice versa.
 | `R/pareto_wrappers.R` (353 LOC) | **DELETED** | All wrappers removed (pre-release) |
 | — | `R/optimization_transforms.R` (~350 LOC) | NEW: ILR, simplex, param transforms, feasibility score |
 | — | `R/optimization_mbo.R` (~300 LOC) | NEW: mlr3mbo/bbotk setup |
-| — | `R/optimization_objective.R` (~200 LOC) | NEW: objective fn creation, archive mgmt |
+| — | ~~`R/optimization_objective.R`~~ | SKIPPED: logic inlined into `optimization_single.R` and `pareto_optimize.R` |
 | — | `R/optimization_postprocessing.R` (~200 LOC) | NEW: surrogate/probabilistic optimum |
 | — | `R/optimize_sample_size.R` (~250 LOC) | NEW: unified entry point |
 | — | `R/class_sample_size_result.R` (~150 LOC) | NEW: single-objective result class |
@@ -544,3 +544,18 @@ _Living section — updated during implementation._
 | 2 | IMPORTANT | `mbo_objects` in `rctbp_pareto_result` still uses `class_list \| NULL` anti-pattern | Resolved: added to Phase 1 modification list — fix to `class_any` |
 | 3 | IMPORTANT | Pareto dispatch construction not specified; `search` not exposed | Resolved: construction pattern documented; complex searches use `pareto_optimize()` directly |
 | 4 | IMPORTANT | `logit_transform`/`invlogit_transform`/`compute_p_feas` interleaved with dead code, risk of accidental deletion | Resolved: explicit CAUTION note in dead code section |
+
+### Post-Implementation Review Findings
+
+| # | Severity | Issue | Status |
+|---|----------|-------|--------|
+| 1 | CRITICAL | `run_bbotk_score_loop` ignores `patience` — no early stopping | **Fixed**: added `bbotk::trm("stagnation")` combo terminator |
+| 2 | CRITICAL | `optimization_objective.R` never created; plan file map inaccurate | **Fixed**: updated plan to note logic was inlined instead |
+| 3 | IMPORTANT | `apply_simplex_transforms_flat` not consolidated per plan | TODO: move to `optimization_transforms.R` |
+| 4 | IMPORTANT | `plot.rctbp_sample_size_result()` not implemented | TODO: implement in Phase 4 follow-up |
+| 5 | IMPORTANT | GP fit failure silently breaks loop | **Fixed**: added warning message before break |
+| 6 | IMPORTANT | `test-optimization_postprocessing.R` never created | TODO: add tests for exported functions |
+| 7 | IMPORTANT | Seed handling undocumented for `n_cores > 1` in bbotk path | TODO: document limitation |
+| 8 | MINOR | Dead `get_param_transform()` roxygen reference | **Fixed** |
+| 9 | MINOR | Error message styling inconsistency in `n_range` validation | **Fixed** |
+| 10 | MINOR | No integration dispatch test | TODO: add minimal BO dispatch test |

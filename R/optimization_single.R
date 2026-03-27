@@ -209,7 +209,12 @@ run_gp_power_loop <- function(design, target_power, n_range, constant,
       NULL
     })
 
-    if (is.null(gp_model)) break
+    if (is.null(gp_model)) {
+      cli::cli_alert_warning(
+        "GP surrogate fitting failed after {n_evaluated} evaluations; stopping early"
+      )
+      break
+    }
 
     # Query GP at dense grid
     n_grid <- seq(n_range[1], n_range[2], length.out = 500)

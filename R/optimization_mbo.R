@@ -18,7 +18,7 @@
 #' @param search Named list of parameter bounds or simplex specs
 #' @param search_specs Named list of parsed simplex specifications (optional)
 #' @param apply_transforms Logical, whether to apply automatic transforms (default FALSE)
-#' @param transform_registry Named list of transform specs from get_param_transform()
+#' @param transform_registry Named list of transform specs (optional)
 #' @return paradox::ParamSet with optional transform_registry attribute
 #' @keywords internal
 create_parameter_space <- function(search, search_specs = list(),

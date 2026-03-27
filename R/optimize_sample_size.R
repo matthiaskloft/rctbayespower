@@ -154,7 +154,7 @@ optimize_sample_size <- function(design,
   if (n_range[1] >= n_range[2]) {
     cli::cli_abort(c(
       "{.arg n_range} lower bound must be less than upper bound",
-      "x" = "Got: [{n_range[1]}, {n_range[2]}]"
+      "x" = "Got: [{.val {n_range[1]}}, {.val {n_range[2]}}]"
     ))
   }
 
