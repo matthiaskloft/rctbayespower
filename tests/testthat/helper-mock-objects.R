@@ -395,7 +395,7 @@ mock_pareto_result <- function() {
     archive = archive,
     selected_design = selected_design,
     convergence = data.frame(),
-    optimization_type = "power_n",
+    optimization_type = "pareto",
     objectives = list(pwr_eff = "maximize", n_total = "minimize"),
     search = list(n_total = c(50, 300)),
     n_sims = 100,

@@ -11,7 +11,6 @@ pareto_optimize(
   constant = list(),
   constraint = NULL,
   n_sims = 1000,
-  evals_per_step = 10,
   max_evals = 50,
   n_cores = 1,
   knee_method = "utopia",
@@ -48,13 +47,9 @@ numeric vector \code{c(lower, upper)}. Can include:
 Designs not meeting the constraint are excluded from the Pareto front.
 }}
 
-\item{n_sims}{Number of simulations per evaluation. Can be a vector for
-progressive fidelity (e.g., \code{c(500, 2000)}).}
+\item{n_sims}{Number of simulations per evaluation (scalar).}
 
-\item{evals_per_step}{Evaluations per fidelity level when \code{n_sims} is a vector.
-Scalar for uniform steps, or vector matching \code{n_sims} length.}
-
-\item{max_evals}{Maximum evaluations (used when \code{n_sims} is scalar).}
+\item{max_evals}{Maximum number of evaluations.}
 
 \item{n_cores}{Number of parallel cores for power analysis.}
 

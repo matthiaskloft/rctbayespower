@@ -622,7 +622,7 @@ test_that("power_curve works for sequential design (accrual mock)", {
 # =============================================================================
 
 test_that("get_pareto_axis_labels returns friendly names", {
-  labels <- rctbayespower:::get_pareto_axis_labels("power_n", "pwr_eff", "n_total")
+  labels <- rctbayespower:::get_pareto_axis_labels("pareto", "pwr_eff", "n_total")
   expect_equal(labels$x, "Power (Efficacy)")
   expect_equal(labels$y, "Sample Size")
 })
