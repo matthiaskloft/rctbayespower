@@ -180,6 +180,8 @@ Post-redesign cleanup and polish tasks identified during plan review.
 - [ ] Create `test-optimization_postprocessing.R` for exported postprocessing functions
 - [ ] Add minimal integration dispatch test to `test-optimize_sample_size.R` (mock-based, verifying single/pareto dispatch)
 - [ ] Document seed handling limitation for `n_cores > 1` in bbotk path
+- [ ] Remove unused `@importFrom dplyr if_else` in `R/backend_brms.R:363`
+- [ ] Remove unused `scales::percent` from `@importFrom scales percent_format percent` in `R/plot_power_analysis.R:64`
 
 ---
 
