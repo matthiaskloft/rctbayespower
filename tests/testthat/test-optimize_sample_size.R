@@ -244,23 +244,8 @@ test_that("optimize_sample_size errors on invalid objective value", {
 })
 
 test_that("optimize_sample_size accepts objective = 'single'", {
-  # Verifying match.arg works; actual dispatch causes further errors (no n_sims run)
-  # so we just check it doesn't fail at the match.arg stage
   design <- mock_design()
-  # This will error downstream (no actual model), but the match.arg itself passes
-  expect_error(
-    optimize_sample_size(
-      design = design,
-      objective = "single",
-      n_range = c(50, 300),
-      constant = list(),
-      n_sims = 1,
-      max_evals = 1,
-      n_init = 1,
-      verbose = FALSE
-    )
-  )
-  # The error should NOT mention 'should be one of'
+  # Should not fail with a match.arg error
   err <- tryCatch(
     optimize_sample_size(
       design = design,
@@ -274,7 +259,11 @@ test_that("optimize_sample_size accepts objective = 'single'", {
     ),
     error = function(e) e
   )
-  expect_false(grepl("should be one of", conditionMessage(err), fixed = TRUE))
+  # If it succeeded (no error), match.arg passed — test passes
+
+  if (inherits(err, "error")) {
+    expect_false(grepl("should be one of", conditionMessage(err), fixed = TRUE))
+  }
 })
 
 test_that("optimize_sample_size accepts objective = 'pareto'", {
@@ -291,7 +280,9 @@ test_that("optimize_sample_size accepts objective = 'pareto'", {
     ),
     error = function(e) e
   )
-  expect_false(grepl("should be one of", conditionMessage(err), fixed = TRUE))
+  if (inherits(err, "error")) {
+    expect_false(grepl("should be one of", conditionMessage(err), fixed = TRUE))
+  }
 })
 
 # =============================================================================
@@ -327,10 +318,12 @@ test_that("optimize_sample_size accepts all valid surrogate values without match
       ),
       error = function(e) e
     )
-    expect_false(
-      grepl("should be one of", conditionMessage(err), fixed = TRUE),
-      label = paste0("surrogate = '", surr, "' should pass match.arg")
-    )
+    if (inherits(err, "error")) {
+      expect_false(
+        grepl("should be one of", conditionMessage(err), fixed = TRUE),
+        label = paste0("surrogate = '", surr, "' should pass match.arg")
+      )
+    }
   }
 })
 
@@ -367,10 +360,12 @@ test_that("optimize_sample_size accepts all valid score_shape values without mat
       ),
       error = function(e) e
     )
-    expect_false(
-      grepl("should be one of", conditionMessage(err), fixed = TRUE),
-      label = paste0("score_shape = '", shape, "' should pass match.arg")
-    )
+    if (inherits(err, "error")) {
+      expect_false(
+        grepl("should be one of", conditionMessage(err), fixed = TRUE),
+        label = paste0("score_shape = '", shape, "' should pass match.arg")
+      )
+    }
   }
 })
 
@@ -407,10 +402,12 @@ test_that("optimize_sample_size accepts all valid score_scale values without mat
       ),
       error = function(e) e
     )
-    expect_false(
-      grepl("should be one of", conditionMessage(err), fixed = TRUE),
-      label = paste0("score_scale = '", scale, "' should pass match.arg")
-    )
+    if (inherits(err, "error")) {
+      expect_false(
+        grepl("should be one of", conditionMessage(err), fixed = TRUE),
+        label = paste0("score_scale = '", scale, "' should pass match.arg")
+      )
+    }
   }
 })
 
@@ -446,9 +443,11 @@ test_that("optimize_sample_size accepts all valid knee_method values without mat
       ),
       error = function(e) e
     )
-    expect_false(
-      grepl("should be one of", conditionMessage(err), fixed = TRUE),
-      label = paste0("knee_method = '", method, "' should pass match.arg")
-    )
+    if (inherits(err, "error")) {
+      expect_false(
+        grepl("should be one of", conditionMessage(err), fixed = TRUE),
+        label = paste0("knee_method = '", method, "' should pass match.arg")
+      )
+    }
   }
 })
