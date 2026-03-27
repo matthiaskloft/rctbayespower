@@ -171,6 +171,16 @@ Implement automation additions from `dev/plans/automation_recommendations.md`.
 - [ ] Phase 2: Create `/rctbp-validation` skill (orchestrator) + `integration-tester` agent (worker)
 - [ ] Phase 3: Related test hook (optional)
 
+### Optimization Redesign Follow-ups (from PR #31 review)
+
+Post-redesign cleanup and polish tasks identified during plan review.
+
+- [ ] Consolidate `apply_simplex_transforms_flat()` into `optimization_transforms.R` (currently duplicated)
+- [ ] Implement `plot.rctbp_sample_size_result()` (convergence trace plot)
+- [ ] Create `test-optimization_postprocessing.R` for exported postprocessing functions
+- [ ] Add minimal integration dispatch test to `test-optimize_sample_size.R` (mock-based, verifying single/pareto dispatch)
+- [ ] Document seed handling limitation for `n_cores > 1` in bbotk path
+
 ---
 
 # MEDIUM — Post-v1 Features
