@@ -47,7 +47,7 @@ required by the model except \code{n_total}. For example,
 \item{surrogate}{Surrogate model strategy (single-objective only):
 \itemize{
 \item \code{"gp_power"} (default): Custom GP loop fitting logit(power). Theoretically
-strongest --- exploits smooth monotonic structure.
+strongest — exploits smooth monotonic structure.
 \item \code{"gp_score"}: Standard bbotk EGO on feasibility score. Simplest pipeline.
 \item \code{"rf"}: Random forest on feasibility score. Handles discontinuities natively.
 }}
@@ -62,7 +62,7 @@ strongest --- exploits smooth monotonic structure.
 
 \item{max_evals}{Maximum evaluations (default 30).}
 
-\item{patience}{Early stopping patience --- stop if best score hasn't improved
+\item{patience}{Early stopping patience — stop if best score hasn't improved
 for this many consecutive evaluations after the initial design (default 5).}
 
 \item{power_metric}{Power metric for Pareto objective (Pareto only, default \code{"pwr_eff"}).}

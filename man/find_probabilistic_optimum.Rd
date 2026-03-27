@@ -18,8 +18,7 @@ find_probabilistic_optimum(
 \item{alpha}{Required confidence level for P(power >= target) (default 0.95).
 Higher values (e.g., 0.99, 0.999) are more conservative.}
 
-\item{target}{Target power value. If NULL (default), extracted from
-the optimization objectives.}
+\item{target}{Target power value. If NULL (default), uses 0.80.}
 
 \item{n_candidates}{Number of candidate n values to evaluate (default 1000)}
 
@@ -53,39 +52,6 @@ it finds the minimum n where we are alpha-confident that power >= target.
 \item For each candidate n, computes P_feas = P(power >= target) using
 the GP's predictive distribution
 \item Returns the minimum n where P_feas >= alpha
-}
-
-\strong{Why logit(power)?}
-\itemize{
-\item Power is bounded in (0, 1); logit transforms to unbounded (-Inf, Inf)
-\item GPs work better on approximately Gaussian, unbounded targets
-\item Predictions back-transformed to probability scale
-}
-
-\strong{Choosing alpha}:
-\itemize{
-\item alpha = 0.95: 95\% confident power >= target (standard)
-\item alpha = 0.99: 99\% confident (more conservative, larger n)
-\item alpha = 0.999: Very high confidence for critical studies
-}
-}
-\examples{
-\dontrun{
-result <- optimize_sample_size(design, objective = "pareto", n_range = c(50, 500), ...)
-
-# Find minimum n with 95\% confidence of achieving target
-prob_opt <- find_probabilistic_optimum(result, alpha = 0.95)
-prob_opt$n_opt
-prob_opt$p_feas
-
-# More conservative: 99\% confidence
-prob_opt_99 <- find_probabilistic_optimum(result, alpha = 0.99)
-
-# Plot P_feas profile
-plot(prob_opt$profile$n, prob_opt$profile$p_feas, type = "l",
-     xlab = "Sample Size", ylab = "P(power >= target)")
-abline(h = 0.95, lty = 2, col = "red")
-abline(v = prob_opt$n_opt, lty = 2, col = "blue")
 }
 }
 \seealso{

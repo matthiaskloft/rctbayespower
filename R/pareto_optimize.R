@@ -175,6 +175,7 @@ pareto_optimize <- function(design,
   # ===========================================================================
   # CREATE PARAMETER SPACE
   # ===========================================================================
+  rlang::check_installed("paradox", reason = "for optimization parameter spaces")
   domain <- create_parameter_space(search, search_specs)
 
   # ===========================================================================

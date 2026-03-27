@@ -18,12 +18,13 @@ create_parameter_space(
 
 \item{apply_transforms}{Logical, whether to apply automatic transforms (default FALSE)}
 
-\item{transform_registry}{Named list of transform specs from get_param_transform()}
+\item{transform_registry}{Named list of transform specs (optional)}
 }
 \value{
 paradox::ParamSet with optional transform_registry attribute
 }
 \description{
+Builds a \link[paradox:ParamSet]{paradox::ParamSet} from the search bounds and simplex specs.
 Handles both standard bounds and simplex search specs. Optionally applies
 automatic transforms (log for sample sizes, logit for probabilities).
 }

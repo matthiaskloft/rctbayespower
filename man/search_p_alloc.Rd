@@ -2,9 +2,12 @@
 % Please edit documentation in R/optimization_search.R
 \name{search_p_alloc}
 \alias{search_p_alloc}
+\alias{print.rctbp_search_p_alloc}
 \title{Specify Allocation Probability Search}
 \usage{
 search_p_alloc(min = 0.1)
+
+\method{print}{rctbp_search_p_alloc}(x, ...)
 }
 \arguments{
 \item{min}{Minimum proportion acceptable for any group (default 0.1).
@@ -49,5 +52,5 @@ result <- pareto_optimize(
 }
 }
 \seealso{
-\code{\link[=pareto_optimize]{pareto_optimize()}}, \code{\link[=optimize_sample_size]{optimize_sample_size()}}, \code{\link[=search_looks]{search_looks()}}
+\code{\link[=pareto_optimize]{pareto_optimize()}}, \code{\link[=search_looks]{search_looks()}}
 }

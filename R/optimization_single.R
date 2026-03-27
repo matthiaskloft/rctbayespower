@@ -22,7 +22,7 @@
 #' @param scale Score scale: "log" or "raw"
 #' @param shape Score shape: "linear", "quadratic", or "root"
 #'
-#' @return Numeric score in [0, 1]
+#' @return Numeric score in \[0, 1\]
 #' @keywords internal
 compute_feasibility_score <- function(power, n, n_range, target_power,
                                       scale = "log", shape = "linear") {
@@ -48,7 +48,7 @@ compute_feasibility_score <- function(power, n, n_range, target_power,
 #' @param n_range Numeric vector c(n_min, n_max)
 #' @param scale "log" or "raw"
 #'
-#' @return Numeric value in [0, 1] where 1 = at n_min, 0 = at n_max
+#' @return Numeric value in \[0, 1\] where 1 = at n_min, 0 = at n_max
 #' @keywords internal
 compute_normalized_distance <- function(n, n_range, scale = "log") {
   n_min <- n_range[1]

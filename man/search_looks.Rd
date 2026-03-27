@@ -2,9 +2,12 @@
 % Please edit documentation in R/optimization_search.R
 \name{search_looks}
 \alias{search_looks}
+\alias{print.rctbp_search_looks}
 \title{Specify Interim Look Timing Search}
 \usage{
 search_looks(n = 2, min_spacing = 0.2)
+
+\method{print}{rctbp_search_looks}(x, ...)
 }
 \arguments{
 \item{n}{Number of looks including final analysis (default 2).
@@ -51,5 +54,5 @@ result <- pareto_optimize(
 }
 }
 \seealso{
-\code{\link[=pareto_optimize]{pareto_optimize()}}, \code{\link[=optimize_sample_size]{optimize_sample_size()}}, \code{\link[=search_p_alloc]{search_p_alloc()}}
+\code{\link[=pareto_optimize]{pareto_optimize()}}, \code{\link[=search_p_alloc]{search_p_alloc()}}
 }

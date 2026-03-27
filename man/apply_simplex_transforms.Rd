@@ -2,7 +2,7 @@
 % Please edit documentation in R/optimization_transforms.R
 \name{apply_simplex_transforms}
 \alias{apply_simplex_transforms}
-\title{Apply Simplex Transforms to Optimizer Values}
+\title{Apply Simplex Transforms to Parameters (Structured Return)}
 \usage{
 apply_simplex_transforms(xs, search_specs)
 }
@@ -20,8 +20,9 @@ List with:
 }
 }
 \description{
-Transforms optimizer values (which may include ILR coordinates for simplex
-parameters) to the format expected by \code{\link[=build_conditions]{build_conditions()}}.
+Transforms optimizer parameter values (ILR coordinates, bounded proportions)
+back to the original simplex-constrained space. Returns a structured list
+with separate components for conditions, ILR values, and simplex values.
 }
 \details{
 See also \code{\link[=apply_simplex_transforms_flat]{apply_simplex_transforms_flat()}} in \code{pareto_optimize.R} which

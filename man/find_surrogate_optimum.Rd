@@ -2,7 +2,7 @@
 % Please edit documentation in R/optimization_postprocessing.R
 \name{find_surrogate_optimum}
 \alias{find_surrogate_optimum}
-\title{Find Surrogate-Based Optimum}
+\title{Find Surrogate-Based Optimum from Pareto Result}
 \usage{
 find_surrogate_optimum(
   result,
@@ -19,49 +19,17 @@ find_surrogate_optimum(
 \item{ci_level}{Confidence level for interval (default 0.95)}
 
 \item{trim}{Proportion to trim from each tail of observed distributions
-(default 0.25 = IQR). Set to 0 for full domain search, 0.1 for
-10th-90th percentile, etc.}
+(default 0.25 = IQR). Set to 0 for full domain search.}
 }
 \value{
-A list with:
-\describe{
-\item{params}{Named list of optimal parameter values}
-\item{predicted_mean}{Surrogate's predicted objective at optimum}
-\item{predicted_se}{Surrogate's prediction uncertainty}
-\item{ci_lower, ci_upper}{Confidence interval for prediction}
-\item{domain_used}{Named list of bounds used for each parameter}
-}
+List with params, predicted_mean, predicted_se, ci_lower, ci_upper,
+domain_used
 }
 \description{
-Searches over the parameter space using the fitted surrogate model to find
-the optimal point. By default, constrains search to the observed IQR to
-reduce extrapolation risk.
-}
-\details{
-This function uses the surrogate model fitted during optimization to search
-for the optimum over a constrained domain. Unlike the empirical optimum
-(which only considers observed points), this can find optima between
-observations.
-
-The \code{trim} parameter controls how much to constrain the search domain:
-\itemize{
-\item \code{trim = 0.25} (default): Search within IQR (25th-75th percentile)
-\item \code{trim = 0.1}: Search within 10th-90th percentile
-\item \code{trim = 0}: Search full original domain (higher extrapolation risk)
-}
-}
-\examples{
-\dontrun{
-result <- optimize_sample_size(design, objective = "pareto", n_range = c(50, 500), ...)
-
-# Find surrogate optimum in IQR (default)
-surr_opt <- find_surrogate_optimum(result)
-surr_opt$params$n_total
-
-# Search full domain
-surr_opt_full <- find_surrogate_optimum(result, trim = 0)
-}
+Searches over the parameter space using surrogate model predictions to find
+the optimal point. Constrains search to observed quantile range to reduce
+extrapolation risk.
 }
 \seealso{
-\code{\link[=pareto_optimize]{pareto_optimize()}}
+\code{\link[=pareto_optimize]{pareto_optimize()}}, \code{\link[=find_probabilistic_optimum]{find_probabilistic_optimum()}}
 }

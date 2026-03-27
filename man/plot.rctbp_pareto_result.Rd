@@ -21,7 +21,7 @@ Creates visualizations for Pareto optimization results.
 }
 \examples{
 \dontrun{
-result <- optimize_sample_size(design, objective = "pareto", n_range = c(50, 500), ...)
+result <- pareto_optimize(design, objectives = list(pwr_eff = "max", n_total = "min"), ...)
 plot(result)  # Pareto front
 plot(result, type = "convergence")  # Convergence trace
 plot(result, type = "search")  # Search space exploration

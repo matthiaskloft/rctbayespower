@@ -112,6 +112,5 @@ result@pareto_front
 }
 }
 \seealso{
-\code{\link[=optimize_sample_size]{optimize_sample_size()}},
 \link{plot.rctbp_pareto_result}
 }
