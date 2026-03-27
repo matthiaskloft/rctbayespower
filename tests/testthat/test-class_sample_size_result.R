@@ -52,7 +52,7 @@ make_result <- function(...) {
 
 test_that("rctbp_sample_size_result constructs with valid properties", {
   result <- make_result()
-  expect_s3_class(result, "rctbp_sample_size_result")
+  expect_s3_class(result, "rctbayespower::rctbp_sample_size_result")
 })
 
 test_that("rctbp_sample_size_result stores n_optimal correctly", {
