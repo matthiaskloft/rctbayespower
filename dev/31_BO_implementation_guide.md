@@ -1,3 +1,7 @@
+> **SUPERSEDED**: This document is superseded by `dev/plans/optimization-redesign.md`.
+> The penalty-based and constrained EIC approaches described here have been replaced
+> by the feasibility score approach in `optimize_sample_size()`.
+
 # Implementation Plan: Bayesian Optimization for Sample Size Determination
 
 ## Overview

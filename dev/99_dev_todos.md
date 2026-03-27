@@ -59,13 +59,13 @@ Fixed: `resolve_boundary_vector_from_fracs()` pre-resolves thresholds before the
 - [x] Pre-resolve all thresholds as a vector at start of sequential loop (not per-look)
 - [x] Applies to all boundary functions (OBF threshold/alpha, Pocock alpha, HSD)
 
-### Optimization Module Redesign (experimental for v1)
+### ~~Optimization Module Redesign~~ (DONE)
 
-Complete refactor/redesign of the optimization module (`R/pareto_optimize.R`, `R/optimization_internal.R`, and related wrappers). Ships as experimental in v1 — not a release blocker. See `dev/plans/optimization-redesign.md`.
+Complete refactor/redesign of the optimization module. Ships as experimental in v1. See `dev/plans/optimization-redesign.md`.
 
 - [x] Design new optimization API and architecture
-- [ ] Implement refactored optimization module
-- [ ] Write tests after redesign is stable
+- [x] Implement refactored optimization module
+- [x] Write tests after redesign is stable
 
 ### ~~v1 Feature Spec — Planning~~ (DONE)
 

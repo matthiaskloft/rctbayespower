@@ -8,11 +8,11 @@
 | Phase | Status | Date | Notes |
 |-------|--------|------|-------|
 | Plan | DONE | 2026-03-11 | |
-| Phase 1: File Reorg + Dead Code Removal | TODO | | Split `optimization_internal.R`, delete dead code, remove fidelity |
-| Phase 2: Unified API + Single-Objective BO | TODO | | `optimize_sample_size()`, result class, feasibility score BO |
-| Phase 3: Tests + Validation | TODO | | Comprehensive test suite for all optimization paths |
-| Phase 4: Cleanup + Documentation | TODO | | Remove old wrappers, plots, update dev docs |
-| Ship | TODO | | |
+| Phase 1: File Reorg + Dead Code Removal | DONE | 2026-03-27 | Split `optimization_internal.R`, delete dead code, remove fidelity |
+| Phase 2: Unified API + Single-Objective BO | DONE | 2026-03-27 | `optimize_sample_size()`, result class, feasibility score BO |
+| Phase 3: Tests + Validation | DONE | 2026-03-27 | Comprehensive test suite for all optimization paths |
+| Phase 4: Cleanup + Documentation | DONE | 2026-03-27 | Update dev docs, archive superseded docs |
+| Ship | DONE | 2026-03-27 | |
 
 ## Summary
 

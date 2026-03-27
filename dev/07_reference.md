@@ -107,10 +107,15 @@ This file contains reference material moved from CLAUDE.md to keep that file con
 
 | File | Purpose |
 |------|---------|
+| `R/optimize_sample_size.R` | Unified entry point: `optimize_sample_size(objective = "single"/"pareto")` |
+| `R/optimization_single.R` | Single-objective BO: feasibility score, GP/RF surrogates |
+| `R/class_sample_size_result.R` | `rctbp_sample_size_result` S7 class for single-objective results |
 | `R/pareto_optimize.R` | Core `pareto_optimize()` + knee point selection |
-| `R/pareto_wrappers.R` | Wrapper functions: `optimize_power_n()`, `optimize_power_effect()`, `optimize_effect_n()` |
-| `R/optimization.R` | Simplex search helpers: `search_p_alloc()`, `search_looks()` |
-| `R/optimization_internal.R` | mlr3mbo/bbotk integration, surrogate setup, ILR transforms |
+| `R/class_pareto_result.R` | `rctbp_pareto_result` S7 class |
+| `R/optimization_search.R` | Simplex search helpers: `search_p_alloc()`, `search_looks()` |
+| `R/optimization_transforms.R` | ILR, simplex, logit transforms, feasibility score |
+| `R/optimization_mbo.R` | mlr3mbo/bbotk parameter space creation, initial design |
+| `R/optimization_postprocessing.R` | `find_surrogate_optimum()`, `find_probabilistic_optimum()` |
 | `R/plot_optimization.R` | Optimization result plots (pareto, convergence, search) |
 
 ### Plotting (`R/plot_*.R`)
@@ -155,12 +160,6 @@ This file contains reference material moved from CLAUDE.md to keep that file con
 | `R/analytical_power.R` | Analytical power calculation (vectorized ANCOVA) |
 | `R/design_prior.R` | Design prior handling |
 | `R/get_code.R` | Code reconstruction utility (`get_code()` methods) |
-
-### Optimization (additional)
-
-| File | Purpose |
-|------|---------|
-| `R/acq_function_eic.R` | Custom EIC acquisition function for Bayesian optimization (R6) |
 
 ### Python Integration
 
