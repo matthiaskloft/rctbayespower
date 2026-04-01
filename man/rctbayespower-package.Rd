@@ -59,7 +59,7 @@ as.data.frame(result)
 \itemize{
 \item \code{\link[=report]{report()}} -- formatted results report
 \item \code{\link[=plot.rctbp_power_analysis]{plot.rctbp_power_analysis()}} -- visualize results
-\item \code{\link[=optimize_power_n]{optimize_power_n()}} -- find sample size for target power
+\item \code{\link[=optimize_sample_size]{optimize_sample_size()}} -- find sample size for target power
 }
 
 \strong{Group-sequential designs:}

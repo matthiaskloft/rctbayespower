@@ -46,7 +46,7 @@
 #' **Results:**
 #' - [report()] -- formatted results report
 #' - [plot.rctbp_power_analysis()] -- visualize results
-#' - [optimize_power_n()] -- find sample size for target power
+#' - [optimize_sample_size()] -- find sample size for target power
 #'
 #' **Group-sequential designs:**
 #' - [interim_success_futility()], [interim_futility_only()] -- stopping rules

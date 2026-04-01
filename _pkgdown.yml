@@ -78,15 +78,12 @@ reference:
 - title: "Bayesian Optimization"
   desc: "Functions for Pareto-based design optimization"
   contents:
+  - optimize_sample_size
   - pareto_optimize
-  - optimize_power_n
-  - optimize_power_effect
-  - optimize_effect_n
   - search_p_alloc
   - search_looks
   - find_probabilistic_optimum
   - find_surrogate_optimum
-  - AcqFunctionEIC
 
 - title: "Sequential Analysis and Boundaries"
   desc: "Functions for group sequential designs and stopping boundaries"

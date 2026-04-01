@@ -33,7 +33,7 @@
 #' The resulting `p_alloc` vector has k entries: `[p_ctrl, p_treat1, p_treat2, ...]`
 #' where the first entry is the control arm probability.
 #'
-#' @seealso [pareto_optimize()], [optimize_power_n()], [search_looks()]
+#' @seealso [pareto_optimize()], [search_looks()]
 #'
 #' @export
 #' @examples
@@ -71,6 +71,9 @@ search_p_alloc <- function(min = 0.1) {
   )
 }
 
+#' @rdname search_p_alloc
+#' @param x An object of class `rctbp_search_p_alloc`.
+#' @param ... Additional arguments (unused).
 #' @export
 print.rctbp_search_p_alloc <- function(x, ...) {
   cli::cat_line(sprintf("search_p_alloc(min = %g)", x$min_prop))
@@ -106,7 +109,7 @@ print.rctbp_search_p_alloc <- function(x, ...) {
 #' The resulting `analysis_at` vector has n-1 proportions. The final look at 1.0
 #' is automatically appended by [build_conditions()].
 #'
-#' @seealso [pareto_optimize()], [optimize_power_n()], [search_p_alloc()]
+#' @seealso [pareto_optimize()], [search_p_alloc()]
 #'
 #' @export
 #' @examples
@@ -153,6 +156,9 @@ search_looks <- function(n = 2, min_spacing = 0.2) {
   )
 }
 
+#' @rdname search_looks
+#' @param x An object of class `rctbp_search_looks`.
+#' @param ... Additional arguments (unused).
 #' @export
 print.rctbp_search_looks <- function(x, ...) {
   cli::cat_line(sprintf("search_looks(n = %d, min_spacing = %g)", x$n_looks, x$min_spacing))

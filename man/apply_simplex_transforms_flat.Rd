@@ -17,7 +17,7 @@ Named list with transformed parameters (flat, no nested structure)
 \description{
 Returns a flat named list with transformed parameters, suitable for merging
 with \code{c(params, constant)}. See also \code{\link[=apply_simplex_transforms]{apply_simplex_transforms()}} in
-\code{optimization_internal.R} which returns a structured list with \verb{$crossed},
+\code{optimization_transforms.R} which returns a structured list with \verb{$crossed},
 \verb{$ilr_values}, and \verb{$simplex_values}.
 }
 \keyword{internal}
