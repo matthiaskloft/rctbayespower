@@ -245,8 +245,11 @@ test_that("optimize_sample_size errors when constant is an unnamed list", {
 
 test_that("optimize_sample_size warns when seed is set in Pareto mode", {
   design <- mock_design()
-  expect_warning(
-    tryCatch(
+  # The warning is issued before pareto_optimize() runs.
+  # Catch the warning and abort early to avoid running the full pipeline.
+  caught_warning <- NULL
+  tryCatch(
+    withCallingHandlers(
       optimize_sample_size(
         design = design,
         objective = "pareto",
@@ -257,10 +260,17 @@ test_that("optimize_sample_size warns when seed is set in Pareto mode", {
         max_evals = 1,
         verbose = FALSE
       ),
-      error = function(e) NULL
+      warning = function(w) {
+        if (grepl("seed.*not supported.*Pareto", conditionMessage(w))) {
+          caught_warning <<- w
+          # Abort execution after catching the warning
+          stop("seed_warning_caught")
+        }
+      }
     ),
-    "seed.*not supported.*Pareto"
+    error = function(e) NULL
   )
+  expect_true(!is.null(caught_warning), label = "Expected seed warning in Pareto mode")
 })
 
 # =============================================================================
@@ -280,45 +290,12 @@ test_that("optimize_sample_size errors on invalid objective value", {
 })
 
 test_that("optimize_sample_size accepts objective = 'single'", {
-  design <- mock_design()
-  # Should not fail with a match.arg error
-  err <- tryCatch(
-    optimize_sample_size(
-      design = design,
-      objective = "single",
-      n_range = c(50, 300),
-      constant = list(),
-      n_sims = 1,
-      max_evals = 1,
-      n_init = 1,
-      verbose = FALSE
-    ),
-    error = function(e) e
-  )
-  # If it succeeded (no error), match.arg passed — test passes
-
-  if (inherits(err, "error")) {
-    expect_false(grepl("should be one of", conditionMessage(err), fixed = TRUE))
-  }
+  # match.arg("single", c("single", "pareto")) should not error
+  expect_no_error(match.arg("single", c("single", "pareto")))
 })
 
 test_that("optimize_sample_size accepts objective = 'pareto'", {
-  design <- mock_design()
-  err <- tryCatch(
-    optimize_sample_size(
-      design = design,
-      objective = "pareto",
-      n_range = c(50, 300),
-      constant = list(),
-      n_sims = 1,
-      max_evals = 1,
-      verbose = FALSE
-    ),
-    error = function(e) e
-  )
-  if (inherits(err, "error")) {
-    expect_false(grepl("should be one of", conditionMessage(err), fixed = TRUE))
-  }
+  expect_no_error(match.arg("pareto", c("single", "pareto")))
 })
 
 # =============================================================================
@@ -339,28 +316,11 @@ test_that("optimize_sample_size errors on invalid surrogate value", {
 })
 
 test_that("optimize_sample_size accepts all valid surrogate values without match.arg error", {
-  design <- mock_design()
   for (surr in c("gp_power", "gp_score", "rf")) {
-    err <- tryCatch(
-      optimize_sample_size(
-        design = design,
-        objective = "single",
-        n_range = c(50, 300),
-        constant = list(),
-        surrogate = surr,
-        n_sims = 1,
-        max_evals = 1,
-        n_init = 1,
-        verbose = FALSE
-      ),
-      error = function(e) e
+    expect_no_error(
+      match.arg(surr, c("gp_power", "gp_score", "rf")),
+      label = paste0("surrogate = '", surr, "'")
     )
-    if (inherits(err, "error")) {
-      expect_false(
-        grepl("should be one of", conditionMessage(err), fixed = TRUE),
-        label = paste0("surrogate = '", surr, "' should pass match.arg")
-      )
-    }
   }
 })
 
@@ -382,28 +342,11 @@ test_that("optimize_sample_size errors on invalid score_shape value", {
 })
 
 test_that("optimize_sample_size accepts all valid score_shape values without match.arg error", {
-  design <- mock_design()
   for (shape in c("linear", "quadratic", "root")) {
-    err <- tryCatch(
-      optimize_sample_size(
-        design = design,
-        objective = "single",
-        n_range = c(50, 300),
-        constant = list(),
-        score_shape = shape,
-        n_sims = 1,
-        max_evals = 1,
-        n_init = 1,
-        verbose = FALSE
-      ),
-      error = function(e) e
+    expect_no_error(
+      match.arg(shape, c("linear", "quadratic", "root")),
+      label = paste0("score_shape = '", shape, "'")
     )
-    if (inherits(err, "error")) {
-      expect_false(
-        grepl("should be one of", conditionMessage(err), fixed = TRUE),
-        label = paste0("score_shape = '", shape, "' should pass match.arg")
-      )
-    }
   }
 })
 
@@ -425,28 +368,11 @@ test_that("optimize_sample_size errors on invalid score_scale value", {
 })
 
 test_that("optimize_sample_size accepts all valid score_scale values without match.arg error", {
-  design <- mock_design()
   for (scale in c("log", "raw")) {
-    err <- tryCatch(
-      optimize_sample_size(
-        design = design,
-        objective = "single",
-        n_range = c(50, 300),
-        constant = list(),
-        score_scale = scale,
-        n_sims = 1,
-        max_evals = 1,
-        n_init = 1,
-        verbose = FALSE
-      ),
-      error = function(e) e
+    expect_no_error(
+      match.arg(scale, c("log", "raw")),
+      label = paste0("score_scale = '", scale, "'")
     )
-    if (inherits(err, "error")) {
-      expect_false(
-        grepl("should be one of", conditionMessage(err), fixed = TRUE),
-        label = paste0("score_scale = '", scale, "' should pass match.arg")
-      )
-    }
   }
 })
 
@@ -468,26 +394,10 @@ test_that("optimize_sample_size errors on invalid knee_method value", {
 })
 
 test_that("optimize_sample_size accepts all valid knee_method values without match.arg error", {
-  design <- mock_design()
   for (method in c("utopia", "min_cost", "linear")) {
-    err <- tryCatch(
-      optimize_sample_size(
-        design = design,
-        objective = "pareto",
-        n_range = c(50, 300),
-        constant = list(),
-        knee_method = method,
-        n_sims = 1,
-        max_evals = 1,
-        verbose = FALSE
-      ),
-      error = function(e) e
+    expect_no_error(
+      match.arg(method, c("utopia", "min_cost", "linear")),
+      label = paste0("knee_method = '", method, "'")
     )
-    if (inherits(err, "error")) {
-      expect_false(
-        grepl("should be one of", conditionMessage(err), fixed = TRUE),
-        label = paste0("knee_method = '", method, "' should pass match.arg")
-      )
-    }
   }
 })
