@@ -32,7 +32,7 @@
 #' @param score_scale Score normalization scale (single-objective only):
 #'   `"log"` (default, proportional cost) or `"raw"` (absolute cost).
 #' @param n_init Number of initial design points (default 5).
-#' @param max_evals Maximum evaluations (default 30).
+#' @param max_evals Maximum total evaluations including initial design points (default 30).
 #' @param patience Early stopping patience — stop if best score hasn't improved
 #'   for this many consecutive evaluations after the initial design (default 5).
 #'
@@ -132,10 +132,6 @@ optimize_sample_size <- function(design,
   # INPUT VALIDATION
   # ==========================================================================
   objective <- match.arg(objective)
-  surrogate <- match.arg(surrogate)
-  score_shape <- match.arg(score_shape)
-  score_scale <- match.arg(score_scale)
-  knee_method <- match.arg(knee_method)
 
   if (!inherits(design, "rctbp_design") &&
       !inherits(design, "rctbayespower::rctbp_design")) {
@@ -173,10 +169,21 @@ optimize_sample_size <- function(design,
     ))
   }
 
+  if (length(constant) > 0 && is.null(names(constant))) {
+    cli::cli_abort(c(
+      "{.arg constant} must be a named list",
+      "x" = "Got an unnamed list"
+    ))
+  }
+
   # ==========================================================================
   # DISPATCH
   # ==========================================================================
   if (objective == "single") {
+    surrogate <- match.arg(surrogate)
+    score_shape <- match.arg(score_shape)
+    score_scale <- match.arg(score_scale)
+
     if (!is.numeric(target_power) || target_power <= 0 || target_power >= 1) {
       cli::cli_abort(c(
         "{.arg target_power} must be a probability in (0, 1)",
@@ -206,6 +213,14 @@ optimize_sample_size <- function(design,
     )
 
   } else {
+    knee_method <- match.arg(knee_method)
+
+    if (!is.null(seed)) {
+      cli::cli_warn(
+        "{.arg seed} is not supported for Pareto mode and will be ignored."
+      )
+    }
+
     # Pareto mode: construct objectives and search, delegate to pareto_optimize()
     objectives <- stats::setNames(
       list("maximize", "minimize"),
@@ -223,6 +238,7 @@ optimize_sample_size <- function(design,
       max_evals = max_evals,
       n_cores = n_cores,
       knee_method = knee_method,
+      init_design_size = n_init,
       bf_args = bf_args,
       brms_args = brms_args,
       verbosity = if (verbose) 1 else 0

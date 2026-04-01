@@ -63,7 +63,6 @@ pareto_optimize(
   constant = list(),
   constraint = NULL,    # Optional: list(metric = "pwr_eff", threshold = 0.80)
   n_sims = 1000,
-  evals_per_step = 10,
   max_evals = 50,
   n_cores = 1,
   knee_method = "utopia",
@@ -80,59 +79,37 @@ pareto_optimize(
 | `search` | Named list of bounds or simplex specs |
 | `constant` | Fixed parameters for all evaluations |
 | `constraint` | Optional power threshold constraint |
-| `n_sims` | Simulations per eval (scalar or vector for progressive fidelity) |
+| `n_sims` | Simulations per eval (scalar) |
 | `knee_method` | "utopia" (default), "min_cost", or "linear" |
 | `surrogate` | "gp" (Gaussian Process) or "rf" (Random Forest) |
 
-### Wrapper Functions
-
-Three specialized wrappers for common use cases:
-
-#### `optimize_power_n()` - Power vs Sample Size
+### `optimize_sample_size()` - Unified Entry Point
 
 ```r
-optimize_power_n(
+# Single-objective: find minimum n for target power
+optimize_sample_size(
   design,
-  power_metric = "pwr_eff",
+  objective = "single",
   n_range = c(50, 500),
-  effect_size,              # Required: fixed effect size
-  constant = list(),
-  ...
+  constant = list(...),
+  target_power = 0.80,
+  surrogate = "gp_power",
+  n_sims = 1000,
+  max_evals = 30
 )
-```
 
-Returns Pareto front of (power, n_total) for a fixed treatment effect.
-
-#### `optimize_power_effect()` - Power vs Effect Size
-
-```r
-optimize_power_effect(
+# Pareto: power vs sample size trade-off
+optimize_sample_size(
   design,
-  power_metric = "pwr_eff",
-  effect_range = c(0.1, 0.8),
-  n_total,                  # Required: fixed sample size
-  constant = list(),
-  ...
-)
-```
-
-Returns Pareto front of (power, effect_size) for a fixed sample size. Useful for finding minimum detectable effect (MDE).
-
-#### `optimize_effect_n()` - Effect Size vs Sample Size
-
-```r
-optimize_effect_n(
-  design,
-  power_target = 0.80,
-  power_metric = "pwr_eff",
+  objective = "pareto",
   n_range = c(50, 500),
-  effect_range = c(0.1, 0.8),
-  constant = list(),
-  ...
+  constant = list(...),
+  n_sims = 1000,
+  max_evals = 50
 )
 ```
 
-Returns Pareto front of (effect_size, n_total) pairs that achieve target power. Constraint filters designs not meeting the power threshold.
+For multi-dimensional Pareto search (e.g., n_total + p_alloc), use `pareto_optimize()` directly.
 
 ## Knee Point Selection
 
@@ -149,20 +126,6 @@ Three methods for selecting from the Pareto front:
 3. **Linear**: Maximum perpendicular distance from endpoints line
    - Also known as the "L-method"
    - Finds the point where the Pareto curve bends most
-
-## Progressive Fidelity
-
-Vector `n_sims` enables multi-fidelity optimization:
-
-```r
-optimize_power_n(
-  ...,
-  n_sims = c(500, 2000),     # Two fidelity levels
-  evals_per_step = c(30, 20) # 30 evals at 500, 20 at 2000
-)
-```
-
-Early evaluations use low fidelity (cheap exploration), later evaluations use high fidelity (precise refinement).
 
 ## Simplex Search Helpers
 
@@ -187,7 +150,7 @@ Internally uses ILR (Isometric Log-Ratio) transform to map simplex constraints t
 ## Visualization
 
 ```r
-result <- optimize_power_n(...)
+result <- optimize_sample_size(design, objective = "pareto", ...)
 
 # Pareto front plot (default)
 plot(result)
@@ -207,8 +170,12 @@ plot(result, type = "all")
 | File | Purpose |
 |------|---------|
 | `R/class_pareto_result.R` | `rctbp_pareto_result` S7 class |
+| `R/class_sample_size_result.R` | `rctbp_sample_size_result` S7 class |
+| `R/optimize_sample_size.R` | Unified `optimize_sample_size()` entry point |
+| `R/optimization_single.R` | Single-objective BO (gp_power, gp_score, rf) |
 | `R/pareto_optimize.R` | Core `pareto_optimize()` + knee selection |
-| `R/pareto_wrappers.R` | Three wrapper functions |
-| `R/optimization.R` | Simplex search helpers |
-| `R/optimization_internal.R` | mlr3mbo/bbotk integration, ILR transforms |
+| `R/optimization_search.R` | Simplex search helpers |
+| `R/optimization_transforms.R` | ILR transforms, logit, feasibility |
+| `R/optimization_mbo.R` | bbotk/mlr3mbo integration |
+| `R/optimization_postprocessing.R` | Surrogate & probabilistic optimum |
 | `R/plot_optimization.R` | Plot methods |

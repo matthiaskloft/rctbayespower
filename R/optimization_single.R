@@ -54,6 +54,8 @@ compute_normalized_distance <- function(n, n_range, scale = "log") {
   n_min <- n_range[1]
   n_max <- n_range[2]
 
+  if (n_min == n_max) return(1)
+
   if (scale == "log") {
     (log(n_max) - log(n)) / (log(n_max) - log(n_min))
   } else {
@@ -172,6 +174,7 @@ run_gp_power_loop <- function(design, target_power, n_range, constant,
     power <- evaluate_power_at_n(
       design, n, constant, n_sims, n_cores, bf_args, brms_args, verbose
     )
+    if (is.na(power)) power <- 0
     score <- compute_feasibility_score(
       power, n, n_range, target_power, score_scale, score_shape
     )
@@ -181,7 +184,6 @@ run_gp_power_loop <- function(design, target_power, n_range, constant,
   }
 
   # Best score tracking for patience
-
   best_score <- max(archive$score)
   patience_counter <- 0
   gp_model <- NULL
@@ -256,6 +258,7 @@ run_gp_power_loop <- function(design, target_power, n_range, constant,
     power <- evaluate_power_at_n(
       design, next_n, constant, n_sims, n_cores, bf_args, brms_args, verbose
     )
+    if (is.na(power)) power <- 0
     score <- compute_feasibility_score(
       power, next_n, n_range, target_power, score_scale, score_shape
     )
@@ -352,6 +355,7 @@ run_bbotk_score_loop <- function(design, target_power, n_range, constant,
     power <- evaluate_power_at_n(
       design, n, constant, n_sims, n_cores, bf_args, brms_args, verbose
     )
+    if (is.na(power)) power <- 0
     score <- compute_feasibility_score(
       power, n, n_range, target_power, score_scale, score_shape
     )
@@ -464,13 +468,11 @@ evaluate_power_at_n <- function(design, n, constant, n_sims, n_cores,
       constant = all_params
     )
   }, error = function(e) {
-    if (verbose) {
-      cli::cli_alert_warning("Conditions error at n={n}: {e$message}")
-    }
+    cli::cli_alert_warning("Conditions error at n={n}: {e$message}")
     return(NULL)
   })
 
-  if (is.null(conditions)) return(0)
+  if (is.null(conditions)) return(NA_real_)
 
   pa_result <- tryCatch({
     power_analysis(
@@ -482,13 +484,11 @@ evaluate_power_at_n <- function(design, n, constant, n_sims, n_cores,
       verbosity = 0
     )
   }, error = function(e) {
-    if (verbose) {
-      cli::cli_alert_warning("Power analysis error at n={n}: {e$message}")
-    }
+    cli::cli_alert_warning("Power analysis error at n={n}: {e$message}")
     return(NULL)
   })
 
-  if (is.null(pa_result)) return(0)
+  if (is.null(pa_result)) return(NA_real_)
 
   # Extract power (pwr_eff)
   results_df <- pa_result@results_conditions

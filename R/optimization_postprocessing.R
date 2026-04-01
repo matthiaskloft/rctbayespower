@@ -158,7 +158,7 @@ find_surrogate_optimum <- function(result,
 #'     \item{n_opt}{Optimal sample size (ceiling-rounded to integer)}
 #'     \item{p_feas}{Feasibility probability P(power >= target) at n_opt}
 #'     \item{predicted_power}{GP-predicted power at n_opt}
-#'     \item{ci_lower, ci_upper}{95% confidence interval for predicted power}
+#'     \item{ci_lower, ci_upper}{Confidence interval for predicted power (level = alpha)}
 #'     \item{target}{Target power value used}
 #'     \item{alpha}{Confidence level used}
 #'     \item{profile}{Data frame with P_feas for all candidate n values}
@@ -289,7 +289,7 @@ find_probabilistic_optimum <- function(result,
   # Get GP predictions
   pred <- DiceKriging::predict(gp_model, newdata = X_new, type = "UK")
   mu <- pred$mean
-  sigma <- sqrt(pred$sd^2)
+  sigma <- pred$sd
 
   # Compute P_feas for each candidate
   p_feas <- compute_p_feas(mu, sigma, target)
@@ -299,7 +299,7 @@ find_probabilistic_optimum <- function(result,
 
   if (length(feasible_idx) == 0) {
     best_idx <- which.max(p_feas)
-    cli::cli_alert_warning(
+    cli::cli_warn(
       "No n found with P_feas >= {alpha}. Best P_feas = {round(max(p_feas), 3)} at n = {ceiling(n_candidates_vec[best_idx])}"
     )
   } else {
@@ -314,7 +314,7 @@ find_probabilistic_optimum <- function(result,
   predicted_power <- invlogit_transform(predicted_logit_power)
 
   # Compute CI for power (on probability scale)
-  z <- stats::qnorm(0.975)
+  z <- stats::qnorm((1 + alpha) / 2)
   logit_ci_lower <- mu[best_idx] - z * sigma[best_idx]
   logit_ci_upper <- mu[best_idx] + z * sigma[best_idx]
   power_ci_lower <- invlogit_transform(logit_ci_lower)

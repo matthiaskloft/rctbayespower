@@ -227,6 +227,42 @@ test_that("optimize_sample_size errors when constant is a numeric vector", {
   )
 })
 
+test_that("optimize_sample_size errors when constant is an unnamed list", {
+  design <- mock_design()
+  expect_error(
+    optimize_sample_size(
+      design = design,
+      n_range = c(50, 300),
+      constant = list(0.3, 0.975)
+    ),
+    class = "rlang_error"
+  )
+})
+
+# =============================================================================
+# INPUT VALIDATION: seed warning in Pareto mode
+# =============================================================================
+
+test_that("optimize_sample_size warns when seed is set in Pareto mode", {
+  design <- mock_design()
+  expect_warning(
+    tryCatch(
+      optimize_sample_size(
+        design = design,
+        objective = "pareto",
+        n_range = c(50, 300),
+        constant = list(),
+        seed = 42,
+        n_sims = 1,
+        max_evals = 1,
+        verbose = FALSE
+      ),
+      error = function(e) NULL
+    ),
+    "seed.*not supported.*Pareto"
+  )
+})
+
 # =============================================================================
 # match.arg: objective
 # =============================================================================
@@ -294,6 +330,7 @@ test_that("optimize_sample_size errors on invalid surrogate value", {
   expect_error(
     optimize_sample_size(
       design = design,
+      objective = "single",
       n_range = c(50, 300),
       constant = list(),
       surrogate = "neural"
@@ -336,6 +373,7 @@ test_that("optimize_sample_size errors on invalid score_shape value", {
   expect_error(
     optimize_sample_size(
       design = design,
+      objective = "single",
       n_range = c(50, 300),
       constant = list(),
       score_shape = "cubic"
@@ -378,6 +416,7 @@ test_that("optimize_sample_size errors on invalid score_scale value", {
   expect_error(
     optimize_sample_size(
       design = design,
+      objective = "single",
       n_range = c(50, 300),
       constant = list(),
       score_scale = "logit"
@@ -420,6 +459,7 @@ test_that("optimize_sample_size errors on invalid knee_method value", {
   expect_error(
     optimize_sample_size(
       design = design,
+      objective = "pareto",
       n_range = c(50, 300),
       constant = list(),
       knee_method = "elbow"

@@ -50,6 +50,11 @@ test_that("compute_normalized_distance log midpoint is 0.5 on log scale", {
   expect_equal(result, 0.5, tolerance = 1e-10)
 })
 
+test_that("compute_normalized_distance returns 1 when n_min == n_max", {
+  expect_equal(compute_normalized_distance(100, c(100, 100), "log"), 1)
+  expect_equal(compute_normalized_distance(100, c(100, 100), "raw"), 1)
+})
+
 test_that("compute_normalized_distance output is in [0, 1] for interior points", {
   n_seq <- seq(50, 500, by = 50)
   for (scale in c("log", "raw")) {
