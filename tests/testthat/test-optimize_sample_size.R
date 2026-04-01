@@ -1,5 +1,8 @@
 # Tests for optimize_sample_size() entry point (R/optimize_sample_size.R)
 
+# covr instrumentation can interfere with optimization pipeline tests
+skip_if(identical(Sys.getenv("R_COVR"), "true"), "Optimization tests unreliable under covr")
+
 # =============================================================================
 # INPUT VALIDATION: design argument
 # =============================================================================

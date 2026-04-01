@@ -1,5 +1,8 @@
 # Tests for single-objective optimization helpers (R/optimization_single.R)
 
+# covr instrumentation can interfere with internal function access
+skip_if(identical(Sys.getenv("R_COVR"), "true"), "Optimization helper tests unreliable under covr")
+
 # =============================================================================
 # compute_normalized_distance()
 # =============================================================================

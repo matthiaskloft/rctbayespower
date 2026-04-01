@@ -1,5 +1,8 @@
 # Tests for S7 class rctbp_sample_size_result (R/class_sample_size_result.R)
 
+# covr instrumentation can interfere with S7 class construction
+skip_if(identical(Sys.getenv("R_COVR"), "true"), "S7 tests unreliable under covr")
+
 # =============================================================================
 # HELPERS
 # =============================================================================
