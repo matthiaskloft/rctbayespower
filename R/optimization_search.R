@@ -72,6 +72,8 @@ search_p_alloc <- function(min = 0.1) {
 }
 
 #' @rdname search_p_alloc
+#' @param x An object of class `rctbp_search_p_alloc`.
+#' @param ... Additional arguments (unused).
 #' @export
 print.rctbp_search_p_alloc <- function(x, ...) {
   cli::cat_line(sprintf("search_p_alloc(min = %g)", x$min_prop))
@@ -155,6 +157,8 @@ search_looks <- function(n = 2, min_spacing = 0.2) {
 }
 
 #' @rdname search_looks
+#' @param x An object of class `rctbp_search_looks`.
+#' @param ... Additional arguments (unused).
 #' @export
 print.rctbp_search_looks <- function(x, ...) {
   cli::cat_line(sprintf("search_looks(n = %d, min_spacing = %g)", x$n_looks, x$min_spacing))

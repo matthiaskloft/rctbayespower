@@ -60,7 +60,7 @@ strongest — exploits smooth monotonic structure.
 
 \item{n_init}{Number of initial design points (default 5).}
 
-\item{max_evals}{Maximum evaluations (default 30).}
+\item{max_evals}{Maximum total evaluations including initial design points (default 30).}
 
 \item{patience}{Early stopping patience — stop if best score hasn't improved
 for this many consecutive evaluations after the initial design (default 5).}

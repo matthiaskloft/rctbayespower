@@ -3,6 +3,9 @@
 \name{summary.rctbp_sample_size_result}
 \alias{summary.rctbp_sample_size_result}
 \title{Summary Method for rctbp_sample_size_result}
+\usage{
+\method{summary}{rctbp_sample_size_result}(object, ...)
+}
 \arguments{
 \item{object}{An rctbp_sample_size_result object}
 

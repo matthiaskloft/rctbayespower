@@ -15,6 +15,10 @@ Must be >= 2 (at least one interim + final).}
 
 \item{min_spacing}{Minimum proportion of total sample size between
 consecutive looks (default 0.2). Requires \code{n * min_spacing <= 1}.}
+
+\item{x}{An object of class \code{rctbp_search_looks}.}
+
+\item{...}{Additional arguments (unused).}
 }
 \value{
 An object of class "rctbp_search_looks" for use in

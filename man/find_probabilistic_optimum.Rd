@@ -31,7 +31,7 @@ A list with:
 \item{n_opt}{Optimal sample size (ceiling-rounded to integer)}
 \item{p_feas}{Feasibility probability P(power >= target) at n_opt}
 \item{predicted_power}{GP-predicted power at n_opt}
-\item{ci_lower, ci_upper}{95\% confidence interval for predicted power}
+\item{ci_lower, ci_upper}{Confidence interval for predicted power (level = alpha)}
 \item{target}{Target power value used}
 \item{alpha}{Confidence level used}
 \item{profile}{Data frame with P_feas for all candidate n values}

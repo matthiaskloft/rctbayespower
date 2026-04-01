@@ -3,6 +3,21 @@
 \name{plot.rctbp_power_analysis}
 \alias{plot.rctbp_power_analysis}
 \title{Plot Power Analysis Results}
+\usage{
+\method{plot}{rctbp_power_analysis}(
+  x,
+  type = "auto",
+  metric = "both",
+  decision = "both",
+  show_target = TRUE,
+  show_mcse = FALSE,
+  facet_by = "decision",
+  group_by = "effect_size",
+  target_power = NULL,
+  interactive = TRUE,
+  ...
+)
+}
 \arguments{
 \item{x}{An rctbp_power_analysis object that has been run with results}
 

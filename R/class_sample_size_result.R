@@ -157,11 +157,13 @@ S7::method(summary, rctbp_sample_size_result) <- function(object, ...) {
 # S3 WRAPPERS
 # =============================================================================
 
+#' @rdname print.rctbp_sample_size_result
 #' @export
 print.rctbp_sample_size_result <- function(x, ...) {
   S7::method(print, rctbp_sample_size_result)(x, ...)
 }
 
+#' @rdname summary.rctbp_sample_size_result
 #' @export
 summary.rctbp_sample_size_result <- function(object, ...) {
   S7::method(summary, rctbp_sample_size_result)(object, ...)

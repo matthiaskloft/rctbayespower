@@ -3,6 +3,9 @@
 \name{print.rctbp_sample_size_result}
 \alias{print.rctbp_sample_size_result}
 \title{Print Method for rctbp_sample_size_result}
+\usage{
+\method{print}{rctbp_sample_size_result}(x, ...)
+}
 \arguments{
 \item{x}{An rctbp_sample_size_result object}
 

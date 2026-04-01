@@ -12,6 +12,10 @@ search_p_alloc(min = 0.1)
 \arguments{
 \item{min}{Minimum proportion acceptable for any group (default 0.1).
 Must be in (0, 0.5). For k arms, requires \code{k * min < 1}.}
+
+\item{x}{An object of class \code{rctbp_search_p_alloc}.}
+
+\item{...}{Additional arguments (unused).}
 }
 \value{
 An object of class "rctbp_search_p_alloc" for use in
