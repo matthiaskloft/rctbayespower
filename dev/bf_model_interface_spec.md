@@ -67,7 +67,7 @@ estimate_batch_bf() builds conditions dict:
     → converted to NumPy float32 [backend_bf.R:1614-1621]
     ⚠ CURRENT GAP: R does NOT pass prior_df/prior_scale yet — must be fixed
 
-Python adapter forward pass:
+Python adapter forward pass (retrained model — old model used only N, p_alloc):
     1. Broadcast scalar context to (B,1)
     2. as_set([outcome, covariate, group]) → (B, N_obs, 1) each
     3. Standardize outcome, covariate
@@ -160,7 +160,7 @@ function(n_total, n_arms = 2, contrasts = "contr.treatment",
 | `group` | `(B, N)` | float32 | Binary treatment indicator (0/1) |
 | `N` | scalar | int | Total sample size |
 | `p_alloc` | scalar | float | Treatment allocation probability |
-| `prior_df` | scalar | int | Prior degrees of freedom for `b_group` |
+| `prior_df` | scalar | int (converted to float32) | Prior degrees of freedom for `b_group` |
 | `prior_scale` | scalar | float | Prior scale for `b_group` |
 
 **Adapter spec** (`adapter.py:30-47`):
@@ -305,15 +305,15 @@ function(n_total, n_arms = 2, contrasts = "contr.treatment",
 
 | File | What it contains |
 |------|-----------------|
-| `rctbayespower/R/backend_bf.R:1614-1621` | R → Python data conversion (the `prior_df`/`prior_scale` gap) |
-| `rctbayespower/R/backend_bf.R:1026-1060` | Batch field maps per model type |
-| `rctbayespower/R/backend_bf.R:1355-1375` | `detect_bf_model_type()` — duck-typing dispatch |
-| `rctbayespower/R/class_design.R:211-223` | `get_bf_parameter_names()` — reads Rename transform |
-| `rctbayespower/R/class_design.R:463-498` | Model registry (5 models) |
-| `rctbayespower/R/class_design.R:628-707` | `create_sim_fn_for_model()` + `create_ancova_sim_fn()` |
-| `rctbayespower/R/class_sim_fn.R:37-61` | arm → group workaround |
-| `rctbayespower/R/model_cache.R:67-76` | Download URL pattern |
-| `rctbayespower/dev/13_bf_model_retraining.md` | Existing retraining guide (CouplingFlow bug details) |
+| `R/backend_bf.R:1614-1621` | R → Python data conversion (the `prior_df`/`prior_scale` gap) |
+| `R/backend_bf.R:1026-1060` | Batch field maps per model type |
+| `R/backend_bf.R:1355-1375` | `detect_bf_model_type()` — duck-typing dispatch |
+| `R/class_design.R:211-223` | `get_bf_parameter_names()` — reads Rename transform |
+| `R/class_design.R:463-498` | Model registry (5 models) |
+| `R/class_design.R:628-707` | `create_sim_fn_for_model()` + `create_ancova_sim_fn()` |
+| `R/class_sim_fn.R:37-61` | arm → group workaround |
+| `R/model_cache.R:67-76` | Download URL pattern |
+| `dev/13_bf_model_retraining.md` | Existing retraining guide (CouplingFlow bug details) |
 | `bayesflow-rct/src/.../ancova/adapter.py` | Full adapter pipeline (declarative spec + fluent API) |
 | `bayesflow-rct/src/.../ancova/simulator.py` | Simulator: prior, likelihood, meta functions |
 | `bayesflow-rct/src/.../ancova/config.py` | `ANCOVAConfig` dataclass (~28 fields) + `build_networks()` |
