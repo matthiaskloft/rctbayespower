@@ -113,7 +113,7 @@ Dev doc specifying the exact contract between `rctbayespower` and the `rctbp-bf-
 - [x] Document file format (.keras/.pkl) and naming conventions
 - [x] Document parameter mapping (sim_fn params → BF inference targets)
 - [x] Document per-model specs for all 5 v1 registry models
-- [x] Save as `dev/bf_model_interface_spec.md`
+- [x] Save as `dev/14_bf_model_interface_spec.md`
 
 ### Validation Articles (pkgdown)
 

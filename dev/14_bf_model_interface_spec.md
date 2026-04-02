@@ -31,15 +31,16 @@ This document defines the exact contract between `rctbayespower` (R, the consume
 
 ### 2.2 Model Architecture Requirements
 
-- Must be `bf.ContinuousApproximator` (provides `.sample()`, `.adapter`, `.fit_online()`)
+- Must be `bf.ContinuousApproximator` (provides `.sample()`, `.adapter`, `.fit()`, `.fit_online()`)
 - For **1D inference targets** (e.g., `b_group` scalar): must use `FlowMatching`, not `CouplingFlow`
   - CouplingFlow splits the vector into two halves: `floor(1/2) = 0` → `Dense(units=0)` → crash
   - See `dev/13_bf_model_retraining.md` for details
 - For **≥2D inference targets**: either `FlowMatching` or `CouplingFlow` is viable
 
-R detects model type via duck-typing in `detect_bf_model_type()` (`backend_bf.R:1355-1375`):
-- `"workflow"`: has `sample()` + `fit_online()`
-- `"approximator"`: has `sample()` + `fit()`
+R detects model type via duck-typing in `detect_bf_model_type()` (`backend_bf.R:1355-1375`).
+Note: `ContinuousApproximator` has both `.fit()` and `.fit_online()`, so it matches "workflow":
+- `"workflow"`: has `sample()` + `fit_online()` — matches `ContinuousApproximator`
+- `"approximator"`: has `sample()` + `fit()` but not `fit_online()`
 - `"keras"`: has `predict()` + `compile()`
 
 ### 2.3 Adapter Contract
@@ -54,7 +55,7 @@ Every trained model's adapter must contain:
 
 ### 2.4 Data Pipeline
 
-```
+```text
 R sim_fn(params)
     → data.frame { outcome, arm (factor), covariate }
 
