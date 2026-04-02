@@ -108,12 +108,12 @@ Implemented in PR #29. Generalized Wang-Tsiatis boundary family. Subsumes OBF (`
 
 Dev doc specifying the exact contract between `rctbayespower` and the `rctbp-bf-training` repo. Unblocks model training.
 
-- [ ] Document input format (summary statistics per model)
-- [ ] Document output format (posterior samples, shape, naming)
-- [ ] Document file format (.keras/.pkl) and naming conventions
-- [ ] Document parameter mapping (sim_fn params → BF inference targets)
-- [ ] Document per-model specs for all 4 v1 registry models
-- [ ] Save as `dev/bf_model_interface_spec.md`
+- [x] Document input format (summary statistics per model)
+- [x] Document output format (posterior samples, shape, naming)
+- [x] Document file format (.keras/.pkl) and naming conventions
+- [x] Document parameter mapping (sim_fn params → BF inference targets)
+- [x] Document per-model specs for all 5 v1 registry models
+- [x] Save as `dev/14_bf_model_interface_spec.md`
 
 ### Validation Articles (pkgdown)
 

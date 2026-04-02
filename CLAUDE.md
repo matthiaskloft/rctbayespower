@@ -85,6 +85,7 @@ Essential rules not in skill:
 | [`dev/11_bayesflow_integration_roadmap.md`](dev/11_bayesflow_integration_roadmap.md) | BayesFlow integration |
 | [`dev/12_gpu_support_plan.md`](dev/12_gpu_support_plan.md) | GPU support |
 | [`dev/13_bf_model_retraining.md`](dev/13_bf_model_retraining.md) | BF model retraining (version fix) |
+| [`dev/14_bf_model_interface_spec.md`](dev/14_bf_model_interface_spec.md) | BF model interface specification |
 
 ### Trial Design Plans (20-25)
 
